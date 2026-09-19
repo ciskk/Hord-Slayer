@@ -111,13 +111,13 @@ export function drawCinematicScreenTitle(ctx, e, frameCount) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  ctx.shadowColor = '#e67e22';
-  ctx.shadowBlur = isVertical ? 10 : 18;
+  const titleY = by + (isVertical ? 22 : 36);
   ctx.font = isVertical ? '900 21px "Cinzel", "Times New Roman", serif' : '900 34px "Cinzel", "Times New Roman", serif';
+  ctx.fillStyle = 'rgba(230, 126, 34, 0.5)';
+  ctx.fillText('MONÓLITO ABISSAL', screenW / 2 + 1, titleY + 1.5);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('MONÓLITO ABISSAL', screenW / 2, by + (isVertical ? 22 : 36));
+  ctx.fillText('MONÓLITO ABISSAL', screenW / 2, titleY);
 
-  ctx.shadowBlur = 0;
   ctx.font = isVertical ? '600 10px "Cinzel", sans-serif' : '700 13px "Cinzel", sans-serif';
   ctx.letterSpacing = isVertical ? '3px' : '6px';
   ctx.fillStyle = '#f1c40f';

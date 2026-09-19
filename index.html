@@ -32,109 +32,229 @@
 
 <!-- HUD de Combate em Alta Fidelidade (Grim Cyber-Gothic) -->
 <div id="hud">
-  <!-- Barra de Topo: Meta e Cronologia de Combate -->
+  <!-- Definições SVG Compartilhadas para Gradientes de Bronze e Ouro Antigo -->
+  <svg style="position: absolute; width: 0; height: 0; pointer-events: none;" aria-hidden="true">
+    <defs>
+      <linearGradient id="gothic-bronze-spike" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ffeaa7"/>
+        <stop offset="35%" stop-color="#d49a1d"/>
+        <stop offset="70%" stop-color="#7a4f07"/>
+        <stop offset="100%" stop-color="#2a1801"/>
+      </linearGradient>
+      <linearGradient id="gothic-bronze-rim" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#2a1801"/>
+        <stop offset="50%" stop-color="#6e4608"/>
+        <stop offset="100%" stop-color="#e6a110"/>
+      </linearGradient>
+      <linearGradient id="chevron-crimson-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#ff4d4d"/>
+        <stop offset="40%" stop-color="#e60000"/>
+        <stop offset="80%" stop-color="#990000"/>
+        <stop offset="100%" stop-color="#4d0000"/>
+      </linearGradient>
+      <linearGradient id="chevron-cyan-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#68d8d6"/>
+        <stop offset="40%" stop-color="#07b1ca"/>
+        <stop offset="80%" stop-color="#057a9e"/>
+        <stop offset="100%" stop-color="#02384a"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- 1. Linha de Topo: Badges de Combate + Banner de Onda e Selo de Pausa -->
   <div class="hud-top-bar">
     <div class="hud-meta-group left">
       <div class="hud-badge kills-badge" title="Inimigos abatidos">
-        <span class="hud-icon"><svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color:#ff7675;"><path fill="currentColor" d="M12 2C7.6 2 4 5.6 4 10c0 2.8 1.4 5.3 3.6 6.8V20h8.8v-3.2c2.2-1.5 3.6-4 3.6-6.8 0-4.4-3.6-8-8-8zm-3 10a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zm6 0a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6z"/><line x1="10" y1="18" x2="10" y2="20" stroke="#121622" stroke-width="1.5"/><line x1="14" y1="18" x2="14" y2="20" stroke="#121622" stroke-width="1.5"/></svg></span>
+        <span class="hud-icon">
+          <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color:#ff3838;"><path fill="currentColor" d="M12 2C7.6 2 4 5.6 4 10c0 2.8 1.4 5.3 3.6 6.8V20h8.8v-3.2c2.2-1.5 3.6-4 3.6-6.8 0-4.4-3.6-8-8-8zm-3 10a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zm6 0a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6z"/><line x1="10" y1="18" x2="10" y2="20" stroke="#121622" stroke-width="1.5"/><line x1="14" y1="18" x2="14" y2="20" stroke="#121622" stroke-width="1.5"/></svg>
+        </span>
         <span class="hud-num" id="kills-val">0</span>
       </div>
       <div class="hud-badge gold-badge" title="Ouro acumulado">
-        <span class="hud-icon"><svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color:#f1c40f;"><polygon points="12,1 17,6 17,18 12,23 7,18 7,6" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="12,5 15,8 15,16 12,19 9,16 9,8" fill="currentColor"/></svg></span>
+        <span class="hud-icon">
+          <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color:#f1c40f;"><polygon points="12,1 17,6 17,18 12,23 7,18 7,6" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="12,5 15,8 15,16 12,19 9,16 9,8" fill="currentColor"/></svg>
+        </span>
         <span class="hud-num" id="gold-val">0</span>
       </div>
     </div>
 
-    <!-- Centro: Cronômetro e Pílula Fixa de Onda (Sem sobreposição) -->
-    <div class="hud-center-chronicle">
-      <span id="timer-val" class="hud-timer">00:00</span>
-      <div class="hud-wave-pill" title="Horda em andamento">
-        <span class="wave-icon"><svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#f1c40f;"><path fill="currentColor" d="M19 3l-5 5 1.5 1.5 5-5-1.5-1.5z"/><path fill="currentColor" d="M5 19l-2 2 2 2 2-2-2-2z"/><path fill="currentColor" d="M12.5 9.5l-6 6-1.5-1.5 6-6 1.5 1.5z"/><path fill="currentColor" d="M5 3l5 5-1.5 1.5-5-5 1.5-1.5z"/><path fill="currentColor" d="M19 19l2 2-2 2-2-2 2-2z"/><path fill="currentColor" d="M11.5 9.5l6 6 1.5-1.5-6-6-1.5 1.5z"/></svg></span>
-        <span id="wave-banner">Onda 1: Reconhecimento</span>
+    <!-- Cluster de Tempo & Selo de Pausa -->
+    <div class="hud-top-cluster-right">
+      <div class="hud-badge timer-badge" title="Tempo de Sobrevivência">
+        <span class="hud-icon">
+          <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color:#ffeaa7;"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 15 14" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </span>
+        <span id="timer-val" class="hud-timer">00:00</span>
       </div>
-    </div>
 
-    <div class="hud-meta-group right">
-      <button id="pause-btn" class="hud-btn pause-hud-btn" aria-label="Pausar Batalha" title="Pausar">
-        <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color:#f1c40f;"><rect x="5" y="4" width="4.5" height="16" rx="1.5" fill="currentColor"/><rect x="14.5" y="4" width="4.5" height="16" rx="1.5" fill="currentColor"/></svg>
+      <button id="pause-btn" class="hud-btn pause-hud-btn" aria-label="Pausar Batalha" title="Pausar Batalha [Esc]">
+        <svg class="medallion-spikes-svg" viewBox="0 0 40 40">
+          <polygon points="20.0,1.0 23.9,5.5 29.5,3.5 30.6,9.4 36.5,10.5 34.5,16.1 39.0,20.0 34.5,23.9 36.5,29.5 30.6,30.6 29.5,36.5 23.9,34.5 20.0,39.0 16.1,34.5 10.5,36.5 9.4,30.6 3.5,29.5 5.5,23.9 1.0,20.0 5.5,16.1 3.5,10.5 9.4,9.4 10.5,3.5 16.1,5.5" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="1.2"/>
+          <circle cx="20" cy="20" r="14" fill="#080a10" stroke="url(#gothic-bronze-rim)" stroke-width="1.6"/>
+          <circle cx="20" cy="20" r="11.5" fill="#0a0d16"/>
+          <!-- Barras Góticas de Pausa Vetoriais: Rigorosamente Simétricas (larguras idênticas de 3.0px) -->
+          <rect x="15" y="13.5" width="3" height="13" rx="0.8" fill="url(#gothic-bronze-spike)" stroke="#2a1801" stroke-width="0.5"/>
+          <rect x="22" y="13.5" width="3" height="13" rx="0.8" fill="url(#gothic-bronze-spike)" stroke="#2a1801" stroke-width="0.5"/>
+        </svg>
+        <span class="pause-key-hint">ESC</span>
       </button>
     </div>
   </div>
 
-  <!-- BLOCO 1: Barra de Vida (Frasco Vital de Sangue / Gothic Blood Vial) -->
-  <div class="hud-vial-block hp-block" id="hp-container">
-    <div class="vial-header">
-      <div class="vial-label">
-        <span class="vial-rune-icon hp-icon"><svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color:#e74c3c;"><path fill="currentColor" d="M12 2.7c-4 5.4-7 9.1-7 12.3 0 3.9 3.1 7 7 7s7-3.1 7-7c0-3.2-3-6.9-7-12.3zm-2.2 12c-.4 0-.8-.3-.8-.8 0-1.8 1.4-3.2 3.2-3.2.4 0 .8.4.8.8s-.4.8-.8.8c-1 0-1.7.7-1.7 1.6 0 .5-.3.8-.7.8z"/></svg></span>
-        <span class="vial-title">VITALIDADE</span>
+  <!-- 2. Container de Vitais e Herói -->
+  <div class="hud-vitals-container">
+    <!-- Bloco 1: Barra de Vida com Medalhão do Coração -->
+    <div class="hud-bar-row hp-bar-row" id="hp-container">
+      <div class="bar-medallion hp-medallion" title="Vitalidade">
+        <svg class="medallion-spikes-svg" viewBox="0 0 40 40">
+          <polygon points="20.0,1.0 23.9,5.5 29.5,3.5 30.6,9.4 36.5,10.5 34.5,16.1 39.0,20.0 34.5,23.9 36.5,29.5 30.6,30.6 29.5,36.5 23.9,34.5 20.0,39.0 16.1,34.5 10.5,36.5 9.4,30.6 3.5,29.5 5.5,23.9 1.0,20.0 5.5,16.1 3.5,10.5 9.4,9.4 10.5,3.5 16.1,5.5" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="1.2"/>
+          <circle cx="20" cy="20" r="14" fill="#080a10" stroke="url(#gothic-bronze-rim)" stroke-width="1.6"/>
+          <circle cx="20" cy="20" r="11.5" fill="#0a0d16"/>
+        </svg>
+        <span class="medallion-glyph heart-glyph">
+          <svg viewBox="0 0 24 24" fill="#ff3838"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </span>
       </div>
-      <div class="vial-readout">
-        <span id="hp-val">120</span><span class="vial-denom"> / <span id="hp-max-val">120</span></span>
-        <span id="hp-pct-val" class="vial-pct">100%</span>
+      <div class="bar-bezel hp-bezel bar-bg hp-bar-container">
+        <div id="hp-ghost-fill"></div>
+        <div id="hp-fill">
+          <div class="fill-spark hp-spark"></div>
+        </div>
+        <div class="bar-glass-gloss"></div>
+        <div class="bar-pips-layer">
+          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+        </div>
+        <div class="bar-readout hp-readout">
+          <span id="hp-val">120</span> / <span id="hp-max-val">120</span>
+          <span id="hp-pct-val" class="vial-pct" style="display:none;">100%</span>
+        </div>
       </div>
     </div>
-    <div class="bar-bezel hp-bezel bar-bg hp-bar-container">
-      <div id="hp-ghost-fill"></div>
-      <div id="hp-fill">
-        <div class="fill-spark hp-spark"></div>
+
+    <!-- Bloco 2: Barra de Experiência com Medalhão da Estrela -->
+    <div class="hud-bar-row xp-bar-row">
+      <div class="bar-medallion xp-medallion" title="Éter de Almas (XP)">
+        <svg class="medallion-spikes-svg" viewBox="0 0 40 40">
+          <polygon points="20.0,1.0 23.9,5.5 29.5,3.5 30.6,9.4 36.5,10.5 34.5,16.1 39.0,20.0 34.5,23.9 36.5,29.5 30.6,30.6 29.5,36.5 23.9,34.5 20.0,39.0 16.1,34.5 10.5,36.5 9.4,30.6 3.5,29.5 5.5,23.9 1.0,20.0 5.5,16.1 3.5,10.5 9.4,9.4 10.5,3.5 16.1,5.5" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="1.2"/>
+          <circle cx="20" cy="20" r="14" fill="#080a10" stroke="url(#gothic-bronze-rim)" stroke-width="1.6"/>
+          <circle cx="20" cy="20" r="11.5" fill="#0a0d16"/>
+        </svg>
+        <span class="medallion-glyph star-glyph">
+          <svg viewBox="0 0 24 24" fill="#00e5ff"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/></svg>
+        </span>
       </div>
-      <div class="bar-glass-gloss"></div>
-      <div class="bar-pips-layer">
-        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+      <div class="bar-bezel xp-bezel bar-bg">
+        <div id="xp-fill">
+          <div class="fill-spark xp-spark"></div>
+          <div class="xp-shimmer-wave"></div>
+        </div>
+        <div class="bar-glass-gloss"></div>
+        <div class="bar-pips-layer xp-pips">
+          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+        </div>
+        <div class="xp-level-badge" title="Nível Atual">
+          <span class="xp-lvl-prefix">NV</span>
+          <b id="lvl-val" class="xp-lvl-num">1</b>
+        </div>
+        <div class="bar-readout xp-readout">
+          <span id="xp-val">0</span> / <span id="xp-next-val">20</span>
+          <span id="xp-pct-val" class="vial-pct xp-pct" style="display:none;">0%</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- BLOCO 2: Barra de Experiência (Astrolábio Cósmico / Astral Aether Bar) -->
-  <div class="hud-vial-block xp-block">
-    <div class="vial-header">
-      <div class="vial-label">
-        <span class="lvl-crest-badge">
-          <span class="crest-label">NV</span>
-          <span id="lvl-val" class="crest-num">1</span>
-        </span>
-        <span class="vial-title xp-title">ÉTER DE ALMAS</span>
-      </div>
-      <div class="vial-readout xp-readout">
-        <span id="xp-val">0</span><span class="vial-denom"> / <span id="xp-next-val">20</span></span>
-        <span id="xp-pct-val" class="vial-pct xp-pct">0%</span>
-      </div>
-    </div>
-    <div class="bar-bezel xp-bezel bar-bg">
-      <div id="xp-fill">
-        <div class="fill-spark xp-spark"></div>
-        <div class="xp-shimmer-wave"></div>
-      </div>
-      <div class="bar-glass-gloss"></div>
-      <div class="bar-pips-layer xp-pips">
-        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-      </div>
-    </div>
+  <!-- 3. Card do Nome da Horda / Onda (No mobile: substitui o cartouche do herói abaixo das barras com largura estendida; no PC: centralizado no topo) -->
+  <div id="hud-wave-card" class="hud-wave-card hud-wave-pill" title="Horda em andamento">
+    <span class="wave-icon">
+      <!-- Espadas cruzadas da referência de arte -->
+      <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color:#f1c40f;"><path fill="currentColor" d="M19 3l-5 5 1.5 1.5 5-5-1.5-1.5z"/><path fill="currentColor" d="M5 19l-2 2 2 2 2-2-2-2z"/><path fill="currentColor" d="M12.5 9.5l-6 6-1.5-1.5 6-6 1.5 1.5z"/><path fill="currentColor" d="M5 3l5 5-1.5 1.5-5-5 1.5-1.5z"/><path fill="currentColor" d="M19 19l2 2-2 2-2-2 2-2z"/><path fill="currentColor" d="M11.5 9.5l6 6 1.5-1.5-6-6-1.5 1.5z"/></svg>
+    </span>
+    <span id="wave-banner">ONDA 1: RECONHECIMENTO</span>
   </div>
 
   <!-- HUD do Chefe (Ativado em Batalha de Boss) -->
-  <div id="boss-hud">
+  <div id="boss-hud" class="boss-hud-monumental">
+    <!-- Efeito de aura atmosférica de fundo -->
+    <div class="boss-hud-backdrop"></div>
+    
+    <!-- Header Superior com Brasão, Nome, Subtítulo e Leitura Numérica de Vida -->
     <div class="boss-hud-header">
       <div class="boss-name-group">
-        <span class="boss-skull-icon"><svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color:#e74c3c;"><polygon points="12,4 16,9 21,5 19,18 5,18 3,5 8,9" fill="currentColor"/><rect x="5" y="19" width="14" height="2.5" rx="1" fill="currentColor"/></svg></span>
-        <span id="boss-name">CHEFE</span>
+        <!-- Medalhão de Crânio Coroado / Chifres Demoníacos -->
+        <div class="boss-crest-medallion" title="Arquichefe">
+          <svg class="boss-crest-spikes-svg" viewBox="0 0 44 44">
+            <polygon points="22.0,1.0 26.2,6.0 32.4,3.8 33.6,10.3 40.1,11.5 37.9,17.7 42.9,22.0 37.9,26.3 40.1,32.5 33.6,33.7 32.4,40.2 26.2,38.0 22.0,43.0 17.8,38.0 11.6,40.2 10.4,33.7 3.9,32.5 6.1,26.3 1.1,22.0 6.1,17.7 3.9,11.5 10.4,10.3 11.6,3.8 17.8,6.0" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="1.2"/>
+            <circle cx="22" cy="22" r="15.5" fill="#080a10" stroke="url(#gothic-bronze-rim)" stroke-width="1.8"/>
+            <circle cx="22" cy="22" r="12.5" fill="#140718"/>
+          </svg>
+          <span class="boss-skull-icon">
+            <svg class="boss-skull-svg" viewBox="0 0 24 24">
+              <path class="skull-horns" fill="#c0392b" d="M3 4c1 4 4 6 6 6-1-3-1-5-6-6zm18 0c-1 4-4 6-6 6 1-3 1-5 6-6z"/>
+              <path class="skull-head" fill="#f1f2f6" d="M12 3c-4.4 0-8 3.6-8 8 0 2.8 1.4 5.3 3.6 6.8V21h8.8v-3.2c2.2-1.5 3.6-4 3.6-6.8 0-4.4-3.6-8-8-8z"/>
+              <circle class="skull-eye left" cx="9.2" cy="11.5" r="1.6" fill="#ff1744"/>
+              <circle class="skull-eye right" cx="14.8" cy="11.5" r="1.6" fill="#ff1744"/>
+              <polygon points="12,13.5 11,15.5 13,15.5" fill="#1e272e"/>
+              <rect x="9.5" y="18" width="1.6" height="3" fill="#1e272e"/>
+              <rect x="11.2" y="18" width="1.6" height="3" fill="#1e272e"/>
+              <rect x="12.9" y="18" width="1.6" height="3" fill="#1e272e"/>
+            </svg>
+          </span>
+        </div>
+        <div class="boss-titles-cluster">
+          <span class="boss-title-tag">✦ ARQUICHEFE SUPREMO ✦</span>
+          <span id="boss-name">CHEFE</span>
+        </div>
       </div>
-      <span id="boss-hp-val" class="boss-pct">100%</span>
+      <div class="boss-hp-readout-group">
+        <span id="boss-hp-raw" class="boss-hp-raw"></span>
+        <span id="boss-hp-val" class="boss-pct">100%</span>
+      </div>
     </div>
-    <div class="bar-bezel boss-bezel bar-bg">
-      <div id="boss-hp-ghost-fill"></div>
-      <div id="boss-hp-fill">
-        <div class="fill-spark boss-spark"></div>
+
+    <!-- Moldura Monumental da Barra de Vida com Asas/Suportes Metálicos -->
+    <div class="boss-bar-stage">
+      <div class="boss-bracket boss-bracket-left" aria-hidden="true">
+        <svg viewBox="0 0 16 32" class="bracket-svg">
+          <polygon points="16,0 4,6 0,16 4,26 16,32 12,24 8,16 12,8" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="0.8"/>
+          <polygon points="14,4 6,9 2,16 6,23 14,28" fill="#d49a1d" opacity="0.6"/>
+        </svg>
       </div>
-      <div class="bar-glass-gloss"></div>
-      <div class="bar-pips-layer boss-pips">
-        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+
+      <div class="bar-bezel boss-bezel bar-bg">
+        <!-- Efeito de pulso de impacto (flash de dano) -->
+        <div class="boss-hit-flash-overlay"></div>
+        
+        <!-- Barra Fantasma Incandescente (Rastro de Dano) -->
+        <div id="boss-hp-ghost-fill"></div>
+        
+        <!-- Barra de Vida Ativa com Textura e Fogo -->
+        <div id="boss-hp-fill">
+          <div class="boss-fill-pattern"></div>
+          <div class="boss-shimmer-wave"></div>
+          <div class="fill-spark boss-spark"></div>
+        </div>
+
+        <!-- Brilho de Vidro Especular 3D -->
+        <div class="bar-glass-gloss boss-gloss"></div>
+
+        <!-- Camada de Gemas de Fase (Pips Rúnicos) -->
+        <div class="bar-pips-layer boss-pips">
+          <div class="boss-pip-notch" data-phase-pct="25"><div class="boss-pip-gem"></div></div>
+          <div class="boss-pip-notch" data-phase-pct="50"><div class="boss-pip-gem"></div></div>
+          <div class="boss-pip-notch" data-phase-pct="75"><div class="boss-pip-gem"></div></div>
+        </div>
+      </div>
+
+      <div class="boss-bracket boss-bracket-right" aria-hidden="true">
+        <svg viewBox="0 0 16 32" class="bracket-svg flipped">
+          <polygon points="16,0 4,6 0,16 4,26 16,32 12,24 8,16 12,8" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="0.8"/>
+          <polygon points="14,4 6,9 2,16 6,23 14,28" fill="#d49a1d" opacity="0.6"/>
+        </svg>
       </div>
     </div>
   </div>
@@ -148,6 +268,20 @@
       </div>
       <div id="boss-bark-text" class="boss-bark-text">“A noite tem sede... e vosso sangue saciará o trono.”</div>
     </div>
+  </div>
+
+  <!-- Banner de Desafio do Altar de Sangue -->
+  <div id="blood-altar-hud" class="blood-altar-hud" style="display: none;">
+    <div class="blood-altar-header">
+      <div class="blood-altar-icon-wrap">
+        <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color:#ff3838;"><path fill="currentColor" d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+      </div>
+      <span class="blood-altar-title">DESAFIO DO ALTAR DE SANGUE</span>
+    </div>
+    <div class="blood-altar-bar-wrap">
+      <div id="blood-altar-fill" class="blood-altar-fill"></div>
+    </div>
+    <div id="blood-altar-status" class="blood-altar-status"></div>
   </div>
 </div>
 
@@ -439,6 +573,19 @@
 
     <!-- Lista de Cards de Conquistas com scroll elegante -->
     <div class="achievements-modal-body">
+      <!-- Monumento à Maior Jornada (Melhor Run - Tarô Arcano) -->
+      <div id="best-run-monument-container" class="best-run-monument-container"></div>
+
+      <!-- Divisor com Glifos de Conquistas -->
+      <div class="achievements-section-divider">
+        <div class="divider-line"></div>
+        <div class="divider-label">
+          <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color: #ffd166; width:13px; height:13px;"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+          <span>DESAFIOS & GLÓRIAS DO CÓDICE</span>
+        </div>
+        <div class="divider-line"></div>
+      </div>
+
       <div id="achievements-list-grid" class="achievements-cards-grid"></div>
     </div>
   </div>
@@ -489,42 +636,164 @@
   </div>
 </div>
 
-<!-- Modal de Upgrades (Cartas de Tarô de Poder Arcano) -->
-<div id="upgrade-modal" class="modal-overlay">
-  <div class="modal-box modal-box-tarot">
+<!-- Palco de Upgrades Intrínseco (Tarô Arcano do Destino) -->
+<div id="upgrade-modal" class="modal-overlay levelup-screen-overlay" style="display: none;">
+  <div class="levelup-stasis-veil"></div>
+
+  <div class="levelup-intrinsic-stage">
+    <!-- Banner de Recompensa de Chefe (se ativado) -->
     <div id="boss-reward-banner" class="boss-reward-banner" style="display: none;">
-      <div class="boss-reward-badge"><svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:4px;"><polygon points="12,4 16,9 21,5 19,18 5,18 3,5 8,9" fill="currentColor"/><rect x="5" y="19" width="14" height="2.5" rx="1" fill="currentColor"/></svg>VITÓRIA DE CHEFE</div>
+      <div class="boss-reward-badge">
+        <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:4px;"><polygon points="12,4 16,9 21,5 19,18 5,18 3,5 8,9" fill="currentColor"/><rect x="5" y="19" width="14" height="2.5" rx="1" fill="currentColor"/></svg>
+        COLOSSO SUPREMO DERROTADO
+      </div>
       <div id="boss-reward-title" class="boss-reward-title">VITÓRIA CONTRA O CHEFE!</div>
       <div id="boss-reward-counter" class="boss-reward-counter">+3 Upgrades Conquistados • Escolha 1 de 3</div>
     </div>
-    <div class="modal-header" style="justify-content: center; flex-direction: column; text-align: center;">
-      <span class="level-up-badge">TRANSCENDÊNCIA DE NÍVEL</span>
-      <h2 class="gothic-title glow-gold">ESCOLHA SEU DESTINO</h2>
-      <div class="modal-header-sub">Invoque uma bênção arcana para remodelar o combate</div>
+
+    <!-- Camada Superior: Sigilo de Ascensão Arcana & Título Monumental -->
+    <div class="levelup-header-group">
+      <div class="levelup-sigil-wrap">
+        <div class="levelup-sigil-halo-outer"></div>
+        <div class="levelup-sigil-halo-inner"></div>
+        <div class="levelup-sigil-mist"></div>
+        <svg class="levelup-sigil-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="levelupCoreGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="35%" stop-color="#ffd166"/>
+              <stop offset="70%" stop-color="#f39c12"/>
+              <stop offset="100%" stop-color="#d35400" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="levelupRuneGrad" x1="0" y1="0" x2="100" y2="100">
+              <stop offset="0%" stop-color="#ffd166"/>
+              <stop offset="50%" stop-color="#00f5d4"/>
+              <stop offset="100%" stop-color="#f1c40f"/>
+            </linearGradient>
+            <filter id="levelupGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2.5" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+            </filter>
+          </defs>
+          <!-- Anéis Rúnicos de Ascensão -->
+          <circle cx="50" cy="50" r="44" stroke="url(#levelupRuneGrad)" stroke-width="1.6" stroke-dasharray="6 3" opacity="0.85" filter="url(#levelupGlow)"/>
+          <circle cx="50" cy="50" r="37" stroke="#ffd166" stroke-width="0.8" opacity="0.5"/>
+          <!-- Pontas Cardeais -->
+          <line x1="50" y1="3" x2="50" y2="11" stroke="#ffd166" stroke-width="2" stroke-linecap="round"/>
+          <line x1="50" y1="89" x2="50" y2="97" stroke="#ffd166" stroke-width="2" stroke-linecap="round"/>
+          <line x1="3" y1="50" x2="11" y2="50" stroke="#ffd166" stroke-width="2" stroke-linecap="round"/>
+          <line x1="89" y1="50" x2="97" y2="50" stroke="#ffd166" stroke-width="2" stroke-linecap="round"/>
+          <!-- Diamante de Ascensão / Estrela de Poder -->
+          <polygon points="50,14 82,50 50,86 18,50" stroke="url(#levelupRuneGrad)" stroke-width="1.5" fill="none" opacity="0.8"/>
+          <polygon points="50,24 72,50 50,76 28,50" stroke="#ffd166" stroke-width="1" fill="none" opacity="0.55"/>
+          <!-- Núcleo de Poder Radiante -->
+          <circle cx="50" cy="50" r="10" fill="url(#levelupCoreGlow)" filter="url(#levelupGlow)"/>
+          <polygon points="50,44 56,50 50,56 44,50" fill="#ffffff"/>
+        </svg>
+      </div>
+
+      <div class="levelup-eyebrow">
+        <span class="levelup-eyebrow-line"></span>
+        <span class="void-pulsing-node" style="background: #ffd166; box-shadow: 0 0 8px #ffd166;"></span>
+        <span id="levelup-eyebrow-text" class="levelup-eyebrow-text">TRANSCENDÊNCIA DE NÍVEL • TARÔ ARCANO</span>
+        <span class="levelup-eyebrow-line"></span>
+      </div>
+
+      <h1 class="levelup-monumental-title">ESCOLHA SEU DESTINO</h1>
+      <div id="levelup-monumental-sub" class="levelup-monumental-sub">Invoque uma bênção arcana para remodelar o combate</div>
+
+      <!-- Fila de Bênçãos e Chip de Nível -->
+      <div class="levelup-meta-chips-row">
+        <div class="levelup-meta-chip">
+          <span class="chip-label">ASCENSÃO</span>
+          <span id="levelup-hero-level" class="chip-val">NV 1</span>
+        </div>
+        <div id="levelup-queue-chip" class="levelup-meta-chip highlight-gold" style="display: none;">
+          <span class="chip-label">FILA</span>
+          <span id="levelup-queue-count" class="chip-val">1 Bênção</span>
+        </div>
+      </div>
     </div>
+
+    <!-- Grid de Cartas de Tarô Arcano -->
     <div id="upgrade-list" class="upgrade-cards-grid"></div>
-    <button id="reroll-btn" class="card-btn reroll-btn-styled" style="display: none;">
-      <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:4px;"><rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/></svg>Rolar Novas Cartas (Restantes: <span id="reroll-count">0</span>)
-    </button>
+
+    <!-- Botão de Reroll em Estilo Nobre CTA -->
+    <div class="levelup-actions-bar">
+      <button id="reroll-btn" class="btn-levelup-reroll" style="display: none;" aria-label="Rolar Novas Cartas">
+        <div class="btn-shimmer-sweep"></div>
+        <div class="btn-reroll-content">
+          <svg class="game-icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/></svg>
+          <span class="reroll-label">ROLAR NOVAS CARTAS</span>
+          <span class="reroll-capsule-badge"><b id="reroll-count">0</b> restantes</span>
+        </div>
+        <span class="reroll-hotkey-hint">[ R ]</span>
+      </button>
+    </div>
   </div>
 </div>
 
-<!-- Modal do Baú de Tesouro (Unboxing Dramático) -->
-<div id="chest-modal" class="modal-overlay">
-  <div class="modal-box chest-modal-box">
-    <div class="chest-unboxing-header">
-      <div class="chest-anim-stage">
-        <div class="chest-rays"></div>
-        <div class="chest-icon-visual">
-          <div class="chest-lid-graphic"></div>
-          <div class="chest-base-graphic"></div>
+<!-- Palco do Baú de Tesouro Intrínseco (Relicário Espectral & Sarcófago do Soberano) -->
+<div id="chest-modal" class="modal-overlay chest-screen-overlay tier-boss" style="display: none;">
+  <div class="chest-stasis-veil"></div>
+
+  <div class="chest-intrinsic-stage">
+    <!-- Palco do Relicário com God-Rays e Abertura Dramática -->
+    <div class="chest-relic-stage">
+      <div class="chest-god-rays-outer"></div>
+      <div class="chest-god-rays-inner"></div>
+      <div class="chest-ambient-glow"></div>
+      
+      <!-- Representação Dimensional do Relicário (Vetorial Arcana) -->
+      <div class="chest-monument-box" id="chest-monument-box">
+        <div class="chest-halo-ring"></div>
+        <div class="chest-sparkle-burst"></div>
+        <!-- Tampa do Baú -->
+        <div class="relic-lid-wrap">
+          <div class="relic-lid-graphic">
+            <div class="relic-gem-crest"></div>
+            <div class="relic-engravings"></div>
+          </div>
+        </div>
+        <!-- Base do Baú -->
+        <div class="relic-base-wrap">
+          <div class="relic-base-graphic">
+            <div class="relic-lock-mechanism">
+              <div class="relic-lock-core"></div>
+            </div>
+            <div class="relic-runic-filigree"></div>
+          </div>
         </div>
       </div>
-      <h3 id="chest-modal-title">TESOURO DO CHEFE!</h3>
-      <p id="chest-modal-sub">A arena foi purificada. Recompensas lendárias concedidas:</p>
     </div>
+
+    <!-- Cabeçalho do Baú -->
+    <div class="chest-header-group">
+      <div class="chest-eyebrow">
+        <span class="chest-eyebrow-line"></span>
+        <span class="void-pulsing-node" id="chest-eyebrow-node"></span>
+        <span id="chest-eyebrow-text" class="chest-eyebrow-text">SARCÓFAGO DO SOBERANO • DÁDIVA DO DESTINO</span>
+        <span class="chest-eyebrow-line"></span>
+      </div>
+
+      <h1 class="chest-monumental-title" id="chest-modal-title">TESOURO DO CHEFE!</h1>
+      <div class="chest-monumental-sub" id="chest-modal-sub">A arena foi purificada. Recompensas lendárias concedidas:</div>
+    </div>
+
+    <!-- Lista de Recompensas em Cartas Bento/Dossiê -->
     <div id="chest-rewards-list" class="chest-rewards-grid"></div>
-    <button class="card-btn" id="chest-claim-btn">Equipar Poderes e Continuar</button>
+
+    <!-- Ação de Resgate com Botão de Alto Impacto -->
+    <div class="chest-actions-bar">
+      <button class="btn-chest-claim" id="chest-claim-btn" disabled aria-label="Equipar Poderes e Continuar">
+        <div class="btn-shimmer-sweep"></div>
+        <div class="btn-claim-content">
+          <svg class="game-icon icon-sm" viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="currentColor"/></svg>
+          <span id="chest-claim-text" class="claim-label">Revelando Recompensas...</span>
+        </div>
+        <span class="claim-hotkey-hint">[ ESPAÇO / ENTER ]</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -733,96 +1002,32 @@
 
 <!-- Tela de Morte Intrínseca (Dark Cyber-Gothic Arena Overlay) -->
 <div id="death-modal" class="modal-overlay death-screen-overlay" style="display: none;">
+  <!-- Projeção Espectral Colossal de Fundo (Backdrop Watermark) -->
+  <div class="death-phantom-backdrop" aria-hidden="true">
+    <div class="death-phantom-mist"></div>
+    <div class="death-phantom-halo"></div>
+  </div>
+
   <div class="death-intrinsic-stage">
     
-    <!-- Camada Superior: Brasão do Vazio e Veredito Épico -->
+    <!-- Camada Superior: Brasão Monumental e Veredito Épico -->
     <div class="death-header-group">
       <div class="death-sigil-wrap">
-        <div class="death-sigil-halo"></div>
         <div class="death-sigil-mist"></div>
-        <svg class="death-sigil-icon" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div class="death-sigil-halo"></div>
+        <div class="death-sigil-rune-ring"></div>
+        <div class="death-eye-gleam death-eye-left"></div>
+        <div class="death-eye-gleam death-eye-right"></div>
+        <svg class="death-sigil-icon" viewBox="0 0 348 348" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <linearGradient id="bonePlateGrad" x1="60" y1="15" x2="60" y2="105" gradientUnits="userSpaceOnUse">
+            <linearGradient id="deathSkullGrad" x1="174" y1="40" x2="174" y2="305" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stop-color="#ffffff"/>
-              <stop offset="25%" stop-color="#ff7675"/>
-              <stop offset="65%" stop-color="#d63031"/>
-              <stop offset="100%" stop-color="#2d0508"/>
+              <stop offset="65%" stop-color="#ffffff"/>
+              <stop offset="85%" stop-color="#ff9b9b"/>
+              <stop offset="100%" stop-color="#e84118"/>
             </linearGradient>
-
-            <linearGradient id="hornGrad" x1="15" y1="10" x2="105" y2="90" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#00f5d4"/>
-              <stop offset="30%" stop-color="#a29bfe"/>
-              <stop offset="75%" stop-color="#ff4757"/>
-              <stop offset="100%" stop-color="#3d070b"/>
-            </linearGradient>
-
-            <radialGradient id="spectralEyeGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
-              <stop offset="35%" stop-color="#00f5d4" stop-opacity="0.95"/>
-              <stop offset="70%" stop-color="#0984e3" stop-opacity="0.6"/>
-              <stop offset="100%" stop-color="#6c5ce7" stop-opacity="0"/>
-            </radialGradient>
-
-            <filter id="ghostGlow" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="3" result="blur"/>
-              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-            </filter>
           </defs>
-
-          <!-- 1. Asas e Eflúvios Espectrais Posteriores -->
-          <g opacity="0.85" filter="url(#ghostGlow)">
-            <path d="M42 45 C30 35, 12 40, 6 56 C14 55, 24 58, 28 66 C18 68, 10 76, 12 88 C20 84, 30 84, 38 78 Z" fill="url(#hornGrad)" opacity="0.65"/>
-            <path d="M78 45 C90 35, 108 40, 114 56 C106 55, 96 58, 92 66 C102 68, 110 76, 108 88 C100 84, 90 84, 82 78 Z" fill="url(#hornGrad)" opacity="0.65"/>
-          </g>
-
-          <!-- 2. Chifres Arcanos da Cripta -->
-          <path d="M44 32 C34 20, 20 14, 8 16 C12 28, 24 36, 36 40 Z" fill="url(#hornGrad)" stroke="#ff7675" stroke-width="1"/>
-          <path d="M76 32 C86 20, 100 14, 112 16 C108 28, 96 36, 84 40 Z" fill="url(#hornGrad)" stroke="#ff7675" stroke-width="1"/>
-          <path d="M38 36 C30 30, 20 28, 14 32 C20 38, 28 42, 34 44 Z" fill="url(#hornGrad)" opacity="0.8"/>
-          <path d="M82 36 C90 30, 100 28, 106 32 C100 38, 92 42, 86 44 Z" fill="url(#hornGrad)" opacity="0.8"/>
-
-          <!-- 3. Diadema / Coroa Rúnica Astral -->
-          <path d="M48 24 L52 14 L56 24 L60 10 L64 24 L68 14 L72 24 Z" fill="#ffd166" filter="url(#ghostGlow)" opacity="0.95"/>
-
-          <!-- 4. Crânio Gótico Esculpido -->
-          <path d="M38 32 C44 26, 76 26, 82 32 C92 42, 94 56, 88 68 C84 76, 78 78, 76 86 L72 96 C66 100, 54 100, 48 96 L44 86 C42 78, 36 76, 32 68 C26 56, 28 42, 38 32 Z" 
-                fill="url(#bonePlateGrad)" stroke="#ff7675" stroke-width="1.8" filter="url(#ghostGlow)"/>
-
-          <!-- Têmporas Escavadas em Sombra Profunda -->
-          <path d="M33 54 C36 48, 42 46, 44 48 C40 54, 38 62, 34 66 Z" fill="#150204" opacity="0.85"/>
-          <path d="M87 54 C84 48, 78 46, 76 48 C80 54, 82 62, 86 66 Z" fill="#150204" opacity="0.85"/>
-
-          <!-- Fissura Rúnica Frontal (Ciano Astral) -->
-          <path d="M60 28 L59 38 L62 44 L58 48 L60 52" stroke="#00f5d4" stroke-width="1.6" stroke-linecap="round" filter="url(#ghostGlow)"/>
-          <circle cx="60" cy="28" r="2" fill="#00f5d4" filter="url(#ghostGlow)"/>
-
-          <!-- 5. Cavidades Oculares Agressivas -->
-          <path d="M42 50 C48 48, 54 52, 53 62 C48 66, 40 64, 38 56 Z" fill="#080102" stroke="#ff4757" stroke-width="1.2"/>
-          <path d="M78 50 C72 48, 66 52, 67 62 C72 66, 80 64, 82 56 Z" fill="#080102" stroke="#ff4757" stroke-width="1.2"/>
-
-          <!-- Chamas Oculares Vivas (Soul Embers) -->
-          <g filter="url(#ghostGlow)">
-            <ellipse cx="46" cy="56" rx="4.5" ry="5.5" fill="url(#spectralEyeGlow)"/>
-            <circle cx="46" cy="56" r="2" fill="#ffffff"/>
-            <path d="M46 51 C48 47, 44 43, 47 39 C44 43, 42 47, 46 51 Z" fill="#00f5d4" opacity="0.85"/>
-            
-            <ellipse cx="74" cy="56" rx="4.5" ry="5.5" fill="url(#spectralEyeGlow)"/>
-            <circle cx="74" cy="56" r="2" fill="#ffffff"/>
-            <path d="M74 51 C76 47, 72 43, 75 39 C72 43, 70 47, 74 51 Z" fill="#00f5d4" opacity="0.85"/>
-          </g>
-
-          <!-- 6. Cavidade Nasal em Losango Fendido -->
-          <path d="M60 62 L57 71 L60 70 L63 71 Z" fill="#080102" stroke="#ff4757" stroke-width="1"/>
-
-          <!-- 7. Mandíbula com Presas Superiores e Inferiores -->
-          <path d="M46 78 L48 85 L51 78 L54 86 L57 78 L60 84 L63 78 L66 86 L69 78 L72 85 L74 78" 
-                stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <path d="M48 93 L50 87 L53 93 L56 86 L59 93 L62 86 L65 93 L68 87 L70 93" 
-                stroke="#ffd166" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-
-          <!-- Queixo com Lâmina / Espigão Gótico -->
-          <polygon points="60,104 54,95 66,95" fill="#d63031" stroke="#ff7675" stroke-width="1"/>
-          <line x1="60" y1="95" x2="60" y2="103" stroke="#ffd166" stroke-width="1.2"/>
+          <path fill="url(#deathSkullGrad)" fill-rule="evenodd" d="M 160.41 302.04 C 151.46 300.11 143.85 295.60 135.67 287.36 C 130.35 282.00 128.31 278.53 124.48 268.34 C 123.07 264.58 119.80 258.35 117.21 254.50 C 112.61 247.67 112.50 247.32 112.56 240.00 C 112.59 235.88 112.81 230.14 113.06 227.25 L 113.50 222.00 L 119.62 222.00 L 125.74 222.00 L 126.44 230.01 C 127.05 236.99 127.46 238.23 129.63 239.76 C 131.00 240.71 133.45 242.55 135.06 243.84 L 138.00 246.18 L 138.10 243.84 C 138.16 242.55 138.12 240.04 138.02 238.25 C 137.84 234.89 138.48 234.38 140.94 235.94 C 142.12 236.69 142.17 237.34 141.19 239.48 C 140.54 240.92 140.00 243.35 140.00 244.88 C 140.00 247.12 140.44 247.64 142.25 247.58 C 143.49 247.54 144.96 246.60 145.53 245.51 C 146.85 242.94 150.00 242.26 150.00 244.54 C 150.00 245.96 150.28 245.89 151.75 244.12 C 153.89 241.54 155.93 242.53 156.85 246.62 L 157.50 249.50 L 159.86 247.10 C 162.09 244.84 162.11 244.74 160.16 245.25 C 158.73 245.62 157.63 245.09 156.59 243.50 C 155.55 241.91 153.89 241.10 151.13 240.84 C 147.64 240.51 146.96 240.81 145.49 243.28 C 143.62 246.45 141.66 246.42 141.19 243.22 C 141.00 241.92 141.67 240.60 142.90 239.83 L 144.93 238.56 L 142.79 236.28 C 141.62 235.03 139.77 234.00 138.70 234.00 C 136.95 234.00 136.80 233.44 137.21 228.44 C 137.84 220.91 136.48 220.00 124.53 219.99 C 116.37 219.98 115.00 219.70 110.37 217.04 C 100.19 211.20 92.00 198.23 92.00 187.95 C 92.00 182.20 93.15 180.00 96.14 180.00 C 97.10 180.00 98.09 179.66 98.35 179.25 C 98.60 178.84 99.77 173.10 100.93 166.50 C 103.64 151.21 105.38 145.97 109.57 140.48 L 112.95 136.05 L 110.80 126.53 C 109.62 121.29 108.44 117.23 108.17 117.50 C 107.89 117.77 108.48 121.53 109.46 125.84 C 111.43 134.46 111.58 133.80 105.68 143.34 C 103.82 146.37 101.97 151.98 100.23 159.95 C 98.77 166.58 97.34 172.00 97.03 172.00 C 95.52 172.00 93.80 167.10 93.06 160.67 C 92.60 156.73 91.40 150.57 90.37 147.00 C 87.74 137.77 88.02 115.73 90.93 104.50 C 96.44 83.20 109.81 67.43 132.65 55.28 C 145.50 48.44 155.00 45.91 170.21 45.27 C 180.98 44.82 184.35 45.07 192.21 46.89 C 218.04 52.88 241.80 69.62 250.96 88.25 C 257.14 100.84 259.09 109.89 259.20 126.50 C 259.24 134.20 258.78 143.43 258.16 147.00 C 256.86 154.55 251.98 171.00 251.04 171.00 C 250.69 171.00 249.37 166.41 248.10 160.81 C 245.74 150.34 242.15 140.93 239.31 137.80 C 238.01 136.35 237.81 134.48 238.26 127.76 C 238.70 121.00 238.63 120.32 237.85 124.00 C 237.33 126.47 236.46 129.92 235.92 131.66 C 235.04 134.49 235.36 135.49 238.98 141.09 C 243.83 148.59 246.57 156.98 248.03 168.77 C 249.17 178.00 250.66 181.44 253.97 182.49 C 256.37 183.25 256.44 184.52 254.55 192.51 C 251.56 205.18 245.76 214.04 237.80 218.10 C 234.65 219.71 232.29 220.01 224.58 219.79 C 212.72 219.44 211.00 220.56 211.00 228.65 C 211.00 232.96 210.68 234.00 209.35 234.00 C 207.81 234.00 207.81 234.13 209.35 235.83 C 211.38 238.07 211.43 239.40 209.57 240.94 C 208.42 241.89 207.91 241.70 206.99 239.99 C 206.36 238.81 206.10 237.18 206.42 236.36 C 207.06 234.67 202.28 237.76 200.00 240.50 C 199.05 241.64 197.82 241.90 195.61 241.41 L 192.54 240.74 L 195.02 243.33 C 196.87 245.27 197.58 245.55 197.82 244.46 C 198.00 243.66 198.96 243.00 199.96 243.00 C 202.12 243.00 203.29 246.59 201.95 249.10 C 201.36 250.19 201.35 251.10 201.93 251.45 C 202.44 251.77 203.00 251.01 203.18 249.76 C 203.38 248.33 204.30 247.39 205.69 247.19 C 207.05 246.99 207.99 246.05 208.19 244.69 C 208.59 241.88 210.51 242.78 210.46 245.75 C 210.44 246.99 210.51 248.00 210.61 248.00 C 210.72 248.00 211.72 246.45 212.83 244.56 C 213.95 242.67 216.24 240.41 217.93 239.54 C 220.43 238.25 221.00 237.32 221.00 234.61 C 221.00 232.78 221.29 229.19 221.64 226.64 L 222.27 222.00 L 228.60 222.00 C 234.85 222.00 234.92 222.03 234.83 224.75 C 234.78 226.26 235.09 231.66 235.52 236.74 L 236.30 245.98 L 232.42 252.24 C 230.29 255.68 226.23 263.23 223.41 269.00 C 214.48 287.25 205.30 296.93 193.43 300.62 C 187.65 302.41 166.39 303.32 160.41 302.04 Z M 49.77 294.19 C 45.77 293.72 43.37 289.98 42.58 282.97 C 41.65 274.78 41.41 274.33 36.54 271.47 C 34.22 270.11 31.80 267.85 31.16 266.45 C 28.15 259.85 31.40 247.39 36.85 244.58 C 38.77 243.59 42.00 243.36 48.59 243.74 C 63.90 244.62 80.63 240.56 97.91 231.78 C 103.09 229.15 107.70 227.00 108.16 227.00 C 108.62 227.00 109.00 231.84 109.01 237.75 C 109.01 245.54 109.44 249.32 110.58 251.50 C 112.07 254.36 112.04 254.56 109.83 256.00 C 104.17 259.69 89.55 272.01 78.49 282.41 L 66.43 293.75 L 59.47 294.12 C 55.63 294.33 51.27 294.36 49.77 294.19 Z M 272.89 285.95 C 264.68 276.85 252.64 266.40 243.00 260.00 C 239.43 257.63 236.33 255.55 236.12 255.39 C 235.92 255.22 236.42 253.38 237.24 251.29 C 239.42 245.78 240.08 239.30 239.15 232.75 C 238.70 229.59 238.62 227.00 238.97 227.00 C 239.31 227.00 243.17 228.75 247.55 230.88 C 263.86 238.85 280.62 242.94 297.10 242.98 C 308.24 243.01 311.19 244.12 315.35 249.84 C 318.62 254.33 318.71 254.72 317.99 260.65 C 317.08 268.10 316.91 268.41 311.67 271.69 C 306.44 274.96 306.04 275.59 306.01 280.50 C 305.98 286.97 304.29 291.55 301.45 292.84 C 300.05 293.48 294.69 294.00 289.53 294.00 L 280.16 294.00 L 272.89 285.95 Z M 169.45 272.25 C 168.66 270.74 168.01 267.59 168.01 265.25 C 168.00 262.91 167.55 261.00 167.00 261.00 C 166.45 261.00 166.00 263.25 166.00 266.00 C 166.00 268.75 166.42 271.00 166.93 271.00 C 167.45 271.00 168.15 271.90 168.50 273.00 C 168.85 274.10 169.53 275.00 170.01 275.00 C 170.49 275.00 170.24 273.76 169.45 272.25 Z M 179.72 272.96 C 180.23 271.02 180.35 271.01 182.15 272.64 C 183.66 274.01 184.30 274.10 185.27 273.10 C 186.24 272.12 186.20 271.92 185.07 272.18 C 182.97 272.65 180.73 267.49 181.51 263.96 C 182.02 261.62 182.69 261.00 184.72 261.00 C 187.20 261.00 187.26 261.15 186.69 265.95 C 186.26 269.62 186.42 270.78 187.33 270.43 C 188.11 270.13 188.41 268.49 188.16 265.92 C 187.87 262.85 188.23 261.54 189.64 260.46 C 191.34 259.16 191.23 259.09 188.33 259.63 C 185.21 260.21 185.14 260.14 184.46 255.61 C 184.08 253.07 183.97 249.67 184.21 248.05 C 184.44 246.43 184.28 245.33 183.84 245.60 C 183.40 245.87 182.13 245.61 181.02 245.01 C 179.66 244.28 179.00 244.27 179.00 244.96 C 179.00 245.53 179.38 246.00 179.84 246.00 C 182.71 246.00 184.11 257.83 181.50 260.00 C 180.56 260.78 180.00 262.99 180.00 265.93 C 180.00 270.64 177.86 275.19 176.35 273.69 C 174.37 271.71 174.44 252.16 176.45 246.50 L 177.16 244.50 L 175.52 246.50 C 173.90 248.48 173.86 248.48 172.44 246.56 C 171.65 245.49 171.00 245.06 171.00 245.61 C 171.00 246.15 171.49 247.09 172.08 247.68 C 172.79 248.39 173.05 253.21 172.83 261.35 C 172.52 273.27 172.61 273.95 174.50 274.33 C 178.53 275.13 179.20 274.96 179.72 272.96 Z M 165.52 272.98 C 165.86 272.41 165.59 272.07 164.91 272.23 C 163.19 272.60 161.03 268.18 161.01 264.25 C 161.00 261.73 161.42 261.00 162.88 261.00 C 164.44 261.00 164.85 260.02 165.31 255.25 C 165.61 252.09 166.01 248.62 166.18 247.54 C 166.36 246.41 165.86 245.44 165.00 245.26 C 163.76 245.00 163.56 246.09 163.84 251.58 C 164.03 255.23 163.73 258.67 163.19 259.21 C 162.63 259.77 160.79 259.89 158.99 259.50 C 156.12 258.87 155.85 258.51 156.36 255.97 L 156.92 253.15 L 154.70 255.33 C 152.84 257.14 152.57 258.20 153.08 261.76 C 153.41 264.10 153.94 266.28 154.26 266.59 C 154.57 266.91 154.59 265.33 154.28 263.08 C 153.68 258.57 153.78 258.49 157.50 260.18 C 159.76 261.21 160.06 261.89 159.80 265.39 C 159.58 268.30 160.06 270.05 161.50 271.69 C 163.72 274.22 164.58 274.49 165.52 272.98 Z M 192.00 270.00 C 192.59 268.90 192.90 268.00 192.69 268.00 C 192.48 268.00 191.50 268.90 190.50 270.00 C 189.50 271.10 189.19 272.00 189.81 272.00 C 190.43 272.00 191.41 271.10 192.00 270.00 Z M 158.00 270.62 C 158.00 270.41 157.31 269.68 156.48 268.98 C 155.20 267.92 155.06 267.99 155.58 269.36 C 156.12 270.76 158.00 271.74 158.00 270.62 Z M 196.05 265.00 C 198.11 265.00 200.05 262.16 199.92 259.32 C 199.87 258.14 199.33 258.65 198.42 260.75 C 197.00 263.98 195.01 265.14 194.98 262.75 C 194.97 261.92 194.65 262.00 194.00 263.00 C 193.47 263.82 193.06 265.18 193.09 266.00 C 193.14 267.02 193.32 267.10 193.66 266.25 C 193.94 265.56 195.01 265.00 196.05 265.00 Z M 149.63 261.58 C 149.04 259.69 148.21 258.37 147.78 258.63 C 147.10 259.05 149.53 265.00 150.38 265.00 C 150.56 265.00 150.22 263.46 149.63 261.58 Z M 194.61 257.20 C 193.87 257.04 192.77 255.91 192.16 254.70 C 191.17 252.73 191.12 252.82 191.68 255.50 C 192.40 258.92 194.09 260.46 195.20 258.70 C 195.63 258.01 195.37 257.37 194.61 257.20 Z M 145.00 256.03 C 145.00 254.72 144.52 254.25 143.54 254.62 C 142.57 255.00 141.59 254.07 140.62 251.84 C 139.82 250.00 139.13 249.18 139.09 250.00 C 138.98 251.96 142.68 258.00 143.99 258.00 C 144.54 258.00 145.00 257.11 145.00 256.03 Z M 208.56 251.88 C 209.37 250.32 209.60 248.87 209.08 248.55 C 208.57 248.24 207.86 249.37 207.49 251.06 C 207.12 252.75 206.18 254.38 205.41 254.67 C 204.63 254.97 204.00 255.67 204.00 256.23 C 204.00 257.80 206.96 254.98 208.56 251.88 Z M 150.61 254.42 C 150.27 253.55 150.00 252.15 150.00 251.31 C 150.00 250.43 149.42 250.01 148.62 250.31 C 147.86 250.61 146.74 250.34 146.12 249.72 C 145.29 248.89 145.00 248.90 145.00 249.73 C 145.00 250.36 145.90 251.15 147.00 251.50 C 148.10 251.85 149.00 253.00 149.00 254.07 C 149.00 255.13 149.50 256.00 150.11 256.00 C 150.72 256.00 150.94 255.29 150.61 254.42 Z M 191.00 248.66 C 191.00 247.08 190.11 245.92 188.25 245.07 L 185.50 243.82 L 187.75 246.23 C 188.99 247.55 190.00 249.16 190.00 249.81 C 190.00 250.47 190.22 251.00 190.50 251.00 C 190.78 251.00 191.00 249.95 191.00 248.66 Z M 203.07 244.13 C 201.59 241.36 201.73 239.00 203.38 239.00 C 205.31 239.00 207.23 241.57 206.83 243.62 C 206.34 246.14 204.29 246.42 203.07 244.13 Z M 169.26 220.25 C 171.02 216.34 171.47 213.07 171.81 201.75 C 172.04 194.19 171.89 188.00 171.48 188.00 C 171.07 188.00 169.24 188.92 167.42 190.05 C 161.42 193.76 156.80 206.78 158.41 215.39 C 159.16 219.37 163.40 225.00 165.65 225.00 C 166.45 225.00 168.08 222.86 169.26 220.25 Z M 186.37 221.97 C 187.77 220.30 189.22 217.34 189.59 215.38 C 191.30 206.27 186.69 193.70 180.00 189.21 L 176.50 186.86 L 176.22 199.18 C 175.92 212.01 177.31 219.41 180.75 223.25 C 182.86 225.61 183.41 225.49 186.37 221.97 Z M 142.00 196.28 C 151.95 191.66 156.80 187.62 159.56 181.69 C 162.42 175.56 162.76 168.09 160.36 164.04 C 158.19 160.36 151.77 156.29 145.04 154.33 C 138.68 152.47 125.32 152.99 119.85 155.31 C 112.95 158.22 109.87 165.10 109.87 177.53 C 109.87 187.90 112.22 194.55 117.02 197.82 C 122.02 201.23 132.80 200.56 142.00 196.28 Z M 232.11 196.94 C 234.75 195.53 238.00 184.04 237.99 176.14 C 237.98 162.72 234.40 156.94 224.50 154.35 C 215.78 152.08 204.34 152.07 200.14 154.34 C 194.79 157.24 188.26 164.41 186.93 168.84 C 183.43 180.51 195.93 194.36 213.24 198.00 C 218.11 199.02 229.40 198.39 232.11 196.94 Z M 83.71 163.23 C 79.40 161.00 77.11 160.65 61.21 159.84 C 51.47 159.34 42.07 158.48 40.33 157.92 C 36.42 156.66 29.49 149.30 26.95 143.69 C 24.54 138.39 24.46 131.21 26.77 128.40 C 27.72 127.24 30.67 124.83 33.31 123.05 C 38.45 119.60 39.02 118.66 41.46 109.82 C 44.38 99.16 49.78 97.71 62.53 104.15 C 67.77 106.79 69.47 108.24 70.63 111.00 C 71.43 112.92 74.72 117.20 77.93 120.50 C 81.14 123.80 84.27 127.48 84.89 128.68 C 85.50 129.89 86.00 134.16 86.01 138.18 C 86.01 142.61 86.80 148.07 88.00 152.00 C 89.98 158.49 90.67 166.13 89.25 165.86 C 88.84 165.78 86.34 164.60 83.71 163.23 Z M 258.00 163.09 C 258.00 161.38 258.90 156.73 260.00 152.76 C 261.10 148.79 262.00 142.67 262.00 139.17 C 262.00 131.37 263.55 127.92 269.84 121.75 C 272.79 118.86 275.15 115.45 275.87 113.03 C 276.59 110.62 278.34 108.09 280.28 106.62 C 284.08 103.76 292.82 101.00 298.12 101.00 C 302.64 101.00 304.07 102.70 307.03 111.60 C 308.81 116.95 310.05 118.64 316.05 123.97 C 322.58 129.78 323.00 130.41 323.00 134.38 C 323.00 139.57 319.36 147.17 313.93 153.34 C 308.92 159.03 304.65 160.05 286.42 159.89 C 272.91 159.78 272.33 159.90 259.25 165.66 C 258.40 166.04 258.00 165.22 258.00 163.09 Z"/>
         </svg>
       </div>
 
@@ -921,13 +1126,64 @@
   </div>
 </div>
 
-<!-- Botão de Habilidade Ativa ("Selo Arcano") -->
-<div id="skill-btn-container">
-  <div id="skill-cooldown-mask"></div>
-  <svg id="skill-icon" viewBox="0 0 24 24">
-    <path fill="#f1c40f" d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z"/>
+<!-- Botão de Habilidade Suprema (ULT / Medalhão Espinhoso Gótico) -->
+<div id="skill-btn-container" class="skill-btn-container" role="button" aria-label="Habilidade Suprema (ULT)" title="Habilidade Suprema [Espaço / M2]">
+  <div class="skill-halo-pulse"></div>
+  <div class="skill-spikes-frame">
+    <svg class="medallion-spikes-svg ult-spikes-svg" viewBox="0 0 64 64">
+      <polygon points="32.0,1.0 38.3,8.3 47.5,5.2 49.3,14.7 58.8,16.5 55.7,25.7 63.0,32.0 55.7,38.3 58.8,47.5 49.3,49.3 47.5,58.8 38.3,55.7 32.0,63.0 25.7,55.7 16.5,58.8 14.7,49.3 5.2,47.5 8.3,38.3 1.0,32.0 8.3,25.7 5.2,16.5 14.7,14.7 16.5,5.2 25.7,8.3" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="1.6"/>
+      <circle cx="32" cy="32" r="23" fill="#080a10" stroke="url(#gothic-bronze-rim)" stroke-width="2.2"/>
+      <circle cx="32" cy="32" r="19.5" fill="#0c101a"/>
+    </svg>
+    <div id="skill-cooldown-mask" class="skill-cooldown-mask"></div>
+    <div id="skill-emblem-wrap" class="skill-emblem-wrap">
+      <!-- SVG heráldico do herói (ex: martelo de Sir Roland) injetado dinamicamente -->
+    </div>
+    <div class="skill-ready-flare"></div>
+  </div>
+  <span id="skill-timer-text" class="skill-timer-text"></span>
+  <div id="skill-key-badge" class="skill-key-badge" aria-hidden="true">ESPAÇO</div>
+</div>
+
+<!-- Botão Contextual de Canalização do Altar de Sangue (Mobile / Toque / Centro-Direita da Tela) -->
+<div id="blood-altar-touch-btn" class="blood-altar-touch-btn" role="button" aria-label="Canalizar Altar de Sangue" style="display: none;">
+  <div class="blood-altar-touch-halo"></div>
+  <svg class="blood-altar-touch-svg" viewBox="0 0 76 76">
+    <defs>
+      <linearGradient id="altar-progress-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ff7675" />
+        <stop offset="50%" stop-color="#ff3838" />
+        <stop offset="100%" stop-color="#c0392b" />
+      </linearGradient>
+      <radialGradient id="altar-bg-grad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#2c080d" />
+        <stop offset="70%" stop-color="#150406" />
+        <stop offset="100%" stop-color="#090203" />
+      </radialGradient>
+      <filter id="altar-glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="2.5" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+    <!-- Trilha externa rúnica -->
+    <circle cx="38" cy="38" r="35" fill="none" stroke="rgba(255, 56, 56, 0.2)" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <!-- Pedestal central -->
+    <circle cx="38" cy="38" r="31" fill="url(#altar-bg-grad)" stroke="rgba(255, 56, 56, 0.4)" stroke-width="4"/>
+    <!-- Guia rúnica interior -->
+    <circle cx="38" cy="38" r="26" fill="none" stroke="rgba(255, 90, 90, 0.22)" stroke-width="1.2" stroke-dasharray="2 3"/>
+    <!-- Barra circular de progresso de canalização de 1s -->
+    <circle id="blood-altar-touch-circle" cx="38" cy="38" r="31" fill="none" stroke="url(#altar-progress-grad)" stroke-width="5" stroke-linecap="round" stroke-dasharray="194.78" stroke-dashoffset="194.78" transform="rotate(-90 38 38)" filter="url(#altar-glow)"/>
   </svg>
-  <span id="skill-timer-text"></span>
+  <div class="blood-altar-touch-content">
+    <div class="blood-altar-touch-icon-wrap">
+      <svg viewBox="0 0 24 24" class="blood-altar-touch-icon">
+        <path fill="currentColor" d="M12 2.1c-.3 0-.6.1-.8.3-2.1 2.3-5.2 6.1-5.2 9.8 0 3.3 2.7 6 6 6s6-2.7 6-6c0-3.7-3.1-7.5-5.2-9.8-.2-.2-.5-.3-.8-.3zm0 3.5c1.4 1.9 4 5.2 4 7.7 0 2.2-1.8 4-4 4s-4-1.8-4-4c0-2.5 2.6-5.8 4-7.7z"/>
+      </svg>
+      <div class="blood-altar-touch-pulse-dot"></div>
+    </div>
+    <span class="blood-altar-touch-badge">PACTO</span>
+    <span class="blood-altar-touch-label">SEGURE <b>1s</b></span>
+  </div>
 </div>
 
 <!-- Notificação Flutuante de Desenvolvedor (Ações de Debug) -->

@@ -139,14 +139,14 @@ export function drawCinematicScreenTitle(ctx, e, frameCount) {
   ctx.fillText('[ JULGAMENTO DO ALÉM // AMEAÇA DA CEIFA ]', centerX, by + (isVertical ? 15 : 20));
 
   // Título Principal
-  ctx.shadowColor = '#00cec9';
-  ctx.shadowBlur = isVertical ? 12 : 22;
+  const titleY = by + (isVertical ? 34 : 50);
   ctx.font = isVertical ? '900 20px "Cinzel", "Times New Roman", serif' : '900 32px "Cinzel", "Times New Roman", serif';
+  ctx.fillStyle = 'rgba(0, 206, 201, 0.5)';
+  ctx.fillText('THANATOS, O CEIFADOR SUPREMO', centerX + 1, titleY + 1.5);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('THANATOS, O CEIFADOR SUPREMO', centerX, by + (isVertical ? 34 : 50));
+  ctx.fillText('THANATOS, O CEIFADOR SUPREMO', centerX, titleY);
 
   // Subtítulo Épico Inferior
-  ctx.shadowBlur = 0;
   ctx.font = isVertical ? '600 9px "Cinzel", sans-serif' : '700 12px "Cinzel", sans-serif';
   ctx.letterSpacing = isVertical ? '2px' : '5px';
   ctx.fillStyle = '#81ecec';

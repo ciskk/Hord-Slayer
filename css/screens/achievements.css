@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    FASE 1: GRIMÓRIO DE CONQUISTAS, DESBLOQUEIOS & SELO PRIMORDIAL
    ========================================================================== */
 
@@ -360,6 +360,514 @@
   font-weight: 700;
 }
 
+/* ==========================================================================
+   MONUMENTO À MAIOR JORNADA: MELHOR RUN NO FORMATO TARÔ ARCANO
+   ========================================================================== */
+
+.best-run-monument-container {
+  margin-bottom: 16px;
+}
+
+.best-run-monument-box {
+  background: linear-gradient(135deg, rgba(25, 20, 42, 0.96) 0%, rgba(13, 11, 24, 0.98) 55%, rgba(7, 6, 12, 1) 100%);
+  border: 1.5px solid rgba(241, 196, 15, 0.45);
+  box-shadow: 0 0 30px rgba(241, 196, 15, 0.12), inset 0 0 25px rgba(0, 0, 0, 0.85);
+  border-radius: 12px;
+  padding: 14px 16px 16px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.best-run-monument-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(241, 196, 15, 0.05), transparent);
+  animation: monument-shimmer 6s infinite linear;
+  pointer-events: none;
+}
+
+@keyframes monument-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.best-run-monument-box.monument-defeat {
+  border-color: rgba(231, 76, 60, 0.45);
+  box-shadow: 0 0 30px rgba(231, 76, 60, 0.12), inset 0 0 25px rgba(0, 0, 0, 0.85);
+}
+
+.best-run-monument-box.monument-defeat::before {
+  background: linear-gradient(90deg, transparent, rgba(231, 76, 60, 0.04), transparent);
+}
+
+/* Header Row do Monumento */
+.monument-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(241, 196, 15, 0.2);
+  flex-wrap: wrap;
+}
+
+.best-run-monument-box.monument-defeat .monument-header-row {
+  border-bottom-color: rgba(231, 76, 60, 0.2);
+}
+
+.monument-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.monument-pulsing-glyph {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f1c40f;
+  box-shadow: 0 0 10px #f1c40f;
+  animation: pulse-glyph 2.5s infinite ease-in-out;
+}
+
+.best-run-monument-box.monument-defeat .monument-pulsing-glyph {
+  background: #e74c3c;
+  box-shadow: 0 0 10px #e74c3c;
+}
+
+@keyframes pulse-glyph {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.monument-title-text {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ffd166;
+  text-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
+}
+
+.best-run-monument-box.monument-defeat .monument-title-text {
+  color: #ff7675;
+  text-shadow: 0 0 10px rgba(231, 76, 60, 0.35);
+}
+
+.monument-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.monument-date {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.monument-fate-badge {
+  font-family: 'Cinzel', serif;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.monument-fate-badge.badge-victory {
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.2) 0%, rgba(0, 245, 212, 0.15) 100%);
+  border: 1px solid #f1c40f;
+  color: #ffd166;
+  box-shadow: 0 0 12px rgba(241, 196, 15, 0.35);
+}
+
+.monument-fate-badge.badge-defeat {
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.2) 0%, rgba(139, 0, 0, 0.25) 100%);
+  border: 1px solid #e74c3c;
+  color: #ff7675;
+  box-shadow: 0 0 12px rgba(231, 76, 60, 0.3);
+}
+
+/* Grade Principal: Carta de Tarô + Coluna de Métricas */
+.monument-main-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+/* ==========================================
+   CARTA DE TARÔ ARCANO
+   ========================================== */
+.tarot-card-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.tarot-hero-card {
+  background: #100d1a;
+  border: 2px solid #d4af37;
+  border-radius: 9px;
+  padding: 10px 10px 12px;
+  position: relative;
+  box-shadow: 0 0 18px rgba(212, 175, 55, 0.25), inset 0 0 18px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.tarot-hero-card::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px dashed rgba(212, 175, 55, 0.45);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.tarot-hero-card.tarot-defeat {
+  border-color: #c0392b;
+  box-shadow: 0 0 18px rgba(192, 57, 43, 0.25), inset 0 0 18px rgba(0, 0, 0, 0.8);
+}
+
+.tarot-hero-card.tarot-defeat::after {
+  border-color: rgba(231, 76, 60, 0.4);
+}
+
+.tarot-card-header {
+  text-align: center;
+  padding-bottom: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.tarot-card-eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 7.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: rgba(212, 175, 55, 0.9);
+  text-transform: uppercase;
+}
+
+.tarot-hero-name {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffd166;
+  margin-top: 2px;
+  text-shadow: 0 0 8px rgba(255, 209, 102, 0.4);
+}
+
+.tarot-hero-subtitle {
+  font-size: 9px;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.tarot-canvas-window {
+  width: 100%;
+  height: 165px;
+  background: radial-gradient(circle at 50% 60%, rgba(20, 16, 32, 0.9) 0%, rgba(8, 7, 14, 0.98) 75%, rgba(4, 3, 8, 1) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tarot-hero-card.tarot-defeat .tarot-canvas-window {
+  border-color: rgba(231, 76, 60, 0.3);
+}
+
+.tarot-canvas-window canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.tarot-card-footer {
+  text-align: center;
+  padding-top: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.tarot-verdict-quote {
+  font-size: 8.5px;
+  color: #94a3b8;
+  font-style: italic;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ==========================================
+   PAINEL DE BIOMETRIA & ARSENAL (COLUNA DIREITA)
+   ========================================== */
+.monument-details-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.monument-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.monument-stat-pill {
+  background: rgba(14, 17, 26, 0.9);
+  border: 1px solid rgba(162, 155, 254, 0.16);
+  border-radius: 8px;
+  padding: 8px 10px;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.monument-stat-pill:hover {
+  border-color: rgba(241, 196, 15, 0.45);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.stat-pill-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.stat-pill-val {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.stat-pill-val.text-cyan {
+  color: #00f5d4;
+  font-size: 11.5px;
+}
+
+.stat-pill-val.text-ruby {
+  color: #ff4757;
+}
+
+.stat-pill-val.text-purple {
+  color: #c084fc;
+}
+
+.stat-pill-val.text-gold {
+  color: #ffd166;
+}
+
+.monument-stat-pill.pill-legendary-score {
+  background: linear-gradient(135deg, rgba(38, 28, 12, 0.5) 0%, rgba(18, 14, 24, 0.8) 100%);
+  border-color: rgba(241, 196, 15, 0.4);
+}
+
+.stat-pill-label.label-gold {
+  color: #f1c40f;
+}
+
+.val-score-glow {
+  color: #ffd166;
+  text-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+}
+
+/* Arsenal Consagrado */
+.monument-arsenal-section {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.monument-arsenal-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.arsenal-row-title {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #cbd5e1;
+  text-transform: uppercase;
+}
+
+.arsenal-chips-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.monument-weapon-chip {
+  background: rgba(10, 12, 18, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-size: 9.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+
+.monument-weapon-chip.weapon-evolved {
+  border-color: #f1c40f;
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.14) 0%, rgba(10, 12, 18, 0.95) 100%);
+  box-shadow: 0 0 10px rgba(241, 196, 15, 0.25);
+}
+
+.monument-weapon-chip.weapon-evolved .chip-name {
+  color: #ffd166;
+  font-weight: 700;
+}
+
+.chip-name {
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.chip-fusion-tag {
+  font-size: 7.5px;
+  font-weight: 800;
+  background: rgba(241, 196, 15, 0.25);
+  border: 1px solid rgba(241, 196, 15, 0.5);
+  color: #ffd166;
+  padding: 1px 4px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.monument-passives-row {
+  font-size: 9.5px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ==========================================
+   ESTADO VAZIO (EMPTY STATE)
+   ========================================== */
+.monument-empty-card {
+  text-align: center;
+  padding: 24px 20px;
+  border: 1px dashed rgba(162, 155, 254, 0.25);
+  border-radius: 10px;
+  background: rgba(10, 12, 18, 0.5);
+}
+
+.monument-empty-icon-wrap {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(18, 22, 34, 0.8);
+  border: 1px solid rgba(162, 155, 254, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+}
+
+.monument-empty-eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #a29bfe;
+  text-transform: uppercase;
+}
+
+.monument-empty-title {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: #cbd5e1;
+  margin: 3px 0 6px;
+}
+
+.monument-empty-desc {
+  font-size: 10.5px;
+  color: #64748b;
+  max-width: 460px;
+  margin: 0 auto 12px;
+  line-height: 1.45;
+}
+
+.monument-empty-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  background: rgba(162, 155, 254, 0.08);
+  border: 1px solid rgba(162, 155, 254, 0.25);
+  font-size: 10px;
+  font-weight: 600;
+  color: #a29bfe;
+}
+
+/* Divisor com Glifos de Conquistas */
+.achievements-section-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 12px;
+}
+
+.achievements-section-divider .divider-line {
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, transparent, rgba(162, 155, 254, 0.25), transparent);
+}
+
+.achievements-section-divider .divider-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Cinzel', serif;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: rgba(162, 155, 254, 0.85);
+  text-transform: uppercase;
+}
+
+/* ==========================================
+   RESPONSIVIDADE MOBILE
+   ========================================== */
 @media (max-width: 768px) {
   .achievements-void-box {
     width: 96vw;
@@ -372,5 +880,19 @@
   .achievements-modal-body {
     padding: 8px 10px 14px;
   }
+  .monument-main-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .tarot-hero-card {
+    max-width: 280px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .monument-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
 }
+
 

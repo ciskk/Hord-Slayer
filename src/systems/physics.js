@@ -2,12 +2,12 @@
  * src/systems/physics.js
  * Módulo de Simulação Física e Resolução de Colisões Espaciais (Fases 1.1 e 2.1)
  */
-import { clearSpatialGrid, insertIntoGrid, getNeighborIndices, rebuildSpatialGrid } from '../core/spatialGrid.js';
+import { clearSpatialGrid, insertIntoGrid, getNeighborIndices } from '../core/spatialGrid.js';
 import { inputX, inputY } from '../core/input.js';
 
 /**
  * Resolve as interpenetrações físicas no mundo de jogo:
- * 1. Reconstrói a Spatial Grid com entidades ativas.
+ * 1. Utiliza a Spatial Grid já atualizada do quadro.
  * 2. Aplica separação elasto-cinemática (50% / 50%) entre inimigos na horda.
  * 3. Resolve a sobreposição física Jogador vs. Inimigos com base em massa relativa (70% mob / 30% player)
  *    ou executa o Crowd Shove de Kael caso esteja em estado de Phasing/Invisibilidade.
@@ -19,9 +19,6 @@ import { inputX, inputY } from '../core/input.js';
  */
 export function resolveWorldPhysics(player, enemies, dt) {
   const enemyCount = enemies.length;
-
-  // 1. População da Malha Espacial
-  rebuildSpatialGrid(enemies);
 
   // 2. Separação Elástica Mútua: Inimigo vs. Inimigo (50% / 50%)
   // Mobs a mais de 750px do jogador dispensam separação mútua até se aproximarem da visão

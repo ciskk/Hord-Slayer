@@ -6,6 +6,7 @@ import { triggerBossEncounter, spawnMiniBoss } from '../entities/enemies.js';
 import { activeBoss, gameState } from '../main.js';
 import { recordRunStats } from '../config/achievements.js';
 import { triggerBossBark } from './barks.js';
+import { isBossBlockedByWorldEvent } from './worldEvents.js';
 
 export const BOSS_QUEUE = [
   { bossId: 1, delay: 60 },
@@ -126,6 +127,7 @@ export function checkMiniBossSchedule(seconds) {
 export function checkBossSchedule(seconds) {
   if (currentBossIndex >= BOSS_QUEUE.length) return;
   if (activeBoss !== null) return;
+  if (isBossBlockedByWorldEvent()) return;
 
   if (seconds >= nextBossSpawnTime) {
     const bossConfig = BOSS_QUEUE[currentBossIndex];

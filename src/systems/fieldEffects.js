@@ -65,13 +65,13 @@ export function updateFieldEffects(dt, {
             currentAuraDmg *= (1 + e.acidStacks * 0.06);
           }
           const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
-          let finalDmg = isCrit ? currentAuraDmg * player.critMult : currentAuraDmg;
+          let finalDmg = isCrit ? currentAuraDmg * player.critMult : currentAuraDmg * (player.nonCritDamageMult || 1.0);
 
           e.hp -= finalDmg;
           e.hitFlash = 3;
           if (isCrit || isKaelExecute) playSfx('crit');
-          addDamageText(e.x, e.y, finalDmg, isCrit || isKaelExecute, isKaelExecute ? '#00cec9' : '#f1c40f');
-          createHitParticles(e.x, e.y, isKaelExecute ? '#00cec9' : '#f1c40f', 2);
+          addDamageText(e.x, e.y, finalDmg, isCrit || isKaelExecute, isKaelExecute ? '#7c3aed' : '#f1c40f');
+          createHitParticles(e.x, e.y, isKaelExecute ? '#7c3aed' : '#f1c40f', 2);
 
           if (player.slowChance > 0 && Math.random() < player.slowChance) {
             e.slowTimer = 150;
@@ -131,7 +131,7 @@ export function updateFieldEffects(dt, {
             dmg *= (1 + e.acidStacks * 0.06);
           }
           const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
-          let finalDmg = isCrit ? dmg * player.critMult : dmg;
+          let finalDmg = isCrit ? dmg * player.critMult : dmg * (player.nonCritDamageMult || 1.0);
 
           e.hp -= finalDmg;
           e.hitFlash = 4;

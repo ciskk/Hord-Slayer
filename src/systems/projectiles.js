@@ -33,17 +33,23 @@ export function updateProjectiles(dt) {
       b.vy = (b.vy || 0) + b.gravity * dt;
       b.angle = (b.angle || 0) + 0.18 * dt;
       if (!b.trail) b.trail = [];
-      b.trail.unshift({ x: b.x, y: b.y });
-      if (b.trail.length > 5) b.trail.pop();
+      const pt = b.trail.length >= 5 ? b.trail.pop() : {};
+      pt.x = b.x;
+      pt.y = b.y;
+      b.trail.unshift(pt);
     } else if (b.type === 'STAFF') {
       if (!b.trail) b.trail = [];
-      b.trail.unshift({ x: b.x, y: b.y });
       const maxTrail = b.isEvolved ? 12 : 9;
-      if (b.trail.length > maxTrail) b.trail.pop();
+      const pt = b.trail.length >= maxTrail ? b.trail.pop() : {};
+      pt.x = b.x;
+      pt.y = b.y;
+      b.trail.unshift(pt);
     } else if (b.type === 'SWORD') {
       if (!b.trail) b.trail = [];
-      b.trail.unshift({ x: b.x, y: b.y });
-      if (b.trail.length > 5) b.trail.pop();
+      const pt = b.trail.length >= 5 ? b.trail.pop() : {};
+      pt.x = b.x;
+      pt.y = b.y;
+      b.trail.unshift(pt);
     } else if (b.type === 'HAMMER_SLAM') {
       // Durante a fase de preparação (windup), o martelo acompanha o cavaleiro em tempo real
       if (b.playerRef && !b.hasImpacted) {
@@ -70,7 +76,7 @@ export function updateProjectiles(dt) {
           const dy = e.y - b.y;
           if (dx * dx + dy * dy <= (puddleRadius + e.radius) ** 2) {
             const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
-            let impactDmg = (b.damage || 20) * (isCrit ? player.critMult : 1.0);
+            let impactDmg = (b.damage || 20) * (isCrit ? player.critMult : (player.nonCritDamageMult || 1.0));
             let isKaelExecute = false;
             if (selectedHeroKey === 'ROGUE' && e.maxHp && (e.hp / e.maxHp) < 0.35) {
               const isBossTarget = !!(e.isBoss || e.isMiniBoss || e.isBossSubTarget);
@@ -92,8 +98,8 @@ export function updateProjectiles(dt) {
             }
             e.hp -= impactDmg;
             e.hitFlash = 4;
-            addDamageText(e.x, e.y, Math.round(impactDmg), isCrit || isKaelExecute, isKaelExecute ? '#00cec9' : (isCrit ? '#f1c40f' : (b.isEvolved ? '#00cec9' : '#2ecc71')));
-            createHitParticles(e.x, e.y, isKaelExecute ? '#00cec9' : (b.isEvolved ? '#00cec9' : '#2ecc71'), isKaelExecute ? 5 : 3);
+            addDamageText(e.x, e.y, Math.round(impactDmg), isCrit || isKaelExecute, isKaelExecute ? '#7c3aed' : (isCrit ? '#f1c40f' : (b.isEvolved ? '#00cec9' : '#2ecc71')));
+            createHitParticles(e.x, e.y, isKaelExecute ? '#7c3aed' : (b.isEvolved ? '#00cec9' : '#2ecc71'), isKaelExecute ? 5 : 3);
 
             // FIXAÇÃO CÁUSTICA (Caminhos 1 e 3): O frasco quebra diretamente no alvo, aplicando veneno aderente
             e.acidStacks = Math.min(5, (e.acidStacks || 0) + 1);
@@ -185,7 +191,7 @@ export function updateProjectiles(dt) {
         b.hitEnemies.add(e);
 
         const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
-        let finalDmg = (b.damage || 20) * (isCrit ? player.critMult : 1.0);
+        let finalDmg = (b.damage || 20) * (isCrit ? player.critMult : (player.nonCritDamageMult || 1.0));
 
         const isBossEntity = !!e.isBoss;
         const isSubTarget = !!e.isBossSubTarget;
@@ -279,7 +285,7 @@ export function updateProjectiles(dt) {
         } else if (isMeleeAdrenaline) {
           dmgTextColor = '#f1c40f';
         } else if (isKaelExecute) {
-          dmgTextColor = '#00cec9';
+          dmgTextColor = '#7c3aed';
         } else if (isCrit) {
           dmgTextColor = '#f39c12';
         } else if (b.color) {
@@ -289,7 +295,7 @@ export function updateProjectiles(dt) {
         }
 
         addDamageText(e.x, e.y, Math.round(finalDmg), isCrit || isMeleeAdrenaline || isKaelExecute, dmgTextColor);
-        createHitParticles(b.x, b.y, isShieldBlocked ? '#74b9ff' : (isKaelExecute ? '#00cec9' : (isMeleeAdrenaline ? '#f1c40f' : (b.color || '#3498db'))), isCrit || isKaelExecute ? 5 : 3);
+        createHitParticles(b.x, b.y, isShieldBlocked ? '#74b9ff' : (isKaelExecute ? '#7c3aed' : (isMeleeAdrenaline ? '#f1c40f' : (b.color || '#3498db'))), isCrit || isKaelExecute ? 5 : 3);
 
         if (player.slowChance > 0 && Math.random() < player.slowChance) {
           e.slowTimer = 150;

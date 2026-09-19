@@ -37,7 +37,7 @@ const MINIBOSS_HANDLERS = {
   // 1. GÁRGULA DE SANGUE (Onda 2)
   BLOOD_GARGOYLE: {
     init(e) {
-      e.skillCooldown = 70;
+      e.skillCooldown = 54;
       e.diveBombCount = 0;
       e.isAirborne = false;
       e.isStoneForm = false;
@@ -50,8 +50,8 @@ const MINIBOSS_HANDLERS = {
         e.hasUsedStoneForm = true;
         e.currentSkill = 'STONE_FORM';
         e.actionState = 'WINDUP';
-        e.actionTimer = 80;
-        e.actionMaxTimer = 80;
+        e.actionTimer = 62;
+        e.actionMaxTimer = 62;
         e.isStoneForm = true;
         safePlaySfx('freeze');
         ctx.addDamageText(e.x, e.y, "PETRIFICAÇÃO!", true, '#7f8c8d');
@@ -70,7 +70,7 @@ const MINIBOSS_HANDLERS = {
             // Rasante Predatório (Dive-Bomb)
             e.currentSkill = 'DIVE_BOMB';
             e.actionState = 'WINDUP';
-            e.actionTimer = e.enraged ? 35 : 45;
+            e.actionTimer = e.enraged ? 27 : 35;
             e.actionMaxTimer = e.actionTimer;
             e.targetX = player.x;
             e.targetY = player.y;
@@ -91,8 +91,8 @@ const MINIBOSS_HANDLERS = {
             // Vômito Hemático (Blood Volley)
             e.currentSkill = 'BLOOD_VOLLEY';
             e.actionState = 'WINDUP';
-            e.actionTimer = 24;
-            e.actionMaxTimer = 24;
+            e.actionTimer = 18;
+            e.actionMaxTimer = 18;
             e.aimAngle = angle;
             safePlaySfx('charge');
           }
@@ -177,7 +177,7 @@ const MINIBOSS_HANDLERS = {
         }
 
         e.actionState = 'RECOVERY';
-        e.actionTimer = e.enraged ? 20 : 32;
+        e.actionTimer = e.enraged ? 15 : 25;
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         e.x += Math.cos(angle) * e.speed * 0.3 * dt;
@@ -185,7 +185,7 @@ const MINIBOSS_HANDLERS = {
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 45 : 70;
+          e.skillCooldown = e.enraged ? 35 : 54;
         }
       }
     }
@@ -194,7 +194,7 @@ const MINIBOSS_HANDLERS = {
   // 2. ZUMBI ALFA (Onda 2)
   ZOMBIE_ALPHA: {
     init(e) {
-      e.skillCooldown = 80;
+      e.skillCooldown = 62;
     },
     update(e, dt, ctx, dist, angle) {
       const { player, enemies, bossShockwaves, createHitParticles } = ctx;
@@ -210,8 +210,8 @@ const MINIBOSS_HANDLERS = {
             // Bote Esmagador
             e.currentSkill = 'POUNCE';
             e.actionState = 'WINDUP';
-            e.actionTimer = 28;
-            e.actionMaxTimer = 28;
+            e.actionTimer = 17;
+            e.actionMaxTimer = 17;
             e.pounceAngle = angle;
             safePlaySfx('charge');
             ctx.addDamageText(e.x, e.y, "BOTE!", true, '#27ae60');
@@ -219,8 +219,8 @@ const MINIBOSS_HANDLERS = {
             // Rugido de Guerra Alfa
             e.currentSkill = 'HOWL';
             e.actionState = 'WINDUP';
-            e.actionTimer = 32;
-            e.actionMaxTimer = 32;
+            e.actionTimer = 25;
+            e.actionMaxTimer = 25;
             safePlaySfx('boss');
             ctx.addDamageText(e.x, e.y, "RUGIDO ALFA!", true, '#2ecc71');
           }
@@ -282,7 +282,7 @@ const MINIBOSS_HANDLERS = {
           }
         }
         e.actionState = 'RECOVERY';
-        e.actionTimer = e.enraged ? 20 : 35;
+        e.actionTimer = e.enraged ? 15 : 27;
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         e.x += Math.cos(angle) * e.speed * 0.4 * dt;
@@ -290,7 +290,7 @@ const MINIBOSS_HANDLERS = {
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 50 : 85;
+          e.skillCooldown = e.enraged ? 38 : 65;
         }
       }
     }
@@ -299,7 +299,7 @@ const MINIBOSS_HANDLERS = {
   // 3. CENTURIÃO DA GUARDA (Onda 3)
   PHALANX_LEADER: {
     init(e) {
-      e.skillCooldown = 75;
+      e.skillCooldown = 58;
       e.hasFrontalShield = true;
       e.hasSpawnedGuards = false;
     },
@@ -324,8 +324,8 @@ const MINIBOSS_HANDLERS = {
             // Investida com Escudo (Shield Bash Rush)
             e.currentSkill = 'SHIELD_CHARGE';
             e.actionState = 'WINDUP';
-            e.actionTimer = 34;
-            e.actionMaxTimer = 34;
+            e.actionTimer = 26;
+            e.actionMaxTimer = 26;
             e.chargeAngle = angle;
             safePlaySfx('charge');
 
@@ -336,15 +336,15 @@ const MINIBOSS_HANDLERS = {
               angle: e.chargeAngle,
               length: 190,
               width: 50,
-              timer: 34,
-              maxTimer: 34
+              timer: 26,
+              maxTimer: 26
             });
           } else {
             // Estocada Perfurante de Lança (Spear Thrust)
             e.currentSkill = 'SPEAR_THRUST';
             e.actionState = 'WINDUP';
-            e.actionTimer = 26;
-            e.actionMaxTimer = 26;
+            e.actionTimer = 20;
+            e.actionMaxTimer = 20;
             e.thrustAngle = angle;
             safePlaySfx('charge');
 
@@ -355,8 +355,8 @@ const MINIBOSS_HANDLERS = {
               radius: 95,
               angle: e.thrustAngle,
               arcHalf: Math.PI * 0.18,
-              timer: 26,
-              maxTimer: 26,
+              timer: 20,
+              maxTimer: 20,
               damage: Math.round(e.damage * 1.2),
               color: '#f1c40f',
               colorRgb: '241, 196, 15'
@@ -398,7 +398,7 @@ const MINIBOSS_HANDLERS = {
         e.strikeDuration -= dt;
         if (e.strikeDuration <= 0) {
           e.actionState = 'RECOVERY';
-          e.actionTimer = 28;
+          e.actionTimer = 22;
         }
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
@@ -407,7 +407,7 @@ const MINIBOSS_HANDLERS = {
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 45 : 75;
+          e.skillCooldown = e.enraged ? 35 : 58;
         }
       }
     }
@@ -416,7 +416,7 @@ const MINIBOSS_HANDLERS = {
   // 4. DEMOLIDOR SÍSMICO (Onda 3)
   SEISMIC_SMASHER: {
     init(e) {
-      e.skillCooldown = 85;
+      e.skillCooldown = 65;
     },
     update(e, dt, ctx, dist, angle) {
       const { bossTelegraphs, bossShockwaves, createHitParticles } = ctx;
@@ -429,7 +429,7 @@ const MINIBOSS_HANDLERS = {
         if (e.skillCooldown <= 0) {
           e.currentSkill = 'GROUND_POUND';
           e.actionState = 'WINDUP';
-          e.actionTimer = e.enraged ? 36 : 48;
+          e.actionTimer = e.enraged ? 28 : 37;
           e.actionMaxTimer = e.actionTimer;
           safePlaySfx('charge');
           ctx.addDamageText(e.x, e.y, "CARGA SÍSMICA!", true, '#95a5a6');
@@ -488,13 +488,13 @@ const MINIBOSS_HANDLERS = {
         }
 
         e.actionState = 'RECOVERY';
-        e.actionTimer = 35;
+        e.actionTimer = 27;
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 55 : 90;
+          e.skillCooldown = e.enraged ? 42 : 69;
         }
       }
     }
@@ -503,7 +503,7 @@ const MINIBOSS_HANDLERS = {
   // 5. TORRE MÓVEL (Onda 4)
   ARTILLERY_MECH: {
     init(e) {
-      e.skillCooldown = 70;
+      e.skillCooldown = 54;
       e.isSiegeMode = false;
     },
     update(e, dt, ctx, dist, angle) {
@@ -536,8 +536,8 @@ const MINIBOSS_HANDLERS = {
             // Modo Cerco (Sniper Lock-On Burst)
             e.currentSkill = 'SIEGE_BURST';
             e.actionState = 'WINDUP';
-            e.actionTimer = 35;
-            e.actionMaxTimer = 35;
+            e.actionTimer = 27;
+            e.actionMaxTimer = 27;
             e.isSiegeMode = true;
             e.aimAngle = angle;
             safePlaySfx('charge');
@@ -546,8 +546,8 @@ const MINIBOSS_HANDLERS = {
             // Salva de Mísseis
             e.currentSkill = 'MISSILE_BARRAGE';
             e.actionState = 'WINDUP';
-            e.actionTimer = 30;
-            e.actionMaxTimer = 30;
+            e.actionTimer = 23;
+            e.actionMaxTimer = 23;
             safePlaySfx('shoot');
 
             for (let m = 0; m < 3; m++) {
@@ -558,8 +558,8 @@ const MINIBOSS_HANDLERS = {
                 x: player.x + targetOffsetX,
                 y: player.y + targetOffsetY,
                 radius: 40,
-                timer: 30 + m * 8,
-                maxTimer: 30 + m * 8,
+                timer: 23 + m * 6,
+                maxTimer: 23 + m * 6,
                 damage: Math.round(e.damage * 0.8),
                 color: '#2980b9'
               });
@@ -604,19 +604,19 @@ const MINIBOSS_HANDLERS = {
           }
           if (e.burstShotsLeft <= 0) {
             e.actionState = 'RECOVERY';
-            e.actionTimer = 26;
+            e.actionTimer = 20;
             e.isSiegeMode = false;
           }
         } else {
           e.actionState = 'RECOVERY';
-          e.actionTimer = 20;
+          e.actionTimer = 15;
         }
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 40 : 65;
+          e.skillCooldown = e.enraged ? 31 : 50;
         }
       }
     }
@@ -625,7 +625,7 @@ const MINIBOSS_HANDLERS = {
   // 6. INCINERADOR INSTÁVEL (Onda 4) - Caldeira Viva Ambulante
   FIRE_INCINERATOR: {
     init(e) {
-      e.skillCooldown = 60;
+      e.skillCooldown = 46;
       e.isFlamethrowing = false;
     },
     update(e, dt, ctx, dist, angle) {
@@ -650,8 +650,8 @@ const MINIBOSS_HANDLERS = {
             // Purga de Vapor e Brasas
             e.currentSkill = 'STEAM_PURGE';
             e.actionState = 'WINDUP';
-            e.actionTimer = 26;
-            e.actionMaxTimer = 26;
+            e.actionTimer = 20;
+            e.actionMaxTimer = 20;
             safePlaySfx('charge');
           }
         }
@@ -663,7 +663,7 @@ const MINIBOSS_HANDLERS = {
         if (e.actionTimer <= 0) {
           e.actionState = 'STRIKE';
           if (e.currentSkill === 'FLAMETHROWER') {
-            e.flameDuration = 40;
+            e.flameDuration = 31;
             e.isFlamethrowing = true;
           }
         }
@@ -692,7 +692,7 @@ const MINIBOSS_HANDLERS = {
             e.isFlamethrowing = false;
             acidPuddles.push({ x: e.x, y: e.y, radius: 26, life: 180, maxLife: 180, isFire: true });
             e.actionState = 'RECOVERY';
-            e.actionTimer = 24;
+            e.actionTimer = 18;
           }
         } else if (e.currentSkill === 'STEAM_PURGE') {
           safePlaySfx('boss');
@@ -726,7 +726,7 @@ const MINIBOSS_HANDLERS = {
           }
 
           e.actionState = 'RECOVERY';
-          e.actionTimer = 26;
+          e.actionTimer = 20;
         }
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
@@ -742,7 +742,7 @@ const MINIBOSS_HANDLERS = {
   // 7. MATRIARCA PARASITA (Onda 5)
   BROOD_MATRIARCH: {
     init(e) {
-      e.skillCooldown = 75;
+      e.skillCooldown = 58;
       e.isSpawningEggs = false;
     },
     update(e, dt, ctx, dist, angle) {
@@ -759,8 +759,8 @@ const MINIBOSS_HANDLERS = {
             // Cuspe de Casulo Ácido
             e.currentSkill = 'ACID_SPIT';
             e.actionState = 'WINDUP';
-            e.actionTimer = 28;
-            e.actionMaxTimer = 28;
+            e.actionTimer = 22;
+            e.actionMaxTimer = 22;
             e.aimAngle = angle;
             safePlaySfx('charge');
             ctx.addDamageText(e.x, e.y, "CUSPE ÁCIDO!", true, '#00cec9');
@@ -769,8 +769,8 @@ const MINIBOSS_HANDLERS = {
               x: ctx.player.x,
               y: ctx.player.y,
               radius: 52,
-              timer: 28,
-              maxTimer: 28,
+              timer: 22,
+              maxTimer: 22,
               damage: Math.round(e.damage * 0.75),
               color: '#00cec9'
             });
@@ -778,8 +778,8 @@ const MINIBOSS_HANDLERS = {
             // Postura de Ovos / Espinhos
             e.currentSkill = 'BROOD_EGGS';
             e.actionState = 'WINDUP';
-            e.actionTimer = 34;
-            e.actionMaxTimer = 34;
+            e.actionTimer = 26;
+            e.actionMaxTimer = 26;
             e.isSpawningEggs = true;
             safePlaySfx('boss');
             ctx.addDamageText(e.x, e.y, "INCUBAÇÃO!", true, '#2ecc71');
@@ -829,13 +829,13 @@ const MINIBOSS_HANDLERS = {
         }
 
         e.actionState = 'RECOVERY';
-        e.actionTimer = 26;
+        e.actionTimer = 20;
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 45 : 75;
+          e.skillCooldown = e.enraged ? 35 : 58;
         }
       }
     }
@@ -844,7 +844,7 @@ const MINIBOSS_HANDLERS = {
   // 8. PREDADOR ESPECTRAL (Onda 5)
   SPECTRAL_STALKER: {
     init(e) {
-      e.skillCooldown = 75;
+      e.skillCooldown = 58;
       e.isStealthed = false;
     },
     update(e, dt, ctx, dist, angle) {
@@ -858,8 +858,8 @@ const MINIBOSS_HANDLERS = {
         if (e.skillCooldown <= 0) {
           e.currentSkill = 'SHADOW_STEP';
           e.actionState = 'WINDUP';
-          e.actionTimer = 38;
-          e.actionMaxTimer = 38;
+          e.actionTimer = 29;
+          e.actionMaxTimer = 29;
           e.isStealthed = true;
           safePlaySfx('warp');
           ctx.addDamageText(e.x, e.y, "CAMUFLAGEM!", true, '#6c5ce7');
@@ -889,8 +889,8 @@ const MINIBOSS_HANDLERS = {
             radius: 85,
             angle: strikeAng,
             arcHalf: Math.PI * 0.35,
-            timer: 18,
-            maxTimer: 18,
+            timer: 14,
+            maxTimer: 14,
             damage: Math.round(e.damage * 1.35),
             color: '#6c5ce7',
             colorRgb: '108, 92, 231'
@@ -899,7 +899,7 @@ const MINIBOSS_HANDLERS = {
       } else if (e.actionState === 'STRIKE') {
         createHitParticles(e.x, e.y, '#6c5ce7', 12);
         e.actionState = 'RECOVERY';
-        e.actionTimer = 28;
+        e.actionTimer = 22;
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         e.x += Math.cos(angle) * e.speed * 0.35 * dt;
@@ -907,7 +907,7 @@ const MINIBOSS_HANDLERS = {
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 45 : 75;
+          e.skillCooldown = e.enraged ? 35 : 58;
         }
       }
     }
@@ -916,7 +916,7 @@ const MINIBOSS_HANDLERS = {
   // 9. ALTO SACERDOTE (Onda 6)
   HIGH_OCCULTIST: {
     init(e) {
-      e.skillCooldown = 80;
+      e.skillCooldown = 62;
     },
     update(e, dt, ctx, dist, angle) {
       const { player, enemyBullets, bossTelegraphs, createHitParticles } = ctx;
@@ -935,8 +935,8 @@ const MINIBOSS_HANDLERS = {
           if (Math.random() < 0.55) {
             e.currentSkill = 'SINGULARITY';
             e.actionState = 'WINDUP';
-            e.actionTimer = 44;
-            e.actionMaxTimer = 44;
+            e.actionTimer = 34;
+            e.actionMaxTimer = 34;
             e.runeX = player.x;
             e.runeY = player.y;
             safePlaySfx('singularity');
@@ -947,15 +947,15 @@ const MINIBOSS_HANDLERS = {
               x: e.runeX,
               y: e.runeY,
               radius: 65,
-              timer: 44,
-              maxTimer: 44,
+              timer: 34,
+              maxTimer: 34,
               damage: Math.round(e.damage * 1.25)
             });
           } else {
             e.currentSkill = 'CURSE_ORBS';
             e.actionState = 'WINDUP';
-            e.actionTimer = 26;
-            e.actionMaxTimer = 26;
+            e.actionTimer = 20;
+            e.actionMaxTimer = 20;
             safePlaySfx('charge');
           }
         }
@@ -996,13 +996,13 @@ const MINIBOSS_HANDLERS = {
           }
         }
         e.actionState = 'RECOVERY';
-        e.actionTimer = 28;
+        e.actionTimer = 22;
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 50 : 80;
+          e.skillCooldown = e.enraged ? 38 : 62;
         }
       }
     }
@@ -1011,7 +1011,7 @@ const MINIBOSS_HANDLERS = {
   // 10. GUARDIÃO RÚNICO (Onda 6)
   RUNIC_WARDEN: {
     init(e) {
-      e.skillCooldown = 75;
+      e.skillCooldown = 58;
     },
     update(e, dt, ctx, dist, angle) {
       const { player, bossShockwaves, bossTelegraphs, enemies, createHitParticles } = ctx;
@@ -1026,8 +1026,8 @@ const MINIBOSS_HANDLERS = {
           if (rand < 0.55) {
             e.currentSkill = 'RUNIC_CAGE';
             e.actionState = 'WINDUP';
-            e.actionTimer = 36;
-            e.actionMaxTimer = 36;
+            e.actionTimer = 28;
+            e.actionMaxTimer = 28;
             safePlaySfx('charge');
             ctx.addDamageText(e.x, e.y, "PRISÃO RÚNICA!", true, '#0984e3');
 
@@ -1035,16 +1035,16 @@ const MINIBOSS_HANDLERS = {
               x: player.x,
               y: player.y,
               radius: 75,
-              timer: 36,
-              maxTimer: 36,
+              timer: 28,
+              maxTimer: 28,
               damage: Math.round(e.damage * 0.8),
               color: '#0984e3'
             });
           } else {
             e.currentSkill = 'WARD_PULSE';
             e.actionState = 'WINDUP';
-            e.actionTimer = 30;
-            e.actionMaxTimer = 30;
+            e.actionTimer = 23;
+            e.actionMaxTimer = 23;
             safePlaySfx('freeze');
           }
         }
@@ -1081,13 +1081,13 @@ const MINIBOSS_HANDLERS = {
           }
         }
         e.actionState = 'RECOVERY';
-        e.actionTimer = 28;
+        e.actionTimer = 22;
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 45 : 75;
+          e.skillCooldown = e.enraged ? 35 : 58;
         }
       }
     }
@@ -1096,7 +1096,7 @@ const MINIBOSS_HANDLERS = {
   // 11. COLOSSO FERRUGINOSO (Onda 7)
   RUST_COLOSSUS: {
     init(e) {
-      e.skillCooldown = 80;
+      e.skillCooldown = 62;
     },
     update(e, dt, ctx, dist, angle) {
       const { player, bossTelegraphs, bossShockwaves, createHitParticles } = ctx;
@@ -1110,8 +1110,8 @@ const MINIBOSS_HANDLERS = {
           if (dist > 160) {
             e.currentSkill = 'BOULDER_TOSS';
             e.actionState = 'WINDUP';
-            e.actionTimer = 42;
-            e.actionMaxTimer = 42;
+            e.actionTimer = 32;
+            e.actionMaxTimer = 32;
             safePlaySfx('charge');
             ctx.addDamageText(e.x, e.y, "CATAPULTA!", true, '#d35400');
 
@@ -1120,16 +1120,16 @@ const MINIBOSS_HANDLERS = {
               x: player.x,
               y: player.y,
               radius: 65,
-              timer: 42,
-              maxTimer: 42,
+              timer: 32,
+              maxTimer: 32,
               damage: Math.round(e.damage * 1.3),
               color: '#d35400'
             });
           } else {
             e.currentSkill = 'TRAIN_CHARGE';
             e.actionState = 'WINDUP';
-            e.actionTimer = 34;
-            e.actionMaxTimer = 34;
+            e.actionTimer = 26;
+            e.actionMaxTimer = 26;
             e.chargeAngle = angle;
             safePlaySfx('boss');
             ctx.addDamageText(e.x, e.y, "CARGA FÉRREA!", true, '#e67e22');
@@ -1141,8 +1141,8 @@ const MINIBOSS_HANDLERS = {
               angle: e.chargeAngle,
               length: 220,
               width: 55,
-              timer: 34,
-              maxTimer: 34
+              timer: 26,
+              maxTimer: 26
             });
           }
         }
@@ -1179,14 +1179,14 @@ const MINIBOSS_HANDLERS = {
         e.chargeDuration -= dt;
         if (e.chargeDuration <= 0) {
           e.actionState = 'RECOVERY';
-          e.actionTimer = 30;
+          e.actionTimer = 23;
         }
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 50 : 80;
+          e.skillCooldown = e.enraged ? 38 : 62;
         }
       }
     }
@@ -1195,7 +1195,7 @@ const MINIBOSS_HANDLERS = {
   // 12. CAPITÃO DE CERCO (Onda 7)
   SIEGE_CAPTAIN: {
     init(e) {
-      e.skillCooldown = 75;
+      e.skillCooldown = 58;
     },
     update(e, dt, ctx, dist, angle) {
       const { player, enemyBullets, bossTelegraphs, createHitParticles } = ctx;
@@ -1214,16 +1214,16 @@ const MINIBOSS_HANDLERS = {
           if (dist < 120) {
             e.currentSkill = 'FLAK_BLAST';
             e.actionState = 'WINDUP';
-            e.actionTimer = 24;
-            e.actionMaxTimer = 24;
+            e.actionTimer = 18;
+            e.actionMaxTimer = 18;
             e.aimAngle = angle;
             safePlaySfx('charge');
             ctx.addDamageText(e.x, e.y, "METRANCAS!", true, '#b71540');
           } else {
             e.currentSkill = 'MORTAR_BARRAGE';
             e.actionState = 'WINDUP';
-            e.actionTimer = 34;
-            e.actionMaxTimer = 34;
+            e.actionTimer = 26;
+            e.actionMaxTimer = 26;
             safePlaySfx('shoot');
             ctx.addDamageText(e.x, e.y, "BOMBARDEIO!", true, '#b71540');
 
@@ -1234,8 +1234,8 @@ const MINIBOSS_HANDLERS = {
                 x: player.x + Math.cos(mAng) * mDist,
                 y: player.y + Math.sin(mAng) * mDist,
                 radius: 50,
-                timer: 34 + m * 8,
-                maxTimer: 34 + m * 8,
+                timer: 26 + m * 6,
+                maxTimer: 26 + m * 6,
                 damage: Math.round(e.damage * 0.9),
                 color: '#b71540'
               });
@@ -1270,13 +1270,13 @@ const MINIBOSS_HANDLERS = {
           }
         }
         e.actionState = 'RECOVERY';
-        e.actionTimer = 28;
+        e.actionTimer = 22;
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 45 : 75;
+          e.skillCooldown = e.enraged ? 35 : 58;
         }
       }
     }
@@ -1285,7 +1285,7 @@ const MINIBOSS_HANDLERS = {
   // 13. NINHO MÓVEL (Onda 8)
   MOBILE_HIVE: {
     init(e) {
-      e.skillCooldown = 75;
+      e.skillCooldown = 58;
     },
     update(e, dt, ctx, dist, angle) {
       const { acidPuddles, enemyBullets, createHitParticles } = ctx;
@@ -1299,15 +1299,15 @@ const MINIBOSS_HANDLERS = {
           if (Math.random() < 0.6) {
             e.currentSkill = 'SWARM_MISSILES';
             e.actionState = 'WINDUP';
-            e.actionTimer = 28;
-            e.actionMaxTimer = 28;
+            e.actionTimer = 22;
+            e.actionMaxTimer = 22;
             safePlaySfx('boss');
             ctx.addDamageText(e.x, e.y, "ENXAME!", true, '#16a085');
           } else {
             e.currentSkill = 'SMOG_CLOUD';
             e.actionState = 'WINDUP';
-            e.actionTimer = 24;
-            e.actionMaxTimer = 24;
+            e.actionTimer = 18;
+            e.actionMaxTimer = 18;
             safePlaySfx('charge');
           }
         }
@@ -1347,13 +1347,13 @@ const MINIBOSS_HANDLERS = {
           });
         }
         e.actionState = 'RECOVERY';
-        e.actionTimer = 25;
+        e.actionTimer = 19;
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 45 : 75;
+          e.skillCooldown = e.enraged ? 35 : 58;
         }
       }
     }
@@ -1362,7 +1362,7 @@ const MINIBOSS_HANDLERS = {
   // 14. FATIADOR QUÂNTICO (Onda 8)
   QUANTUM_SLICER: {
     init(e) {
-      e.skillCooldown = 70;
+      e.skillCooldown = 54;
       e.blinkCount = 0;
     },
     update(e, dt, ctx, dist, angle) {
@@ -1376,8 +1376,8 @@ const MINIBOSS_HANDLERS = {
         if (e.skillCooldown <= 0) {
           e.currentSkill = 'TRIPLE_BLINK';
           e.actionState = 'WINDUP';
-          e.actionTimer = 18;
-          e.actionMaxTimer = 18;
+          e.actionTimer = 14;
+          e.actionMaxTimer = 14;
           e.blinkCount = 0;
           safePlaySfx('warp');
         }
@@ -1408,8 +1408,8 @@ const MINIBOSS_HANDLERS = {
           radius: 90,
           angle: cleaveAng,
           arcHalf: Math.PI * 0.35,
-          timer: 16,
-          maxTimer: 16,
+          timer: 12,
+          maxTimer: 12,
           damage: Math.round(e.damage * 0.95),
           color: '#a29bfe',
           colorRgb: '162, 155, 254'
@@ -1417,18 +1417,18 @@ const MINIBOSS_HANDLERS = {
 
         if (e.blinkCount < (e.enraged ? 4 : 3)) {
           e.actionState = 'WINDUP';
-          e.actionTimer = 16;
-          e.actionMaxTimer = 16;
+          e.actionTimer = 12;
+          e.actionMaxTimer = 12;
         } else {
           e.actionState = 'RECOVERY';
-          e.actionTimer = 32;
+          e.actionTimer = 25;
         }
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 40 : 70;
+          e.skillCooldown = e.enraged ? 31 : 54;
         }
       }
     }
@@ -1437,7 +1437,7 @@ const MINIBOSS_HANDLERS = {
   // 15. PRECURSOR DO VAZIO (Onda 9)
   VOID_PRECURSOR: {
     init(e) {
-      e.skillCooldown = 80;
+      e.skillCooldown = 62;
     },
     update(e, dt, ctx, dist, angle) {
       const { player, voidVortices, bossTelegraphs, createHitParticles } = ctx;
@@ -1456,15 +1456,15 @@ const MINIBOSS_HANDLERS = {
           if (Math.random() < 0.55) {
             e.currentSkill = 'VOID_VORTEX';
             e.actionState = 'WINDUP';
-            e.actionTimer = 35;
-            e.actionMaxTimer = 35;
+            e.actionTimer = 27;
+            e.actionMaxTimer = 27;
             safePlaySfx('singularity');
             ctx.addDamageText(e.x, e.y, "VÓRTICE DO VAZIO!", true, '#8e44ad');
           } else {
             e.currentSkill = 'EVENT_HORIZON';
             e.actionState = 'WINDUP';
-            e.actionTimer = 40;
-            e.actionMaxTimer = 40;
+            e.actionTimer = 31;
+            e.actionMaxTimer = 31;
             e.beamAngle = angle;
             safePlaySfx('charge');
             ctx.addDamageText(e.x, e.y, "FEIXE CÓSMICO!", true, '#9b59b6');
@@ -1476,8 +1476,8 @@ const MINIBOSS_HANDLERS = {
               angle: e.beamAngle,
               length: 650,
               width: 32,
-              timer: 40,
-              maxTimer: 40,
+              timer: 31,
+              maxTimer: 31,
               damage: Math.round(e.damage * 1.3)
             });
           }
@@ -1503,13 +1503,13 @@ const MINIBOSS_HANDLERS = {
           });
         }
         e.actionState = 'RECOVERY';
-        e.actionTimer = 30;
+        e.actionTimer = 23;
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 50 : 80;
+          e.skillCooldown = e.enraged ? 38 : 62;
         }
       }
     }
@@ -1518,7 +1518,7 @@ const MINIBOSS_HANDLERS = {
   // 16. ARAUTO DO CAOS (Onda 10 / Clímax)
   CHAOS_HERALD: {
     init(e) {
-      e.skillCooldown = 65;
+      e.skillCooldown = 50;
       e.cycleIndex = 0;
     },
     update(e, dt, ctx, dist, angle) {
@@ -1535,15 +1535,15 @@ const MINIBOSS_HANDLERS = {
           if (e.cycleIndex === 0) {
             e.currentSkill = 'CHAOS_SPIRAL';
             e.actionState = 'WINDUP';
-            e.actionTimer = 25;
-            e.actionMaxTimer = 25;
+            e.actionTimer = 19;
+            e.actionMaxTimer = 19;
             safePlaySfx('charge');
             ctx.addDamageText(e.x, e.y, "ESPIRAIS DO CAOS!", true, '#c0392b');
           } else if (e.cycleIndex === 1) {
             e.currentSkill = 'HELLFIRE_CHARGE';
             e.actionState = 'WINDUP';
-            e.actionTimer = 32;
-            e.actionMaxTimer = 32;
+            e.actionTimer = 25;
+            e.actionMaxTimer = 25;
             e.chargeAngle = angle;
             safePlaySfx('boss');
             ctx.addDamageText(e.x, e.y, "CARGA INFERNAL!", true, '#e74c3c');
@@ -1555,14 +1555,14 @@ const MINIBOSS_HANDLERS = {
               angle: e.chargeAngle,
               length: 240,
               width: 60,
-              timer: 32,
-              maxTimer: 32
+              timer: 25,
+              maxTimer: 25
             });
           } else {
             e.currentSkill = 'APOCALYPSE_SLAM';
             e.actionState = 'WINDUP';
-            e.actionTimer = 38;
-            e.actionMaxTimer = 38;
+            e.actionTimer = 29;
+            e.actionMaxTimer = 29;
             safePlaySfx('boss');
             ctx.addDamageText(e.x, e.y, "COLAPSO DO CAOS!", true, '#c0392b');
 
@@ -1570,8 +1570,8 @@ const MINIBOSS_HANDLERS = {
               x: e.x,
               y: e.y,
               radius: 120,
-              timer: 38,
-              maxTimer: 38,
+              timer: 29,
+              maxTimer: 29,
               damage: Math.round(e.damage * 1.2),
               color: '#c0392b'
             });
@@ -1640,14 +1640,14 @@ const MINIBOSS_HANDLERS = {
         e.chargeDuration -= dt;
         if (e.chargeDuration <= 0) {
           e.actionState = 'RECOVERY';
-          e.actionTimer = 26;
+          e.actionTimer = 20;
         }
       } else if (e.actionState === 'RECOVERY') {
         e.actionTimer -= dt;
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 35 : 60;
+          e.skillCooldown = e.enraged ? 27 : 46;
         }
       }
     }

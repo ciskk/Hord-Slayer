@@ -5,7 +5,8 @@
  */
 import { player, getPersistentGold, selectedHeroKey } from '../../entities/player.js';
 import { CHARACTERS } from '../../config/characters.js';
-import { HERO_EMBLEMS_SVG } from './characterSelectModal.js';
+import { HERO_EMBLEMS_SVG } from '../../config/heroProfiles.js';
+import { isMobileScreen } from './characterSelectModal.js';
 import { WEAPON_ICONS, renderIcon } from '../icons.js';
 import { ITEMS, getSynergyTrackerList } from '../../config/items.js';
 import { gameState, setLastTime } from '../../main.js';
@@ -164,31 +165,31 @@ export function renderPauseInventory() {
     const passives = [];
 
     if (player.damageCardCount) {
-      passives.push({ icon: 'damage', label: 'Poder Bruto', val: `+${Math.round((player.damagePercentBonus || 0) * 100)}% (${player.damageCardCount}/4)`, color: '#e74c3c' });
+      passives.push({ icon: 'damage', label: 'Poder Bruto', val: `+${Math.round((player.damagePercentBonus || 0) * 100)}% (Nv. ${player.damageCardCount})`, color: '#e74c3c' });
     }
     if (player.armorCardCount || player.hasArmorPassive) {
-      passives.push({ icon: 'armor', label: 'Armadura Rúnica', val: `+${(player.armorCardCount || 1) * 45} HP (${player.armorCardCount || 1}/5)`, color: '#3498db' });
+      passives.push({ icon: 'armor', label: 'Armadura Rúnica', val: `+${(player.armorCardCount || 1) * 30} HP (Nv. ${player.armorCardCount || 1})`, color: '#3498db' });
     }
     if (player.wingsCardCount || player.hasWingsPassive) {
-      passives.push({ icon: 'wings', label: 'Asas do Vento', val: `+${player.speed.toFixed(1)} Vel (${player.wingsCardCount || 1}/4)`, color: '#00cec9' });
+      passives.push({ icon: 'wings', label: 'Asas do Vento', val: `+${player.speed.toFixed(1)} Vel (Nv. ${player.wingsCardCount || 1})`, color: '#00cec9' });
     }
     if (player.frostCardCount || (player.slowChance || 0) > 0) {
-      passives.push({ icon: 'frost', label: 'Golpe Criogênico', val: `${Math.round(player.slowChance * 100)}% Lento (${player.frostCardCount || 1}/4)`, color: '#74b9ff' });
+      passives.push({ icon: 'frost', label: 'Golpe Criogênico', val: `${Math.round(player.slowChance * 100)}% Lento (Nv. ${player.frostCardCount || 1})`, color: '#74b9ff' });
     }
     if (player.orbitals > 0) {
-      passives.push({ icon: 'orbitals', label: 'Bíblias Protetoras', val: `${player.orbitals} Tomos ${player.evolvedOrbitals ? '(Vórtice)' : ''}`, color: '#9b59b6' });
+      passives.push({ icon: 'orbitals', label: 'Bíblias Protetoras', val: `${player.orbitals}/3 Tomos ${player.evolvedOrbitals ? '(Vórtice)' : ''}`, color: '#9b59b6' });
     }
     if (player.auraLvl > 0) {
       passives.push({ icon: 'aura', label: 'Aura Sagrada', val: `Nv ${player.auraLvl}/5 ${player.evolvedAura ? '(Santuário)' : ''}`, color: '#f1c40f' });
     }
     if (player.critCardCount || player.critChance > 0.05) {
-      passives.push({ icon: 'crit', label: 'Foco Letal', val: `${Math.round(player.critChance * 100)}% Crítico (${player.critCardCount || 1}/4)`, color: '#f39c12' });
+      passives.push({ icon: 'crit', label: 'Foco Letal', val: `${Math.round(player.critChance * 100)}% Crítico (Nv. ${player.critCardCount || 1})`, color: '#f39c12' });
     }
     if (player.hasteCardCount || (player.cooldownReduction || 0) > 0) {
-      passives.push({ icon: 'cooldown', label: 'Fúria Rápida', val: `-${Math.round((player.cooldownReduction || 0) * 100)}% CDR (${player.hasteCardCount || 1}/3)`, color: '#e67e22' });
+      passives.push({ icon: 'cooldown', label: 'Fúria Rápida', val: `-${Math.round((player.cooldownReduction || 0) * 100)}% CDR (Nv. ${player.hasteCardCount || 1})`, color: '#e67e22' });
     }
     if (player.magnetCardCount) {
-      passives.push({ icon: 'magnet', label: 'Ímã Titânico', val: `+${player.magnetCardCount * 50}px (${player.magnetCardCount}/4)`, color: '#9b59b6' });
+      passives.push({ icon: 'magnet', label: 'Ímã Titânico', val: `+${player.magnetCardCount * 30}px (Nv. ${player.magnetCardCount})`, color: '#9b59b6' });
     }
 
     if (passives.length === 0) {
@@ -201,6 +202,23 @@ export function renderPauseInventory() {
           ${renderIcon(p.icon, { size: 10, color: p.color })}
           <span>${p.label}:</span>
           <span class="passive-val">${p.val}</span>
+        `;
+        passivesFlow.appendChild(chip);
+      });
+    }
+
+    // Exibição de Pactos Amaldiçoados do Destino
+    if (player.destinyPacts && player.destinyPacts.length > 0) {
+      player.destinyPacts.forEach(p => {
+        const chip = document.createElement('div');
+        chip.className = 'pause-passive-chip';
+        chip.style.borderColor = 'rgba(168, 85, 247, 0.7)';
+        chip.style.background = 'rgba(48, 16, 68, 0.55)';
+        chip.innerHTML = `
+          ${renderIcon('sparkle', { size: 10, color: '#c084fc' })}
+          <span style="color:#c084fc; font-weight:800;">${p.title}:</span>
+          <span class="passive-val" style="color:#2ecc71; font-weight:800;">${p.bonus}</span>
+          <span style="color:#ff6b6b; font-size:9.5px; margin-left:3px;">(${p.penalty})</span>
         `;
         passivesFlow.appendChild(chip);
       });
@@ -264,7 +282,7 @@ function cleanupPauseKeydown() {
  * Abertura com Estase Temporal: Congelamento Imediato da Arena
  */
 export function openPause() {
-  if (gameState.isDead || gameState.isWon || isTransitioning) return;
+  if (!gameState.isInMatch || gameState.isDead || gameState.isWon || isTransitioning) return;
   if (gameState.isPaused) return;
 
   // 1. REQUISITO CRÍTICO: O jogo CONGELA IMEDIATAMENTE antes de qualquer animação
@@ -284,9 +302,10 @@ export function openPause() {
   // 4. Renderização do Conteúdo
   renderPauseInventory();
 
-  // 5. Exibição do Palco
+  // 5. Exibição do Palco com Detecção Mobile
   const pauseModal = document.getElementById('pause-modal');
   if (pauseModal) {
+    pauseModal.classList.toggle('is-mobile-device', isMobileScreen());
     pauseModal.classList.remove('closing');
     pauseModal.classList.add('active');
     pauseModal.style.display = 'flex';
@@ -301,7 +320,7 @@ export function openPause() {
  * O JOGO PERMANECE CONGELADO DURANTE TODA A TRANSIÇÃO (200ms)
  */
 export function closePause() {
-  if (!gameState.isPaused || isTransitioning) return;
+  if (!gameState.isInMatch || !gameState.isPaused || isTransitioning) return;
 
   isTransitioning = true;
   playSfx('stasis_exit');
@@ -337,8 +356,11 @@ export function closePause() {
     // 5. Recalibrar o delta time da engine para evitar salto de física
     setLastTime(performance.now());
 
-    // 6. Finalmente retomar o loop do jogo após a interface estar 100% fechada
-    gameState.isPaused = false;
+    // 6. Finalmente retomar o loop do jogo após a interface estar 100% fechada,
+    // garantindo que a partida ainda está ativa
+    if (gameState.isInMatch) {
+      gameState.isPaused = false;
+    }
     isTransitioning = false;
   }, 200);
 }
@@ -368,7 +390,7 @@ export function forceClosePause() {
  * Alternador de Pausa Unificado (Chamado por ESC, P ou Botão HUD)
  */
 export function togglePause() {
-  if (gameState.isDead || gameState.isWon) return;
+  if (!gameState.isInMatch || gameState.isDead || gameState.isWon) return;
   if (isTransitioning) return;
 
   if (gameState.isPaused) {

@@ -420,6 +420,8 @@ export const player = {
   ignisDashDuration: 0,
   ignisDashVx: 0,
   ignisDashVy: 0,
+  vx: 0,
+  vy: 0,
   berserkTimer: 0,
   invisTimer: 0,
   isPhasing: false,
@@ -430,6 +432,25 @@ export const player = {
     passives: new Map()
   }
 };
+
+/**
+ * Avalia se o herói está em um estado de ação ininterruptível (ex: ULT de Sir Roland ou Ignis).
+ * Durante esses estados, telas de nível (Tarô) e congelamento de jogo são adiadas para preservar o controle.
+ */
+export function isHeroInUninterruptibleState() {
+  if (!player) return false;
+  if ((player.dashDuration && player.dashDuration > 0) || 
+      (player.ignisDashDuration && player.ignisDashDuration > 0)) {
+    return true;
+  }
+  if (player.alchemistSkillTimer && player.alchemistSkillTimer > 0) {
+    return true;
+  }
+  if (player.isChannelingAltar) {
+    return true;
+  }
+  return false;
+}
 
 export function registerWeaponInInventory(weaponId, level = 1, extraData = {}) {
   if (!player.inventory) {
@@ -541,7 +562,7 @@ export function updateSkillUI() {
 }
 
 export function triggerHeroSkill() {
-  if (player.skillCd > 0 || gameState.isPaused || gameState.isDead || gameState.isWon) return;
+  if (player.skillCd > 0 || !gameState.isInMatch || gameState.isPaused || gameState.isDead || gameState.isWon) return;
 
   if (selectedHeroKey === 'KNIGHT') {
     player.dashDuration = 24;
@@ -809,7 +830,7 @@ export function updateSpinningAxes(dt) {
         }
 
         const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
-        let finalDmg = isCrit ? dmg * player.critMult : dmg;
+        let finalDmg = isCrit ? dmg * player.critMult : dmg * (player.nonCritDamageMult || 1.0);
         if (player.executeBonus > 0 && e.maxHp && (e.hp / e.maxHp) < 0.30) {
           finalDmg *= (1 + player.executeBonus);
         }
@@ -846,7 +867,7 @@ export function updateSpinningAxes(dt) {
         playSfx('axe_cleave');
         if (isCrit || isMeleeAdrenaline || isKaelExecute) playSfx('crit');
         
-        const dmgColor = isMeleeAdrenaline ? '#f1c40f' : (isKaelExecute ? '#00cec9' : (isOuterZone ? '#e67e22' : '#f39c12'));
+        const dmgColor = isMeleeAdrenaline ? '#f1c40f' : (isKaelExecute ? '#7c3aed' : (isOuterZone ? '#e67e22' : '#f39c12'));
         addDamageText(seg.closestX, seg.closestY, Math.round(finalDmg), isCrit || isMeleeAdrenaline || isKaelExecute, dmgColor);
         createHitParticles(seg.closestX, seg.closestY, isOuterZone ? '#e67e22' : '#d35400', isOuterZone ? 4 : 2);
 
@@ -1140,6 +1161,13 @@ export function resetPlayer(heroKey) {
   player.armorCardCount = 0;
   player.frostCardCount = 0;
   player.hasteCardCount = 0;
+  player.axeSpeedCount = 0;
+  player.axeRadiusCount = 0;
+  player.destinyPacts = [];
+  player.damageTakenMultiplier = 1.0;
+  player.healingMultiplier = 1.0;
+  player.iFramesDurationMult = 1.0;
+  player.nonCritDamageMult = 1.0;
 
   player.attackCooldown = c.stats.attackCooldown;
   player.baseSpeed = c.stats.speed * meta.speedMult;
@@ -1162,6 +1190,8 @@ export function resetPlayer(heroKey) {
   player.ignisDashDuration = 0;
   player.ignisDashVx = 0;
   player.ignisDashVy = 0;
+  player.vx = 0;
+  player.vy = 0;
   player.berserkTimer = 0;
   player.invisTimer = 0;
   player.isPhasing = false;

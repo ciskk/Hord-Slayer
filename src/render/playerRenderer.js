@@ -3721,7 +3721,7 @@ export function renderHeroModel(c, heroKey, state = {}) {
       for (let g = 1; g <= 4; g++) {
         const ghostDist = g * 9.5;
         const gAlpha = 0.40 / g;
-        c.fillStyle = `rgba(0, 242, 254, ${gAlpha * 0.6})`;
+        c.fillStyle = `rgba(168, 85, 247, ${gAlpha * 0.6})`;
         c.beginPath();
         c.ellipse(-ghostDist, bob + (g % 2 === 0 ? 1 : -1), 11, 16, -0.15, 0, Math.PI * 2);
         c.fill();
@@ -3734,7 +3734,7 @@ export function renderHeroModel(c, heroKey, state = {}) {
 
       // Anel rúnico de transposição gravitacional no solo sob os passos
       const pulseGlow = Math.sin(tFrame * 0.2) * 3.5;
-      c.strokeStyle = 'rgba(0, 245, 212, 0.85)';
+      c.strokeStyle = 'rgba(147, 51, 234, 0.85)';
       c.lineWidth = 1.8;
       c.setLineDash([4, 2]);
       c.beginPath();
@@ -4248,7 +4248,7 @@ export function renderHeroModel(c, heroKey, state = {}) {
       c.fill();
 
       // Halo translúcido externo de plasma da foice
-      c.fillStyle = 'rgba(0, 245, 212, 0.35)';
+      c.fillStyle = 'rgba(147, 51, 234, 0.35)';
       c.beginPath();
       c.moveTo(-3.0, -1.0);
       c.lineTo(3.0, -1.0);
@@ -4280,7 +4280,7 @@ export function renderHeroModel(c, heroKey, state = {}) {
       c.fill();
 
       // Friso de luz cortante no gume
-      c.strokeStyle = '#e0f7fa';
+      c.strokeStyle = '#ede9fe';
       c.lineWidth = 0.8;
       c.beginPath();
       c.moveTo(0.5, 0);
@@ -4289,7 +4289,7 @@ export function renderHeroModel(c, heroKey, state = {}) {
 
       // ARCO CINÉTICO DE VÁCUO NO AR (Duplo com partículas de vácuo)
       const slashPulse = Math.sin(tFrame * 0.4) * 2.0;
-      c.strokeStyle = 'rgba(0, 245, 212, 0.85)';
+      c.strokeStyle = 'rgba(147, 51, 234, 0.85)';
       c.lineWidth = 3.4;
       c.beginPath();
       c.arc(10, 0, 14 + slashPulse, -Math.PI * 0.42, Math.PI * 0.42);
@@ -4455,7 +4455,7 @@ export function renderHeroModel(c, heroKey, state = {}) {
     const breathCycle = (tFrame * 0.08) % 1;
     if (breathCycle < 0.45) {
       const bProg = breathCycle / 0.45;
-      c.fillStyle = `rgba(0, 245, 212, ${(1 - bProg) * (isPhasing ? 0.6 : 0.35)})`;
+      c.fillStyle = `rgba(147, 51, 234, ${(1 - bProg) * (isPhasing ? 0.6 : 0.35)})`;
       c.beginPath();
       c.arc(6.5 + bProg * 5, -5.5 + bob - bProg * 2.5, 0.8 + bProg * 1.8, 0, Math.PI * 2);
       c.fill();
@@ -4481,7 +4481,7 @@ export function renderHeroModel(c, heroKey, state = {}) {
     const fireWisp2 = Math.cos(tFrame * 0.28) * 1.2;
 
     // Halo da chama
-    c.strokeStyle = isPhasing ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 245, 212, 0.4)';
+    c.strokeStyle = isPhasing ? 'rgba(255, 255, 255, 0.65)' : 'rgba(147, 51, 234, 0.4)';
     c.lineWidth = 2.4;
     c.beginPath();
     c.moveTo(5.8, -11.2 + bob);

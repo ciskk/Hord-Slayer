@@ -7,6 +7,7 @@ import { addPersistentGold } from '../entities/player.js';
 
 const ACHIEVEMENTS_STORAGE_KEY = 'hord_achievements_v2';
 const STATS_STORAGE_KEY = 'hord_stats_v2';
+export const BEST_RUN_STORAGE_KEY = 'hord_best_run_v1';
 
 export const HERO_UNLOCK_MAP = {
   MAGE: 'hero_ignis',
@@ -401,6 +402,7 @@ export function resetAchievements() {
 
   try {
     localStorage.removeItem(ACHIEVEMENTS_STORAGE_KEY);
+    localStorage.removeItem(BEST_RUN_STORAGE_KEY);
     localStorage.removeItem('hord_achievements_v1');
     localStorage.removeItem('hord_stats_v1');
     localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(stats));
@@ -412,4 +414,84 @@ export function resetAchievements() {
   } catch (e) {}
 
   return true;
+}
+
+// ========================================================
+// RECORDE HISTÓRICO: MONUMENTO À MAIOR JORNADA (MELHOR RUN)
+// ========================================================
+
+/**
+ * Calcula a Pontuação Composta de Glória para uma run
+ */
+export function calculateRunScore(runData = {}) {
+  const baseWave = (Number(runData.wave) || 1) * 10000;
+  const victoryBonus = runData.isVictory ? 50000 : 0;
+  const killsBonus = (Number(runData.kills) || 0) * 10;
+  const timeBonus = (Number(runData.seconds) || 0) * 20;
+  const levelBonus = (Number(runData.level) || 1) * 500;
+  return baseWave + victoryBonus + killsBonus + timeBonus + levelBonus;
+}
+
+/**
+ * Retorna a melhor run salva no perfil do jogador
+ * @returns {Object|null}
+ */
+export function getBestRun() {
+  try {
+    const raw = localStorage.getItem(BEST_RUN_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    return parsed;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Salva explicitamente os dados da melhor run
+ */
+export function saveBestRun(runData) {
+  try {
+    localStorage.setItem(BEST_RUN_STORAGE_KEY, JSON.stringify(runData));
+  } catch (e) {
+    console.error('Erro ao salvar melhor run:', e);
+  }
+}
+
+/**
+ * Avalia se a run finalizada bateu o recorde histórico e, em caso afirmativo, salva como novo recorde.
+ * @param {Object} runData
+ * @returns {{ isNewRecord: boolean, bestRun: Object }}
+ */
+export function checkAndRecordBestRun(runData = {}) {
+  const score = calculateRunScore(runData);
+  const currentBest = getBestRun();
+
+  const formattedRun = {
+    heroKey: runData.heroKey || 'KNIGHT',
+    heroName: runData.heroName || 'Sir Roland',
+    heroTitle: runData.heroTitle || 'O Paladino',
+    isVictory: !!runData.isVictory,
+    wave: Number(runData.wave) || 1,
+    waveText: runData.waveText || `Onda ${runData.wave || 1}`,
+    time: runData.time || '00:00',
+    seconds: Number(runData.seconds) || 0,
+    kills: Number(runData.kills) || 0,
+    level: Number(runData.level) || 1,
+    souls: Number(runData.souls) || 0,
+    score,
+    date: runData.date || new Date().toLocaleDateString('pt-BR'),
+    weapons: Array.isArray(runData.weapons) ? runData.weapons : [],
+    passives: Array.isArray(runData.passives) ? runData.passives : [],
+    verdictTitle: runData.verdictTitle || (runData.isVictory ? 'VITÓRIA SUPREMA ABSOLUTA' : 'ÚLTIMO SUSPIRO NA ARENA'),
+    verdictSub: runData.verdictSub || ''
+  };
+
+  if (!currentBest || score > (currentBest.score || 0)) {
+    saveBestRun(formattedRun);
+    return { isNewRecord: true, bestRun: formattedRun };
+  }
+
+  return { isNewRecord: false, bestRun: currentBest };
 }

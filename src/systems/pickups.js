@@ -13,6 +13,7 @@ import { addDamageText, createHitParticles, addBloodSplat } from './combat.js';
 import { addXP } from '../entities/player.js';
 import { transitionToArenaTheme, getWaveArenaTheme } from '../render/environment.js';
 import { getCurrentWave, getEffectiveHordeSeconds } from './waves.js';
+import { onAltarChestCollected } from './worldEvents.js';
 
 export function getGemConfig(xp) {
   if (xp >= 50) {
@@ -201,8 +202,9 @@ export function updatePickups(dt, {
 
     if (dx * dx + dy * dy < sumR * sumR) {
       if (d.type === 'HEART') {
-        player.hp = Math.min(player.maxHp, player.hp + 35);
-        addDamageText(player.x, player.y, "+35 HP", false, "#2ecc71");
+        const healAmt = Math.round(35 * (player.healingMultiplier !== undefined ? player.healingMultiplier : 1.0));
+        player.hp = Math.min(player.maxHp, player.hp + healAmt);
+        addDamageText(player.x, player.y, `+${healAmt} HP`, false, "#2ecc71");
         playSfx('gem');
       } else if (d.type === 'MAGNET') {
         gems.forEach(g => { g.forcedPull = true; });
@@ -252,6 +254,9 @@ export function updatePickups(dt, {
       if (dx * dx + dy * dy < sumR * sumR) {
         const tier = ch.tier || 'BOSS';
         chests.splice(i, 1);
+        if (tier === 'LEGENDARY_ALTAR') {
+          onAltarChestCollected();
+        }
         if (tier === 'BOSS') {
           const waveSeconds = Math.floor(frameCount / 60);
           const hordeSeconds = getEffectiveHordeSeconds(waveSeconds);

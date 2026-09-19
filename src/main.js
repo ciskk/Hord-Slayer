@@ -16,10 +16,11 @@ import {
   initSkillUI, 
   fireWeapons, 
   updateSpinningAxes, 
-  selectedHeroKey 
+  selectedHeroKey,
+  isHeroInUninterruptibleState
 } from './entities/player.js';
-import { inputX, inputY } from './core/input.js';
-import { rebuildSpatialGrid } from './core/spatialGrid.js';
+import { inputX, inputY, resetInput } from './core/input.js';
+import { rebuildSpatialGrid, clearSpatialGrid } from './core/spatialGrid.js';
 import { resolveWorldPhysics } from './systems/physics.js';
 import { 
   damageTexts, 
@@ -42,7 +43,7 @@ import {
   canSpawnEnemyBullet 
 } from './systems/projectiles.js';
 import { groundCraters } from './render/groundCracks.js';
-import { spawnSquad, spawnMobCluster, spawnProp } from './entities/enemies.js';
+import { spawnSquad, spawnMobCluster, spawnProp, spawnInitialHorde } from './entities/enemies.js';
 import { recordRunStats } from './config/achievements.js';
 import { 
   getCurrentWave, 
@@ -62,7 +63,9 @@ import {
   openChestModal,
   setBossRewardContext,
   ensureBossUpgradeCount,
-  resetUpgradeQueue
+  resetUpgradeQueue,
+  pendingLevelUps,
+  presentDeferredLevelUpModal
 } from './systems/ui.js';
 import { render } from './render/renderer.js';
 import { transitionToArenaTheme, getWaveArenaTheme, resetEnvironment } from './render/environment.js';
@@ -70,6 +73,7 @@ import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
 import { initResponsive, layoutMetrics } from './core/responsive.js';
 import { devCheats } from './systems/devtools.js';
 import { clearActiveBarks } from './systems/barks.js';
+import { forceClosePause } from './ui/modals/pauseModal.js';
 
 // Subsistemas Especializados Extraídos
 import { updateFieldEffects } from './systems/fieldEffects.js';
@@ -83,7 +87,13 @@ import {
   purgeAllNormalEnemies as purgeAllNormalEnemiesPickup, 
   triggerSuperMagnet as triggerSuperMagnetPickup 
 } from './systems/pickups.js';
-import { updateHUD, resetHUD, resetBossGhostHp } from './ui/hudController.js';
+import { updateHUD, resetHUD, resetBossGhostHp, applyHeroVisuals } from './ui/hudController.js';
+import { 
+  updateWorldEvents, 
+  resetWorldEvents, 
+  getWorldEventSpawnRateMult, 
+  initWorldEventsUI 
+} from './systems/worldEvents.js';
 
 // Reexportações diretas das variáveis de combate e projéteis
 export { 
@@ -153,7 +163,8 @@ initResponsive(() => {
 });
 
 export const gameState = {
-  isPaused: true,
+  isInMatch: false,
+  isPaused: false,
   isDead: false,
   isWon: false,
   kills: 0,
@@ -227,6 +238,7 @@ export const waveAnnouncement = {
   maxTimer: 180
 };
 export let lastAnnouncedWaveIndex = 0;
+export let deferredLevelUpGraceTimer = 0;
 
 let cachedFreezeOverlay = null;
 let isFreezeOverlayVisible = false;
@@ -290,14 +302,20 @@ export function warpToWaveTime(targetWaveIndex) {
   playSfx('level');
 }
 
-export function resetGame() {
-  resize();
-  resetPlayer(selectedHeroKey);
-  player.bossIFrames = 0;
-  player.isPhasing = false;
-  player.alchemistBuffTimer = 0;
-  player.alchemistSkillDisoriented = false;
+export function terminateMatch() {
+  gameState.isInMatch = false;
+  gameState.isPaused = false;
+  gameState.isDead = false;
+  gameState.isWon = false;
+  gameState.isWavePaused = false;
+  gameState.kills = 0;
 
+  frameCount = 0;
+  spawnTimer = 0;
+  screenShake = 0;
+  freezeTimer = 0;
+
+  // 1. Limpeza total de entidades vivas e ativas da partida
   enemies.length = 0;
   dyingEnemies.length = 0;
   bullets.length = 0;
@@ -316,8 +334,12 @@ export function resetGame() {
   bossShockwaves.length = 0;
   voidVortices.length = 0;
   activeBoss = null;
-  clearActiveBarks();
 
+  // 2. Limpeza da Spatial Grid (Zero memory leak)
+  clearSpatialGrid();
+
+  // 3. Resets de agendamentos, barks e câmeras
+  clearActiveBarks();
   resetBossSchedule();
   resetMiniBossSchedule();
   resetUpgradeQueue();
@@ -326,16 +348,17 @@ export function resetGame() {
   cinematicCamera.returningToPlayer = false;
   cinematicCamera.letterboxProgress = 0;
   resetEnvironment();
-  gameState.isWavePaused = false;
-  gameState.kills = 0;
-  frameCount = 0;
-  spawnTimer = 999;
-  screenShake = 0;
-  freezeTimer = 0;
-  gameState.isDead = false;
-  gameState.isWon = false;
-  gameState.isPaused = false;
-  lastTime = performance.now();
+  resetWorldEvents();
+
+  // 4. Reset completo do jogador
+  resetPlayer(selectedHeroKey);
+  player.bossIFrames = 0;
+  player.isPhasing = false;
+  player.alchemistBuffTimer = 0;
+  player.alchemistSkillDisoriented = false;
+
+  // 5. Reset de inputs
+  resetInput();
 
   lastAttackerName = '';
   deathContext = {
@@ -348,22 +371,31 @@ export function resetGame() {
     tacticTip: ''
   };
 
-  const canvasElem = document.getElementById('game-canvas');
-  if (canvasElem) canvasElem.classList.remove('canvas-death-frozen');
-
   waveAnnouncement.timer = 0;
   waveAnnouncement.index = 0;
   waveAnnouncement.name = '';
   lastAnnouncedWaveIndex = 0;
+  deferredLevelUpGraceTimer = 0;
 
+  // 6. Reset do HUD e overlays visuais
   resetHUD(player.maxHp);
   resetDeathAudioFilter();
+
+  const canvasElem = document.getElementById('game-canvas');
+  if (canvasElem) {
+    canvasElem.classList.remove('canvas-death-frozen');
+    canvasElem.classList.remove('canvas-stasis-frozen');
+  }
 
   const bloodFilter = document.getElementById('blood-screen-filter');
   if (bloodFilter) bloodFilter.classList.remove('active');
 
   const victoryFade = document.getElementById('victory-fade-overlay');
   if (victoryFade) victoryFade.classList.remove('active');
+
+  const freezeOverlay = document.getElementById('freeze-overlay');
+  if (freezeOverlay) freezeOverlay.style.display = 'none';
+  isFreezeOverlayVisible = false;
 
   updateSkillUI();
 
@@ -378,20 +410,18 @@ export function resetGame() {
 
   hideEl('boss-hud');
   hideEl('freeze-overlay');
-  isFreezeOverlayVisible = false;
   hideEl('death-modal');
   hideEl('victory-modal');
   hideEl('chest-modal');
   hideEl('upgrade-modal');
-  hideEl('talents-modal');
-  hideEl('char-modal');
-  hideEl('boss-select-modal');
 
   const bossHud = document.getElementById('boss-hud');
   if (bossHud) {
     bossHud.style.display = 'none';
-    bossHud.classList.remove('enraged');
+    bossHud.classList.remove('enraged', 'hit-shake', 'hit-flash');
   }
+  const hud = document.getElementById('hud');
+  if (hud) hud.classList.remove('boss-active');
 
   const bossHpFill = document.getElementById('boss-hp-fill');
   if (bossHpFill) {
@@ -407,6 +437,34 @@ export function resetGame() {
   }
 
   resetBossGhostHp();
+
+  // 7. Encerramento forçado e desvinculação de eventos de pausa
+  forceClosePause();
+}
+
+export function resetGame() {
+  terminateMatch();
+  resize();
+
+  gameState.isInMatch = true;
+  gameState.isPaused = false;
+  lastTime = performance.now();
+
+  // Spawna a horda inicial ativa imediatamente ao iniciar a partida
+  spawnInitialHorde();
+
+  const hideEl = id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.add('modal-hidden');
+      el.style.setProperty('display', 'none', 'important');
+      el.style.display = 'none';
+    }
+  };
+
+  hideEl('char-modal');
+  hideEl('talents-modal');
+  hideEl('boss-select-modal');
 }
 
 function update(dt) {
@@ -603,17 +661,30 @@ function update(dt) {
 
   if (player.dashDuration > 0) {
     player.dashDuration -= dt;
+    deferredLevelUpGraceTimer = 10;
 
     const inputLen = Math.hypot(inputX, inputY);
     if (inputLen > 0.05) {
-      const moveAng = Math.atan2(inputY, inputX);
-      player.dashVx = Math.cos(moveAng) * 16;
-      player.dashVy = Math.sin(moveAng) * 16;
+      const targetAng = Math.atan2(inputY, inputX);
+      const curAng = Math.atan2(player.dashVy || 0, player.dashVx || 1);
+      let diff = targetAng - curAng;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+
+      // Taxa de viragem com inércia e torque para Sir Roland (~14 rad/s)
+      const maxTurn = 0.23 * dt;
+      const turn = Math.max(-maxTurn, Math.min(maxTurn, diff));
+      const nextAng = curAng + turn;
+
+      player.dashVx = Math.cos(nextAng) * 16;
+      player.dashVy = Math.sin(nextAng) * 16;
       if (Math.abs(player.dashVx) > 0.1) {
         player.facing = player.dashVx >= 0 ? 1 : -1;
       }
     }
 
+    player.vx = player.dashVx;
+    player.vy = player.dashVy;
     player.x += player.dashVx * dt;
     player.y += player.dashVy * dt;
     createHitParticles(player.x, player.y, '#f1c40f', 3);
@@ -667,17 +738,30 @@ function update(dt) {
     }
   } else if (player.ignisDashDuration > 0) {
     player.ignisDashDuration -= dt;
+    deferredLevelUpGraceTimer = 10;
 
     const inputLen = Math.hypot(inputX, inputY);
     if (inputLen > 0.05) {
-      const moveAng = Math.atan2(inputY, inputX);
-      player.ignisDashVx = Math.cos(moveAng) * 15.5;
-      player.ignisDashVy = Math.sin(moveAng) * 15.5;
+      const targetAng = Math.atan2(inputY, inputX);
+      const curAng = Math.atan2(player.ignisDashVy || 0, player.ignisDashVx || 1);
+      let diff = targetAng - curAng;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+
+      // Taxa de viragem rápida e afiada para Ignis (~32 rad/s)
+      const maxTurn = 0.52 * dt;
+      const turn = Math.max(-maxTurn, Math.min(maxTurn, diff));
+      const nextAng = curAng + turn;
+
+      player.ignisDashVx = Math.cos(nextAng) * 15.5;
+      player.ignisDashVy = Math.sin(nextAng) * 15.5;
       if (Math.abs(player.ignisDashVx) > 0.1) {
         player.facing = player.ignisDashVx >= 0 ? 1 : -1;
       }
     }
 
+    player.vx = player.ignisDashVx;
+    player.vy = player.ignisDashVy;
     player.x += player.ignisDashVx * dt;
     player.y += player.ignisDashVy * dt;
     player.iFrames = Math.max(player.iFrames, 8);
@@ -748,8 +832,31 @@ function update(dt) {
       player.walkCycle = 0;
     }
 
-    player.x += inputX * player.speed * dt;
-    player.y += inputY * player.speed * dt;
+    // Curva cinética assimétrica: Micro-Aceleração rápida (~40ms) e Parada com micro-skid suave
+    const targetVx = inputX * player.speed;
+    const targetVy = inputY * player.speed;
+
+    if (player.isMoving) {
+      // Reversão de marcha (pivot): acelera a frenagem para resposta instantânea
+      const reversingX = (targetVx > 0 && (player.vx || 0) < 0) || (targetVx < 0 && (player.vx || 0) > 0);
+      const reversingY = (targetVy > 0 && (player.vy || 0) < 0) || (targetVy < 0 && (player.vy || 0) > 0);
+
+      const factorX = reversingX ? (1 - Math.pow(0.04, dt)) : (1 - Math.pow(0.20, dt));
+      const factorY = reversingY ? (1 - Math.pow(0.04, dt)) : (1 - Math.pow(0.20, dt));
+
+      player.vx = (player.vx || 0) + (targetVx - (player.vx || 0)) * factorX;
+      player.vy = (player.vy || 0) + (targetVy - (player.vy || 0)) * factorY;
+    } else {
+      // Desaceleração quase instantânea ao soltar os controles (sem efeito de patinação)
+      const stopFactor = 1 - Math.pow(0.12, dt);
+      player.vx = (player.vx || 0) * (1 - stopFactor);
+      player.vy = (player.vy || 0) * (1 - stopFactor);
+      if (Math.abs(player.vx) < 0.02) player.vx = 0;
+      if (Math.abs(player.vy) < 0.02) player.vy = 0;
+    }
+
+    player.x += (player.vx || 0) * dt;
+    player.y += (player.vy || 0) * dt;
   }
 
   // Knockback e Amortecimento do Jogador
@@ -777,6 +884,13 @@ function update(dt) {
 
       const nx = pdx / pDist;
       const ny = pdy / pDist;
+
+      // Deslizamento tangencial suave na barreira da arena
+      const vDot = (player.vx || 0) * nx + (player.vy || 0) * ny;
+      if (vDot > 0) {
+        player.vx -= vDot * nx;
+        player.vy -= vDot * ny;
+      }
 
       const pushDot = (player.pushVx || 0) * nx + (player.pushVy || 0) * ny;
       if (pushDot > 0) {
@@ -807,6 +921,15 @@ function update(dt) {
         playSfx('forcefield');
         triggerHaptic('light');
       }
+    }
+  }
+
+  // Verificação e Liberação de Level-Up Diferido (Pós-ULT)
+  if (!isHeroInUninterruptibleState() && pendingLevelUps > 0 && !gameState.isPaused && !gameState.isDead && !gameState.isWon) {
+    if (deferredLevelUpGraceTimer > 0) {
+      deferredLevelUpGraceTimer -= dt;
+    } else {
+      presentDeferredLevelUpModal();
     }
   }
 
@@ -851,28 +974,12 @@ function update(dt) {
   const targetLetterbox = isBossSpawning ? 1.0 : 0.0;
   cinematicCamera.letterboxProgress += (targetLetterbox - cinematicCamera.letterboxProgress) * (1 - Math.pow(1 - 0.08, dt));
 
-  player.weapons.forEach(w => { w.timer += dt; });
-  rebuildSpatialGrid(enemies);
-  fireWeapons();
-  updateSpinningAxes(dt);
-
-  // 1. Efeitos de Campo (Aura Sagrada, Bíblias Orbitais e Miasma)
-  updateFieldEffects(dt, {
-    player,
-    enemies,
-    enemyBullets,
-    acidPuddles,
-    frameCount,
-    selectedHeroKey,
-    triggerShake
-  });
-
   checkBossSchedule(seconds);
   checkMiniBossSchedule(seconds);
 
-  // 2. Spawner de Hordas, Esquadrões e Props
+  // 1. Spawner de Hordas, Esquadrões e Props
   if (!gameState.isWavePaused) {
-    spawnTimer += dt;
+    spawnTimer += dt * getWorldEventSpawnRateMult();
     if (spawnTimer >= currentWave.rate) {
       const hasSquads = currentWave.allowedSquads && currentWave.allowedSquads.length > 0;
       const hasTypes = currentWave.types && currentWave.types.length > 0;
@@ -892,6 +999,23 @@ function update(dt) {
       spawnTimer = 0;
     }
   }
+
+  // 2. Reconstrução Única da Spatial Grid por quadro (alimenta armas, auras e física)
+  player.weapons.forEach(w => { w.timer += dt; });
+  rebuildSpatialGrid(enemies);
+  fireWeapons();
+  updateSpinningAxes(dt);
+
+  // 3. Efeitos de Campo (Aura Sagrada, Bíblias Orbitais e Miasma)
+  updateFieldEffects(dt, {
+    player,
+    enemies,
+    enemyBullets,
+    acidPuddles,
+    frameCount,
+    selectedHeroKey,
+    triggerShake
+  });
 
   resolveWorldPhysics(player, enemies, dt);
   updateProjectiles(dt);
@@ -957,6 +1081,18 @@ function update(dt) {
   });
   if (pickupsResult && pickupsResult.playerDied) return;
 
+  // 6. Subsistema Modular de Eventos Dinâmicos (Altar de Sangue)
+  updateWorldEvents(dt, {
+    player,
+    enemies,
+    gameState,
+    frameCount,
+    activeBoss,
+    spawnChest: (x, y, tier) => spawnChest(x, y, tier),
+    triggerShake,
+    setLastAttackerName
+  });
+
   updateCombatVisuals(dt);
 
   // 6. Atualização do HUD e Decaimento Fantasma
@@ -976,10 +1112,14 @@ function loop(now) {
   const speed = (typeof devCheats !== 'undefined' && devCheats.gameSpeed) ? devCheats.gameSpeed : 1.0;
   const dt = Math.min(Math.max(rawDt, 0.1), 2.5) * speed;
 
-  if (!gameState.isPaused && !gameState.isDead && !gameState.isWon) {
-    update(dt);
+  try {
+    if (gameState.isInMatch && !gameState.isPaused && !gameState.isDead && !gameState.isWon) {
+      update(dt);
+    }
+    render();
+  } catch (err) {
+    console.error('Erro crítico no loop de jogo:', err);
   }
-  render();
   requestAnimationFrame(loop);
 }
 
@@ -992,8 +1132,10 @@ function startApplication() {
 
   try {
     initSkillUI();
+    initWorldEventsUI();
+    applyHeroVisuals();
   } catch (err) {
-    console.warn('Aviso: Falha ao inicializar Skill UI:', err);
+    console.warn('Aviso: Falha ao inicializar Skill UI e visuais de herói:', err);
   }
 
   try {

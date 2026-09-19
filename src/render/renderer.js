@@ -14,6 +14,7 @@ import { drawBossVictoryOverlay } from '../entities/bosses/abyssSovereign/render
 import { getHudBottom, layoutMetrics } from '../core/responsive.js';
 import { player } from '../entities/player.js';
 import {
+  gameState,
   ctx,
   dpr,
   viewW,
@@ -42,10 +43,216 @@ import {
   waveAnnouncement,
   cinematicCamera
 } from '../main.js';
+import { getActiveBloodAltar } from '../systems/worldEvents.js';
 
 // Reexportações para assegurar total retrocompatibilidade
 export { drawEnemyShape } from './enemiesRenderer.js';
 export { drawPlayerCharacter } from './playerRenderer.js';
+
+// Cache do layout de texto do banner de onda (Zero Layout Thrashing e Zero measureText contínuo)
+let cachedWaveAnnouncementIndex = -1;
+let cachedWaveTitleText = '';
+let cachedWaveFontSize = 18;
+
+/**
+ * Renderização Diegética do Altar de Sangue e seu Círculo Ritual:
+ * - Círculo místico de 190px com preenchimento pulsante e runas orbitais
+ * - Tolerância visual com aviso luminoso vermelho ao sair do perímetro
+ * - Feixe vertical carmesim de alta altitude visível à distância
+ * - Monólito de obsidiana com cálice/cristal de sangue e anel de canalização
+ */
+function drawBloodAltarWorld(ctx, altar) {
+  if (!altar) return;
+
+  ctx.save();
+  if (altar.fadeTimer !== undefined && altar.fadeAlpha !== undefined) {
+    ctx.globalAlpha = altar.fadeAlpha;
+  }
+
+  // 1. Círculo Ritual no Solo (Quando ACTIVE ou SPAWNED)
+  if (altar.state === 'ACTIVE' || altar.state === 'SPAWNED') {
+    const isAct = altar.state === 'ACTIVE';
+    const rad = altar.ritualRadius;
+
+    // Preenchimento do Círculo com Pulso Místico
+    const pulse = Math.sin(frameCount * 0.1) * 0.03;
+    const bgAlpha = isAct 
+      ? (altar.isWarning ? (0.16 + Math.sin(frameCount * 0.3) * 0.08) : 0.07 + pulse)
+      : 0.025;
+    
+    ctx.fillStyle = altar.isWarning ? `rgba(255, 56, 56, ${bgAlpha})` : `rgba(214, 48, 49, ${bgAlpha})`;
+    ctx.beginPath();
+    ctx.arc(altar.x, altar.y, rad, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Borda Rúnica Pontilhada e Giratória
+    ctx.strokeStyle = altar.isWarning ? '#ff3838' : (isAct ? '#e74c3c' : 'rgba(231, 76, 60, 0.45)');
+    ctx.lineWidth = altar.isWarning ? 3.5 : (isAct ? 2.2 : 1.2);
+    ctx.setLineDash(isAct ? [16, 10] : [8, 8]);
+    ctx.lineDashOffset = -frameCount * (isAct ? 0.8 : 0.2);
+    ctx.beginPath();
+    ctx.arc(altar.x, altar.y, rad, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Anel Interno Fino
+    if (isAct) {
+      ctx.strokeStyle = altar.isWarning ? 'rgba(255, 118, 117, 0.6)' : 'rgba(255, 107, 107, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(altar.x, altar.y, rad - 8, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 6 Runas Orbitais na Periferia do Círculo
+      ctx.save();
+      ctx.translate(altar.x, altar.y);
+      ctx.rotate(altar.runesAngle);
+      for (let r = 0; r < 6; r++) {
+        const rAng = (r * Math.PI * 2) / 6;
+        const rx = Math.cos(rAng) * (rad - 4);
+        const ry = Math.sin(rAng) * (rad - 4);
+        ctx.fillStyle = altar.isWarning ? '#ff7675' : '#ff4757';
+        ctx.beginPath();
+        ctx.arc(rx, ry, 3.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  // 2. Feixe de Luz Místico Vertical Carmesim (God Ray Ascendente)
+  ctx.save();
+  const beamH = 1400;
+  const beamW = altar.state === 'ACTIVE' ? 38 : 24;
+  const beamGrad = ctx.createLinearGradient(altar.x, altar.y, altar.x, altar.y - beamH);
+  const alphaMult = altar.state === 'ACTIVE' ? 0.42 : 0.24;
+  beamGrad.addColorStop(0, `rgba(255, 56, 56, ${alphaMult})`);
+  beamGrad.addColorStop(0.25, `rgba(231, 76, 60, ${alphaMult * 0.7})`);
+  beamGrad.addColorStop(0.7, `rgba(192, 57, 43, ${alphaMult * 0.25})`);
+  beamGrad.addColorStop(1, 'rgba(255, 56, 56, 0)');
+  ctx.fillStyle = beamGrad;
+  ctx.fillRect(altar.x - beamW / 2, altar.y - beamH, beamW, beamH);
+
+  // Núcleo brilhante fino do feixe
+  ctx.strokeStyle = `rgba(255, 255, 255, ${alphaMult * 0.75})`;
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(altar.x, altar.y - 12);
+  ctx.lineTo(altar.x, altar.y - beamH);
+  ctx.stroke();
+  ctx.restore();
+
+  // 3. Monólito / Base do Altar
+  // Sombra de contato
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.58)';
+  ctx.beginPath();
+  ctx.ellipse(altar.x, altar.y + 7, 34, 15, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.save();
+  ctx.translate(altar.x, altar.y);
+
+  // Hexágono de Obsidiana Lapidada
+  ctx.fillStyle = '#16080b';
+  ctx.strokeStyle = '#c0392b';
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (i * Math.PI) / 3;
+    const px = Math.cos(a) * 26;
+    const py = Math.sin(a) * 15;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Pedestal Central
+  const pedGrad = ctx.createLinearGradient(-13, -22, 13, 0);
+  pedGrad.addColorStop(0, '#2f0f15');
+  pedGrad.addColorStop(1, '#16080b');
+  ctx.fillStyle = pedGrad;
+  ctx.strokeStyle = '#ff3838';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.roundRect(-13, -22, 26, 22, [4, 4, 1, 1]);
+  ctx.fill();
+  ctx.stroke();
+
+  // Linhas rúnicas esculpidas no pedestal
+  ctx.strokeStyle = 'rgba(255, 56, 56, 0.7)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-7, -16); ctx.lineTo(0, -6); ctx.lineTo(7, -16);
+  ctx.moveTo(0, -18); ctx.lineTo(0, -3);
+  ctx.stroke();
+
+  // Cristal de Sangue / Cálice Flutuante
+  const floatY = -30 + Math.sin(frameCount * 0.08) * 3;
+  ctx.fillStyle = '#ff3838';
+  ctx.beginPath();
+  ctx.moveTo(0, floatY - 9);
+  ctx.lineTo(7, floatY);
+  ctx.lineTo(0, floatY + 9);
+  ctx.lineTo(-7, floatY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+
+  // Se em SPAWNED: Círculo de Interação e Barra de Canalização Diegética
+  if (altar.state === 'SPAWNED') {
+    // Raio de interação tracejado
+    ctx.strokeStyle = 'rgba(255, 56, 56, 0.4)';
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.arc(0, 0, altar.interactRadius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Anel de canalização se houver progresso
+    if (altar.channelProgress > 0) {
+      const startAngle = -Math.PI / 2;
+      const endAngle = startAngle + (Math.PI * 2 * altar.channelProgress);
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(0, 0, 34, startAngle, endAngle);
+      ctx.stroke();
+    }
+
+    // Prompt Diegético se o jogador estiver ao alcance
+    if (player) {
+      const distToPlayer = Math.hypot(player.x - altar.x, player.y - altar.y);
+      if (distToPlayer <= altar.interactRadius) {
+        ctx.font = 'bold 10px Outfit, sans-serif';
+        const promptText = "[SEGURE ESPAÇO / E] PACTO DE SANGUE";
+        const pw = ctx.measureText(promptText).width;
+        ctx.fillStyle = 'rgba(10, 5, 8, 0.88)';
+        ctx.strokeStyle = '#ff3838';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(-pw / 2 - 8, -54, pw + 16, 18, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffd166';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(promptText, 0, -45);
+      }
+    }
+  }
+
+  ctx.restore();
+  ctx.restore();
+}
 
 /**
  * Pipeline principal de renderização do quadro (Frame Render Loop).
@@ -69,11 +276,20 @@ export function render() {
 
   renderEnvironment(ctx);
 
+  if (!gameState.isInMatch) {
+    ctx.restore();
+    ctx.restore();
+    return;
+  }
+
   const pad = 60;
   const viewLeft = camera.x - pad;
   const viewRight = camera.x + cameraViewW + pad;
   const viewTop = camera.y - pad;
   const viewBottom = camera.y + cameraViewH + pad;
+
+  // 0. Renderização Diegética do Altar de Sangue no Solo da Arena
+  drawBloodAltarWorld(ctx, getActiveBloodAltar());
 
   for (let i = 0; i < props.length; i++) {
     const p = props[i];
@@ -130,6 +346,7 @@ export function render() {
 
     const z = Math.min(0, ch.z || 0);
     const isMini = ch.tier === 'MINI_BOSS';
+    const isAltarChest = ch.tier === 'LEGENDARY_ALTAR';
     const bw = isMini ? 22 : 26;
     const bh = isMini ? 16 : 19;
     const hw = bw / 2;
@@ -145,8 +362,8 @@ export function render() {
 
     // 2. Feixes de Luz Místicos (God Rays) e Pulso Radiante quando em repouso
     if (ch.isResting) {
-      const rayColor = isMini ? 'rgba(52, 152, 219, 0.07)' : 'rgba(241, 196, 15, 0.08)';
-      const glowColor = isMini ? 'rgba(52, 152, 219, 0.22)' : 'rgba(241, 196, 15, 0.25)';
+      const rayColor = isAltarChest ? 'rgba(255, 56, 56, 0.12)' : (isMini ? 'rgba(52, 152, 219, 0.07)' : 'rgba(241, 196, 15, 0.08)');
+      const glowColor = isAltarChest ? 'rgba(255, 56, 56, 0.35)' : (isMini ? 'rgba(52, 152, 219, 0.22)' : 'rgba(241, 196, 15, 0.25)');
       const angleRot = frameCount * 0.012 + (ch.pulseOffset || 0);
 
       ctx.save();
@@ -176,33 +393,33 @@ export function render() {
 
     // Caixa de madeira reforçada
     const woodGrad = ctx.createLinearGradient(-hw, -hh, -hw, hh);
-    woodGrad.addColorStop(0, '#542d18');
-    woodGrad.addColorStop(0.5, '#3a1e0f');
-    woodGrad.addColorStop(1, '#241208');
+    woodGrad.addColorStop(0, isAltarChest ? '#3d0c11' : '#542d18');
+    woodGrad.addColorStop(0.5, isAltarChest ? '#25070a' : '#3a1e0f');
+    woodGrad.addColorStop(1, isAltarChest ? '#120305' : '#241208');
     ctx.fillStyle = woodGrad;
     ctx.beginPath();
     ctx.roundRect(-hw, -hh + 3, bw, bh - 3, 3);
     ctx.fill();
-    ctx.strokeStyle = '#1a0b04';
+    ctx.strokeStyle = isAltarChest ? '#740b17' : '#1a0b04';
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // Tampa arredondada superior (Lid)
     const lidGrad = ctx.createLinearGradient(-hw, -hh - 4, -hw, -hh + 5);
-    lidGrad.addColorStop(0, isMini ? '#47535e' : '#733c1d');
-    lidGrad.addColorStop(0.5, isMini ? '#2f3640' : '#542d18');
-    lidGrad.addColorStop(1, isMini ? '#1e272e' : '#33190c');
+    lidGrad.addColorStop(0, isAltarChest ? '#5c1017' : (isMini ? '#47535e' : '#733c1d'));
+    lidGrad.addColorStop(0.5, isAltarChest ? '#3b0a0e' : (isMini ? '#2f3640' : '#542d18'));
+    lidGrad.addColorStop(1, isAltarChest ? '#1c0507' : (isMini ? '#1e272e' : '#33190c'));
     ctx.fillStyle = lidGrad;
     ctx.beginPath();
     ctx.roundRect(-hw - 1, -hh - 3, bw + 2, 7, [4, 4, 1, 1]);
     ctx.fill();
-    ctx.strokeStyle = isMini ? '#718093' : '#8d4b24';
+    ctx.strokeStyle = isAltarChest ? '#c0392b' : (isMini ? '#718093' : '#8d4b24');
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // Tiras verticais de aço reforçado
-    const strapColor = isMini ? '#718093' : '#d35400';
-    const rivetColor = isMini ? '#dcdde1' : '#f1c40f';
+    const strapColor = isAltarChest ? '#c0392b' : (isMini ? '#718093' : '#d35400');
+    const rivetColor = isAltarChest ? '#ff7675' : (isMini ? '#dcdde1' : '#f1c40f');
     const strapOffset = hw * 0.52;
     [-strapOffset, strapOffset].forEach(sx => {
       ctx.fillStyle = strapColor;
@@ -213,20 +430,20 @@ export function render() {
     });
 
     // Friso horizontal da tampa
-    ctx.fillStyle = isMini ? '#bdc3c7' : '#f1c40f';
+    ctx.fillStyle = isAltarChest ? '#ff4757' : (isMini ? '#bdc3c7' : '#f1c40f');
     ctx.fillRect(-hw - 1, -hh + 3, bw + 2, 2);
 
     // Fechadura em formato de brasão com gema
-    ctx.fillStyle = isMini ? '#95a5a6' : '#f39c12';
+    ctx.fillStyle = isAltarChest ? '#962d22' : (isMini ? '#95a5a6' : '#f39c12');
     ctx.beginPath();
     ctx.roundRect(-3.5, -hh + 2, 7, 7, 2);
     ctx.fill();
-    ctx.strokeStyle = isMini ? '#dcdde1' : '#f1c40f';
+    ctx.strokeStyle = isAltarChest ? '#ff7675' : (isMini ? '#dcdde1' : '#f1c40f');
     ctx.lineWidth = 0.8;
     ctx.stroke();
 
     // Gema mística no miolo da fechadura
-    ctx.fillStyle = isMini ? '#00cec9' : '#e74c3c';
+    ctx.fillStyle = isAltarChest ? '#ff3838' : (isMini ? '#00cec9' : '#e74c3c');
     ctx.beginPath();
     ctx.arc(0, -hh + 5.5, 1.8, 0, Math.PI * 2);
     ctx.fill();
@@ -246,7 +463,8 @@ export function render() {
   // 1. Renderização das poças ativas no solo (Ácido / Alquimia / Fogo) - no chão, abaixo das orbes de XP
   for (let i = 0; i < acidPuddles.length; i++) {
     const p = acidPuddles[i];
-    if (p.x < viewLeft || p.x > viewRight || p.y < viewTop || p.y > viewBottom) continue;
+    const maxR = p.isFire ? 65 : 35;
+    if (p.x < viewLeft - maxR || p.x > viewRight + maxR || p.y < viewTop - maxR || p.y > viewBottom + maxR) continue;
 
     const maxL = p.maxLife || 220;
     
@@ -384,8 +602,7 @@ export function render() {
       continue;
     }
 
-    ctx.save();
-    // Opacidade base 50% mais translúcida para Valéria (0.28), atenuada linearmente por globalAlpha
+    // Zero-Save/Restore: evita sobrecarga de pilha de canvas por poça
     const baseAlpha = p.isAlchemist ? 0.28 : 0.60;
     ctx.globalAlpha = baseAlpha * fadeProgress;
 
@@ -407,17 +624,20 @@ export function render() {
     ctx.lineWidth = 1.8;
     ctx.stroke();
 
-    const bubbleCount = p.isEvolved ? 4 : 3;
+    // Bolhas efervescentes em lote único (Single-pass path)
+    const bubbleCount = p.isEvolved ? 3 : 2;
+    ctx.fillStyle = p.isAlchemist ? (p.isEvolved ? '#e056fd' : '#d6a2e8') : (p.isEvolved ? '#e0ffff' : '#a8e6cf');
+    ctx.beginPath();
     for (let b = 0; b < bubbleCount; b++) {
-      const bAng = frameCount * 0.08 + (b * Math.PI * 2 / bubbleCount) + i;
+      const bAng = frameCount * 0.08 + (b * Math.PI) + i;
       const bDist = r * 0.52;
       const bx = p.x + Math.cos(bAng) * bDist;
       const by = p.y + Math.sin(bAng) * bDist;
-      ctx.fillStyle = p.isAlchemist ? (p.isEvolved ? '#e056fd' : '#d6a2e8') : (p.isEvolved ? '#e0ffff' : '#a8e6cf');
-      ctx.beginPath();
-      ctx.arc(bx, by, Math.max(0.5, (2.2 + Math.sin(frameCount * 0.2 + b) * 1.2) * shrinkFactor), 0, Math.PI * 2);
-      ctx.fill();
+      const br = Math.max(0.6, (2.0 + Math.sin(frameCount * 0.2 + b)) * shrinkFactor);
+      ctx.moveTo(bx + br, by);
+      ctx.arc(bx, by, br, 0, Math.PI * 2);
     }
+    ctx.fill();
 
     if (p.isAlchemist) {
       // Anel cáustico efervescente interno em tom violeta
@@ -427,8 +647,8 @@ export function render() {
       ctx.arc(p.x, p.y, Math.max(1, r * 0.78), 0, Math.PI * 2);
       ctx.stroke();
     }
-    ctx.restore();
   }
+  ctx.globalAlpha = 1.0;
 
   // 2. Renderização das Orbes de XP (Gems) - Sobrepostas às poças com alto relevo visual (Zero-Save/Restore)
   for (let i = 0; i < gems.length; i++) {
@@ -2039,52 +2259,118 @@ export function render() {
     ctx.lineTo(bx + bannerW, by + bannerH);
     ctx.stroke();
 
-    // Texto Centralizado com Auto-Scaling
+    // Texto Centralizado com Auto-Scaling Cacheado (Zero recalculo por frame)
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Rótulo Principal da Horda com redução dinâmica de fonte
-    let fontSize = isCompactH ? 14 : 18;
-    const waveTitle = (waveAnnouncement.name || '').toUpperCase();
-    const titleText = `⚜ ${waveTitle} ⚜`;
-    
-    ctx.font = `bold ${fontSize}px "Cinzel", "Cinzel Decorative", Georgia, serif`;
-    let textWidth = ctx.measureText(titleText).width;
-    const maxTextWidth = bannerW - 32;
-
-    while (textWidth > maxTextWidth && fontSize > 11) {
-      fontSize -= 1;
+    if (cachedWaveAnnouncementIndex !== waveAnnouncement.index) {
+      cachedWaveAnnouncementIndex = waveAnnouncement.index;
+      const waveTitle = (waveAnnouncement.name || '').toUpperCase();
+      cachedWaveTitleText = `⚜ ${waveTitle} ⚜`;
+      let fontSize = isCompactH ? 14 : 18;
       ctx.font = `bold ${fontSize}px "Cinzel", "Cinzel Decorative", Georgia, serif`;
-      textWidth = ctx.measureText(titleText).width;
+      let textWidth = ctx.measureText(cachedWaveTitleText).width;
+      const maxTextWidth = bannerW - 32;
+
+      while (textWidth > maxTextWidth && fontSize > 11) {
+        fontSize -= 1;
+        ctx.font = `bold ${fontSize}px "Cinzel", "Cinzel Decorative", Georgia, serif`;
+        textWidth = ctx.measureText(cachedWaveTitleText).width;
+      }
+      cachedWaveFontSize = fontSize;
     }
 
-    ctx.fillStyle = '#f1c40f';
-    ctx.shadowColor = 'rgba(241, 196, 15, 0.65)';
-    ctx.shadowBlur = 10;
+    ctx.font = `bold ${cachedWaveFontSize}px "Cinzel", "Cinzel Decorative", Georgia, serif`;
+    const titleX = viewW / 2;
     const titleY = by + (isCompactH ? 15 : 20);
-    ctx.fillText(titleText, viewW / 2, titleY);
+
+    // Efeito de Glow Dourado em Camadas (Zero-cost shadow - sem ativação do pipeline de shadowBlur)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.fillText(cachedWaveTitleText, titleX + 1, titleY + 1.5);
+    ctx.fillStyle = 'rgba(241, 196, 15, 0.35)';
+    ctx.fillText(cachedWaveTitleText, titleX, titleY + 1);
+    ctx.fillStyle = '#f1c40f';
+    ctx.fillText(cachedWaveTitleText, titleX, titleY);
 
     // Subtítulo descritivo
     if (!isCompactH || viewH > 370) {
       ctx.font = 'italic 10.5px sans-serif';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillText("Sobreviva à maré crescente de horrores", titleX + 1, by + (isCompactH ? 30 : 38));
       ctx.fillStyle = '#dfe4ea';
-      ctx.shadowBlur = 0;
-      ctx.fillText("Sobreviva à maré crescente de horrores", viewW / 2, by + (isCompactH ? 29 : 37));
+      ctx.fillText("Sobreviva à maré crescente de horrores", titleX, by + (isCompactH ? 29 : 37));
     }
 
     ctx.restore();
   }
 
   if (stick.active) {
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.lineWidth = 3;
+    ctx.save();
+    
+    // 1. Base externa do joystick
+    const isSat = stick.isSaturated;
+    const baseColor = isSat ? 'rgba(241, 196, 15, ' : 'rgba(129, 236, 236, ';
+    
+    // Fundo translúcido sutil
+    ctx.fillStyle = 'rgba(10, 12, 18, 0.35)';
+    ctx.beginPath();
+    ctx.arc(stick.startX, stick.startY, stick.radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Anel externo
+    ctx.strokeStyle = `${baseColor}0.38)`;
+    ctx.lineWidth = isSat ? 2.5 : 1.8;
     ctx.beginPath();
     ctx.arc(stick.startX, stick.startY, stick.radius, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+
+    // Círculo pontilhado da zona morta interna
+    const innerDeadzone = stick.radius * 0.12;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
     ctx.beginPath();
-    ctx.arc(stick.curX, stick.curY, 20, 0, Math.PI * 2);
+    ctx.arc(stick.startX, stick.startY, innerDeadzone, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 2. Linha do vetor de direção
+    if (stick.normMag > 0.08) {
+      ctx.strokeStyle = `${baseColor}0.45)`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(stick.startX, stick.startY);
+      ctx.lineTo(stick.curX, stick.curY);
+      ctx.stroke();
+    }
+
+    // 3. Knob do Polegar
+    const knobRadius = isSat ? 22 : 19;
+    const knobGrad = ctx.createRadialGradient(
+      stick.curX - 3, stick.curY - 3, 2,
+      stick.curX, stick.curY, knobRadius
+    );
+    if (isSat) {
+      knobGrad.addColorStop(0, '#ffffff');
+      knobGrad.addColorStop(0.4, '#f1c40f');
+      knobGrad.addColorStop(1, 'rgba(211, 84, 0, 0.85)');
+    } else {
+      knobGrad.addColorStop(0, '#ffffff');
+      knobGrad.addColorStop(0.4, '#74b9ff');
+      knobGrad.addColorStop(1, 'rgba(9, 132, 227, 0.75)');
+    }
+
+    ctx.fillStyle = knobGrad;
+    ctx.beginPath();
+    ctx.arc(stick.curX, stick.curY, knobRadius, 0, Math.PI * 2);
     ctx.fill();
+
+    // Borda do Knob
+    ctx.strokeStyle = isSat ? '#ffeaa7' : '#dfe6e9';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.restore();
   }
 
   // 3. Overlay Cósmico de Vitória do Boss Final (Banner Dourado + Fade-Out da Tela)
@@ -2127,27 +2413,42 @@ export function render() {
  * - Inclui feixe pulsante de energia saindo do perímetro do herói e fade-out de proximidade.
  */
 function drawPlayerChestArrows(ctx) {
-  if (!chests || chests.length === 0 || !player) return;
+  if (!player) return;
 
-  for (let i = 0; i < chests.length; i++) {
-    const ch = chests[i];
+  const targets = [];
+  if (chests && chests.length > 0) {
+    for (let i = 0; i < chests.length; i++) {
+      targets.push({ x: chests[i].x, y: chests[i].y, tier: chests[i].tier });
+    }
+  }
+
+  const altar = getActiveBloodAltar();
+  if (altar && (altar.state === 'SPAWNED' || altar.state === 'ACTIVE')) {
+    targets.push({ x: altar.x, y: altar.y, tier: 'ALTAR' });
+  }
+
+  if (targets.length === 0) return;
+
+  for (let i = 0; i < targets.length; i++) {
+    const ch = targets[i];
     const dx = ch.x - player.x;
     const dy = ch.y - player.y;
     const dist = Math.hypot(dx, dy);
     if (dist <= 0) continue;
 
-    // Fade-out suave quando o jogador se aproxima do baú (< 70px)
+    // Fade-out suave quando o jogador se aproxima do alvo (< 70px)
     const proximityAlpha = Math.max(0, Math.min(1, (dist - 40) / 30));
     if (proximityAlpha <= 0) continue;
 
     const angle = Math.atan2(dy, dx);
+    const isAltar = ch.tier === 'ALTAR' || ch.tier === 'LEGENDARY_ALTAR';
     const isMini = ch.tier === 'MINI_BOSS';
 
-    const primaryColor = isMini ? '#00cec9' : '#f1c40f';
-    const glowColor = isMini ? 'rgba(0, 206, 201, 0.85)' : 'rgba(241, 196, 15, 0.9)';
+    const primaryColor = isAltar ? '#ff3838' : (isMini ? '#00cec9' : '#f1c40f');
+    const glowColor = isAltar ? 'rgba(255, 56, 56, 0.95)' : (isMini ? 'rgba(0, 206, 201, 0.85)' : 'rgba(241, 196, 15, 0.9)');
     const trailAlpha = (0.55 + Math.sin(frameCount * 0.12) * 0.25) * proximityAlpha;
 
-    // 1. Feixe de Luz Místico saindo do jogador em direção ao baú
+    // 1. Feixe de Luz Místico saindo do jogador em direção ao alvo
     ctx.save();
     const startR = 18;
     const orbitR = 44 + Math.sin(frameCount * 0.15) * 3.5;
@@ -2158,7 +2459,7 @@ function drawPlayerChestArrows(ctx) {
 
     const beamGrad = ctx.createLinearGradient(x1, y1, x2, y2);
     beamGrad.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
-    beamGrad.addColorStop(0.4, isMini ? 'rgba(9, 132, 227, 0.45)' : 'rgba(230, 126, 34, 0.45)');
+    beamGrad.addColorStop(0.4, isAltar ? 'rgba(192, 57, 43, 0.5)' : (isMini ? 'rgba(9, 132, 227, 0.45)' : 'rgba(230, 126, 34, 0.45)'));
     beamGrad.addColorStop(0.85, primaryColor);
     beamGrad.addColorStop(1, '#ffffff');
 
@@ -2180,17 +2481,19 @@ function drawPlayerChestArrows(ctx) {
     ctx.rotate(angle);
     ctx.globalAlpha = (0.9 + Math.sin(frameCount * 0.18) * 0.1) * proximityAlpha;
 
-    ctx.shadowColor = glowColor;
-    ctx.shadowBlur = isMini ? 9 : 14;
-
-    // Corpo pontiagudo da seta
-    ctx.fillStyle = primaryColor;
+    // Halo brilhante externo (Zero-cost glow)
+    ctx.strokeStyle = glowColor;
+    ctx.lineWidth = 3.6;
     ctx.beginPath();
     ctx.moveTo(11, 0);       // Ponta frontal
     ctx.lineTo(-7, -7);      // Aresta superior
     ctx.lineTo(-3, 0);       // Chanfro traseiro
     ctx.lineTo(-7, 7);       // Aresta inferior
     ctx.closePath();
+    ctx.stroke();
+
+    // Corpo pontiagudo da seta
+    ctx.fillStyle = primaryColor;
     ctx.fill();
 
     ctx.strokeStyle = '#ffffff';
@@ -2208,14 +2511,28 @@ function drawPlayerChestArrows(ctx) {
 }
 
 /**
- * Radar Periférico na Borda da Tela para Baús Fora de Campo (Offscreen).
- * Exibe seta direcional na borda, badge estilizado e distância em metros até o baú.
+ * Radar Periférico na Borda da Tela para Baús e Altar de Sangue Fora de Campo (Offscreen).
+ * Exibe seta direcional na borda, badge estilizado e distância em metros até o objetivo.
  */
 function drawOffscreenChestRadar(ctx) {
-  if (!chests || chests.length === 0 || !player) return;
+  if (!player) return;
 
-  for (let i = 0; i < chests.length; i++) {
-    const ch = chests[i];
+  const targets = [];
+  if (chests && chests.length > 0) {
+    for (let i = 0; i < chests.length; i++) {
+      targets.push({ x: chests[i].x, y: chests[i].y, tier: chests[i].tier });
+    }
+  }
+
+  const altar = getActiveBloodAltar();
+  if (altar && (altar.state === 'SPAWNED' || altar.state === 'ACTIVE')) {
+    targets.push({ x: altar.x, y: altar.y, tier: 'ALTAR' });
+  }
+
+  if (targets.length === 0) return;
+
+  for (let i = 0; i < targets.length; i++) {
+    const ch = targets[i];
     const sx = (ch.x - camera.x) * CAMERA_ZOOM;
     const sy = (ch.y - camera.y) * CAMERA_ZOOM;
     const pad = 46;
@@ -2228,10 +2545,11 @@ function drawOffscreenChestRadar(ctx) {
     const angle = Math.atan2(sy - centerY, sx - centerX);
     const clampX = Math.max(pad, Math.min(viewW - pad, sx));
     const clampY = Math.max(pad, Math.min(viewH - pad, sy));
+    const isAltar = ch.tier === 'ALTAR' || ch.tier === 'LEGENDARY_ALTAR';
     const isMini = ch.tier === 'MINI_BOSS';
 
-    const primaryColor = isMini ? '#00cec9' : '#f1c40f';
-    const glowColor = isMini ? 'rgba(0, 206, 201, 0.85)' : 'rgba(241, 196, 15, 0.9)';
+    const primaryColor = isAltar ? '#ff3838' : (isMini ? '#00cec9' : '#f1c40f');
+    const glowColor = isAltar ? 'rgba(255, 56, 56, 0.95)' : (isMini ? 'rgba(0, 206, 201, 0.85)' : 'rgba(241, 196, 15, 0.9)');
     const pulse = Math.sin(frameCount * 0.16) * 3;
 
     const dx = ch.x - player.x;
@@ -2244,16 +2562,19 @@ function drawOffscreenChestRadar(ctx) {
     // Seta periférica apontando para fora
     ctx.save();
     ctx.rotate(angle);
-    ctx.fillStyle = primaryColor;
-    ctx.shadowColor = glowColor;
-    ctx.shadowBlur = isMini ? 8 : 12;
 
+    // Halo brilhante externo (Zero-cost glow)
+    ctx.strokeStyle = glowColor;
+    ctx.lineWidth = 3.8;
     ctx.beginPath();
     ctx.moveTo(12 + pulse, 0);
     ctx.lineTo(-7, -8);
     ctx.lineTo(-3, 0);
     ctx.lineTo(-7, 8);
     ctx.closePath();
+    ctx.stroke();
+
+    ctx.fillStyle = primaryColor;
     ctx.fill();
 
     ctx.strokeStyle = '#ffffff';
@@ -2262,7 +2583,9 @@ function drawOffscreenChestRadar(ctx) {
     ctx.restore();
 
     // Etiqueta com Distância Rúnica
-    const textLabel = `${distMeters}m`;
+    const textLabel = ch.tier === 'ALTAR' 
+      ? `ALTAR • ${distMeters}m` 
+      : (ch.tier === 'LEGENDARY_ALTAR' ? `BAÚ • ${distMeters}m` : `${distMeters}m`);
     ctx.font = 'bold 10px Outfit, sans-serif';
     const textW = ctx.measureText(textLabel).width;
     const badgeW = textW + 14;

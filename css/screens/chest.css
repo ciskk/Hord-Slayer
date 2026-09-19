@@ -1,144 +1,565 @@
-﻿/* ======================================================== */
-/* SISTEMA DE UNBOXING DRAMÁTICO DO BAÚ                    */
+/* ======================================================== */
+/* HORD.IO: UNBOXING DE BAÚS ARCANOS (MINIBOSS & BOSS)       */
+/* Design System: Neo-Arcane / Void Astral                  */
 /* ======================================================== */
 
-.chest-modal-box {
-  width: min(92vw, 440px);
-  padding: 16px 20px;
-  border-radius: 14px;
-  background: radial-gradient(circle at 50% 15%, #1a1e2d 0%, #0d1017 100%);
-  border: 2px solid var(--gold-runic);
-  box-shadow: 0 0 35px rgba(241, 196, 15, 0.25), inset 0 0 20px rgba(0, 0, 0, 0.7);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.chest-unboxing-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 8px;
-  width: 100%;
-}
-
-.chest-anim-stage {
-  position: relative;
-  width: 90px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 4px;
-}
-
-.chest-rays {
-  position: absolute;
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    rgba(241, 196, 15, 0) 0deg,
-    rgba(241, 196, 15, 0.25) 30deg,
-    rgba(241, 196, 15, 0) 60deg,
-    rgba(241, 196, 15, 0.25) 90deg,
-    rgba(241, 196, 15, 0) 120deg,
-    rgba(241, 196, 15, 0.25) 150deg,
-    rgba(241, 196, 15, 0) 180deg,
-    rgba(241, 196, 15, 0.25) 210deg,
-    rgba(241, 196, 15, 0) 240deg,
-    rgba(241, 196, 15, 0.25) 270deg,
-    rgba(241, 196, 15, 0) 300deg,
-    rgba(241, 196, 15, 0.25) 330deg,
-    rgba(241, 196, 15, 0) 360deg
-  );
-  animation: godRaySpin 9s linear infinite;
+/* 1. Integração Óptica com a Arena de Combate */
+#game-canvas.canvas-chest-frozen {
+  filter: blur(3.5px) brightness(0.72) saturate(0.85) contrast(1.18);
+  transform: scale(1.012);
   pointer-events: none;
-  z-index: 1;
 }
 
-@keyframes godRaySpin {
-  0% { transform: rotate(0deg) scale(0.92); }
-  50% { transform: rotate(180deg) scale(1.06); }
-  100% { transform: rotate(360deg) scale(0.92); }
+/* 2. Overlay Geral do Baú: Diegético, Aberto e Translúcido */
+.chest-screen-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100dvh;
+  backdrop-filter: blur(3.5px);
+  -webkit-backdrop-filter: blur(3.5px);
+  justify-content: center;
+  align-items: center;
+  padding: max(env(safe-area-inset-top, 10px), 10px) 
+           max(env(safe-area-inset-right, 14px), 14px) 
+           max(env(safe-area-inset-bottom, 10px), 10px) 
+           max(env(safe-area-inset-left, 14px), 14px);
+  z-index: 100;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
 }
 
-.chest-icon-visual {
+/* Fundo Dinâmico conforme a categoria */
+.chest-screen-overlay.tier-miniboss {
+  background: radial-gradient(circle at 50% 28%, rgba(8, 28, 48, 0.48) 0%, rgba(6, 16, 32, 0.72) 55%, rgba(4, 6, 12, 0.90) 100%);
+}
+
+.chest-screen-overlay.tier-boss {
+  background: radial-gradient(circle at 50% 28%, rgba(36, 16, 10, 0.48) 0%, rgba(18, 10, 24, 0.72) 55%, rgba(4, 5, 8, 0.90) 100%);
+}
+
+.chest-screen-overlay.tier-altar {
+  background: radial-gradient(circle at 50% 28%, rgba(55, 12, 16, 0.62) 0%, rgba(26, 6, 12, 0.82) 55%, rgba(4, 5, 8, 0.94) 100%);
+}
+
+.chest-screen-overlay.active {
+  display: flex !important;
+  animation: chestFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.chest-screen-overlay.closing {
+  animation: chestFadeOut 0.22s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+  pointer-events: none !important;
+}
+
+@keyframes chestFadeIn {
+  from { opacity: 0; transform: scale(0.985); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes chestFadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.985); }
+}
+
+/* Véu de Textura Celestial e Partículas */
+.chest-stasis-veil {
+  position: absolute;
+  inset: 0;
+  background-size: 26px 26px, 100% 52px;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.tier-miniboss .chest-stasis-veil {
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(0, 245, 212, 0.06) 1px, transparent 1px),
+    linear-gradient(rgba(9, 132, 227, 0.02) 1px, transparent 1px);
+}
+
+.tier-boss .chest-stasis-veil {
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(255, 209, 102, 0.06) 1px, transparent 1px),
+    linear-gradient(rgba(231, 76, 60, 0.02) 1px, transparent 1px);
+}
+
+.tier-altar .chest-stasis-veil {
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(255, 56, 56, 0.08) 1px, transparent 1px),
+    linear-gradient(rgba(255, 56, 56, 0.03) 1px, transparent 1px);
+}
+
+/* 3. Palco Intrínseco do Baú */
+.chest-intrinsic-stage {
+  width: 100%;
+  max-width: min(94vw, 560px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   position: relative;
-  width: 52px;
-  height: 42px;
+  gap: clamp(8px, 1.8vh, 16px);
+  margin: auto;
+  padding: clamp(8px, 2vh, 20px) 0;
+  box-sizing: border-box;
   z-index: 2;
 }
 
-.chest-lid-graphic {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 52px;
-  height: 16px;
-  background: linear-gradient(180deg, #8d4b24 0%, #542d18 100%);
-  border: 2px solid #f1c40f;
-  border-radius: 8px 8px 2px 2px;
-  box-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
-  transform-origin: top center;
-  animation: chestLidOpen 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+/* ======================================================== */
+/* 4. PALCO DO RELICÁRIO / SARCÓFAGO (GOD RAYS & MODELAGEM) */
+/* ======================================================== */
+
+.chest-relic-stage {
+  position: relative;
+  width: 180px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
 }
 
-@keyframes chestLidOpen {
-  0% { transform: translateY(0) rotateX(0deg); }
-  100% { transform: translateY(-12px) rotateX(-45deg) scale(1.04); }
+/* Feixes Divinos (God-Rays Conic Radiantes) */
+.chest-god-rays-outer,
+.chest-god-rays-inner {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
 }
 
-.chest-base-graphic {
+.chest-god-rays-outer {
+  width: 260px;
+  height: 260px;
+  animation: godRaySpin 20s linear infinite;
+  opacity: 0.55;
+}
+
+.chest-god-rays-inner {
+  width: 190px;
+  height: 190px;
+  animation: godRaySpinReverse 13s linear infinite;
+  opacity: 0.75;
+}
+
+.tier-miniboss .chest-god-rays-outer {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(0, 245, 212, 0.22) 25deg,
+    transparent 50deg,
+    rgba(9, 132, 227, 0.25) 80deg,
+    transparent 110deg,
+    rgba(0, 245, 212, 0.22) 140deg,
+    transparent 170deg,
+    rgba(9, 132, 227, 0.25) 210deg,
+    transparent 240deg,
+    rgba(0, 245, 212, 0.22) 280deg,
+    transparent 320deg,
+    rgba(9, 132, 227, 0.25) 345deg,
+    transparent 360deg
+  );
+}
+
+.tier-miniboss .chest-god-rays-inner {
+  background: conic-gradient(
+    from 180deg,
+    transparent 0deg,
+    rgba(0, 245, 212, 0.35) 30deg,
+    transparent 70deg,
+    rgba(9, 132, 227, 0.35) 120deg,
+    transparent 160deg,
+    rgba(0, 245, 212, 0.35) 210deg,
+    transparent 260deg,
+    rgba(9, 132, 227, 0.35) 310deg,
+    transparent 360deg
+  );
+}
+
+.tier-boss .chest-god-rays-outer {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(255, 209, 102, 0.28) 25deg,
+    transparent 50deg,
+    rgba(231, 76, 60, 0.26) 80deg,
+    transparent 110deg,
+    rgba(255, 209, 102, 0.28) 140deg,
+    transparent 170deg,
+    rgba(231, 76, 60, 0.26) 210deg,
+    transparent 240deg,
+    rgba(255, 209, 102, 0.28) 280deg,
+    transparent 320deg,
+    rgba(231, 76, 60, 0.26) 345deg,
+    transparent 360deg
+  );
+}
+
+.tier-boss .chest-god-rays-inner {
+  background: conic-gradient(
+    from 180deg,
+    transparent 0deg,
+    rgba(255, 209, 102, 0.40) 30deg,
+    transparent 70deg,
+    rgba(241, 196, 15, 0.40) 120deg,
+    transparent 160deg,
+    rgba(231, 76, 60, 0.35) 210deg,
+    transparent 260deg,
+    rgba(255, 209, 102, 0.40) 310deg,
+    transparent 360deg
+  );
+}
+
+.tier-altar .chest-god-rays-outer {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(255, 56, 56, 0.35) 25deg,
+    transparent 50deg,
+    rgba(231, 76, 60, 0.32) 80deg,
+    transparent 110deg,
+    rgba(255, 56, 56, 0.35) 140deg,
+    transparent 170deg,
+    rgba(231, 76, 60, 0.32) 210deg,
+    transparent 240deg,
+    rgba(255, 56, 56, 0.35) 280deg,
+    transparent 320deg,
+    rgba(231, 76, 60, 0.32) 345deg,
+    transparent 360deg
+  );
+}
+
+.tier-altar .chest-god-rays-inner {
+  background: conic-gradient(
+    from 180deg,
+    transparent 0deg,
+    rgba(255, 71, 87, 0.45) 30deg,
+    transparent 70deg,
+    rgba(255, 56, 56, 0.45) 120deg,
+    transparent 160deg,
+    rgba(231, 76, 60, 0.40) 210deg,
+    transparent 260deg,
+    rgba(255, 71, 87, 0.45) 310deg,
+    transparent 360deg
+  );
+}
+
+@keyframes godRaySpin {
+  from { transform: rotate(0deg) scale(0.95); }
+  50% { transform: rotate(180deg) scale(1.05); }
+  to { transform: rotate(360deg) scale(0.95); }
+}
+
+@keyframes godRaySpinReverse {
+  from { transform: rotate(360deg) scale(1.05); }
+  50% { transform: rotate(180deg) scale(0.95); }
+  to { transform: rotate(0deg) scale(1.05); }
+}
+
+/* Halo e Brilho Ambiente */
+.chest-ambient-glow {
   position: absolute;
-  bottom: 0;
-  left: 3px;
-  width: 46px;
-  height: 28px;
-  background: linear-gradient(180deg, #42210f 0%, #200f07 100%);
-  border: 2px solid #d35400;
+  inset: -15px;
+  border-radius: 50%;
+  filter: blur(18px);
+  pointer-events: none;
+  animation: chestAmbientBreathe 2.8s ease-in-out infinite alternate;
+}
+
+.tier-miniboss .chest-ambient-glow {
+  background: radial-gradient(circle, rgba(0, 245, 212, 0.35) 0%, rgba(9, 132, 227, 0.2) 50%, transparent 75%);
+}
+
+.tier-boss .chest-ambient-glow {
+  background: radial-gradient(circle, rgba(255, 209, 102, 0.45) 0%, rgba(231, 76, 60, 0.25) 50%, transparent 75%);
+}
+
+.tier-altar .chest-ambient-glow {
+  background: radial-gradient(circle, rgba(255, 56, 56, 0.55) 0%, rgba(192, 57, 43, 0.30) 50%, transparent 75%);
+}
+
+@keyframes chestAmbientBreathe {
+  0% { transform: scale(0.9); opacity: 0.5; }
+  100% { transform: scale(1.18); opacity: 0.9; }
+}
+
+/* ======================================================== */
+/* 5. ESTRUTURA DIMENSIONAL DO BAÚ (VETORIAL & RÚNICA)      */
+/* ======================================================== */
+
+.chest-monument-box {
+  position: relative;
+  width: 86px;
+  height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 2;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.85));
+}
+
+/* Animação de tremor na inicialização */
+.chest-monument-box.rumbling {
+  animation: chestRumble 0.4s ease-in-out infinite;
+}
+
+@keyframes chestRumble {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-2px, 1px) rotate(-1.5deg); }
+  50% { transform: translate(2px, -1px) rotate(1.5deg); }
+  75% { transform: translate(-1.5px, -1px) rotate(-1deg); }
+}
+
+.chest-monument-box.opened {
+  animation: chestOpenedLevitate 3s ease-in-out infinite alternate;
+}
+
+@keyframes chestOpenedLevitate {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-4px); }
+}
+
+/* Tampa do Baú */
+.relic-lid-wrap {
+  position: relative;
+  width: 86px;
+  height: 24px;
+  transform-origin: 50% 100%;
+  z-index: 3;
+  transition: transform 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.chest-monument-box.opened .relic-lid-wrap {
+  transform: translateY(-16px) rotateX(-50deg) scale(1.06);
+}
+
+.relic-lid-graphic {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px 10px 3px 3px;
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Base do Baú */
+.relic-base-wrap {
+  position: relative;
+  width: 78px;
+  height: 42px;
+  z-index: 2;
+  margin-top: -2px;
+}
+
+.relic-base-graphic {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px 2px 9px 9px;
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ======================================================== */
+/* 5.1 ESTILIZAÇÃO ESPECÍFICA: RELICÁRIO DE SAFIRA (MINIBOSS) */
+/* ======================================================== */
+
+.tier-miniboss .relic-lid-graphic {
+  background: linear-gradient(180deg, #10304a 0%, #081a2c 100%);
+  border: 1.8px solid #00f5d4;
+  box-shadow: 0 0 14px rgba(0, 245, 212, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.tier-miniboss .relic-base-graphic {
+  background: linear-gradient(180deg, #091c30 0%, #050d18 100%);
+  border: 1.8px solid #0984e3;
   border-top: none;
-  border-radius: 2px 2px 6px 6px;
-  box-shadow: inset 0 0 12px rgba(241, 196, 15, 0.35);
+  box-shadow: inset 0 0 16px rgba(0, 245, 212, 0.25);
 }
 
-.chest-base-graphic::after {
-  content: '';
+.tier-miniboss .relic-lock-mechanism {
   position: absolute;
   top: 4px;
-  left: 17px;
+  width: 16px;
+  height: 18px;
+  background: #040914;
+  border: 1.5px solid #00f5d4;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 8px rgba(0, 245, 212, 0.5);
+}
+
+.tier-miniboss .relic-lock-core {
+  width: 6px;
+  height: 6px;
+  background: #00f5d4;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #00f5d4;
+}
+
+/* ======================================================== */
+/* 5.2 ESTILIZAÇÃO ESPECÍFICA: SARCÓFAGO DO SOBERANO (BOSS) */
+/* ======================================================== */
+
+.tier-boss .relic-lid-graphic {
+  background: linear-gradient(180deg, #592512 0%, #2e0f06 100%);
+  border: 2px solid #ffd166;
+  box-shadow: 0 0 18px rgba(255, 209, 102, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.tier-boss .relic-base-graphic {
+  background: linear-gradient(180deg, #381206 0%, #170402 100%);
+  border: 2px solid #e74c3c;
+  border-top: none;
+  box-shadow: inset 0 0 20px rgba(255, 209, 102, 0.35);
+}
+
+.tier-boss .relic-lock-mechanism {
+  position: absolute;
+  top: 4px;
+  width: 20px;
+  height: 22px;
+  background: #140402;
+  border: 1.8px solid #ffd166;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(241, 196, 15, 0.6);
+}
+
+.tier-boss .relic-lock-core {
   width: 8px;
-  height: 10px;
-  background: #f1c40f;
-  border-radius: 2px;
-  box-shadow: 0 0 6px #f39c12;
+  height: 8px;
+  background: #ff4757;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ff4757, 0 0 18px #ffd166;
+  animation: eyeGleamPulse 2.4s ease-in-out infinite alternate;
 }
 
-#chest-modal-title {
-  margin: 0 0 4px 0;
-  color: var(--gold-runic);
-  font-size: clamp(15px, 2.4vw, 18px);
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
-}
+/* ======================================================== */
+/* 6. CAMADA DE TEXTO & TÍTULO MONUMENTAL                   */
+/* ======================================================== */
 
-#chest-modal-sub {
-  font-size: 11px;
-  color: #a4b0be;
-  margin: 0;
+.chest-header-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
   text-align: center;
+  width: 100%;
 }
+
+.chest-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 480px;
+  justify-content: center;
+}
+
+.chest-eyebrow-line {
+  flex: 1;
+  height: 1px;
+}
+
+.tier-miniboss .chest-eyebrow-line {
+  background: linear-gradient(90deg, transparent, rgba(0, 245, 212, 0.5), transparent);
+}
+
+.tier-boss .chest-eyebrow-line {
+  background: linear-gradient(90deg, transparent, rgba(255, 209, 102, 0.55), transparent);
+}
+
+.tier-miniboss #chest-eyebrow-node {
+  background: #00f5d4;
+  box-shadow: 0 0 8px #00f5d4;
+}
+
+.tier-boss #chest-eyebrow-node {
+  background: #ffd166;
+  box-shadow: 0 0 8px #ffd166;
+}
+
+.chest-eyebrow-text {
+  font-family: var(--font-heading);
+  font-size: clamp(9.5px, 0.9vw, 11px);
+  font-weight: 800;
+  letter-spacing: clamp(1.8px, 0.3vw, 3px);
+  text-transform: uppercase;
+}
+
+.tier-miniboss .chest-eyebrow-text {
+  color: #00f5d4;
+  text-shadow: 0 0 10px rgba(0, 245, 212, 0.5);
+}
+
+.tier-boss .chest-eyebrow-text {
+  color: #ffd166;
+  text-shadow: 0 0 10px rgba(255, 209, 102, 0.5);
+}
+
+.tier-altar .chest-eyebrow-text {
+  color: #ff3838;
+  text-shadow: 0 0 10px rgba(255, 56, 56, 0.6);
+}
+
+.chest-monumental-title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.4vw, 30px);
+  font-weight: 900;
+  letter-spacing: clamp(1.5px, 0.3vw, 3px);
+  line-height: 1.15;
+  margin: 2px 0 0 0;
+  text-transform: uppercase;
+}
+
+.tier-miniboss .chest-monumental-title {
+  color: #ffffff;
+  text-shadow: 0 0 18px rgba(0, 245, 212, 0.70), 
+               0 0 35px rgba(9, 132, 227, 0.50), 
+               2px 3px 6px #000000;
+}
+
+.tier-boss .chest-monumental-title {
+  color: #ffffff;
+  text-shadow: 0 0 18px rgba(241, 196, 15, 0.75), 
+               0 0 35px rgba(231, 76, 60, 0.55), 
+               2px 3px 6px #000000;
+}
+
+.tier-altar .chest-monumental-title {
+  color: #ffffff;
+  text-shadow: 0 0 18px rgba(255, 56, 56, 0.85), 
+               0 0 35px rgba(192, 57, 43, 0.65), 
+               2px 3px 6px #000000;
+}
+
+.chest-monumental-sub {
+  font-size: clamp(11px, 0.9vw, 12.5px);
+  color: #94a3b8;
+  letter-spacing: 0.4px;
+}
+
+/* ======================================================== */
+/* 7. GRID DE RECOMPENSAS & CARDS BENTO                     */
+/* ======================================================== */
 
 .chest-rewards-grid {
   display: flex;
   flex-direction: column;
   gap: 8px;
   width: 100%;
-  margin: 10px 0;
+  margin: 6px 0;
   min-height: 80px;
 }
 
@@ -146,40 +567,45 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: rgba(18, 22, 33, 0.85);
-  border: 1px solid #3d4a63;
+  gap: 12px;
+  background: radial-gradient(ellipse at 50% 15%, rgba(20, 26, 42, 0.85) 0%, rgba(12, 16, 26, 0.94) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   opacity: 0;
-  transform: translateY(12px) scale(0.92);
-  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform: translateY(16px) scale(0.94);
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+  box-sizing: border-box;
 }
 
 .chest-card.revealed {
   opacity: 1;
   transform: translateY(0) scale(1);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
 }
 
 .chest-card.revealed:hover {
   transform: translateY(-2px) scale(1.01);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .chest-card-icon {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   flex-shrink: 0;
+  color: #ffd166;
 }
 
 .chest-card-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
+  filter: drop-shadow(0 0 6px currentColor);
 }
 
 .chest-card-info {
@@ -187,85 +613,201 @@
   flex-direction: column;
   flex-grow: 1;
   text-align: left;
+  gap: 2px;
+  min-width: 0;
 }
 
 .chest-card-title {
+  font-family: var(--font-heading);
   font-weight: 800;
-  font-size: 13px;
-  color: #fff;
+  font-size: 13.5px;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.chest-card-stat {
-  font-size: 10.5px;
-  color: #f1c40f;
+.chest-card-badge {
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  color: #94a3b8;
   font-weight: 700;
-  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.chest-card-stat {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffd166;
 }
 
 .chest-card-desc {
-  font-size: 10px;
-  color: #a4b0be;
-  margin-top: 1px;
-  line-height: 1.25;
+  font-size: 10.5px;
+  color: #94a3b8;
+  line-height: 1.35;
 }
 
-/* Card Lendária de Evolução */
+/* Destaque para Evolução Lendária (Boss Chest) */
 .chest-card.legendary-card {
-  border: 2px solid var(--gold-runic);
-  background: linear-gradient(135deg, rgba(241, 196, 15, 0.16) 0%, rgba(26, 30, 45, 0.95) 100%);
-  box-shadow: 0 0 20px rgba(241, 196, 15, 0.35);
-  animation: legendaryBorderGlow 2.5s ease-in-out infinite alternate;
+  border: 1.8px solid #ffd166;
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.22) 0%, rgba(26, 18, 36, 0.95) 100%);
+  box-shadow: 0 0 24px rgba(241, 196, 15, 0.38), inset 0 0 20px rgba(241, 196, 15, 0.12);
+  animation: legendaryChestGlow 2.5s ease-in-out infinite alternate;
 }
 
-@keyframes legendaryBorderGlow {
-  0% { box-shadow: 0 0 12px rgba(241, 196, 15, 0.25); border-color: #f39c12; }
-  100% { box-shadow: 0 0 24px rgba(241, 196, 15, 0.55); border-color: #f1c40f; }
+@keyframes legendaryChestGlow {
+  0% { box-shadow: 0 0 16px rgba(241, 196, 15, 0.28); border-color: #f39c12; }
+  100% { box-shadow: 0 0 32px rgba(241, 196, 15, 0.65); border-color: #ffd166; }
 }
 
 .chest-card.legendary-card .chest-card-title {
-  color: #f1c40f;
+  color: #ffd166;
+  text-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
 }
 
 .legendary-pill {
+  font-family: var(--font-heading);
   font-size: 9px;
   font-weight: 900;
-  letter-spacing: 0.5px;
-  background: linear-gradient(90deg, #f1c40f, #e67e22);
-  color: #000;
-  padding: 2px 6px;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg, #ffd166, #e67e22);
+  color: #040508;
+  padding: 2px 8px;
   border-radius: 4px;
-  margin-bottom: 2px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   align-self: flex-start;
+  margin-bottom: 2px;
 }
 
-#chest-claim-btn {
+/* ======================================================== */
+/* 8. BOTÃO DE RESGATE (CTA NOBRE DE ALTO IMPACTO)           */
+/* ======================================================== */
+
+.chest-actions-bar {
   width: 100%;
-  background: linear-gradient(90deg, #f39c12, #f1c40f);
-  color: #0d1017;
+  margin-top: 4px;
+}
+
+.btn-chest-claim {
+  position: relative;
+  width: 100%;
+  border-radius: 9px;
+  padding: 12px 20px;
+  font-family: var(--font-heading);
+  font-size: clamp(13px, 1.2vw, 15px);
   font-weight: 900;
-  font-size: 13px;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
+  letter-spacing: 1.8px;
   cursor: pointer;
-  margin-top: 8px;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(243, 156, 18, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
 }
 
-#chest-claim-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-  filter: grayscale(0.8);
-  box-shadow: none;
+.tier-miniboss .btn-chest-claim {
+  background: linear-gradient(135deg, #00f5d4 0%, #0984e3 60%, #00cec9 100%) !important;
+  border: 1.5px solid #00f5d4 !important;
+  color: #040508 !important;
+  box-shadow: 0 6px 22px rgba(0, 245, 212, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
-#chest-claim-btn:not(:disabled):hover {
+.tier-boss .btn-chest-claim {
+  background: linear-gradient(135deg, #ffd166 0%, #e67e22 60%, #d35400 100%) !important;
+  border: 1.5px solid #ffd166 !important;
+  color: #040508 !important;
+  box-shadow: 0 6px 22px rgba(241, 196, 15, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.tier-altar .btn-chest-claim {
+  background: linear-gradient(135deg, #ff4757 0%, #c0392b 60%, #740b17 100%) !important;
+  border: 1.5px solid #ff6b81 !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 22px rgba(255, 56, 56, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.btn-chest-claim:not(:disabled):hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(241, 196, 15, 0.6);
+  filter: brightness(1.1);
 }
 
+.tier-miniboss .btn-chest-claim:not(:disabled):hover {
+  box-shadow: 0 10px 28px rgba(0, 245, 212, 0.6), 0 0 20px rgba(0, 245, 212, 0.4);
+}
+
+.tier-boss .btn-chest-claim:not(:disabled):hover {
+  box-shadow: 0 10px 28px rgba(241, 196, 15, 0.65), 0 0 20px rgba(241, 196, 15, 0.45);
+}
+
+.btn-chest-claim:active {
+  transform: translateY(1px);
+}
+
+.btn-chest-claim:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.7);
+  box-shadow: none !important;
+}
+
+.btn-claim-content {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.claim-hotkey-hint {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 800;
+  color: rgba(4, 5, 8, 0.8);
+  letter-spacing: 0.8px;
+  position: relative;
+  z-index: 2;
+}
+
+/* ======================================================== */
+/* 9. ADAPTAÇÕES RESPONSIVAS MOBILE                         */
+/* ======================================================== */
+
+@media (max-width: 640px) {
+  .chest-relic-stage {
+    width: 140px;
+    height: 96px;
+  }
+
+  .chest-god-rays-outer {
+    width: 200px;
+    height: 200px;
+  }
+
+  .chest-god-rays-inner {
+    width: 150px;
+    height: 150px;
+  }
+
+  .chest-monument-box {
+    width: 72px;
+    height: 54px;
+  }
+
+  .relic-lid-wrap {
+    width: 72px;
+    height: 20px;
+  }
+
+  .relic-base-wrap {
+    width: 64px;
+    height: 36px;
+  }
+
+  .claim-hotkey-hint {
+    display: none !important;
+  }
+}

@@ -17,9 +17,12 @@ import {
   renderBestiaryDossier,
   selectedCreatureId
 } from './ui.js';
+import { levelUp } from '../ui/modals/upgradeModal.js';
+import { openChestModal } from '../ui/modals/chestModal.js';
 import { 
   unlockAllAchievements, 
-  resetAchievements 
+  resetAchievements,
+  saveBestRun 
 } from '../config/achievements.js';
 import { 
   unlockAllBestiary, 
@@ -30,6 +33,7 @@ import {
   triggerSuperMagnet, 
   warpToWaveTime 
 } from '../main.js';
+import { spawnBloodAltar } from './worldEvents.js';
 
 export const devCheats = {
   godMode: false,
@@ -605,10 +609,20 @@ function renderCheatsTab(container) {
       <div class="dev-cheat-card action-card" id="card-reset-achievements">
         <div class="dev-cheat-icon">🔒</div>
         <div class="dev-cheat-info">
-          <div class="dev-cheat-name" style="color: #ff7675;">Resetar Bloqueios de Heróis</div>
-          <div class="dev-cheat-desc">Bloqueia Ignis, Kael, Kragdor e Valéria para testar o fluxo de progressão inicial.</div>
+          <div class="dev-cheat-name" style="color: #ff7675;">Resetar Bloqueios & Conquistas</div>
+          <div class="dev-cheat-desc">Bloqueia heróis e limpa os recordes da Melhor Run para testar como jogador novo.</div>
         </div>
         <button class="dev-card-action-btn btn-danger">🔒 Resetar Bloqueios</button>
+      </div>
+
+      <!-- Card Forjar Melhor Run (Recorde Mock) -->
+      <div class="dev-cheat-card action-card" id="card-mock-best-run">
+        <div class="dev-cheat-icon">🏆</div>
+        <div class="dev-cheat-info">
+          <div class="dev-cheat-name" style="color: #ffd166;">Forjar Melhor Run (Vitória Suprema)</div>
+          <div class="dev-cheat-desc">Gera instantaneamente uma crônica de vitória para Sir Roland com 184.250 PTS para testar o Tarô.</div>
+        </div>
+        <button class="dev-card-action-btn" style="background: #ffd166; color: #000; font-weight: bold;">🏆 Forjar Recorde</button>
       </div>
 
       <!-- Card Desbloquear Todo o Bestiário -->
@@ -630,12 +644,85 @@ function renderCheatsTab(container) {
         </div>
         <button class="dev-card-action-btn btn-danger">🔒 Ocultar Bestiário</button>
       </div>
+
+      <!-- Card Testar Subir de Nível -->
+      <div class="dev-cheat-card action-card" id="card-test-levelup">
+        <div class="dev-cheat-icon">✨</div>
+        <div class="dev-cheat-info">
+          <div class="dev-cheat-name" style="color: #ffd166;">Testar Subir de Nível (Tarô Arcano)</div>
+          <div class="dev-cheat-desc">Abre a nova tela monumental de escolha de bênçãos de nível.</div>
+        </div>
+        <button class="dev-card-action-btn" style="background: #ffd166; color: #000; font-weight: bold;">✨ Subir Nível</button>
+      </div>
+
+      <!-- Card Testar Baú de Miniboss -->
+      <div class="dev-cheat-card action-card" id="card-test-miniboss-chest">
+        <div class="dev-cheat-icon">💎</div>
+        <div class="dev-cheat-info">
+          <div class="dev-cheat-name" style="color: #00f5d4;">Testar Baú de Miniboss (Safira)</div>
+          <div class="dev-cheat-desc">Abre o novo Relicário Espectral de elite com tema de safira ciano.</div>
+        </div>
+        <button class="dev-card-action-btn" style="background: #00f5d4; color: #000; font-weight: bold;">💎 Baú Miniboss</button>
+      </div>
+
+      <!-- Card Testar Baú de Boss -->
+      <div class="dev-cheat-card action-card" id="card-test-boss-chest">
+        <div class="dev-cheat-icon">👑</div>
+        <div class="dev-cheat-info">
+          <div class="dev-cheat-name" style="color: #f1c40f;">Testar Baú de Chefe (Sarcófago)</div>
+          <div class="dev-cheat-desc">Abre o Sarcófago do Soberano com feixes áureos, tremor e evoluções.</div>
+        </div>
+        <button class="dev-card-action-btn" style="background: #f1c40f; color: #000; font-weight: bold;">👑 Baú de Boss</button>
+      </div>
+
+      <!-- Card Invocar Altar de Sangue -->
+      <div class="dev-cheat-card action-card" id="card-spawn-blood-altar">
+        <div class="dev-cheat-icon">🩸</div>
+        <div class="dev-cheat-info">
+          <div class="dev-cheat-name" style="color: #ff3838;">Invocar Altar de Sangue</div>
+          <div class="dev-cheat-desc">Gera um Altar de Sangue imediatamente próximo ao jogador na arena.</div>
+        </div>
+        <button class="dev-card-action-btn" style="background: #ff3838; color: #fff; font-weight: bold;">🩸 Spawn Altar</button>
+      </div>
+
+      <!-- Card Testar Baú do Altar -->
+      <div class="dev-cheat-card action-card" id="card-test-altar-chest">
+        <div class="dev-cheat-icon">📦</div>
+        <div class="dev-cheat-info">
+          <div class="dev-cheat-name" style="color: #ff3838;">Testar Baú do Altar (Lendário)</div>
+          <div class="dev-cheat-desc">Abre o Baú Lendário do Altar de Sangue com dádivas ancestrais.</div>
+        </div>
+        <button class="dev-card-action-btn" style="background: #c0392b; color: #fff; font-weight: bold;">📦 Baú do Altar</button>
+      </div>
     </div>
   `;
 
   container.appendChild(cheatsSection);
 
   // Handlers
+  cheatsSection.querySelector('#card-test-levelup').onclick = () => {
+    closeBossSelectModal();
+    levelUp();
+  };
+  cheatsSection.querySelector('#card-test-miniboss-chest').onclick = () => {
+    closeBossSelectModal();
+    openChestModal('MINI_BOSS');
+  };
+  cheatsSection.querySelector('#card-test-boss-chest').onclick = () => {
+    closeBossSelectModal();
+    openChestModal('BOSS');
+  };
+  cheatsSection.querySelector('#card-spawn-blood-altar').onclick = () => {
+    closeBossSelectModal();
+    if (player) {
+      spawnBloodAltar(player, 0, 180);
+      showDevToast('🩸 <b>Altar de Sangue Invocado!</b> Monólito gerado próximo ao herói.');
+    }
+  };
+  cheatsSection.querySelector('#card-test-altar-chest').onclick = () => {
+    closeBossSelectModal();
+    openChestModal('LEGENDARY_ALTAR');
+  };
   cheatsSection.querySelector('#card-god-mode').onclick = () => toggleGodMode();
   cheatsSection.querySelector('#card-zero-cd').onclick = () => toggleZeroCooldown();
 
@@ -663,11 +750,39 @@ function renderCheatsTab(container) {
 
   cheatsSection.querySelector('#card-reset-achievements').onclick = () => {
     resetAchievements();
-    showDevToast(`🔒 <b>Progresso Resetado:</b> Apenas Sir Roland está liberado.`, true);
+    showDevToast(`🔒 <b>Progresso Resetado:</b> Heróis bloqueados e Recordes limpos.`, true);
     const charModal = document.getElementById('char-modal');
     if (charModal && charModal.style.display !== 'none' && !charModal.classList.contains('modal-hidden')) {
       openCharacterSelect();
     }
+  };
+
+  cheatsSection.querySelector('#card-mock-best-run').onclick = () => {
+    saveBestRun({
+      heroKey: 'KNIGHT',
+      heroName: 'Sir Roland',
+      heroTitle: 'O Paladino da Retaliação',
+      isVictory: true,
+      wave: 10,
+      waveText: 'Onda 10 (Vitória Suprema)',
+      time: '18:45',
+      seconds: 1125,
+      kills: 6480,
+      level: 46,
+      souls: 2850,
+      score: 184250,
+      date: new Date().toLocaleDateString('pt-BR'),
+      weapons: [
+        { type: 'HAMMER', name: 'Martelo Sagrado', level: 5, evolved: true, iconKey: 'hammer' },
+        { type: 'AURA', name: 'Aura Radiante', level: 5, evolved: true, iconKey: 'aura' },
+        { type: 'ORBITALS', name: 'Esferas Arcanas', level: 4, evolved: false, iconKey: 'orbitals' },
+        { type: 'POTION', name: 'Frasco Cáustico', level: 3, evolved: false, iconKey: 'potion' }
+      ],
+      passives: ['Égide (+40% Armadura)', 'Poder Bruto (+35% Dano)', 'Asas do Vento'],
+      verdictTitle: 'VITÓRIA SUPREMA ABSOLUTA',
+      verdictSub: 'Expurgou o Soberano do Abismo e consagrou a luz eterna'
+    });
+    showDevToast(`🏆 <b>Recorde Forjado:</b> Vitória de Sir Roland gravada no Tarô Arcano!`);
   };
 
   cheatsSection.querySelector('#card-unlock-all-bestiary').onclick = () => {

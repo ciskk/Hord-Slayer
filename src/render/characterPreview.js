@@ -45,7 +45,7 @@ let arenaBgHeroKey = null;
 const THEME_COLORS = {
   KNIGHT: { primary: '#f1c40f', secondary: '#f39c12', glow: 'rgba(241, 196, 15, 0.35)', accent: '#ffffff' },
   MAGE: { primary: '#ff7675', secondary: '#d35400', glow: 'rgba(231, 76, 60, 0.40)', accent: '#f1c40f' },
-  ROGUE: { primary: '#00f2fe', secondary: '#00cec9', glow: 'rgba(0, 245, 212, 0.42)', accent: '#e2e8f0' },
+  ROGUE: { primary: '#c084fc', secondary: '#7c3aed', glow: 'rgba(168, 85, 247, 0.42)', accent: '#c4b5d6' },
   BARBARIAN: { primary: '#e74c3c', secondary: '#c0392b', glow: 'rgba(231, 76, 60, 0.45)', accent: '#f39c12' },
   ALCHEMIST: { primary: '#9b59b6', secondary: '#8e44ad', glow: 'rgba(155, 89, 182, 0.40)', accent: '#a29bfe' }
 };
@@ -751,7 +751,7 @@ function drawAtmosphericParticles(c, x, y, colors) {
       c.translate(x + p.x, y + p.y);
       c.rotate(previewTime * 0.08 + p.seed);
       const ls = p.size * 1.2;
-      c.fillStyle = i % 4 === 0 ? '#00ffff' : '#00cec9';
+      c.fillStyle = i % 4 === 0 ? '#c084fc' : '#7c3aed';
       c.beginPath();
       c.moveTo(0, -ls * 1.8);
       c.lineTo(ls * 0.4, 0);
@@ -1020,7 +1020,7 @@ function drawHeroWeaponAttack(c, cx, cy, heroKey, facing, scale, t, colors) {
       c.lineTo(reachX + 22 * scale, reachY + 20 * scale);
       c.stroke();
 
-      c.strokeStyle = `rgba(0, 206, 201, ${alpha * 0.7})`;
+      c.strokeStyle = `rgba(147, 51, 234, ${alpha * 0.7})`;
       c.lineWidth = 9 * scale * 0.4;
       c.stroke();
       c.restore();
@@ -1034,7 +1034,7 @@ function drawHeroWeaponAttack(c, cx, cy, heroKey, facing, scale, t, colors) {
       c.lineTo(reachX + 24 * scale, reachY - 24 * scale);
       c.stroke();
 
-      c.strokeStyle = `rgba(0, 206, 201, ${alpha * 0.7})`;
+      c.strokeStyle = `rgba(147, 51, 234, ${alpha * 0.7})`;
       c.lineWidth = 9 * scale * 0.4;
       c.stroke();
       c.restore();
@@ -1217,28 +1217,28 @@ function drawSpiritDagger(c, x, y, angle, scale, alpha = 1.0) {
   c.scale(scale, scale);
 
   // Guarda em meia-lua e garras de platina
-  c.fillStyle = '#e2e8f0';
+  c.fillStyle = '#c4b5d6';
   c.fillRect(-2.2, -3.0, 4.4, 1.8);
-  c.fillStyle = '#ffffff';
+  c.fillStyle = '#e8ddf5';
   c.fillRect(-1.8, -2.8, 1.2, 0.8);
-  c.fillStyle = '#070c14';
+  c.fillStyle = '#08061a';
   c.fillRect(-1.2, -6.5, 2.4, 3.5);
 
   // Pomo em anel cósmico de platina com núcleo brilhante
-  c.strokeStyle = '#e2e8f0';
+  c.strokeStyle = '#c4b5d6';
   c.lineWidth = 1.3;
   c.beginPath();
   c.arc(0, -8.0, 2.2, 0, Math.PI * 2);
   c.stroke();
-  c.fillStyle = '#00f5d4';
+  c.fillStyle = '#a855f7';
   c.beginPath();
   c.arc(0, -8.0, 1.1, 0, Math.PI * 2);
   c.fill();
-  c.fillStyle = '#ffffff';
+  c.fillStyle = '#e8ddf5';
   c.fillRect(-0.4, -8.6, 0.8, 0.8);
 
   // Halo espectral sutil ao redor da foice
-  c.fillStyle = 'rgba(0, 245, 212, 0.35)';
+  c.fillStyle = 'rgba(147, 51, 234, 0.35)';
   c.beginPath();
   c.moveTo(-3.2, -1.0);
   c.lineTo(3.2, -1.0);
@@ -1249,7 +1249,7 @@ function drawSpiritDagger(c, x, y, angle, scale, alpha = 1.0) {
   c.fill();
 
   // Lâmina em Foice Curva de Plasma Estelar Cristalizado (Kama Astral)
-  c.fillStyle = '#00cec9';
+  c.fillStyle = '#7c3aed';
   c.beginPath();
   c.moveTo(-2.5, -1.2);
   c.lineTo(2.5, -1.2);
@@ -1270,7 +1270,7 @@ function drawSpiritDagger(c, x, y, angle, scale, alpha = 1.0) {
   c.fill();
 
   // Friso de luz cortante no gume
-  c.strokeStyle = '#e0f7fa';
+  c.strokeStyle = '#ede9fe';
   c.lineWidth = 0.8;
   c.beginPath();
   c.moveTo(0.5, 0);
@@ -1278,7 +1278,7 @@ function drawSpiritDagger(c, x, y, angle, scale, alpha = 1.0) {
   c.stroke();
 
   // Micro-runa estelar ciano no canal central da lâmina
-  c.fillStyle = '#00f5d4';
+  c.fillStyle = '#a855f7';
   c.fillRect(0.2, 4.0, 1.2, 2.0);
   c.fillRect(0.2, 9.0, 1.2, 2.0);
 

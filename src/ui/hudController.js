@@ -4,11 +4,13 @@
  * Responsável pelo cache do DOM (Zero Layout Thrashing), Dirty Checking,
  * Decaimento da Barra Fantasma (Ghost Bar) do jogador e do chefe, e timer de sobrevivência.
  */
-import { player, updateSkillUI, getPersistentGold } from '../entities/player.js';
+import { HERO_EMBLEMS_SVG, CHARACTER_PROFILES } from '../config/heroProfiles.js';
+import { CHARACTERS } from '../config/characters.js';
 import { ARENA_PALETTES } from '../render/environment.js';
+import { player, updateSkillUI, getPersistentGold, selectedHeroKey } from '../entities/player.js';
 
 // Cache de nós estáticos do DOM para eliminar chamadas a document.getElementById e evitar Layout Thrashing
-const hudDom = {
+var hudDom = {
   hpVal: null,
   hpMaxVal: null,
   hpFill: null,
@@ -27,10 +29,19 @@ const hudDom = {
   bossHpGhostFill: null,
   bossHpFill: null,
   bossHpVal: null,
-  timerVal: null
+  timerVal: null,
+  hudHeroCrest: null,
+  hudHeroEmblem: null,
+  hudHeroTitle: null,
+  skillEmblemWrap: null,
+  skillBtnContainer: null,
+  hudRoot: null
 };
 
 export function ensureHudElementsCached() {
+  if (!hudDom) {
+    hudDom = {};
+  }
   if (!hudDom.hpVal) {
     hudDom.hpVal = document.getElementById('hp-val');
     hudDom.hpMaxVal = document.getElementById('hp-max-val');
@@ -50,14 +61,23 @@ export function ensureHudElementsCached() {
     hudDom.bossHpGhostFill = document.getElementById('boss-hp-ghost-fill');
     hudDom.bossHpFill = document.getElementById('boss-hp-fill');
     hudDom.bossHpVal = document.getElementById('boss-hp-val');
+    hudDom.bossHpRaw = document.getElementById('boss-hp-raw');
+    hudDom.bossPipNotches = document.querySelectorAll('#boss-hud .boss-pip-notch');
     hudDom.timerVal = document.getElementById('timer-val');
+    hudDom.hudHeroCrest = document.getElementById('hud-hero-crest');
+    hudDom.hudHeroEmblem = document.getElementById('hud-hero-emblem');
+    hudDom.hudHeroTitle = document.getElementById('hud-hero-title');
+    hudDom.skillEmblemWrap = document.getElementById('skill-emblem-wrap');
+    hudDom.skillBtnContainer = document.getElementById('skill-btn-container');
+    hudDom.hudRoot = document.getElementById('hud');
   }
 }
 
 // Estados cacheados para Dirty Checking no loop principal
-let _lastHp = -1;
-let _lastMaxHp = -1;
-let _lastHpPct = -1;
+var _lastHeroKey = null;
+var _lastHp = -1;
+var _lastMaxHp = -1;
+var _lastHpPct = -1;
 let _lastGhostHp = -1;
 let _lastLvl = -1;
 let _lastKills = -1;
@@ -76,11 +96,71 @@ let ghostHpTimer = 0;
 let bossGhostHp = 0;
 let bossGhostHpTimer = 0;
 let _lastBossGhostHp = -1;
+let _lastBossActualHp = -1;
+let _lastBossRawHpText = '';
+let _hitShakeTimer = null;
+let _lastBossActive = false;
 
 export function resetBossGhostHp() {
   bossGhostHp = 0;
   bossGhostHpTimer = 0;
   _lastBossGhostHp = 0;
+  _lastBossHpPct = -1;
+  _lastBossEnraged = null;
+  _lastBossActualHp = -1;
+  _lastBossRawHpText = '';
+  _lastBossActive = false;
+  if (_hitShakeTimer) {
+    clearTimeout(_hitShakeTimer);
+    _hitShakeTimer = null;
+  }
+  if (hudDom && hudDom.bossHud) {
+    hudDom.bossHud.classList.remove('hit-shake', 'hit-flash', 'enraged');
+  }
+  if (hudDom && hudDom.hudRoot) {
+    hudDom.hudRoot.classList.remove('boss-active');
+  }
+}
+
+export function applyHeroVisuals(heroKey) {
+  ensureHudElementsCached();
+  let activeKey = heroKey;
+  if (!activeKey) {
+    try {
+      activeKey = selectedHeroKey;
+    } catch (_) {
+      activeKey = 'KNIGHT';
+    }
+  }
+  if (!activeKey) activeKey = 'KNIGHT';
+  _lastHeroKey = activeKey;
+  const heroEmblems = (typeof HERO_EMBLEMS_SVG !== 'undefined' && HERO_EMBLEMS_SVG) ? HERO_EMBLEMS_SVG : {};
+  const heroProfiles = (typeof CHARACTER_PROFILES !== 'undefined' && CHARACTER_PROFILES) ? CHARACTER_PROFILES : {};
+  const characters = (typeof CHARACTERS !== 'undefined' && CHARACTERS) ? CHARACTERS : {};
+
+  const heroEmblemSvg = heroEmblems[activeKey] || heroEmblems.KNIGHT || '';
+  const heroProfile = heroProfiles[activeKey] || heroProfiles.KNIGHT || { themeColor: '#f1c40f' };
+  const heroChar = characters[activeKey] || characters.KNIGHT || { title: 'O SOBREVIVENTE' };
+
+  if (hudDom.hudHeroEmblem) {
+    hudDom.hudHeroEmblem.innerHTML = heroEmblemSvg;
+  }
+  if (hudDom.hudHeroTitle) {
+    hudDom.hudHeroTitle.innerText = (heroChar.title || 'O SOBREVIVENTE').toUpperCase();
+  }
+  if (hudDom.skillEmblemWrap) {
+    hudDom.skillEmblemWrap.innerHTML = heroEmblemSvg;
+  }
+  if (hudDom.skillBtnContainer) {
+    hudDom.skillBtnContainer.style.setProperty('--skill-theme-color', heroProfile.themeColor);
+  }
+  if (hudDom.hudRoot) {
+    hudDom.hudRoot.style.setProperty('--hero-theme-color', heroProfile.themeColor);
+  }
+}
+
+export function syncHudHero() {
+  applyHeroVisuals();
 }
 
 export function resetHUD(initialHp = 120) {
@@ -102,6 +182,8 @@ export function resetHUD(initialHp = 120) {
   _lastBossHpPct = -1;
   _lastBossEnraged = null;
   _lastTimerStr = '';
+
+  applyHeroVisuals();
 }
 
 export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, seconds, currentWave }) {
@@ -118,9 +200,28 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
 
   ensureHudElementsCached();
 
+  // Sincronização Dinâmica do Herói (Brasão no HUD + Ícone Específico de ULT)
+  let currentHero = 'KNIGHT';
+  try {
+    currentHero = selectedHeroKey || 'KNIGHT';
+  } catch (_) {
+    currentHero = _lastHeroKey || 'KNIGHT';
+  }
+  if (currentHero !== _lastHeroKey) {
+    applyHeroVisuals(currentHero);
+  }
+
   // Dirty Checking do HUD de Vida
   const currentHp = Math.max(0, Math.ceil(player.hp));
   if (currentHp !== _lastHp) {
+    if (currentHp < _lastHp && _lastHp > 0 && hudDom.hpContainer) {
+      hudDom.hpContainer.classList.remove('hp-micro-shake');
+      requestAnimationFrame(() => {
+        if (hudDom.hpContainer) {
+          hudDom.hpContainer.classList.add('hp-micro-shake');
+        }
+      });
+    }
     _lastHp = currentHp;
     if (hudDom.hpVal) hudDom.hpVal.innerText = currentHp;
   }
@@ -203,13 +304,67 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
 
   updateSkillUI();
 
+  // Alternância suave do modo de chefe no HUD
+  const isBossActive = !!activeBoss;
+  if (isBossActive !== _lastBossActive) {
+    _lastBossActive = isBossActive;
+    if (hudDom.hudRoot) {
+      hudDom.hudRoot.classList.toggle('boss-active', isBossActive);
+    }
+  }
+
   if (activeBoss) {
     const bossHpPct = Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100);
     const roundedBossHpPct = Math.ceil(bossHpPct);
 
+    // Garante que o container tenha o ID do chefe para carregar o tema visual correspondente
+    if (hudDom.bossHud) {
+      const bossIdStr = String(activeBoss.bossId || 1);
+      if (hudDom.bossHud.getAttribute('data-boss-id') !== bossIdStr) {
+        hudDom.bossHud.setAttribute('data-boss-id', bossIdStr);
+      }
+    }
+
     // Inicializa ghostHp se desatualizado ou inicial
     if (bossGhostHp <= 0 || bossGhostHp > activeBoss.maxHp) {
       bossGhostHp = activeBoss.hp;
+    }
+
+    // Reação de Impacto e Dano (Hit-Shake e Hit-Flash)
+    if (_lastBossActualHp > 0 && activeBoss.hp < _lastBossActualHp - 0.5) {
+      if (hudDom.bossHud) {
+        hudDom.bossHud.classList.add('hit-shake', 'hit-flash');
+        if (_hitShakeTimer) clearTimeout(_hitShakeTimer);
+        _hitShakeTimer = setTimeout(() => {
+          if (hudDom.bossHud) {
+            hudDom.bossHud.classList.remove('hit-shake', 'hit-flash');
+          }
+        }, 150);
+      }
+    }
+    _lastBossActualHp = activeBoss.hp;
+
+    // Atualiza leitura de HP numérico detalhado
+    if (hudDom.bossHpRaw) {
+      const curHp = Math.max(0, Math.ceil(activeBoss.hp));
+      const maxHp = Math.ceil(activeBoss.maxHp);
+      const rawText = `${curHp.toLocaleString('pt-BR')} / ${maxHp.toLocaleString('pt-BR')} HP`;
+      if (rawText !== _lastBossRawHpText) {
+        _lastBossRawHpText = rawText;
+        hudDom.bossHpRaw.innerText = rawText;
+      }
+    }
+
+    // Atualiza estado das gemas rúnicas de fase (25%, 50%, 75%)
+    if (hudDom.bossPipNotches && hudDom.bossPipNotches.length) {
+      hudDom.bossPipNotches.forEach(notch => {
+        const threshold = Number(notch.getAttribute('data-phase-pct') || 0);
+        if (bossHpPct < threshold) {
+          notch.classList.add('extinguished');
+        } else {
+          notch.classList.remove('extinguished');
+        }
+      });
     }
 
     if (activeBoss.hp < bossGhostHp) {
@@ -230,13 +385,9 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
 
       if (hudDom.bossHpFill) {
         hudDom.bossHpFill.style.width = `${bossHpPct}%`;
-        if (activeBoss.isEnraged) {
-          hudDom.bossHpFill.style.background = 'linear-gradient(90deg, #c0392b, #e74c3c)';
-          hudDom.bossHpFill.style.boxShadow = '0 0 12px rgba(231, 76, 60, 0.85)';
-        } else {
-          hudDom.bossHpFill.style.background = '';
-          hudDom.bossHpFill.style.boxShadow = '';
-        }
+        // Deixamos os gradientes visuais serem controlados pelos seletores CSS avançados
+        hudDom.bossHpFill.style.background = '';
+        hudDom.bossHpFill.style.boxShadow = '';
       }
       if (hudDom.bossHud) {
         if (activeBoss.isEnraged) {

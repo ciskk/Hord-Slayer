@@ -133,12 +133,12 @@ export function drawEnemyShape(e) {
     ctx.font = "bold 9px 'Cinzel', 'Outfit', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
-    ctx.fillStyle = e.enraged ? '#ff4757' : '#f1c40f';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-    ctx.shadowBlur = 4;
     const bossTitle = (e.enraged ? "⚡ " : "★ ") + (e.name ? e.name.toUpperCase() : "MINIBOSS");
+    // Sombra projetada limpa sem custo de blur (Zero-cost shadow)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    ctx.fillText(bossTitle, 0, offsetY - 2);
+    ctx.fillStyle = e.enraged ? '#ff4757' : '#f1c40f';
     ctx.fillText(bossTitle, 0, offsetY - 3);
-    ctx.shadowBlur = 0;
 
     // 2. Fundo e Barra de Vida Elite
     ctx.fillStyle = 'rgba(10, 12, 16, 0.9)';
@@ -185,9 +185,10 @@ export function drawEnemyShape(e) {
   } else {
     // 1. Sombra Elíptica Projetada no Solo (Drop Shadow 2.5D)
     const isFlying = e.baseType === 'BAT' || e.baseType === 'NECRO';
-    const shadowBob = e.baseType === 'BAT' ? Math.sin(frameCount * 0.42) * 2 : 0;
-    const shadowY = e.radius * (isFlying ? 0.95 : 0.8) + shadowBob;
-    const shadowRx = Math.max(4, e.radius * (isFlying ? 0.7 : 0.85) - shadowBob * 0.5);
+    const shadowBob = e.baseType === 'BAT' ? Math.sin(frameCount * 0.42) * 1.2 : 0;
+    const shadowR = e.baseType === 'ZOMBIE' ? e.radius * 1.38 : e.radius;
+    const shadowY = shadowR * (isFlying ? 0.95 : 0.8) + shadowBob;
+    const shadowRx = Math.max(2.2, shadowR * (isFlying ? 0.7 : 0.85) - shadowBob * 0.5);
     const shadowRy = shadowRx * 0.38;
     ctx.fillStyle = isFlying ? 'rgba(0, 0, 0, 0.22)' : 'rgba(0, 0, 0, 0.38)';
     ctx.beginPath();
@@ -232,16 +233,15 @@ export function drawEnemyShape(e) {
         ctx.fillRect(Math.cos(dAng) * dDist - 1.5, shadowY + Math.sin(dAng) * (dDist * 0.4) - dHeight, 3, 3);
       }
 
-      // Indicador de Alerta "!" flutuando sobre a fenda
+      // Indicador de Alerta "!" flutuando sobre a fenda (Zero-cost shadow)
       if (progress < 0.85) {
         ctx.font = "bold 13px 'Cinzel', 'Outfit', sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillText("!", 0, shadowY - e.radius - 11);
         ctx.fillStyle = '#ff4757';
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-        ctx.shadowBlur = 4;
         ctx.fillText("!", 0, shadowY - e.radius - 12);
-        ctx.shadowBlur = 0;
       }
       ctx.restore();
 
@@ -285,7 +285,8 @@ export function drawEnemyShape(e) {
     const baseCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : e.color);
 
     if (e.baseType === 'ZOMBIE') {
-      const R_m = e.radius;
+      // Escala visual de renderização: Zumbi possui porte de antigo humano (90% da altura do player)
+      const R_m = e.radius * 1.38;
       const walk = Math.sin(frameCount * 0.16);
       const isAttacking = e.combatState === 'WINDUP' || e.combatState === 'STRIKE';
       const variant = e.variant || 0;
@@ -327,8 +328,8 @@ export function drawEnemyShape(e) {
 
       // 1. Pernas com passada trôpega assimétrica (mancando)
       ctx.fillStyle = clothAccent;
-      ctx.fillRect(-R_m * 0.4, R_m * 0.2 + walk * 2.5, 3.2, R_m * 0.7 - walk * 1.8);
-      ctx.fillRect(-R_m * 0.1, R_m * 0.25 - walk * 2.2, 3.2, R_m * 0.65 + walk * 1.8);
+      ctx.fillRect(-R_m * 0.4, R_m * 0.2 + walk * 2.5, 4.2, R_m * 0.7 - walk * 1.8);
+      ctx.fillRect(-R_m * 0.1, R_m * 0.25 - walk * 2.2, 4.2, R_m * 0.65 + walk * 1.8);
 
       // 2. Torso Curvado / Silhueta Corcunda
       ctx.fillStyle = clothMain;
@@ -471,14 +472,9 @@ export function drawEnemyShape(e) {
       ctx.fillRect(R_m * 0.05 + reach1 + 2.5, -R_m * 0.22 + lift1, 1.5, 1.5);
       ctx.fillRect(R_m * 0.05 + reach1 + 2.5, -R_m * 0.22 + lift1 + 2.5, 1.5, 1.5);
 
-      // Efeito Visual de Golpe: Rastro em Arco de Garras (Claw Swipe Ribbon)
+      // Efeito Visual de Golpe: Rastro em Arco de Garras (Claw Swipe Ribbon Otimizado)
       if (armStrike) {
-        ctx.save();
-        const clawGrad = ctx.createLinearGradient(R_m * 0.6, -R_m * 0.7, R_m * 1.6, R_m * 0.7);
-        clawGrad.addColorStop(0, 'rgba(255, 71, 87, 0.9)');
-        clawGrad.addColorStop(0.45, 'rgba(255, 255, 255, 0.95)');
-        clawGrad.addColorStop(1, 'rgba(255, 71, 87, 0)');
-        ctx.strokeStyle = clawGrad;
+        ctx.strokeStyle = 'rgba(255, 71, 87, 0.85)';
         ctx.lineWidth = 2.8;
         ctx.beginPath();
         ctx.arc(R_m * 0.3, 0, R_m * 1.25, -Math.PI * 0.38, Math.PI * 0.38);
@@ -489,7 +485,6 @@ export function drawEnemyShape(e) {
         ctx.beginPath();
         ctx.arc(R_m * 0.35, 0, R_m * 1.4, -Math.PI * 0.28, Math.PI * 0.28);
         ctx.stroke();
-        ctx.restore();
       }
 
     } else if (e.baseType === 'BAT') {
@@ -500,7 +495,7 @@ export function drawEnemyShape(e) {
       const isBatWindup = e.combatState === 'WINDUP';
       const isBatStrike = e.combatState === 'STRIKE';
       const wingCycle = Math.sin(frameCount * (isBatStrike ? 0.68 : 0.42));
-      const wingY = wingCycle * (isBatWindup ? 5.5 : 9.5);
+      const wingY = wingCycle * (isBatWindup ? 2.8 : 4.8);
       const isHit = e.hitFlash > 0;
 
       const batFlesh = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#1a111a');
@@ -515,19 +510,19 @@ export function drawEnemyShape(e) {
 
       // 1. Patas Traseiras Atrofiadas Recolhidas com Garras em Foice
       ctx.strokeStyle = batBone;
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 1.0;
       for (let leg = -1; leg <= 1; leg += 2) {
         const lx = leg * (R_m * 0.28);
         const ly = R_m * 0.38;
         ctx.beginPath();
         ctx.moveTo(lx, ly);
-        ctx.lineTo(lx + leg * 2, ly + R_m * 0.4);
-        ctx.lineTo(lx + leg * 4.5, ly + R_m * 0.28);
+        ctx.lineTo(lx + leg * 1.0, ly + R_m * 0.4);
+        ctx.lineTo(lx + leg * 2.2, ly + R_m * 0.28);
         ctx.stroke();
 
         ctx.fillStyle = clawColor;
         ctx.beginPath();
-        ctx.arc(lx + leg * 4.5, ly + R_m * 0.28, 1.4, 0, Math.PI * 2);
+        ctx.arc(lx + leg * 2.2, ly + R_m * 0.28, 0.8, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -569,13 +564,13 @@ export function drawEnemyShape(e) {
         ctx.beginPath();
         ctx.moveTo(f1X, f1Y);
         ctx.quadraticCurveTo(side * (R_m * 1.85), -R_m * 0.65 + wingY, f2X, f2Y);
-        ctx.lineTo(f2X - side * 2, f2Y - 3);
+        ctx.lineTo(f2X - side * 1.0, f2Y - 1.5);
         ctx.closePath();
         ctx.fill();
 
         // Nervuras e Falanges Ósseas
         ctx.strokeStyle = batBone;
-        ctx.lineWidth = 1.6;
+        ctx.lineWidth = 1.0;
         ctx.beginPath();
         ctx.moveTo(shoulderX, shoulderY);
         ctx.lineTo(elbowX, elbowY);
@@ -591,7 +586,7 @@ export function drawEnemyShape(e) {
 
         // Veias Escuras Ramificadas na Asa
         ctx.strokeStyle = isHit ? '#ffffff' : '#3d080e';
-        ctx.lineWidth = 0.9;
+        ctx.lineWidth = 0.6;
         ctx.beginPath();
         ctx.moveTo(elbowX, elbowY);
         ctx.lineTo(side * (R_m * 1.25), -R_m * 0.25 + wingY * 0.65);
@@ -602,8 +597,8 @@ export function drawEnemyShape(e) {
         ctx.fillStyle = clawColor;
         ctx.beginPath();
         ctx.moveTo(wristX, wristY);
-        ctx.lineTo(wristX + side * 3.5, wristY - 3.5);
-        ctx.lineTo(wristX + side * 1.2, wristY + 1.2);
+        ctx.lineTo(wristX + side * 1.8, wristY - 1.8);
+        ctx.lineTo(wristX + side * 0.6, wristY + 0.6);
         ctx.closePath();
         ctx.fill();
       }
@@ -620,7 +615,7 @@ export function drawEnemyShape(e) {
 
       // Costelas Esqueléticas Salientes
       ctx.strokeStyle = isHit ? '#ffffff' : '#2b131e';
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 0.8;
       for (let r = 0; r < 3; r++) {
         const ry = -R_m * 0.2 + r * (R_m * 0.18);
         ctx.beginPath();
@@ -659,38 +654,38 @@ export function drawEnemyShape(e) {
       // Focinho de Morcego-Vampiro em Ferradura
       ctx.fillStyle = isHit ? '#ffffff' : '#2c0c16';
       ctx.beginPath();
-      ctx.arc(0, headY - 1, 3.2, -Math.PI * 0.85, -Math.PI * 0.15);
+      ctx.arc(0, headY - 0.5, 1.6, -Math.PI * 0.85, -Math.PI * 0.15);
       ctx.stroke();
 
       // Olhos Rubis Incandescentes
       ctx.fillStyle = (isBatWindup || isBatStrike) ? '#ffffff' : '#ff1744';
-      ctx.fillRect(-R_m * 0.22, headY - 3, 3, 2.5);
-      ctx.fillRect(R_m * 0.06, headY - 3, 3, 2.5);
+      ctx.fillRect(-R_m * 0.22, headY - 1.5, 1.5, 1.2);
+      ctx.fillRect(R_m * 0.06, headY - 1.5, 1.5, 1.2);
 
       // Boca Aberta e Presas Longas Curvadas para Baixo
       ctx.fillStyle = '#080104';
-      ctx.fillRect(-R_m * 0.2, headY + 3, R_m * 0.4, 3.2);
+      ctx.fillRect(-R_m * 0.2, headY + 1.2, R_m * 0.4, 1.6);
 
       ctx.fillStyle = clawColor;
       ctx.beginPath();
-      ctx.moveTo(-R_m * 0.18, headY + 3);
-      ctx.lineTo(-R_m * 0.14, headY + 8);
-      ctx.lineTo(-R_m * 0.08, headY + 3);
-      ctx.moveTo(R_m * 0.08, headY + 3);
-      ctx.lineTo(R_m * 0.14, headY + 8);
-      ctx.lineTo(R_m * 0.18, headY + 3);
+      ctx.moveTo(-R_m * 0.18, headY + 1.2);
+      ctx.lineTo(-R_m * 0.14, headY + 3.8);
+      ctx.lineTo(-R_m * 0.08, headY + 1.2);
+      ctx.moveTo(R_m * 0.08, headY + 1.2);
+      ctx.lineTo(R_m * 0.14, headY + 3.8);
+      ctx.lineTo(R_m * 0.18, headY + 1.2);
       ctx.fill();
 
       // Ondas Ultrassônicas no STRIKE
       if (isBatStrike) {
         ctx.save();
         ctx.strokeStyle = 'rgba(255, 71, 87, 0.85)';
-        ctx.lineWidth = 2.0;
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
         ctx.arc(R_m * 0.6, 0, R_m * 0.75, -0.65, 0.65);
         ctx.stroke();
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
-        ctx.lineWidth = 1.4;
+        ctx.lineWidth = 0.9;
         ctx.beginPath();
         ctx.arc(R_m * 1.0, 0, R_m * 1.15, -0.55, 0.55);
         ctx.stroke();
@@ -1663,27 +1658,27 @@ export function drawEnemyShape(e) {
       const venomColor = isHit ? '#ffffff' : '#2ecc71';
       const legColor = isHit ? '#ffffff' : '#072b23';
 
-      // 1. 8 Pares de Pernas de Adaga com Cadência Senoidal
+      // 1. 8 Pares de Pernas de Adaga com Cadência Senoidal (Caminho Único Otimizado)
       ctx.strokeStyle = legColor;
       ctx.lineWidth = 2.0;
+      ctx.beginPath();
       for (let p = 0; p < 4; p++) {
         const legWave = Math.sin(frameCount * 0.32 + p * 1.2) * 6;
         const px = -R_m * 0.45 * p;
         // Perna Superior
-        ctx.beginPath();
         ctx.moveTo(px, -R_m * 0.45);
         ctx.lineTo(px - 3, -R_m * 0.95 + legWave);
         ctx.lineTo(px + 4, -R_m * 1.35 + legWave);
-        ctx.stroke();
         // Perna Inferior
-        ctx.beginPath();
         ctx.moveTo(px, R_m * 0.45);
         ctx.lineTo(px - 3, R_m * 0.95 - legWave);
         ctx.lineTo(px + 4, R_m * 1.35 - legWave);
-        ctx.stroke();
       }
+      ctx.stroke();
 
       // 2. Quatro Placas Dorsais Arqueadas Sobrepostas (Estilo Armadura Samurai)
+      ctx.strokeStyle = shellEdge;
+      ctx.lineWidth = 1.6;
       for (let s = 3; s >= 0; s--) {
         const segX = -R_m * 0.45 * s;
         const segY = Math.sin(frameCount * 0.25 - s * 0.8) * 2.2;
@@ -1700,8 +1695,6 @@ export function drawEnemyShape(e) {
         ctx.lineTo(segX - segW * 0.5, segY + segH);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = shellEdge;
-        ctx.lineWidth = 1.6;
         ctx.stroke();
 
         // Espinho oco central de veneno
@@ -3239,6 +3232,7 @@ export function drawDyingEnemyShape(de) {
   switch (de.baseType) {
     case 'ZOMBIE': {
       const v = de.variant || 0;
+      const R = de.radius * 1.38;
       // Fase 1: Impacto joga o torso para trás; Fase 2: Joelhos dobram e desaba; Fase 3: Dissolução cadavérica
       const fallAngle = t < 0.35 ? -t * 0.8 : (-0.28 - (t - 0.35) * 1.3);
       ctx.rotate(fallAngle);
@@ -3253,8 +3247,8 @@ export function drawDyingEnemyShape(de) {
 
       // Pernas trôpegas tombadas
       ctx.fillStyle = '#242628';
-      ctx.fillRect(-R * 0.4, R * 0.3, 3.5, R * 0.5 * (1 - t * 0.5));
-      ctx.fillRect(-R * 0.1, R * 0.35, 3.5, R * 0.45 * (1 - t * 0.5));
+      ctx.fillRect(-R * 0.4, R * 0.3, 4.2, R * 0.5 * (1 - t * 0.5));
+      ctx.fillRect(-R * 0.1, R * 0.35, 4.2, R * 0.45 * (1 - t * 0.5));
 
       // Torso desabando
       ctx.fillStyle = bodyCol;
@@ -3300,7 +3294,7 @@ export function drawDyingEnemyShape(de) {
 
     case 'BAT': {
       // Falanges travam, mergulho em espiral com rotação acelerada e névoa carmesim
-      ctx.translate(0, t * 18);
+      ctx.translate(0, t * 10);
       ctx.rotate(t * 1.4);
       ctx.scale(Math.max(0.05, 1 - t * 0.7), Math.max(0.05, 1 - t * 0.8));
 
@@ -3316,7 +3310,7 @@ export function drawDyingEnemyShape(de) {
 
       // Esqueleto de morcego quebrado
       ctx.strokeStyle = '#2b131e';
-      ctx.lineWidth = 1.6;
+      ctx.lineWidth = 1.0;
       ctx.beginPath();
       ctx.moveTo(-R * 1.1 * (1 - t * 0.5), -R * 0.4);
       ctx.lineTo(0, 0);
@@ -3328,7 +3322,7 @@ export function drawDyingEnemyShape(de) {
         ctx.fillStyle = 'rgba(255, 71, 87, 0.65)';
         for (let b = 0; b < 4; b++) {
           const ba = b * 1.57 + t * 2;
-          ctx.fillRect(Math.cos(ba) * (R * 0.8 * t) - 2, Math.sin(ba) * (R * 0.8 * t) - 2, 4, 4);
+          ctx.fillRect(Math.cos(ba) * (R * 0.8 * t) - 1, Math.sin(ba) * (R * 0.8 * t) - 1, 2.5, 2.5);
         }
       }
       break;

@@ -1,4 +1,4 @@
-﻿/* ======================================================== */
+/* ======================================================== */
 /* VOID ASTRAL / NEO-ARCANE: ALTAR DOS HERÓIS               */
 /* ======================================================== */
 
@@ -781,6 +781,7 @@
 .bento-stats-container {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  align-items: center;
   gap: 8px;
   background: rgba(4, 6, 14, 0.75);
   border: 1px solid rgba(0, 245, 212, 0.14);
@@ -791,12 +792,17 @@
 .bento-attr-item {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 4px;
   font-size: 8.5px;
   font-weight: 800;
   color: #8c9bb5;
   text-align: center;
   letter-spacing: 0.5px;
+}
+
+.bento-attr-item span {
+  line-height: 1;
 }
 
 .segmented-meter {
@@ -816,6 +822,56 @@
 .segment-cell.filled {
   background: linear-gradient(90deg, #00f5d4, var(--showcase-color, #ffd166));
   box-shadow: 0 0 8px var(--showcase-color, #00f5d4);
+}
+
+/* ======================================================== */
+/* STATS COLORIDOS POR TIPO: Identidade visual por atributo */
+/* ======================================================== */
+
+/* Célula individual de stat — mini-card com cor temática */
+.bento-attr-item[data-stat] {
+  border-radius: 6px;
+  padding: 6px 4px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+/* Label colorido por stat */
+.bento-attr-item[data-stat] span {
+  color: var(--stat-color);
+}
+
+/* Segmentos preenchidos com a cor do stat */
+.bento-attr-item[data-stat] .segment-cell.filled {
+  background: var(--stat-color);
+  box-shadow: 0 0 6px var(--stat-color);
+}
+
+/* DANO — Vermelho/Carmesim */
+.bento-attr-item[data-stat="dano"] {
+  --stat-color: #ff4757;
+  background: rgba(255, 71, 87, 0.08);
+  border: 1px solid rgba(255, 71, 87, 0.18);
+}
+
+/* ÁREA — Âmbar/Laranja */
+.bento-attr-item[data-stat="area"] {
+  --stat-color: #ffa502;
+  background: rgba(255, 165, 2, 0.08);
+  border: 1px solid rgba(255, 165, 2, 0.18);
+}
+
+/* VEL — Ciano/Teal */
+.bento-attr-item[data-stat="vel"] {
+  --stat-color: #00f5d4;
+  background: rgba(0, 245, 212, 0.08);
+  border: 1px solid rgba(0, 245, 212, 0.18);
+}
+
+/* RES — Roxo/Violeta */
+.bento-attr-item[data-stat="res"] {
+  --stat-color: #a855f7;
+  background: rgba(168, 85, 247, 0.08);
+  border: 1px solid rgba(168, 85, 247, 0.18);
 }
 
 /* ======================================================== */

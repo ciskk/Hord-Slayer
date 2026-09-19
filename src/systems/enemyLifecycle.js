@@ -37,6 +37,7 @@ import { addPersistentGold, addXP, getPersistentGold, selectedHeroKey } from '..
 import { getGemConfig, spawnChest as spawnChestPickup } from './pickups.js';
 import { onBossDefeated, setFirstBossKilled } from './waves.js';
 import { getNeighborIndices } from '../core/spatialGrid.js';
+import { getWorldEventEnemySpeedMult } from './worldEvents.js';
 
 export function updateEnemies(dt, {
   player,
@@ -138,7 +139,7 @@ export function updateEnemies(dt, {
       const angle = Math.atan2(targetY - e.y, targetX - e.x);
       e.facing = (targetX - e.x) > 0 ? 1 : -1;
       
-      let curSpeed = e.speed;
+      let curSpeed = e.speed * getWorldEventEnemySpeedMult();
       if (e.emergeTimer > 0) {
         curSpeed *= 0.18;
       }
@@ -253,7 +254,7 @@ export function updateEnemies(dt, {
           // Rajada Tática Tripla (3-Round Burst)
           if (e.burstRemaining > 0) {
             e.burstTimer = (e.burstTimer || 0) + dt;
-            if (e.burstTimer >= 6) {
+            if (e.burstTimer >= 5) {
               e.burstTimer = 0;
               e.burstRemaining--;
               if (canSpawnEnemyBullet()) {
@@ -264,7 +265,7 @@ export function updateEnemies(dt, {
                   vx: Math.cos(spreadAngle) * 3.9,
                   vy: Math.sin(spreadAngle) * 3.9,
                   radius: 5.5,
-                  damage: 12,
+                  damage: 16,
                   life: 95,
                   bulletType: 'TECH',
                   color: '#ff4757'
@@ -278,13 +279,13 @@ export function updateEnemies(dt, {
             }
           } else {
             e.shootTimer += dt;
-            if (e.shootTimer >= 148) {
+            if (e.shootTimer >= 114) {
               if (canSpawnEnemyBullet()) {
                 e.shootTimer = 0;
                 e.burstRemaining = 3;
-                e.burstTimer = 6;
+                e.burstTimer = 5;
               } else {
-                e.shootTimer = 148 - 25;
+                e.shootTimer = 114 - 20;
               }
             }
           }
@@ -297,7 +298,7 @@ export function updateEnemies(dt, {
         if (e.dashState === 'chase') {
           e.x += Math.cos(angle) * curSpeed * dt;
           e.y += Math.sin(angle) * curSpeed * dt;
-          if (e.dashTimer > 105) {
+          if (e.dashTimer > 81) {
             e.dashState = 'aim';
             e.dashTimer = 0;
             // Emboscada de Flanco para Stalker (Assassino Espectral)
@@ -314,7 +315,7 @@ export function updateEnemies(dt, {
             }
           }
         } else if (e.dashState === 'aim') {
-          if (e.dashTimer > 20) {
+          if (e.dashTimer > 15) {
             e.dashState = 'dashing';
             e.dashTimer = 0;
           }
@@ -323,7 +324,7 @@ export function updateEnemies(dt, {
           e.x += Math.cos(e.dashAngle) * curSpeed * dt;
           e.y += Math.sin(e.dashAngle) * curSpeed * dt;
           createHitParticles(e.x, e.y, '#9b59b6', 1);
-          if (e.dashTimer > 18) {
+          if (e.dashTimer > 14) {
             e.dashState = 'cooldown';
             e.dashTimer = 0;
           }
@@ -331,7 +332,7 @@ export function updateEnemies(dt, {
           curSpeed = e.speed * 0.4;
           e.x += Math.cos(angle) * curSpeed * dt;
           e.y += Math.sin(angle) * curSpeed * dt;
-          if (e.dashTimer > 35) {
+          if (e.dashTimer > 27) {
             e.dashState = 'chase';
             e.dashTimer = 0;
           }
@@ -350,14 +351,14 @@ export function updateEnemies(dt, {
         } else {
           if (distToPlayerSq <= 55 * 55) {
             e.fuseState = 'FUSE';
-            e.fuseTimer = 36;
+            e.fuseTimer = 28;
             e.fuseTelegraph = {
               type: 'FUSE_INDICATOR',
               x: e.x,
               y: e.y,
               radius: 50,
-              timer: 36,
-              maxTimer: 36,
+              timer: 28,
+              maxTimer: 28,
               color: 'rgba(230, 126, 34, 0.45)'
             };
             bossTelegraphs.push(e.fuseTelegraph);
@@ -527,11 +528,11 @@ export function updateEnemies(dt, {
               combatState: 'CHASE',
               attackTimer: 0,
               attackRange: 20,
-              attackWindupFrames: 16,
+              attackWindupFrames: 12,
               attackStrikeFrames: 4,
-              attackRecoveryFrames: 30,
+              attackRecoveryFrames: 23,
               attackCooldown: 0,
-              attackCooldownMax: 20,
+              attackCooldownMax: 15,
               attackAngle: 0,
               hasHitInStrike: false,
               fuseState: 'CHASE',
@@ -661,7 +662,7 @@ export function updateEnemies(dt, {
 
         // Orbe Entrópico Noturno a cada ~3s quando em alcance
         e.shadowBoltTimer = (e.shadowBoltTimer || 0) + dt;
-        if (e.shadowBoltTimer >= 170 && canSpawnEnemyBullet() && !gameState.isWavePaused) {
+        if (e.shadowBoltTimer >= 131 && canSpawnEnemyBullet() && !gameState.isWavePaused) {
           e.shadowBoltTimer = 0;
           playSfx('shoot');
           enemyBullets.push({
@@ -670,7 +671,7 @@ export function updateEnemies(dt, {
             vx: Math.cos(angle) * 2.175,
             vy: Math.sin(angle) * 2.175,
             radius: 6.5,
-            damage: 14,
+            damage: 18,
             life: 160,
             bulletType: 'SHADOW_ORB',
             color: '#9b59b6'
@@ -680,7 +681,7 @@ export function updateEnemies(dt, {
         }
 
         e.summonTimer = (e.summonTimer || 0) + dt;
-        if (e.summonTimer > 230 && !gameState.isWavePaused) {
+        if (e.summonTimer > 177 && !gameState.isWavePaused) {
           e.summonTimer = 0;
           spawnMobCluster('ZOMBIE', 2);
           addDamageText(e.x, e.y, 'INVOCAR!', false, '#9b59b6');
@@ -763,16 +764,33 @@ export function updateEnemies(dt, {
         e.trailTimer = (e.trailTimer || 0) + dt;
         if (e.trailTimer >= 24) {
           e.trailTimer = 0;
-          acidPuddles.push({
-            x: e.x,
-            y: e.y,
-            radius: 18,
-            life: 180,
-            maxLife: 180,
-            isCaustic: true,
-            isFire: false
-          });
-          createHitParticles(e.x, e.y, '#16a085', 2);
+          let merged = false;
+          // Coalescência com poça tóxica existente próxima
+          for (let pIdx = acidPuddles.length - 1; pIdx >= 0; pIdx--) {
+            const p = acidPuddles[pIdx];
+            if (p.isCaustic && !p.isAlchemist && !p.isFire && !p.isWeb) {
+              const pdx = p.x - e.x;
+              const pdy = p.y - e.y;
+              if (pdx * pdx + pdy * pdy < 16 * 16) {
+                p.life = Math.min(p.maxLife || 180, (p.life || 0) + 60);
+                p.radius = Math.min(24, (p.radius || 18) + 0.8);
+                merged = true;
+                break;
+              }
+            }
+          }
+          if (!merged && acidPuddles.length < 50) {
+            acidPuddles.push({
+              x: e.x,
+              y: e.y,
+              radius: 18,
+              life: 180,
+              maxLife: 180,
+              isCaustic: true,
+              isFire: false
+            });
+            if (Math.random() < 0.4) createHitParticles(e.x, e.y, '#16a085', 1);
+          }
         }
       } else if (e.behavior === 'web_trapper') {
         const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
@@ -784,7 +802,7 @@ export function updateEnemies(dt, {
           e.y -= Math.sin(angle) * curSpeed * 0.7 * dt;
         }
         e.webTimer = (e.webTimer || 0) + dt;
-        if (e.webTimer >= 150) {
+        if (e.webTimer >= 115) {
           e.webTimer = 0;
           playSfx('shoot');
           acidPuddles.push({
@@ -804,7 +822,7 @@ export function updateEnemies(dt, {
         const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
         e.hookTimer = (e.hookTimer || 0) - dt;
         if (distToPlayerSq <= 140 * 140 && e.hookTimer <= 0) {
-          e.hookTimer = 160;
+          e.hookTimer = 123;
           playSfx('hit');
           triggerShake(3);
           enemyBullets.push({
@@ -855,7 +873,7 @@ export function updateEnemies(dt, {
           e.y += Math.sin(angle) * curSpeed * dt;
         }
         e.bellTimer = (e.bellTimer || 0) + dt;
-        if (e.bellTimer >= 140) {
+        if (e.bellTimer >= 108) {
           e.bellTimer = 0;
           playSfx('chest_rare');
           triggerShake(3);
@@ -870,12 +888,16 @@ export function updateEnemies(dt, {
             hitPlayer: false
           });
           const neighbors = getNeighborIndices(e.x, e.y, 150);
+          let particleBudget = 4;
           for (let k = 0; k < neighbors.length; k++) {
             const ally = enemies[neighbors[k]];
             if (ally && ally !== e && !ally.isBoss) {
               ally.speed = (ally.baseSpeed || ally.speed) * 1.4;
               ally.hasteTimer = 110;
-              createHitParticles(ally.x, ally.y, '#f1c40f', 2);
+              if (particleBudget > 0) {
+                createHitParticles(ally.x, ally.y, '#f1c40f', 2);
+                particleBudget--;
+              }
             }
           }
           addDamageText(e.x, e.y, "SINO FÚNEBRE!", false, '#f39c12');
@@ -890,18 +912,22 @@ export function updateEnemies(dt, {
           e.y += Math.sin(angle) * curSpeed * dt;
         }
         e.apothecaryTimer = (e.apothecaryTimer || 0) + dt;
-        if (e.apothecaryTimer >= 150) {
+        if (e.apothecaryTimer >= 115) {
           e.apothecaryTimer = 0;
           playSfx('freeze');
-          createHitParticles(e.x, e.y, '#2ecc71', 10);
+          createHitParticles(e.x, e.y, '#2ecc71', 8);
           const neighbors = getNeighborIndices(e.x, e.y, 160);
           let healedAny = false;
+          let healParticleBudget = 4;
           for (let k = 0; k < neighbors.length; k++) {
             const ally = enemies[neighbors[k]];
             if (ally && ally.hp < ally.maxHp) {
               ally.hp = Math.min(ally.maxHp, ally.hp + 120);
               ally.hitFlash = 3;
-              createHitParticles(ally.x, ally.y, '#2ecc71', 3);
+              if (healParticleBudget > 0) {
+                createHitParticles(ally.x, ally.y, '#2ecc71', 2);
+                healParticleBudget--;
+              }
               healedAny = true;
             }
           }
@@ -940,14 +966,14 @@ export function updateEnemies(dt, {
           e.y += Math.sin(angle) * curSpeed * dt;
           if (distToPlayerSq <= 125 * 125) {
             e.flameState = 'aim';
-            e.flameTimer = 30;
+            e.flameTimer = 23;
             e.flameAngle = angle;
           }
         } else if (e.flameState === 'aim') {
           e.flameTimer -= dt;
           if (e.flameTimer <= 0) {
             e.flameState = 'firing';
-            e.flameTimer = 65;
+            e.flameTimer = 50;
             playSfx('acid');
           }
         } else if (e.flameState === 'firing') {
@@ -964,12 +990,12 @@ export function updateEnemies(dt, {
             let angleDiff = Math.abs(playerAngleFromMob - e.flameAngle);
             if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
             if (angleDiff < 0.52 && player.iFrames <= 0) {
-              player.hp -= 5;
-              player.iFrames = 14;
+              player.hp -= 7;
+              player.iFrames = 11;
               triggerShake(2);
               playSfx('hit');
               lastAttackerName = "Lança-Chamas da Forja"; if (setLastAttackerName) setLastAttackerName("Lança-Chamas da Forja");
-              addDamageText(player.x, player.y, "-5", false, '#e67e22');
+              addDamageText(player.x, player.y, "-7", false, '#e67e22');
               createHitParticles(player.x, player.y, '#e67e22', 3);
               if (player.hp <= 0) {
                 player.hp = 0;
@@ -979,7 +1005,7 @@ export function updateEnemies(dt, {
           }
           if (e.flameTimer <= 0) {
             e.flameState = 'cooldown';
-            e.flameTimer = 55;
+            e.flameTimer = 42;
           }
         } else if (e.flameState === 'cooldown') {
           e.flameTimer -= dt;
@@ -994,7 +1020,7 @@ export function updateEnemies(dt, {
         e.y += Math.sin(angle) * curSpeed * dt;
         if (e.hitFlash === 3) {
           e.spikeHits = (e.spikeHits || 0) + 1;
-          if (e.spikeHits >= 5 && canSpawnEnemyBullet()) {
+          if (e.spikeHits >= 4 && canSpawnEnemyBullet()) {
             e.spikeHits = 0;
             playSfx('crit');
             triggerShake(3);
@@ -1006,14 +1032,14 @@ export function updateEnemies(dt, {
                 vx: Math.cos(sa) * 3.8,
                 vy: Math.sin(sa) * 3.8,
                 radius: 4.5,
-                damage: 12,
+                damage: 16,
                 life: 55,
                 bulletType: 'THORN_SPIKE',
                 color: '#8e44ad'
               });
             }
             createHitParticles(e.x, e.y, '#8e44ad', 10);
-            addDamageText(e.x, e.y, "ESP茫OS!", false, '#e056fd');
+            addDamageText(e.x, e.y, "ESPÃOS!", false, '#e056fd');
           }
         }
       } else if (e.behavior === 'mirror_decoy') {
@@ -1047,9 +1073,9 @@ export function updateEnemies(dt, {
           e.y += Math.sin(angle) * curSpeed * dt;
           e.lanceTimer = (e.lanceTimer || 0) + dt;
           const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
-          if (e.lanceTimer >= 90 && distToPlayerSq <= 240 * 240) {
+          if (e.lanceTimer >= 69 && distToPlayerSq <= 240 * 240) {
             e.lanceState = 'aim';
-            e.lanceTimer = 26;
+            e.lanceTimer = 20;
             e.lanceAngle = angle;
             playSfx('boss');
           }
@@ -1057,7 +1083,7 @@ export function updateEnemies(dt, {
           e.lanceTimer -= dt;
           if (e.lanceTimer <= 0) {
             e.lanceState = 'charging';
-            e.lanceTimer = 20;
+            e.lanceTimer = 15;
             playSfx('crit');
             triggerShake(4);
           }
@@ -1083,7 +1109,7 @@ export function updateEnemies(dt, {
           }
           if (e.lanceTimer <= 0) {
             e.lanceState = 'cooldown';
-            e.lanceTimer = 40;
+            e.lanceTimer = 31;
           }
         } else if (e.lanceState === 'cooldown') {
           e.lanceTimer -= dt;
@@ -1105,7 +1131,7 @@ export function updateEnemies(dt, {
         }
         e.sniperAimAngle = angle;
         e.sniperTimer = (e.sniperTimer || 0) + dt;
-        if (e.sniperTimer >= 140) {
+        if (e.sniperTimer >= 108) {
           e.sniperTimer = 0;
           if (canSpawnEnemyBullet()) {
             playSfx('shoot');
@@ -1125,26 +1151,44 @@ export function updateEnemies(dt, {
           }
         }
       } else if (e.behavior === 'xp_devourer') {
-        let nearestGem = null;
-        let nearestDistSq = 250 * 250;
-        for (let g = 0; g < gems.length; g++) {
-          const gem = gems[g];
-          const gdx = gem.x - e.x;
-          const gdy = gem.y - e.y;
-          const gdSq = gdx * gdx + gdy * gdy;
-          if (gdSq < nearestDistSq) {
-            nearestDistSq = gdSq;
-            nearestGem = gem;
-          }
+        e.gemSearchTimer = (e.gemSearchTimer || 0) - dt;
+        let targetGem = e.targetGem;
+        
+        // Verifica se a gema alvo ainda existe no mundo
+        if (targetGem && (targetGem.collected || !gems.includes(targetGem))) {
+          targetGem = null;
+          e.targetGem = null;
         }
-        if (nearestGem) {
-          const gAngle = Math.atan2(nearestGem.y - e.y, nearestGem.x - e.x);
+
+        // Busca periódica de nova gema a cada 12 quadros (ou se não tem alvo)
+        if (!targetGem && e.gemSearchTimer <= 0) {
+          e.gemSearchTimer = 12;
+          let nearestDistSq = 250 * 250;
+          for (let g = 0; g < gems.length; g++) {
+            const gem = gems[g];
+            const gdx = gem.x - e.x;
+            const gdy = gem.y - e.y;
+            const gdSq = gdx * gdx + gdy * gdy;
+            if (gdSq < nearestDistSq) {
+              nearestDistSq = gdSq;
+              targetGem = gem;
+            }
+          }
+          e.targetGem = targetGem;
+        }
+
+        if (targetGem) {
+          const gdx = targetGem.x - e.x;
+          const gdy = targetGem.y - e.y;
+          const gdSq = gdx * gdx + gdy * gdy;
+          const gAngle = Math.atan2(gdy, gdx);
           e.x += Math.cos(gAngle) * curSpeed * 1.25 * dt;
           e.y += Math.sin(gAngle) * curSpeed * 1.25 * dt;
-          if (nearestDistSq < (e.radius + nearestGem.radius + 6) ** 2) {
-            const gIdx = gems.indexOf(nearestGem);
+          if (gdSq < (e.radius + targetGem.radius + 6) ** 2) {
+            const gIdx = gems.indexOf(targetGem);
             if (gIdx !== -1) {
               gems.splice(gIdx, 1);
+              e.targetGem = null;
               e.eatenGemsCount = (e.eatenGemsCount || 0) + 1;
               e.maxHp += 45;
               e.hp += 45;
@@ -1203,7 +1247,7 @@ export function updateEnemies(dt, {
           if (e.pounceCooldown > 0) e.pounceCooldown -= dt;
           const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
           if (distToPlayerSq < 85 * 85 && distToPlayerSq > 15 * 15 && (!e.pounceCooldown || e.pounceCooldown <= 0)) {
-            e.pounceCooldown = 90;
+            e.pounceCooldown = 69;
             curSpeed = e.speed * 2.6;
             createHitParticles(e.x, e.y, '#48dbfb', 3);
           }
@@ -1442,11 +1486,11 @@ export function updateEnemies(dt, {
             combatState: 'CHASE',
             attackTimer: 0,
             attackRange: 24,
-            attackWindupFrames: 18,
+            attackWindupFrames: 14,
             attackStrikeFrames: 4,
-            attackRecoveryFrames: 35,
+            attackRecoveryFrames: 27,
             attackCooldown: 0,
-            attackCooldownMax: 25,
+            attackCooldownMax: 19,
             attackAngle: 0,
             hasHitInStrike: false,
             fuseState: 'CHASE',
@@ -1528,6 +1572,8 @@ export function updateEnemies(dt, {
             if (resetBossGhostHp) resetBossGhostHp();
             const bossHpVal = document.getElementById('boss-hp-val');
             if (bossHpVal) bossHpVal.innerText = 'EXPURGADO';
+            const bossHpRaw = document.getElementById('boss-hp-raw');
+            if (bossHpRaw) bossHpRaw.innerText = '0 HP';
           }
           return { playerDied: false };
         }
@@ -1572,9 +1618,13 @@ export function updateEnemies(dt, {
         if (resetBossGhostHp) resetBossGhostHp();
         const bossHpVal = document.getElementById('boss-hp-val');
         if (bossHpVal) bossHpVal.innerText = '0%';
+        const bossHpRaw = document.getElementById('boss-hp-raw');
+        if (bossHpRaw) bossHpRaw.innerText = '0 HP';
 
         spawnChest(e.x, e.y, 'BOSS');
         activeBoss = null; if (setActiveBoss) setActiveBoss(null);
+        const hud = document.getElementById('hud');
+        if (hud) hud.classList.remove('boss-active');
         bossTelegraphs.length = 0;
         bossProjectiles.length = 0;
         bossShockwaves.length = 0;
@@ -1640,7 +1690,23 @@ export function updateEnemies(dt, {
           spawnChest(e.x, e.y, 'MINI_BOSS');
           addDamageText(e.x, e.y - 15, "+35 OURO & BAÚ!", true, '#e056fd');
         } else if (e.baseType === 'TRAIL_CRAWLER') {
-          acidPuddles.push({ x: e.x, y: e.y, radius: 24, life: 160, maxLife: 160, isCaustic: true, isFire: false });
+          let merged = false;
+          for (let pIdx = acidPuddles.length - 1; pIdx >= 0; pIdx--) {
+            const p = acidPuddles[pIdx];
+            if (p.isCaustic && !p.isAlchemist && !p.isFire && !p.isWeb) {
+              const pdx = p.x - e.x;
+              const pdy = p.y - e.y;
+              if (pdx * pdx + pdy * pdy < 20 * 20) {
+                p.life = Math.max(p.life || 0, 160);
+                p.radius = Math.min(28, (p.radius || 24) + 4);
+                merged = true;
+                break;
+              }
+            }
+          }
+          if (!merged && acidPuddles.length < 50) {
+            acidPuddles.push({ x: e.x, y: e.y, radius: 24, life: 160, maxLife: 160, isCaustic: true, isFire: false });
+          }
         } else {
           const gCfg = getGemConfig(e.xp);
           gems.push({

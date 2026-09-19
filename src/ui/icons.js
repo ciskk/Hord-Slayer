@@ -74,8 +74,15 @@ export const ICONS = {
   `,
 
   frost: `
-    <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M4.9 19.1L19.1 4.9"/>
-    <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 1.5v21 M2.9 6.75l18.2 10.5 M2.9 17.25l18.2-10.5"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" d="M9.5 4.5L12 7l2.5-2.5 M9.5 19.5L12 17l2.5 2.5 M5.5 10l3.5-.5L7 6.5 M18.5 14l-3.5.5 2 3 M5.5 14l1.5-3-3-.5 M18.5 10l-1.5 3 3 .5"/>
+    <polygon points="12,10 14,12 12,14 10,12" fill="currentColor"/>
+    <circle cx="12" cy="1.5" r="1" fill="currentColor"/>
+    <circle cx="12" cy="22.5" r="1" fill="currentColor"/>
+    <circle cx="2.9" cy="6.75" r="1" fill="currentColor"/>
+    <circle cx="21.1" cy="17.25" r="1" fill="currentColor"/>
+    <circle cx="2.9" cy="17.25" r="1" fill="currentColor"/>
+    <circle cx="21.1" cy="6.75" r="1" fill="currentColor"/>
   `,
 
   cooldown: `
@@ -286,6 +293,11 @@ export const ICONS = {
 
   quote: `
     <path fill="currentColor" d="M6 17h3l2-4V7H5v6h3l-2 4zm8 0h3l2-4V7h-6v6h3l-2 4z"/>
+  `,
+
+  trophy: `
+    <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3m12 6h3a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-3M6 3h12v7a6 6 0 0 1-12 0V3z"/>
+    <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 16v5m-4 0h8"/>
   `
 };
 

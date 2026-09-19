@@ -114,6 +114,8 @@ export function initAudio() {
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
+  // Pré-aloca o buffer de ruído procedural para eliminar engasgo no primeiro golpe/som
+  getNoiseBuffer();
 }
 
 export function setGameVolume(val) {

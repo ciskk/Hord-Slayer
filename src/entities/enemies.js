@@ -30,44 +30,32 @@ import { triggerBossBark, triggerMiniBossBark } from '../systems/barks.js';
 export const MAX_ENEMIES = 150;
 
 /**
- * Retorna uma coordenada na borda imediatamente externa à visão do jogador (perímetro retangular).
- * Garante que os inimigos surjam logo fora da tela em qualquer direção (horizontal, vertical ou diagonal),
- * eliminando o atraso de viagem causado pelo cálculo de hipotenusa circular.
+ * Retorna uma coordenada de spawn imediatamente fora da visão do jogador,
+ * garantindo entrada rápida na tela (~0.4s - 0.5s) e suporte a ângulo forçado para hordas inaugurais.
  * @param {number} minDist Distância mínima adicional além da borda da tela.
  * @param {number} maxDist Distância máxima adicional além da borda da tela.
+ * @param {number|null} forcedAngle Ângulo forçado em radianos (ex: Math.PI / 2 para Sul/Baixo).
  * @returns {{ x: number, y: number }}
  */
-function getOffscreenSpawnPoint(minDist = 50, maxDist = 80) {
+function getOffscreenSpawnPoint(minDist = 45, maxDist = 65, forcedAngle = null) {
   const halfW = (cameraViewW || 960) / 2;
   const halfH = (cameraViewH || 640) / 2;
   const margin = minDist + Math.random() * (maxDist - minDist);
-  const w = halfW + margin;
-  const h = halfH + margin;
 
-  const perimH = w * 2;
-  const perimV = h * 2;
-  const roll = Math.random() * (perimH * 2 + perimV * 2);
+  // Sorteio angular uniforme em 360° ou direção forçada para horda inicial
+  const angle = forcedAngle !== null ? forcedAngle : Math.random() * Math.PI * 2;
+  const cosA = Math.cos(angle);
+  const sinA = Math.sin(angle);
 
-  let x, y;
-  if (roll < perimH) {
-    // Borda Superior
-    x = player.x - w + Math.random() * (2 * w);
-    y = player.y - h;
-  } else if (roll < perimH * 2) {
-    // Borda Inferior
-    x = player.x - w + Math.random() * (2 * w);
-    y = player.y + h;
-  } else if (roll < perimH * 2 + perimV) {
-    // Borda Esquerda
-    x = player.x - w;
-    y = player.y - h + Math.random() * (2 * h);
-  } else {
-    // Borda Direita
-    x = player.x + w;
-    y = player.y - h + Math.random() * (2 * h);
-  }
+  // Distância perpendicular exata até a borda externa da tela no ângulo desejado
+  const distToEdgeX = Math.abs(cosA) > 1e-5 ? (halfW + margin) / Math.abs(cosA) : Infinity;
+  const distToEdgeY = Math.abs(sinA) > 1e-5 ? (halfH + margin) / Math.abs(sinA) : Infinity;
+  const spawnDist = Math.min(distToEdgeX, distToEdgeY);
 
-  return { x, y };
+  return {
+    x: player.x + cosA * spawnDist,
+    y: player.y + sinA * spawnDist
+  };
 }
 
 /**
@@ -134,59 +122,59 @@ export function createEnemy(typeKey, x, y, isElite = false) {
   }
 
   let attackRange = 24;
-  let attackWindupFrames = 20;
+  let attackWindupFrames = 15;
   let attackStrikeFrames = 4;
-  let attackRecoveryFrames = 38;
-  let attackCooldownMax = 30;
+  let attackRecoveryFrames = 29;
+  let attackCooldownMax = 23;
 
   if (typeKey === 'BAT') {
     attackRange = 20;
-    attackWindupFrames = 16;
+    attackWindupFrames = 12;
     attackStrikeFrames = 4;
-    attackRecoveryFrames = 30;
-    attackCooldownMax = 20;
+    attackRecoveryFrames = 23;
+    attackCooldownMax = 15;
   } else if (typeKey === 'GOLEM') {
     attackRange = 34;
-    attackWindupFrames = 28;
+    attackWindupFrames = 22;
     attackStrikeFrames = 6;
-    attackRecoveryFrames = 48;
-    attackCooldownMax = 36;
+    attackRecoveryFrames = 37;
+    attackCooldownMax = 28;
   } else if (typeKey === 'STALKER') {
     attackRange = 24;
-    attackWindupFrames = 18;
+    attackWindupFrames = 14;
     attackStrikeFrames = 4;
-    attackRecoveryFrames = 32;
-    attackCooldownMax = 25;
+    attackRecoveryFrames = 25;
+    attackCooldownMax = 19;
   } else if (typeKey === 'SHIELDED') {
     attackRange = 32;
-    attackWindupFrames = 22;
+    attackWindupFrames = 17;
     attackStrikeFrames = 5;
-    attackRecoveryFrames = 36;
-    attackCooldownMax = 32;
+    attackRecoveryFrames = 28;
+    attackCooldownMax = 25;
   } else if (typeKey === 'CHAIN_FLAYER') {
     attackRange = 65;
-    attackWindupFrames = 28;
+    attackWindupFrames = 22;
     attackStrikeFrames = 6;
-    attackRecoveryFrames = 42;
-    attackCooldownMax = 40;
+    attackRecoveryFrames = 32;
+    attackCooldownMax = 31;
   } else if (typeKey === 'DULLAHAN_VANGUARD') {
     attackRange = 38;
-    attackWindupFrames = 20;
+    attackWindupFrames = 15;
     attackStrikeFrames = 5;
-    attackRecoveryFrames = 34;
-    attackCooldownMax = 28;
+    attackRecoveryFrames = 26;
+    attackCooldownMax = 22;
   } else if (typeKey === 'MAIDEN_THORNS') {
     attackRange = 30;
-    attackWindupFrames = 22;
+    attackWindupFrames = 17;
     attackStrikeFrames = 5;
-    attackRecoveryFrames = 36;
-    attackCooldownMax = 30;
+    attackRecoveryFrames = 28;
+    attackCooldownMax = 23;
   } else if (typeKey === 'GRAVE_GORGON') {
     attackRange = 34;
-    attackWindupFrames = 24;
+    attackWindupFrames = 18;
     attackStrikeFrames = 6;
-    attackRecoveryFrames = 40;
-    attackCooldownMax = 32;
+    attackRecoveryFrames = 31;
+    attackCooldownMax = 25;
   } else {
     attackRange = Math.max(22, Math.round(radius * 1.5));
   }
@@ -298,12 +286,12 @@ export function createEnemy(typeKey, x, y, isElite = false) {
  * @param {number} count Quantidade de monstros a gerar.
  * @param {number} eliteChance Probabilidade de spawn de elite [0, 1].
  */
-export function spawnMobCluster(typeKey, count, eliteChance = 0) {
+export function spawnMobCluster(typeKey, count, eliteChance = 0, forcedAngle = null) {
   const def = ENEMY_TYPES[typeKey] || ENEMY_TYPES.ZOMBIE;
   const minutes = frameCount / 3600;
   const scaleFactor = 1.0 + (minutes * 0.28);
   const scaledHp = Math.round(def.hp * scaleFactor);
-  const pt = getOffscreenSpawnPoint(45, 75);
+  const pt = getOffscreenSpawnPoint(45, 65, forcedAngle);
 
   for (let i = 0; i < count; i++) {
     if (enemies.length >= MAX_ENEMIES) {
@@ -312,7 +300,7 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0) {
     }
 
     const isElite = Math.random() < eliteChance;
-    const spreadR = Math.random() * 32;
+    const spreadR = Math.random() * 28;
     const spreadA = Math.random() * Math.PI * 2;
     const mx = pt.x + Math.cos(spreadA) * spreadR;
     const my = pt.y + Math.sin(spreadA) * spreadR;
@@ -325,15 +313,25 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0) {
  * Gera um esquadrão tático com formação orientada ao jogador conforme src/config/squads.js.
  * @param {string} squadKey Chave da formação em SQUAD_TYPES.
  * @param {number} eliteChance Probabilidade de spawn de elite [0, 1].
+ * @param {number|null} forcedAngle Ângulo forçado em radianos caso especificado.
  */
-export function spawnSquad(squadKey, eliteChance = 0) {
+export function spawnSquad(squadKey, eliteChance = 0, forcedAngle = null) {
   const squadDef = getSquadDefinition(squadKey);
   if (!squadDef) {
-    spawnMobCluster('ZOMBIE', 6, eliteChance);
+    spawnMobCluster('ZOMBIE', 6, eliteChance, forcedAngle);
     return;
   }
 
-  const center = getOffscreenSpawnPoint(50, 80);
+  // Calcula o raio máximo da formação do esquadrão para manter margem justa e rente à tela
+  let maxOffset = 30;
+  for (let i = 0; i < squadDef.members.length; i++) {
+    const m = squadDef.members[i];
+    const off = Math.hypot(m.offsetForward || 0, m.offsetLateral || 0);
+    if (off > maxOffset) maxOffset = off;
+  }
+  const squadMargin = maxOffset + 18;
+
+  const center = getOffscreenSpawnPoint(squadMargin, squadMargin + 15, forcedAngle);
   const angleToPlayer = Math.atan2(player.y - center.y, player.x - center.x);
   const cosA = Math.cos(angleToPlayer);
   const sinA = Math.sin(angleToPlayer);
@@ -363,6 +361,23 @@ export function spawnSquad(squadKey, eliteChance = 0) {
 }
 
 /**
+ * Spawna a horda inicial no exato instante em que a partida começa (t = 0).
+ * Posiciona a patrulha inaugural (HORDE_SCOUT) imediatamente abaixo da borda inferior
+ * da tela (ao Sul: Math.PI / 2), já marchando em direção ao jogador.
+ * Permite que o jogador a encontre imediatamente caso dê dash para baixo ou a veja surgir em ~0.4s.
+ * Também gera um pequeno grupo ao norte para movimentar a arena.
+ */
+export function spawnInitialHorde() {
+  // 1. Patrulha principal de reconhecimento logo abaixo (Sul: 90° / pi/2)
+  const southAngle = Math.PI / 2 + (Math.random() - 0.5) * 0.12;
+  spawnSquad('HORDE_SCOUT', 0, southAngle);
+
+  // 2. Grupo secundário de avanço vindo de cima (Norte: -90° / -pi/2)
+  const northAngle = -Math.PI / 2 + (Math.random() - 0.5) * 0.25;
+  spawnMobCluster('ZOMBIE', 3, 0, northAngle);
+}
+
+/**
  * Instancia um mini-chefe programado da onda.
  * @param {string} miniBossType Chave do mini-chefe em MINI_BOSS_TYPES.
  * @returns {Object|null}
@@ -374,7 +389,7 @@ export function spawnMiniBoss(miniBossType) {
   const minutes = frameCount / 3600;
   const scaleFactor = 1.0 + (minutes * 0.28);
   const hp = Math.round(def.hp * scaleFactor);
-  const pt = getOffscreenSpawnPoint(60, 90);
+  const pt = getOffscreenSpawnPoint(70, 100);
 
   const miniBoss = {
     x: pt.x,
@@ -402,11 +417,11 @@ export function spawnMiniBoss(miniBossType) {
     combatState: 'CHASE',
     attackTimer: 0,
     attackRange: Math.max(26, Math.round(def.radius * 1.3)),
-    attackWindupFrames: 22,
+    attackWindupFrames: 17,
     attackStrikeFrames: 5,
-    attackRecoveryFrames: 42,
+    attackRecoveryFrames: 32,
     attackCooldown: 0,
-    attackCooldownMax: 30,
+    attackCooldownMax: 23,
     attackAngle: 0,
     hasHitInStrike: false,
     fuseState: 'CHASE',
@@ -516,8 +531,19 @@ export function triggerBossEncounter(bossId) {
   initBoss(boss);
   triggerBossBark(bossId, 'SPAWN');
 
+  const hud = document.getElementById('hud');
+  if (hud) hud.classList.add('boss-active');
+
   const bossHud = document.getElementById('boss-hud');
-  if (bossHud) bossHud.style.display = 'flex';
+  if (bossHud) {
+    bossHud.style.display = 'flex';
+    bossHud.setAttribute('data-boss-id', String(boss.bossId || 1));
+    bossHud.classList.remove('enraged', 'hit-shake', 'hit-flash');
+    const titleTag = bossHud.querySelector('.boss-title-tag');
+    if (titleTag) {
+      titleTag.innerText = bossDef.isFinalBoss ? '✦ ARQUICHEFE FINAL • SOBERANO ✦' : '✦ ARQUICHEFE SUPREMO ✦';
+    }
+  }
 
   const bossName = document.getElementById('boss-name');
   if (bossName) bossName.innerText = bossDef.name;

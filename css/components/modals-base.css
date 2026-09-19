@@ -19,19 +19,8 @@
            max(env(safe-area-inset-left, 10px), 10px);
 }
 
-/* Modais de Gameplay Ativo (Seleção de Bênçãos de Nível):
-   Fundo muito mais visível, nítido e translúcido para preservar a visão do campo de batalha */
-#upgrade-modal.modal-overlay {
-  background: radial-gradient(circle at center, rgba(8, 12, 20, 0.45) 0%, rgba(5, 7, 10, 0.65) 100%);
-  backdrop-filter: blur(2.5px);
-  -webkit-backdrop-filter: blur(2.5px);
-}
-
-#upgrade-modal .modal-box-tarot {
-  background: linear-gradient(170deg, rgba(21, 25, 38, 0.90) 0%, rgba(13, 16, 23, 0.94) 100%);
-  border: 1.5px solid rgba(241, 196, 15, 0.35);
-  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
+/* Modais de Gameplay Ativo (Upgrades de Nível e Baú Arcano):
+   Estilizações de palco intrínseco centralizadas em upgrades.css e chest.css */
 
 #talents-modal { z-index: 110; }
 

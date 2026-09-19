@@ -64,49 +64,121 @@
 /* 2. CAMADA SUPERIOR: VEREDITO MONUMENTAL & BRASÃO         */
 /* ======================================================== */
 
+/* Projeção Espectral Colossal de Fundo (Phantom Presence) */
+.death-phantom-backdrop {
+  position: absolute;
+  top: 4%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(88vw, 560px);
+  height: min(88vw, 560px);
+  pointer-events: none;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.death-phantom-mist {
+  position: absolute;
+  inset: -10%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(231, 76, 60, 0.22) 0%, rgba(139, 0, 0, 0.15) 45%, transparent 72%);
+  filter: blur(28px);
+  animation: mistBreathe 4.5s ease-in-out infinite alternate;
+}
+
+.death-phantom-halo {
+  position: absolute;
+  inset: 5%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 71, 87, 0.12);
+  box-shadow: 0 0 60px rgba(231, 76, 60, 0.15);
+  animation: rotateHalo 60s linear infinite;
+}
+
 .death-header-group {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  position: relative;
+  z-index: 2;
   animation: verdictImpact 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Brasão da Caveira: Escala Imponente e Efeitos Multicamada */
 .death-sigil-wrap {
   position: relative;
-  width: clamp(74px, 11vw, 104px);
-  height: clamp(74px, 11vw, 104px);
+  width: clamp(124px, 16vw, 172px);
+  height: clamp(124px, 16vw, 172px);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 6px;
-  animation: phantomLevitate 3.6s ease-in-out infinite;
-}
-
-.death-sigil-halo {
-  position: absolute;
-  inset: -14px;
-  border-radius: 50%;
-  border: 1.5px dashed rgba(0, 245, 212, 0.45);
-  box-shadow: 0 0 28px rgba(0, 245, 212, 0.25), inset 0 0 22px rgba(231, 76, 60, 0.25);
-  animation: rotateHalo 26s linear infinite;
-  pointer-events: none;
+  margin-bottom: 8px;
+  animation: phantomLevitate 3.8s ease-in-out infinite;
 }
 
 .death-sigil-mist {
   position: absolute;
-  inset: -20px;
+  inset: -24px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 245, 212, 0.22) 0%, rgba(231, 76, 60, 0.28) 45%, transparent 75%);
-  filter: blur(10px);
-  animation: mistBreathe 2.8s ease-in-out infinite alternate;
+  background: radial-gradient(circle, rgba(255, 71, 87, 0.38) 0%, rgba(192, 57, 43, 0.30) 40%, rgba(12, 3, 5, 0) 75%);
+  filter: blur(14px);
+  animation: mistBreathe 3s ease-in-out infinite alternate;
   pointer-events: none;
 }
 
+.death-sigil-halo {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 71, 87, 0.45);
+  box-shadow: 0 0 32px rgba(231, 76, 60, 0.5), inset 0 0 24px rgba(255, 71, 87, 0.35);
+  animation: rotateHalo 28s linear infinite;
+  pointer-events: none;
+}
+
+.death-sigil-rune-ring {
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  border: 1px dashed rgba(241, 196, 15, 0.38);
+  box-shadow: 0 0 20px rgba(241, 196, 15, 0.22);
+  animation: rotateHaloReverse 38s linear infinite;
+  pointer-events: none;
+}
+
+/* Brilho das Órbitas Oculares (Gleam of the Void) */
+.death-eye-gleam {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffd166;
+  box-shadow: 0 0 10px #ff4757, 0 0 20px #ffd166;
+  pointer-events: none;
+  z-index: 3;
+  animation: eyeGleamPulse 2.4s ease-in-out infinite alternate;
+}
+
+.death-eye-left {
+  top: 49.5%;
+  left: 40.5%;
+}
+
+.death-eye-right {
+  top: 49.5%;
+  right: 40.5%;
+}
+
+/* A Caveira SVG Original com Iluminação Volumétrica */
 .death-sigil-icon {
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 0 14px rgba(0, 245, 212, 0.6)) drop-shadow(0 0 28px rgba(231, 76, 60, 0.65));
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 0 16px rgba(255, 71, 87, 0.75)) drop-shadow(0 0 36px rgba(192, 57, 43, 0.85));
   animation: spectralGaze 3.2s ease-in-out infinite alternate;
 }
 
@@ -115,7 +187,7 @@
     transform: translateY(0) rotate(0deg);
   }
   50% {
-    transform: translateY(-8px) rotate(1.5deg);
+    transform: translateY(-9px) rotate(1.2deg);
   }
 }
 
@@ -124,23 +196,41 @@
   to { transform: rotate(360deg); }
 }
 
+@keyframes rotateHaloReverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
 @keyframes mistBreathe {
   0% {
     transform: scale(0.92);
-    opacity: 0.45;
+    opacity: 0.50;
   }
   100% {
-    transform: scale(1.15);
-    opacity: 0.88;
+    transform: scale(1.18);
+    opacity: 0.92;
+  }
+}
+
+@keyframes eyeGleamPulse {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.85);
+    box-shadow: 0 0 8px #ff4757, 0 0 14px #ffd166;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.2);
+    box-shadow: 0 0 14px #ff4757, 0 0 26px #ffd166;
   }
 }
 
 @keyframes spectralGaze {
   0% {
-    filter: drop-shadow(0 0 12px rgba(0, 245, 212, 0.5)) drop-shadow(0 0 22px rgba(231, 76, 60, 0.45));
+    filter: drop-shadow(0 0 14px rgba(255, 71, 87, 0.65)) drop-shadow(0 0 28px rgba(192, 57, 43, 0.60));
   }
   100% {
-    filter: drop-shadow(0 0 22px rgba(0, 245, 212, 0.85)) drop-shadow(0 0 38px rgba(255, 71, 87, 0.75));
+    filter: drop-shadow(0 0 24px rgba(255, 71, 87, 0.95)) drop-shadow(0 0 44px rgba(231, 76, 60, 0.85));
   }
 }
 
@@ -551,6 +641,25 @@
   font-weight: 600;
   color: #8c94a8;
   letter-spacing: 1px;
+  transition: opacity 0.2s ease;
+}
+
+/* Ocultação rigorosa em dispositivos móveis e touch */
+.death-screen-overlay.is-mobile-device .rebirth-hotkey-hint,
+.is-mobile-device .rebirth-hotkey-hint {
+  display: none !important;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .rebirth-hotkey-hint {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .rebirth-hotkey-hint {
+    display: none !important;
+  }
 }
 
 /* ======================================================== */
@@ -610,32 +719,89 @@
 /* ======================================================== */
 
 @media (max-width: 640px) {
+  .death-sigil-wrap {
+    width: clamp(96px, 20vw, 126px);
+    height: clamp(96px, 20vw, 126px);
+    margin-bottom: 4px;
+  }
+
+  .death-eye-gleam {
+    width: 5px;
+    height: 5px;
+  }
+
   .cause-dossier-inner {
-    flex-direction: column;
+    flex-direction: row;
     align-items: flex-start;
+    gap: 12px;
   }
 
   .cause-killer-emblem {
     width: 46px;
     height: 46px;
+    border-radius: 10px;
   }
 
+  /* Grid 100% simétrico e balanceado sem itens órfãos no mobile */
   .death-metrics-stream {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .death-metric-pill:last-child {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 8px 14px;
   }
 
   .death-monumental-title {
-    font-size: 20px;
-  }
-}
-
-@media (max-width: 420px) {
-  .death-metrics-stream {
-    grid-template-columns: repeat(2, 1fr);
+    font-size: clamp(17px, 4.4vw, 22px);
+    letter-spacing: 1px;
   }
 
   .btn-death-rebirth-v2 {
     width: 100%;
-    padding: 12px 18px;
+    min-height: 48px;
+    padding: 13px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@media (max-width: 420px) {
+  .death-intrinsic-stage {
+    gap: 10px;
+    padding: 6px 0;
+  }
+
+  .cause-dossier-inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .cause-killer-details {
+    align-items: center;
+  }
+
+  .cause-category-badge-row,
+  .cause-attack-metric-row {
+    justify-content: center;
+  }
+
+  .cause-tactic-box {
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .btn-death-rebirth-v2 {
+    padding: 13px 16px;
+    font-size: 13px;
+    letter-spacing: 1.5px;
   }
 }

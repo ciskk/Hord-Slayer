@@ -289,13 +289,14 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
                 name: e.name || 'Abominação da Horda',
                 category: enemyCategory,
                 attackName: strikeName,
-                damage: Math.round(playerDmgTaken),
+                damage: Math.round(playerDmgTaken * (player.damageTakenMultiplier || 1.0)),
                 enemyType: e.baseType || e.type,
                 color: e.color || '#e74c3c'
               });
 
-              player.hp -= playerDmgTaken;
-              player.iFrames = 28;
+              const actualPlayerDmg = playerDmgTaken * (player.damageTakenMultiplier || 1.0);
+              player.hp -= actualPlayerDmg;
+              player.iFrames = Math.round(28 * (player.iFramesDurationMult !== undefined ? player.iFramesDurationMult : 1.0));
               triggerShake(7);
               playSfx('hit');
               triggerHaptic('medium');

@@ -594,44 +594,38 @@ function drawCinematicScreenTitle(ctx, e, frameCount) {
     // Tag Superior
     ctx.font = 'bold 9px monospace';
     ctx.fillStyle = '#ff6b81';
-    ctx.shadowColor = 'rgba(255, 23, 68, 0.85)';
-    ctx.shadowBlur = 6;
     ctx.fillText("[ ALERTA DE CATACLISMA ]", screenW / 2, by + 13);
 
     // Título Central
+    const titleY = by + 31;
     ctx.font = 'bold 17px "Cinzel", "Cinzel Decorative", Georgia, serif';
+    ctx.fillStyle = 'rgba(255, 23, 68, 0.5)';
+    ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2 + 1, titleY + 1.5);
     ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(255, 23, 68, 0.95)';
-    ctx.shadowBlur = pulseGlow;
-    ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2, by + 31);
+    ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2, titleY);
 
     // Subtítulo
     ctx.font = 'italic 10px "Cinzel", Georgia, serif';
     ctx.fillStyle = '#ffd1d1';
-    ctx.shadowColor = 'rgba(183, 21, 64, 0.7)';
-    ctx.shadowBlur = 3;
     ctx.fillText("✦ SENHOR DO VÁZIO PRIMORDIAL ✦", screenW / 2, by + 46);
   } else {
     // --- LAYOUT PARA TELAS HORIZONTAIS (Majestoso & Completo) ---
     // Tag Superior
     ctx.font = 'bold 11px monospace';
     ctx.fillStyle = '#ff4d4d';
-    ctx.shadowColor = 'rgba(255, 23, 68, 0.85)';
-    ctx.shadowBlur = 8;
     ctx.fillText("[ ALERTA DE CATACLISMA // AMEAÇA EXISTENCIAL ]", screenW / 2, by + 20);
 
     // Título Central
+    const titleY = by + 48;
     ctx.font = 'bold 28px "Cinzel", "Cinzel Decorative", Georgia, serif';
+    ctx.fillStyle = 'rgba(255, 23, 68, 0.5)';
+    ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2 + 1.5, titleY + 2);
     ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(255, 23, 68, 0.95)';
-    ctx.shadowBlur = pulseGlow;
-    ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2, by + 48);
+    ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2, titleY);
 
     // Subtítulo
     ctx.font = 'italic 12px "Cinzel", Georgia, serif';
     ctx.fillStyle = '#ffd1d1';
-    ctx.shadowColor = 'rgba(183, 21, 64, 0.7)';
-    ctx.shadowBlur = 4;
     ctx.fillText("✦ O DEVORADOR DAS ERAS E SENHOR DO VÁZIO PRIMORDIAL ✦", screenW / 2, by + 74);
   }
 
@@ -724,8 +718,6 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
   borderGrad.addColorStop(0.8, 'rgba(241, 196, 15, 0.95)');
   borderGrad.addColorStop(1, 'rgba(241, 196, 15, 0)');
 
-  ctx.shadowColor = 'rgba(241, 196, 15, 0.85)';
-  ctx.shadowBlur = pulseGlow;
   ctx.strokeStyle = borderGrad;
   ctx.lineWidth = isVertical ? 2.4 : 3.0;
   ctx.beginPath();
@@ -736,7 +728,6 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
   ctx.stroke();
 
   // Frisos internos dourados finos
-  ctx.shadowBlur = 0;
   ctx.strokeStyle = 'rgba(255, 235, 150, 0.4)';
   ctx.lineWidth = 1;
   const padX = isVertical ? 22 : 45;
@@ -799,8 +790,6 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
     const sAlpha = Math.sin(sProg * Math.PI);
     const sSize = 1.2 + (s % 3 === 0 ? 1.6 : 0.8);
     ctx.fillStyle = `rgba(255, 245, 180, ${sAlpha * 0.95})`;
-    ctx.shadowColor = '#f1c40f';
-    ctx.shadowBlur = 6;
     ctx.beginPath();
     ctx.moveTo(sx, sy - sSize);
     ctx.lineTo(sx + sSize, sy);
@@ -820,8 +809,6 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
     // Layout Vertical
     ctx.font = 'bold 9px monospace';
     ctx.fillStyle = '#f6e58d';
-    ctx.shadowColor = 'rgba(241, 196, 15, 0.85)';
-    ctx.shadowBlur = 6;
     ctx.fillText("[ CATACLISMA PURGADO • O ABISMO FOI SELADO ]", screenW / 2, by + 14);
 
     const titleY = by + 37;
@@ -831,28 +818,23 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
     titleGrad.addColorStop(1, '#f1c40f');
 
     ctx.font = 'bold 19px "Cinzel", "Cinzel Decorative", Georgia, serif';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2 + 1, titleY + 1.5);
     ctx.fillStyle = titleGrad;
-    ctx.shadowColor = 'rgba(241, 196, 15, 0.95)';
-    ctx.shadowBlur = pulseGlow;
     ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2, titleY);
 
     ctx.font = 'italic 10px "Cinzel", Georgia, serif';
     ctx.fillStyle = '#fff2a8';
-    ctx.shadowColor = 'rgba(212, 172, 13, 0.7)';
-    ctx.shadowBlur = 3;
     ctx.fillText("✦ O SOBERANO DO ABISMO FOI ANIQUILADO ✦", screenW / 2, by + 58);
 
     // Linha de Honra e Métricas
     ctx.font = 'bold 9px monospace';
     ctx.fillStyle = '#f1c40f';
-    ctx.shadowBlur = 2;
     ctx.fillText(`TEMPO: ${stats.time}  •  ABATES: ${stats.kills}  •  NÍVEL: ${stats.level}  •  OURO: +${stats.gold}`, screenW / 2, by + 84);
   } else {
     // Layout Horizontal
     ctx.font = 'bold 11px monospace';
     ctx.fillStyle = '#f6e58d';
-    ctx.shadowColor = 'rgba(241, 196, 15, 0.85)';
-    ctx.shadowBlur = 8;
     ctx.fillText("[ CATACLISMA PURGADO // A ORDEM CÓSMICA FOI RESTAURADA ]", screenW / 2, by + 22);
 
     const titleY = by + 53;
@@ -863,22 +845,18 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
     titleGrad.addColorStop(1, '#d4ac0d');
 
     ctx.font = 'bold 31px "Cinzel", "Cinzel Decorative", Georgia, serif';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2 + 1.5, titleY + 2);
     ctx.fillStyle = titleGrad;
-    ctx.shadowColor = 'rgba(241, 196, 15, 0.95)';
-    ctx.shadowBlur = pulseGlow;
     ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2, titleY);
 
     ctx.font = 'italic 13px "Cinzel", Georgia, serif';
     ctx.fillStyle = '#fff2a8';
-    ctx.shadowColor = 'rgba(212, 172, 13, 0.7)';
-    ctx.shadowBlur = 4;
     ctx.fillText("✦ O SOBERANO DO ABISMO FOI ANIQUILADO E AS TREVAS EXPURGADAS ✦", screenW / 2, by + 82);
 
     // Fita de Honra com Métricas Destacadas
     ctx.font = 'bold 11px monospace';
     ctx.fillStyle = '#f1c40f';
-    ctx.shadowColor = 'rgba(241, 196, 15, 0.6)';
-    ctx.shadowBlur = 4;
     ctx.fillText(`TEMPO DE COMBATE: ${stats.time}    |    MONSTROS EXPURGADOS: ${stats.kills}    |    NÍVEL: ${stats.level}    |    OURO CONQUISTADO: +${stats.gold}`, screenW / 2, by + 108);
   }
 
@@ -939,17 +917,18 @@ function drawHealingZones(ctx, e, frameCount) {
     ctx.arc(0, 0, R + pulse, 0, Math.PI * 2);
     ctx.fill();
 
-    // 2. Anel de Limite Sagrado Rúnico
-    ctx.strokeStyle = zone.playerInside ? '#ffffff' : 'rgba(46, 204, 113, 0.85)';
-    ctx.lineWidth = zone.playerInside ? 3.0 : 2.2;
-    ctx.shadowColor = '#2ecc71';
-    ctx.shadowBlur = zone.playerInside ? 14 : 8;
+    // 2. Anel de Limite Sagrado Rúnico (Halo duplo de alto contraste sem blur)
+    ctx.strokeStyle = 'rgba(46, 204, 113, 0.35)';
+    ctx.lineWidth = zone.playerInside ? 5.5 : 4.0;
     ctx.beginPath();
     ctx.arc(0, 0, R, 0, Math.PI * 2);
     ctx.stroke();
 
+    ctx.strokeStyle = zone.playerInside ? '#ffffff' : 'rgba(46, 204, 113, 0.85)';
+    ctx.lineWidth = zone.playerInside ? 3.0 : 2.2;
+    ctx.stroke();
+
     // 3. Medidor Circular de Duração Residual (Contagem Regressiva dos 7 Segundos)
-    ctx.shadowBlur = 0;
     ctx.strokeStyle = '#f1c40f';
     ctx.lineWidth = 3.2;
     ctx.beginPath();
@@ -974,9 +953,7 @@ function drawHealingZones(ctx, e, frameCount) {
 
     // 5. Cruz Sagrada de Cura no Centro
     ctx.fillStyle = zone.playerInside ? '#ffffff' : '#2ecc71';
-    ctx.shadowColor = '#2ecc71';
-    ctx.shadowBlur = 7;
-    const cSize = Math.round(R * 0.26); // Proporcional ao raio da zona (~19px para R=73)
+    const cSize = Math.round(R * 0.26);
     const cThick = 5.5;
     ctx.fillRect(-cSize / 2, -cThick / 2, cSize, cThick);
     ctx.fillRect(-cThick / 2, -cSize / 2, cThick, cSize);
@@ -997,13 +974,13 @@ function drawHealingZones(ctx, e, frameCount) {
     }
 
     // 7. Texto Flutuante Indicador de Duração
-    ctx.shadowBlur = 4;
-    ctx.shadowColor = '#000000';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = 'bold 9px monospace';
-    ctx.fillStyle = zone.playerInside ? '#ffffff' : '#2ecc71';
     const secondsLeft = (zone.life / 60).toFixed(1);
+    ctx.fillStyle = '#000000';
+    ctx.fillText(`CURA +10%/s (${secondsLeft}s)`, 1, -R - 9);
+    ctx.fillStyle = zone.playerInside ? '#ffffff' : '#2ecc71';
     ctx.fillText(`CURA +10%/s (${secondsLeft}s)`, 0, -R - 10);
 
     ctx.restore();
@@ -1184,11 +1161,13 @@ function drawCelestialLimbs(ctx, e, R, frameCount, isStaggered, isWindup, isCast
       // 2. Nó/Junta Circular de Contas (Torus Bead-Joint da Referência)
       const beadR = Math.max(3.2, 5.8 - s * 0.7);
 
-      // Glow azul-gelo sutil ao redor de cada conta
-      ctx.shadowColor = 'rgba(129, 236, 236, 0.65)';
-      ctx.shadowBlur = 5;
+      // Aro externo brilhante da conta com glow sutil
+      ctx.strokeStyle = 'rgba(129, 236, 236, 0.45)';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.arc(currX, currY, beadR + 0.8, 0, Math.PI * 2);
+      ctx.stroke();
 
-      // Aro externo brilhante da conta
       ctx.fillStyle = '#0a0614';
       ctx.beginPath();
       ctx.arc(currX, currY, beadR, 0, Math.PI * 2);
@@ -1199,7 +1178,6 @@ function drawCelestialLimbs(ctx, e, R, frameCount, isStaggered, isWindup, isCast
       ctx.stroke();
 
       // Centro da conta (pino prateado)
-      ctx.shadowBlur = 0;
       ctx.fillStyle = 'rgba(168, 245, 255, 0.85)';
       ctx.beginPath();
       ctx.arc(currX, currY, beadR * 0.42, 0, Math.PI * 2);
@@ -1224,13 +1202,14 @@ function drawCelestialLimbs(ctx, e, R, frameCount, isStaggered, isWindup, isCast
         const idleB = e.idleBlend || 0;
         const tipCol = idleB > 0.4 ? '#81ecec' : (e.phase === 2 ? '#ff7675' : (e.phase === 3 ? '#ffffff' : '#a29bfe'));
         const tipGlow = idleB > 0.4 ? '#00cec9' : (e.phase === 2 ? '#e84393' : (e.phase === 3 ? '#00cec9' : '#8e44ad'));
-        ctx.shadowColor = tipGlow;
-        ctx.shadowBlur = idleB > 0.4 ? 4 : 8;
+        ctx.fillStyle = tipGlow;
+        ctx.beginPath();
+        ctx.arc(finalX, finalY, 2.4, 0, Math.PI * 2);
+        ctx.fill();
         ctx.fillStyle = tipCol;
         ctx.beginPath();
         ctx.arc(finalX, finalY, 1.4, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0;
       }
 
       currX = nextX;
@@ -1247,12 +1226,7 @@ function drawCelestialLimbs(ctx, e, R, frameCount, isStaggered, isWindup, isCast
  */
 function drawDomeFractures(ctx, R, hpRatio, frameCount) {
   ctx.save();
-  const severity = 1 - hpRatio;
-  const glow = 4 + Math.sin(frameCount * 0.15) * 2;
-
   ctx.strokeStyle = hpRatio < 0.20 ? '#ffffff' : (hpRatio < 0.40 ? '#fff6a9' : 'rgba(255, 255, 255, 0.85)');
-  ctx.shadowColor = hpRatio < 0.20 ? '#f1c40f' : (hpRatio < 0.40 ? '#00cec9' : '#e84393');
-  ctx.shadowBlur = glow;
   ctx.lineWidth = hpRatio < 0.20 ? 2.2 : 1.4;
 
   // Racha 1: Superior Esquerda
@@ -1367,8 +1341,13 @@ function drawSacredMandalaVoidSphere(ctx, e, R, frameCount, isHit, isStaggered, 
     ctx.arc(0, 0, haloR, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.shadowColor = combatRimGlow;
-    ctx.shadowBlur = isStaggered ? 6 : 14;
+    // Halo externo translúcido com brilho em camadas (Zero-cost glow)
+    ctx.strokeStyle = combatRimGlow;
+    ctx.lineWidth = 6.0;
+    ctx.beginPath();
+    ctx.arc(0, 0, haloR, 0, Math.PI * 2);
+    ctx.stroke();
+
     ctx.strokeStyle = isStaggered ? '#f1c40f' : combatRimColor;
     ctx.lineWidth = 3.2;
     ctx.beginPath();
@@ -1376,7 +1355,6 @@ function drawSacredMandalaVoidSphere(ctx, e, R, frameCount, isHit, isStaggered, 
     ctx.stroke();
 
     if (!isHit) {
-      ctx.shadowBlur = 0;
       ctx.strokeStyle = archColor;
       ctx.lineWidth = 1.0;
       ctx.beginPath();
@@ -1417,8 +1395,13 @@ function drawSacredMandalaVoidSphere(ctx, e, R, frameCount, isHit, isStaggered, 
     ctx.arc(0, 0, haloR, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.shadowColor = idleRimGlow;
-    ctx.shadowBlur = 12;
+    // Halo externo translúcido com brilho em camadas (Zero-cost glow)
+    ctx.strokeStyle = idleRimGlow;
+    ctx.lineWidth = 6.0;
+    ctx.beginPath();
+    ctx.arc(0, 0, haloR, 0, Math.PI * 2);
+    ctx.stroke();
+
     ctx.strokeStyle = idleRimColor;
     ctx.lineWidth = 3.2;
     ctx.beginPath();
@@ -1426,7 +1409,6 @@ function drawSacredMandalaVoidSphere(ctx, e, R, frameCount, isHit, isStaggered, 
     ctx.stroke();
 
     if (!isHit) {
-      ctx.shadowBlur = 0;
       ctx.strokeStyle = idleArchColor;
       ctx.lineWidth = 1.0;
       ctx.beginPath();
@@ -1511,17 +1493,11 @@ function drawColdObserverEye(ctx, e, R, frameCount, isStaggered, isWindup, isCas
   const openRatio = (e.eyeAperture !== undefined) ? e.eyeAperture : Math.max(0, 1.0 - (idleBlend || 0));
 
   // Moldura Externa Metálica Esbranquiçada / Grafite
-  ctx.shadowColor = openRatio < 0.5 
-    ? 'rgba(168, 245, 255, 0.55)' 
-    : (phase === 2 ? 'rgba(232, 67, 147, 0.55)' : (phase === 3 ? 'rgba(0, 206, 201, 0.55)' : 'rgba(142, 68, 173, 0.55)'));
-  ctx.shadowBlur = 6;
   ctx.strokeStyle = '#2f3640';
   ctx.lineWidth = 3.0;
 
   if (openRatio <= 0.08) {
     // === OLHO TOTALMENTE FECHADO EM DORMÊNCIA SAGRADA (MEDITAÇÃO CELESTE) ===
-    ctx.shadowBlur = 0;
-
     // Fenda da Pálpebra Fechada (curvatura suave descendente em repouso)
     ctx.strokeStyle = '#18151f';
     ctx.lineWidth = 3.4;
@@ -1539,8 +1515,6 @@ function drawColdObserverEye(ctx, e, R, frameCount, isStaggered, isWindup, isCas
     ctx.stroke();
 
     // Fio de luz celestial ciano dormente ao longo da costura
-    ctx.shadowColor = '#81ecec';
-    ctx.shadowBlur = 5;
     ctx.strokeStyle = 'rgba(168, 245, 255, 0.85)';
     ctx.lineWidth = 1.0;
     ctx.beginPath();
@@ -1554,7 +1528,6 @@ function drawColdObserverEye(ctx, e, R, frameCount, isStaggered, isWindup, isCas
     ctx.beginPath();
     ctx.ellipse(0, 0, eyeW + 2.5, eyeH + 2.0, 0, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.shadowBlur = 0;
 
     ctx.strokeStyle = '#718093';
     ctx.lineWidth = 1.2;

@@ -42,7 +42,7 @@ import {
 } from '../ui/modals/bossSelectModal.js';
 import { resetMetaTree } from '../entities/player.js';
 import { playSfx, setGameVolume, audioCtx } from '../core/audio.js';
-import { gameState, activeBoss } from '../main.js';
+import { gameState, activeBoss, terminateMatch } from '../main.js';
 import { onLayoutChange, updateHudBottomMetric } from '../core/responsive.js';
 import { resizePreviewCanvas } from '../render/characterPreview.js';
 
@@ -64,9 +64,18 @@ export function initUI() {
 
   bindClick('pause-btn', togglePause);
   bindClick('resume-btn', togglePause);
-  bindClick('abandon-btn', openCharacterSelect);
-  bindClick('restart-death-btn', openCharacterSelect);
-  bindClick('restart-victory-btn', openCharacterSelect);
+  bindClick('abandon-btn', () => {
+    terminateMatch();
+    openCharacterSelect();
+  });
+  bindClick('restart-death-btn', () => {
+    terminateMatch();
+    openCharacterSelect();
+  });
+  bindClick('restart-victory-btn', () => {
+    terminateMatch();
+    openCharacterSelect();
+  });
 
   bindClick('open-achievements-btn', openAchievementsModal);
   bindClick('close-achievements-btn', closeAchievementsModal);
@@ -161,7 +170,7 @@ export function initUI() {
       if (!marker70) {
         marker70 = document.createElement('div');
         marker70.id = 'boss-marker-70';
-        marker70.style.cssText = 'position:absolute; left:70%; top:0; bottom:0; width:2px; background:#e84393; box-shadow:0 0 6px #e84393; z-index:4; pointer-events:none; display:none;';
+        marker70.style.cssText = 'position:absolute; left:70%; top:0; bottom:0; width:2px; background:linear-gradient(180deg, #ff7675, #e84393); box-shadow:0 0 8px #e84393; z-index:5; pointer-events:none; display:none;';
         barContainer.appendChild(marker70);
       }
 
@@ -169,7 +178,7 @@ export function initUI() {
       if (!marker30) {
         marker30 = document.createElement('div');
         marker30.id = 'boss-marker-30';
-        marker30.style.cssText = 'position:absolute; left:30%; top:0; bottom:0; width:2px; background:#00cec9; box-shadow:0 0 6px #00cec9; z-index:4; pointer-events:none; display:none;';
+        marker30.style.cssText = 'position:absolute; left:30%; top:0; bottom:0; width:2px; background:linear-gradient(180deg, #81ecec, #00cec9); box-shadow:0 0 8px #00cec9; z-index:5; pointer-events:none; display:none;';
         barContainer.appendChild(marker30);
       }
 
@@ -177,7 +186,7 @@ export function initUI() {
       if (!phaseBadge) {
         phaseBadge = document.createElement('div');
         phaseBadge.id = 'boss-phase-badge';
-        phaseBadge.style.cssText = 'font-size:10px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; text-align:center; margin-top:3px; display:none;';
+        phaseBadge.style.cssText = "font-family:var(--font-heading); font-size:10px; font-weight:800; letter-spacing:1.8px; text-transform:uppercase; text-align:center; margin-top:4px; text-shadow:0 1px 4px #000, 0 0 8px currentColor; display:none;";
         bossHudEl.appendChild(phaseBadge);
       }
 
@@ -189,25 +198,25 @@ export function initUI() {
           phaseBadge.style.display = 'block';
 
           if (activeBoss.isStaggered) {
-            phaseBadge.innerText = 'COLAPSO DE ESTABILIDADE (VULNERÁVEL)';
+            phaseBadge.innerText = '⚡ COLAPSO DE ESTABILIDADE (VULNERÁVEL) ⚡';
             phaseBadge.style.color = '#f1c40f';
-            bossHpFillEl.style.background = 'linear-gradient(90deg, #f39c12, #f1c40f)';
-            bossHpFillEl.style.boxShadow = '0 0 14px rgba(241, 196, 15, 0.85)';
+            bossHpFillEl.style.background = 'linear-gradient(180deg, #ffeaa7 0%, #f1c40f 30%, #d49a1d 70%, #593e04 100%)';
+            bossHpFillEl.style.boxShadow = '0 0 20px rgba(241, 196, 15, 0.95)';
           } else if (activeBoss.phase === 3) {
             phaseBadge.innerText = 'FASE 3: SINGULARIDADE PRIMORDIAL';
             phaseBadge.style.color = '#00cec9';
-            bossHpFillEl.style.background = 'linear-gradient(90deg, #0984e3, #00cec9)';
-            bossHpFillEl.style.boxShadow = '0 0 14px rgba(0, 206, 201, 0.85)';
+            bossHpFillEl.style.background = 'linear-gradient(180deg, #81ecec 0%, #00cec9 30%, #0984e3 70%, #032b57 100%)';
+            bossHpFillEl.style.boxShadow = '0 0 20px rgba(0, 206, 201, 0.9)';
           } else if (activeBoss.phase === 2) {
             phaseBadge.innerText = 'FASE 2: FRATURA DO HORIZONTE';
             phaseBadge.style.color = '#e84393';
-            bossHpFillEl.style.background = 'linear-gradient(90deg, #c0392b, #e84393)';
-            bossHpFillEl.style.boxShadow = '0 0 14px rgba(232, 67, 147, 0.85)';
+            bossHpFillEl.style.background = 'linear-gradient(180deg, #fd79a8 0%, #e84393 30%, #c0392b 70%, #4d0b13 100%)';
+            bossHpFillEl.style.boxShadow = '0 0 20px rgba(232, 67, 147, 0.9)';
           } else {
             phaseBadge.innerText = 'FASE 1: TRONO DO VÁZIO';
-            phaseBadge.style.color = '#a29bfe';
-            bossHpFillEl.style.background = 'linear-gradient(90deg, #341f97, #8e44ad)';
-            bossHpFillEl.style.boxShadow = '0 0 14px rgba(142, 68, 173, 0.85)';
+            phaseBadge.style.color = '#d6a2e8';
+            bossHpFillEl.style.background = 'linear-gradient(180deg, #f368e0 0%, #8e44ad 30%, #48146e 70%, #1e0533 100%)';
+            bossHpFillEl.style.boxShadow = '0 0 20px rgba(142, 68, 173, 0.9)';
           }
         } else {
           marker70.style.display = 'none';
@@ -224,7 +233,7 @@ export function initUI() {
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      if (!gameState.isPaused && !gameState.isDead && !gameState.isWon) {
+      if (gameState.isInMatch && !gameState.isPaused && !gameState.isDead && !gameState.isWon) {
         openPause();
         if (audioCtx && audioCtx.state === 'running') {
           audioCtx.suspend();
@@ -266,6 +275,11 @@ export function initUI() {
     if (bestiaryModal && bestiaryModal.style.display === 'flex') {
       bestiaryModal.classList.toggle('is-mobile-device', isMobileScreen());
       renderBestiaryDossier(selectedCreatureId);
+    }
+
+    const deathModal = document.getElementById('death-modal');
+    if (deathModal && deathModal.style.display === 'flex') {
+      deathModal.classList.toggle('is-mobile-device', isMobileScreen());
     }
   });
 }

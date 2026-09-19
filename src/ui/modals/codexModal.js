@@ -6,7 +6,8 @@ import { closeCharSelectModal, openCharacterSelect, isMobileScreen } from './cha
 import { 
   getUnlockedAchievementIds, 
   ACHIEVEMENTS, 
-  getAchievementStatus 
+  getAchievementStatus,
+  getBestRun 
 } from '../../config/achievements.js';
 import { 
   BESTIARY_ENTRIES, 
@@ -18,8 +19,186 @@ import {
   startBestiaryPreview, 
   stopBestiaryPreview 
 } from '../../render/bestiaryPreview.js';
+import { 
+  startBestRunTarot, 
+  stopBestRunTarot 
+} from '../../render/bestRunPreview.js';
 import { renderIcon } from '../icons.js';
 import { playSfx } from '../../core/audio.js';
+
+const HERO_COLORS = {
+  KNIGHT: '#f1c40f',
+  MAGE: '#ff7675',
+  ROGUE: '#c084fc',
+  BARBARIAN: '#e74c3c',
+  ALCHEMIST: '#9b59b6'
+};
+
+/**
+ * Renderiza o Monumento da Melhor Run (Formato Tarô Arcano) no topo do Grimório
+ */
+function renderBestRunMonument() {
+  const container = document.getElementById('best-run-monument-container');
+  if (!container) return;
+
+  const bestRun = getBestRun();
+
+  if (!bestRun) {
+    container.innerHTML = `
+      <div class="monument-empty-card">
+        <div class="monument-empty-icon-wrap">
+          ${renderIcon('soul_coin', { size: 24, color: '#64748b' })}
+        </div>
+        <div class="monument-empty-eyebrow">MONUMENTO À MAIOR JORNADA</div>
+        <div class="monument-empty-title">NENHUMA CRÔNICA GRAVADA AINDA</div>
+        <div class="monument-empty-desc">
+          Adentre a arena das trevas, purifique abominações e desafie os Senhores do Vazio. 
+          Sua jornada mais gloriosa ficará eternizada aqui como um marco para todas as eras.
+        </div>
+        <div class="monument-empty-hint">
+          ${renderIcon('sparkle', { size: 12, color: '#00f5d4' })} Inicie uma partida no Altar para inaugurar seu legado
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const heroColor = HERO_COLORS[bestRun.heroKey] || '#f1c40f';
+
+  let weaponsHtml = '';
+  if (Array.isArray(bestRun.weapons) && bestRun.weapons.length > 0) {
+    weaponsHtml = bestRun.weapons.map(w => `
+      <div class="monument-weapon-chip ${w.evolved ? 'weapon-evolved' : ''}" title="${w.name || w.type}">
+        ${renderIcon(w.iconKey || 'sword', { size: 12, color: w.evolved ? '#ffd166' : '#94a3b8' })}
+        <span class="chip-name">${w.name || w.type}</span>
+        ${w.evolved ? `<span class="chip-fusion-tag">${renderIcon('star_evolution', { size: 9, color: '#ffd166' })} FUSÃO</span>` : ''}
+      </div>
+    `).join('');
+  } else {
+    weaponsHtml = `<span style="font-size:9.5px; color:#64748b; font-style:italic;">Nenhuma arma registrada.</span>`;
+  }
+
+  const passivesHtml = (Array.isArray(bestRun.passives) && bestRun.passives.length > 0)
+    ? bestRun.passives.join(' • ')
+    : '';
+
+  container.innerHTML = `
+    <div class="best-run-monument-box ${bestRun.isVictory ? 'monument-victory' : 'monument-defeat'}">
+      <!-- Barra Superior do Monumento -->
+      <div class="monument-header-row">
+        <div class="monument-title-wrap">
+          <span class="monument-pulsing-glyph"></span>
+          <span class="monument-title-text">MONUMENTO À MAIOR JORNADA • RECORDE HISTÓRICO</span>
+        </div>
+        <div class="monument-meta-right">
+          <span class="monument-date">Gravado em ${bestRun.date || ''}</span>
+          <span class="monument-fate-badge ${bestRun.isVictory ? 'badge-victory' : 'badge-defeat'}">
+            ${bestRun.isVictory ? renderIcon('boss_crown', { size: 12, color: '#ffd166', style: 'vertical-align:middle;margin-right:4px;' }) : renderIcon('skull', { size: 12, color: '#ff7675', style: 'vertical-align:middle;margin-right:4px;' })}
+            ${bestRun.verdictTitle}
+          </span>
+        </div>
+      </div>
+
+      <!-- Grade Principal (Carta de Tarô Arcano + Painel Biométrico) -->
+      <div class="monument-main-grid">
+        <!-- Coluna da Esquerda: A Carta de Tarô Arcano -->
+        <div class="tarot-card-wrapper">
+          <div class="tarot-hero-card ${bestRun.isVictory ? 'tarot-victory' : 'tarot-defeat'}">
+            <div class="tarot-card-header">
+              <div class="tarot-card-eyebrow">✦ ARCANO SUPREMO DO CÓDICE ✦</div>
+              <div class="tarot-hero-name" style="color: ${heroColor};">${bestRun.heroName}</div>
+              <div class="tarot-hero-subtitle">${bestRun.heroTitle}</div>
+            </div>
+
+            <div class="tarot-canvas-window">
+              <canvas id="best-run-tarot-canvas" width="220" height="175"></canvas>
+            </div>
+
+            <div class="tarot-card-footer">
+              <div class="tarot-verdict-quote">"${bestRun.verdictSub || 'O destino curva-se diante da tua glória'}"</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coluna da Direita: Biometria e Arsenal -->
+        <div class="monument-details-col">
+          <!-- Grade das 6 Métricas -->
+          <div class="monument-metrics-grid">
+            <!-- 1. Sobrevivência -->
+            <div class="monument-stat-pill">
+              <div class="stat-pill-label">
+                ${renderIcon('timer', { size: 11, color: '#ffd166' })} SOBREVIVÊNCIA
+              </div>
+              <div class="stat-pill-val">${bestRun.time || '00:00'}</div>
+            </div>
+
+            <!-- 2. Horda Máxima -->
+            <div class="monument-stat-pill">
+              <div class="stat-pill-label">
+                ${renderIcon('wave_swords', { size: 11, color: '#00f5d4' })} HORDA MÁXIMA
+              </div>
+              <div class="stat-pill-val text-cyan">${bestRun.waveText || `Onda ${bestRun.wave}`}</div>
+            </div>
+
+            <!-- 3. Abates -->
+            <div class="monument-stat-pill">
+              <div class="stat-pill-label">
+                ${renderIcon('skull', { size: 11, color: '#ff4757' })} ABATES
+              </div>
+              <div class="stat-pill-val text-ruby">${Number(bestRun.kills).toLocaleString('pt-BR')}</div>
+            </div>
+
+            <!-- 4. Ascensão -->
+            <div class="monument-stat-pill">
+              <div class="stat-pill-label">
+                ${renderIcon('sparkle', { size: 11, color: '#c084fc' })} ASCENSÃO
+              </div>
+              <div class="stat-pill-val text-purple">Nv. ${bestRun.level}</div>
+            </div>
+
+            <!-- 5. Almas -->
+            <div class="monument-stat-pill">
+              <div class="stat-pill-label">
+                ${renderIcon('soul_coin', { size: 11, color: '#f1c40f' })} ALMAS
+              </div>
+              <div class="stat-pill-val text-gold">+${Number(bestRun.souls).toLocaleString('pt-BR')}</div>
+            </div>
+
+            <!-- 6. Score da Lenda -->
+            <div class="monument-stat-pill pill-legendary-score">
+              <div class="stat-pill-label label-gold">
+                ${renderIcon('trophy', { size: 11, color: '#ffd166' })} SCORE DA LENDA
+              </div>
+              <div class="stat-pill-val val-score-glow">${Number(bestRun.score).toLocaleString('pt-BR')} PTS</div>
+            </div>
+          </div>
+
+          <!-- Arsenal Consagrado & Bênçãos -->
+          <div class="monument-arsenal-section">
+            <div class="monument-arsenal-row">
+              <span class="arsenal-row-title">ARSENAL DO HERÓI:</span>
+              <div class="arsenal-chips-wrap">
+                ${weaponsHtml}
+              </div>
+            </div>
+            ${passivesHtml ? `
+              <div class="monument-passives-row">
+                ${renderIcon('sparkle', { size: 10, color: '#ffd166' })}
+                <span>Bênçãos Ativas: ${passivesHtml}</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Inicializa a renderização 2D procedural no Canvas do Preview
+  const cvs = document.getElementById('best-run-tarot-canvas');
+  if (cvs) {
+    startBestRunTarot(cvs, bestRun.heroKey, bestRun.isVictory);
+  }
+}
 
 export function openAchievementsModal() {
   closeCharSelectModal();
@@ -36,6 +215,9 @@ export function openAchievementsModal() {
   const unlockedIds = getUnlockedAchievementIds();
   if (unlockedCountEl) unlockedCountEl.innerText = unlockedIds.length;
   if (totalCountEl) totalCountEl.innerText = ACHIEVEMENTS.length;
+
+  // Renderiza o Monumento da Melhor Run (Tarô Arcano)
+  renderBestRunMonument();
 
   grid.innerHTML = '';
   ACHIEVEMENTS.forEach(ach => {
@@ -84,6 +266,7 @@ export function openAchievementsModal() {
 }
 
 export function closeAchievementsModal() {
+  stopBestRunTarot();
   const modal = document.getElementById('achievements-modal');
   if (modal) {
     modal.classList.add('modal-hidden');

@@ -94,8 +94,8 @@ export const ITEMS = {
     name: "Poder Bruto",
     icon: "damage",
     badge: "Passiva",
-    description: "Aumenta o dano global do herói em +7% cumulativo.",
-    maxLevel: 4
+    description: "Aumenta o dano global do herói em +5% cumulativo por nível.",
+    maxLevel: Infinity
   },
   ARMOR: {
     id: 'armor',
@@ -103,7 +103,7 @@ export const ITEMS = {
     name: "Armadura Rúnica",
     icon: "armor",
     badge: "Passiva",
-    description: "Reforça a carcaça e eleva o limite de vitalidade máxima em +45 HP.",
+    description: "Reforça a vitalidade máxima em +30 HP cumulativo por nível.",
     maxLevel: Infinity
   },
   WINGS: {
@@ -112,8 +112,8 @@ export const ITEMS = {
     name: "Asas do Vento",
     icon: "wings",
     badge: "Passiva",
-    description: "Acelera a locomoção do herói em +0.45 de velocidade base.",
-    maxLevel: 5
+    description: "Acelera a locomoção do herói em +0.18 de velocidade base por nível.",
+    maxLevel: Infinity
   },
   FROST_PASSIVE: {
     id: 'frost_passive',
@@ -121,8 +121,8 @@ export const ITEMS = {
     name: "Golpe Criogênico",
     icon: "frost",
     badge: "Passiva",
-    description: "+15% de chance de congelar e desacelerar monstros atingidos por 2.5s.",
-    maxLevel: 4
+    description: "+6% de chance de congelar e desacelerar monstros por +0.25s por nível.",
+    maxLevel: Infinity
   },
   HASTE: {
     id: 'haste',
@@ -130,8 +130,8 @@ export const ITEMS = {
     name: "Fúria Rápida",
     icon: "cooldown",
     badge: "Passiva",
-    description: "Reduz o tempo de recarga de todas as armas em 12% de forma multiplicativa (teto: 45%).",
-    maxLevel: 4
+    description: "Reduz o tempo de recarga de todas as armas em 5% por nível (teto 55%; após converte em dano).",
+    maxLevel: Infinity
   },
   CRIT: {
     id: 'crit',
@@ -139,8 +139,8 @@ export const ITEMS = {
     name: "Foco Letal",
     icon: "crit",
     badge: "Passiva",
-    description: "Aumenta as chances (+8%) e o multiplicador de dano crítico (+0.08).",
-    maxLevel: 4
+    description: "Aumenta as chances (+4%, teto 85%) e o multiplicador de dano crítico (+0.10).",
+    maxLevel: Infinity
   },
   MAGNET: {
     id: 'magnet',
@@ -148,8 +148,8 @@ export const ITEMS = {
     name: "Ímã Titânico",
     icon: "magnet",
     badge: "Passiva",
-    description: "Aumenta o alcance de atração de gemas em +50px de raio.",
-    maxLevel: 6
+    description: "Aumenta o alcance de atração de gemas em +30px de raio por nível.",
+    maxLevel: Infinity
   },
 
   // ==========================================
