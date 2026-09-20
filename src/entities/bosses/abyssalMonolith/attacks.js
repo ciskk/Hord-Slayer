@@ -29,7 +29,7 @@ export function selectNextSkill(e, dist, player = null) {
     if (nextSkill === MONOLITH_SKILLS.TECTONIC_SLAM && dist <= 220) {
       e.currentSkill = MONOLITH_SKILLS.TECTONIC_SLAM;
       e.actionState = MONOLITH_STATES.WINDUP_SLAM;
-      e.actionTimer = isP3 ? 28 : (isEnraged ? 34 : 40); // Windup ágil pós-combo
+      e.actionTimer = isP3 ? 48 : (isEnraged ? 48 : 60); // Mínimo 1s (60f) na Fase 1 e 800ms (48f) nas Fases 2/3
       e.lastUsedSkill = e.currentSkill;
       return;
     }
@@ -126,32 +126,32 @@ export function selectNextSkill(e, dist, player = null) {
   switch (chosenSkill) {
     case MONOLITH_SKILLS.TECTONIC_SLAM:
       e.actionState = MONOLITH_STATES.WINDUP_SLAM;
-      e.actionTimer = isP3 ? 34 : (isEnraged ? 40 : 48);
+      e.actionTimer = isP3 ? 48 : (isEnraged ? 48 : 60); // Mínimo 1s na Fase 1, 800ms nas Fases 2/3
       break;
 
     case MONOLITH_SKILLS.EPICENTER_SURGE:
       e.actionState = MONOLITH_STATES.WINDUP_EPICENTER;
-      e.actionTimer = isP3 ? 126 : (isEnraged ? 144 : 168);
+      e.actionTimer = isP3 ? 126 : (isEnraged ? 144 : 168); // Já superior a 2 segundos
       break;
 
     case MONOLITH_SKILLS.PLATE_WHIRL:
       e.actionState = MONOLITH_STATES.WINDUP_WHIRL;
-      e.actionTimer = isP3 ? 28 : (isEnraged ? 32 : 38);
+      e.actionTimer = isP3 ? 48 : (isEnraged ? 48 : 60); // Mínimo 1s na Fase 1, 800ms nas Fases 2/3
       break;
 
     case MONOLITH_SKILLS.VOLCANIC_FISSURE:
       e.actionState = MONOLITH_STATES.WINDUP_FISSURE;
-      e.actionTimer = isP3 ? 26 : (isEnraged ? 30 : 38);
+      e.actionTimer = isP3 ? 48 : (isEnraged ? 48 : 60); // Mínimo 1s na Fase 1, 800ms nas Fases 2/3
       break;
 
     case MONOLITH_SKILLS.BASALT_BARRAGE:
       e.actionState = MONOLITH_STATES.WINDUP_BARRAGE;
-      e.actionTimer = isP3 ? 24 : (isEnraged ? 28 : 36);
+      e.actionTimer = isP3 ? 48 : (isEnraged ? 48 : 60); // Mínimo 1s na Fase 1, 800ms nas Fases 2/3
       break;
 
     case MONOLITH_SKILLS.MAGMA_SIPHON:
       e.actionState = MONOLITH_STATES.CHANNELING_SIPHON;
-      e.pullTimer = isP3 ? 60 : (isEnraged ? 70 : 80);
+      e.pullTimer = isP3 ? 60 : (isEnraged ? 70 : 80); // Já superior a 1 segundo em todas as fases
       e.pullMaxTimer = e.pullTimer;
       break;
   }
@@ -457,6 +457,8 @@ export function executeVolcanicFissure(e, context) {
       const nodeX = e.x + Math.cos(lineAng) * distNode;
       const nodeY = e.y + Math.sin(lineAng) * distNode;
 
+      const baseFissureTimer = e.isPhase3 ? 48 : (e.isEnraged ? 48 : 60);
+      const fissureNodeTimer = baseFissureTimer + n * 4;
       bossTelegraphs.push({
         type: 'FISSURE_NODE',
         x: nodeX,
@@ -467,8 +469,8 @@ export function executeVolcanicFissure(e, context) {
         nodeIndex: n,
         angle: lineAng,
         radius: 30,
-        timer: 20 + n * 5,
-        maxTimer: 20 + n * 5,
+        timer: fissureNodeTimer,
+        maxTimer: fissureNodeTimer,
         damage: 57
       });
     }
@@ -504,13 +506,15 @@ export function executeBasaltBarrage(e, context) {
       targetY = player.y + Math.sin(offsetAng) * offsetDist;
     }
 
+    const baseMeteorTimer = e.isPhase3 ? 48 : (e.isEnraged ? 48 : 60);
+    const meteorTimer = baseMeteorTimer + m * 6;
     bossTelegraphs.push({
       type: 'FALLING_ROCK',
       x: targetX,
       y: targetY,
       radius: 44,
-      timer: 36 + m * 7,
-      maxTimer: 36 + m * 7,
+      timer: meteorTimer,
+      maxTimer: meteorTimer,
       damage: 65
     });
   }

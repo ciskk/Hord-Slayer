@@ -15,7 +15,7 @@ export const ENEMY_TYPES = {
   SPLITTER_MINI: { name: 'Parasita Célula', radius: 9, speed: 2.2, hp: 84, color: '#48dbfb', behavior: 'chase', damage: 18, xp: 2 },
 
   // --- 15 NOVOS MONSTROS DA HORDA EXPANDIDA ---
-  TRAIL_CRAWLER:    { name: 'Rastejador Peçonhento', radius: 13, speed: 1.45, hp: 160, color: '#16a085', behavior: 'trail_toxic', damage: 23, xp: 2 },
+  TRAIL_CRAWLER:    { name: 'Rastejador Peçonhento', radius: 13, speed: 1.45, hp: 160, color: '#16a085', behavior: 'trail_toxic', damage: 12, xp: 2 },
   CRYPT_WEAVER:     { name: 'Tecelã das Catacumbas', radius: 14, speed: 1.20, hp: 210, color: '#636e72', behavior: 'web_trapper', damage: 21, xp: 3 },
   CHAIN_FLAYER:     { name: 'Flagelador de Correntes', radius: 16, speed: 1.05, hp: 310, color: '#b33939', behavior: 'chain_hook', damage: 36, xp: 4 },
   BASALT_GARGOYLE:  { name: 'Gárgula de Basalto', radius: 18, speed: 1.35, hp: 520, color: '#57606f', behavior: 'stone_turtle', damage: 42, xp: 5 },
@@ -48,7 +48,7 @@ export const MINI_BOSS_TYPES = {
   SEISMIC_SMASHER:  { name: 'Demolidor Sísmico', radius: 26, speed: 0.9, hp: 1288, color: '#95a5a6', behavior: 'ground_slam', damage: 47, xp: 120, gold: 25 },
   ARTILLERY_MECH:   { name: 'Torre Móvel', radius: 25, speed: 0.9, hp: 1050, color: '#2980b9', behavior: 'shooter', damage: 31, xp: 130, gold: 22 },
   FIRE_INCINERATOR: { name: 'Incinerador Instável', radius: 20, speed: 2.0, hp: 812, color: '#e67e22', behavior: 'kamikaze_spread', damage: 40, xp: 115, gold: 20 },
-  BROOD_MATRIARCH:  { name: 'Matriarca Parasita', radius: 25, speed: 1.3, hp: 1232, color: '#00cec9', behavior: 'splitter_queen', damage: 34, xp: 140, gold: 30 },
+  BROOD_MATRIARCH:  { name: 'Matriarca Parasita', radius: 25, speed: 1.3, hp: 1232, color: '#00cec9', behavior: 'splitter_queen', damage: 17, xp: 140, gold: 30 },
   SPECTRAL_STALKER: { name: 'Predador Espectral', radius: 22, speed: 2.5, hp: 868, color: '#6c5ce7', behavior: 'backstab_dash', damage: 49, xp: 135, gold: 28 },
   HIGH_OCCULTIST:   { name: 'Alto Sacerdote', radius: 24, speed: 1.0, hp: 1330, color: '#341f97', behavior: 'gravity_ritual', damage: 38, xp: 160, gold: 35 },
   RUNIC_WARDEN:     { name: 'Guardião Rúnico', radius: 27, speed: 1.1, hp: 1680, color: '#0984e3', behavior: 'protect_aura', damage: 31, xp: 150, gold: 35 },

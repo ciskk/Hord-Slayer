@@ -473,7 +473,8 @@ export function updateAcidPuddles(dt) {
       const pdx = player.x - p.x;
       const pdy = player.y - p.y;
       if ((pdx * pdx + pdy * pdy) < (p.radius + player.radius) ** 2) {
-        if (p.isCaustic) {
+        // Veneno e ácido não aplicam lentidão; teias e confinamentos continuam aplicando
+        if (p.isWeb) {
           player.slowTimer = Math.max(player.slowTimer || 0, 18);
         }
         if (player.iFrames <= 0) {

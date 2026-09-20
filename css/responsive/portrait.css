@@ -288,26 +288,26 @@
     clip-path: polygon(0 50%, 8px 0, 100% 0, 100% 100%, 8px 100%) !important;
   }
 
-  /* Botão de ULT no Mobile */
+  /* Botão de ULT no Mobile (Tamanho dobrado para 112px e posicionado a 30%) */
   #skill-btn-container {
-    bottom: max(env(safe-area-inset-bottom, 16px), 16px);
-    right: max(env(safe-area-inset-right, 14px), 14px);
-    width: 56px;
-    height: 56px;
+    bottom: 30% !important;
+    right: max(env(safe-area-inset-right, 14px), 16px) !important;
+    width: 112px !important;
+    height: 112px !important;
   }
 
   .skill-emblem-wrap {
-    width: 28px;
-    height: 28px;
+    width: 56px !important;
+    height: 56px !important;
   }
 
   #skill-cooldown-mask {
-    width: 36px;
-    height: 36px;
+    width: 72px !important;
+    height: 72px !important;
   }
 
   #skill-timer-text {
-    font-size: 12px;
+    font-size: 22px !important;
   }
 
   .skill-key-badge {

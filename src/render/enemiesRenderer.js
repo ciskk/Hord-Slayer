@@ -2308,8 +2308,8 @@ export function drawEnemyShape(e) {
         const pWave = Math.sin(frameCount * 0.2 + p * 1.1) * 5;
         const py = R_m * 0.35 + p * 5.5;
         ctx.fillStyle = papiroColor;
-        ctx.beginPath();
-        ctx.ellipse(pWave, py, R_m * 0.45 - p * 2.5, 4, 0.2 * p, 0, Math.PI * 2);
+        const leafRx = Math.max(1.5, R_m * 0.45 - p * 1.2);
+        ctx.ellipse(pWave, py, leafRx, 4, 0.2 * p, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = '#8c7b75';
         ctx.lineWidth = 1;

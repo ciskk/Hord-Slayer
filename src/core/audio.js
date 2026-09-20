@@ -42,7 +42,8 @@ const soundCooldowns = {
   acid_explosion: 0,
   tome_impact: 0,
   kill: 0,
-  chest_rare: 0
+  chest_rare: 0,
+  bell_toll: 0
 };
 
 // Gerador procedural de ruído para transientes, vento de lâmina, estilhaço vítreo e detonações
@@ -172,7 +173,7 @@ export function resetStasisAudioFilter() {
   masterFilterNode.frequency.setTargetAtTime(22000, t, 0.06);
 }
 
-export function playSfx(type) {
+export function playSfx(type, volumeMult = 1.0) {
   if (!audioCtx || currentVolume <= 0) return;
   const now = performance.now();
   const t = audioCtx.currentTime;
@@ -204,6 +205,7 @@ export function playSfx(type) {
   if (type === 'tome_impact' && now - soundCooldowns.tome_impact < 90) return;
   if (type === 'kill' && now - soundCooldowns.kill < 85) return;
   if (type === 'chest_rare' && now - soundCooldowns.chest_rare < 150) return;
+  if (type === 'bell_toll' && now - soundCooldowns.bell_toll < 150) return;
 
   if (soundCooldowns[type] !== undefined) soundCooldowns[type] = now;
 
@@ -949,22 +951,24 @@ export function playSfx(type) {
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
       osc.start(t);
       osc.stop(t + 0.04);
-    } else if (type === 'chest_rare') {
-      // Baú Raro / Super Ímã
+    } else if (type === 'chest_rare' || type === 'bell_toll') {
+      // chest_rare: Baú Raro / Super Ímã (volume padrão 0.10)
+      // bell_toll: Sino Fúnebre do Arauto (volume reduzido em 80%: 0.02)
+      const baseGain = (type === 'bell_toll' ? 0.02 : 0.10) * volumeMult;
       [587.33, 739.99, 880, 1174.66].forEach((freq, idx) => {
         const o = audioCtx.createOscillator();
         const g = audioCtx.createGain();
         o.type = 'triangle';
         o.frequency.value = freq;
         g.gain.setValueAtTime(0.001, t + idx * 0.06);
-        g.gain.linearRampToValueAtTime(0.10, t + idx * 0.06 + 0.01);
+        g.gain.linearRampToValueAtTime(baseGain, t + idx * 0.06 + 0.01);
         g.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.06 + 0.28);
         o.connect(g);
         g.connect(masterGainNode);
         o.start(t + idx * 0.06);
         o.stop(t + idx * 0.06 + 0.28);
       });
-      triggerHaptic('medium');
+      if (type !== 'bell_toll') triggerHaptic('medium');
     }
   } catch (e) {}
 }

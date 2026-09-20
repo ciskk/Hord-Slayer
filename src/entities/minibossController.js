@@ -742,7 +742,7 @@ const MINIBOSS_HANDLERS = {
   // 7. MATRIARCA PARASITA (Onda 5)
   BROOD_MATRIARCH: {
     init(e) {
-      e.skillCooldown = 58;
+      e.skillCooldown = 116; // Cadência reduzida em 50% (cooldown dobrado: 58 -> 116)
       e.isSpawningEggs = false;
     },
     update(e, dt, ctx, dist, angle) {
@@ -835,7 +835,7 @@ const MINIBOSS_HANDLERS = {
         if (e.actionTimer <= 0) {
           e.actionState = 'CHASE';
           e.currentSkill = null;
-          e.skillCooldown = e.enraged ? 35 : 58;
+          e.skillCooldown = e.enraged ? 70 : 116; // Cadência reduzida em 50% (cooldown dobrado)
         }
       }
     }

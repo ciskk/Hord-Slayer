@@ -762,7 +762,7 @@ export function updateEnemies(dt, {
         e.x += Math.cos(angle) * curSpeed * dt;
         e.y += Math.sin(angle) * curSpeed * dt;
         e.trailTimer = (e.trailTimer || 0) + dt;
-        if (e.trailTimer >= 24) {
+        if (e.trailTimer >= 48) { // Cadência reduzida em 50% (intervalo dobrado: 24 -> 48)
           e.trailTimer = 0;
           let merged = false;
           // Coalescência com poça tóxica existente próxima
@@ -875,7 +875,7 @@ export function updateEnemies(dt, {
         e.bellTimer = (e.bellTimer || 0) + dt;
         if (e.bellTimer >= 108) {
           e.bellTimer = 0;
-          playSfx('chest_rare');
+          playSfx('bell_toll'); // Volume reduzido em 80% (ganho 0.02 vs 0.10)
           triggerShake(3);
           createHitParticles(e.x, e.y, '#f1c40f', 12);
           bossShockwaves.push({

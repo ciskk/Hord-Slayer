@@ -138,12 +138,12 @@ export function resolveWorldPhysics(player, enemies, dt) {
           const berserkMult = isBerserk ? 1.75 : 1.0;
           const eliteWeight = e.isElite ? 0.55 : 1.0;
 
-          // 1. Repulsão radial visível
-          const radialPush = (overlap * 0.85 + (isPlayerMoving ? player.speed * 0.55 : 0)) * berserkMult * eliteWeight;
+          // 1. Repulsão radial visível (redução de 50% no empurrão/lentidão sofrido pelo jogador ao ser cercado)
+          const radialPush = (overlap * 0.925 + (isPlayerMoving ? player.speed * 0.55 : 0)) * berserkMult * eliteWeight;
           e.x -= nx * radialPush;
           e.y -= ny * radialPush;
-          player.x += nx * (overlap * 0.15);
-          player.y += ny * (overlap * 0.15);
+          player.x += nx * (overlap * 0.075);
+          player.y += ny * (overlap * 0.075);
 
           // 2. Dispersão lateral tangencial
           if (isPlayerMoving) {
