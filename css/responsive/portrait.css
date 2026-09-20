@@ -356,9 +356,10 @@
   }
 
   /* ======================================================== */
-  /* 2. VOID ASTRAL: NOVO LAYOUT CINEMATOGRÁFICO VERTICAL     */
-  /* (HERO-CENTRIC • HERO PILL DOCK • CARD TÁTICO UNIFICADO)   */
+  /* 2. O ALTAR DOS CONDENADOS: NOVO LAYOUT VERTICAL MOBILE   */
+  /* (HERO-CENTRIC • ESTEIRA DE SIGILOS • TELEMETRIA UNIFICADA)*/
   /* ======================================================== */
+  #char-modal.char-scene-root,
   #char-modal {
     position: fixed !important;
     inset: 0 !important;
@@ -372,12 +373,9 @@
     margin: 0 !important;
     border: none !important;
     border-radius: 0 !important;
-    background: radial-gradient(ellipse at 50% 25%, #180c32 0%, #081224 45%, #040508 100%) !important;
-    backdrop-filter: blur(20px) !important;
+    background: radial-gradient(circle at 50% 25%, rgba(24, 12, 50, 0.65) 0%, rgba(8, 18, 36, 0.85) 55%, rgba(4, 5, 8, 0.96) 100%) !important;
     display: flex !important;
     flex-direction: column !important;
-    align-items: stretch !important;
-    justify-content: stretch !important;
     overflow: hidden !important;
     z-index: 100 !important;
   }
@@ -389,184 +387,253 @@
     pointer-events: none !important;
   }
 
-  .modal-box-altar.void-modal-box {
-    max-width: 100vw !important;
+  .char-stardust-veil {
+    opacity: 0.6 !important;
+  }
+
+
+  .char-scene-container {
     width: 100% !important;
+    height: 100% !important;
     min-height: 100dvh !important;
-    height: 100dvh !important;
     max-height: 100dvh !important;
-    border-radius: 0 !important;
-    border: none !important;
-    padding: max(env(safe-area-inset-top, 6px), 6px) 
-             max(env(safe-area-inset-right, 8px), 8px) 
-             0 
-             max(env(safe-area-inset-left, 8px), 8px) !important;
-    margin: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: flex-start !important;
+    padding: max(env(safe-area-inset-top, 8px), 8px) 
+             max(env(safe-area-inset-right, 10px), 10px) 
+             max(env(safe-area-inset-bottom, 8px), 8px) 
+             max(env(safe-area-inset-left, 10px), 10px) !important;
+    box-sizing: border-box !important;
+    gap: 6px !important;
     overflow: hidden !important;
-    flex-grow: 1 !important;
-    gap: 3px !important;
   }
 
-  /* 2.1 Top Bar Ultraleve Integrada Responsiva (Vertical / Mobile) */
-  .void-modal-header {
-    padding: 3px 4px 4px 4px !important;
-    margin-bottom: 2px !important;
-    border-bottom: 1px solid rgba(0, 245, 212, 0.14) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 4px !important;
-    flex-shrink: 0 !important;
-    z-index: 30 !important;
-  }
-
-  .void-header-top-row {
+  /* 2.1 Top Bar Reorganizada Mobile: [Botões expandidos com nome] → [Moedas] */
+  .char-scene-header {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    width: 100% !important;
+    padding: max(env(safe-area-inset-top, 4px), 4px) 8px 6px 8px !important;
+    border-bottom: 1.2px solid rgba(0, 245, 212, 0.16) !important;
+    flex-shrink: 0 !important;
     gap: 6px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 
-  .void-header-info {
+  .char-scene-header::after {
+    width: 120px !important;
+    height: 1px !important;
+  }
+
+  /* Remove o título "Altar dos Condenados" do canto superior esquerdo na versão mobile */
+  .char-scene-header .char-brand-group {
+    display: none !important;
+  }
+
+  /* Container flex total para utilitários da barra superior */
+  .char-header-utilities {
     display: flex !important;
-    flex-direction: column !important;
-    gap: 0 !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 6px !important;
+    flex: 1 1 100% !important;
+  }
+
+  /* Cluster de botões expandidos na esquerda: [Botões expandidos com nome] */
+  .char-header-nav-cluster {
+    order: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: clamp(3px, 1.2vw, 6px) !important;
+    flex: 1 1 auto !important;
     min-width: 0 !important;
   }
 
-  .void-header-eyebrow {
-    font-size: 7.5px !important;
-    letter-spacing: 1.5px !important;
-    color: #00f5d4 !important;
-    font-weight: 800 !important;
-  }
-
-  .void-modal-title {
-    font-size: clamp(12px, 3.8vw, 15px) !important;
-    letter-spacing: 1px !important;
-    line-height: 1.15 !important;
-    color: #f1f5f9 !important;
-    text-shadow: 0 0 10px rgba(0, 245, 212, 0.35) !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  .void-modal-sub {
-    display: none !important;
-  }
-
-  .void-souls-capsule {
-    padding: 2px 7px !important;
-    font-size: 9.5px !important;
-    height: 24px !important;
-    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px) !important;
-    flex-shrink: 0 !important;
-  }
-
-  /* Grid de 3 botões de navegação preenchendo 100% da largura horizontal */
-  .char-modal-header-actions {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 4px !important;
-    width: 100% !important;
-  }
-
-  .char-modal-header-actions .void-astrolabe-btn {
-    padding: 4px 2px !important;
-    font-size: 9px !important;
+  /* Botões de Relíquias expandidos com ícone + nome */
+  .char-relic-btn {
     height: 27px !important;
-    width: 100% !important;
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 3px clamp(5px, 1.4vw, 8px) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    text-align: center !important;
-    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px) !important;
-    letter-spacing: 0.4px !important;
-    box-sizing: border-box !important;
-    white-space: nowrap !important;
+    gap: 5px !important;
+    border-radius: 7px !important;
+    flex-shrink: 1 !important;
+    background: rgba(12, 18, 34, 0.75) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1.2px solid rgba(255, 255, 255, 0.12) !important;
+    color: #c8d6e5 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+    user-select: none !important;
   }
 
-  .char-modal-header-actions .void-astrolabe-btn svg {
+  .char-relic-btn .relic-icon {
     width: 12px !important;
     height: 12px !important;
-    margin-right: 3px !important;
+    stroke: currentColor !important;
     flex-shrink: 0 !important;
   }
 
-  /* 2.2 Estrutura Geral Vertical */
-  .char-altar-layout {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 4px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    flex-grow: 1 !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-    position: relative !important;
+  .char-relic-btn .relic-label {
+    display: inline-block !important;
+    font-family: var(--font-heading) !important;
+    font-size: clamp(8px, 2.1vw, 9.5px) !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.8px !important;
+    white-space: nowrap !important;
+    color: inherit !important;
+    line-height: 1 !important;
   }
 
-  /* Tier 1: Palco Monumental do Campeão (Canvas 2D ao Vivo Otimizado para Mobile) */
-  .char-stage-col.void-hero-stage {
-    order: 1 !important;
-    flex: 1 1 0 !important;
-    min-height: 120px !important;
-    max-height: none !important;
-    width: 100% !important;
-    padding: 0 !important;
+  /* Cápsula de Moedas (Almas Cósmicas) posicionada à direita dos botões: [Moedas] */
+  .char-souls-capsule {
+    order: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+    padding: 3px clamp(6px, 1.5vw, 9px) !important;
+    height: 27px !important;
+    border-radius: 14px !important;
+    gap: 4px !important;
+    font-family: var(--font-heading) !important;
+    font-size: clamp(10px, 2.4vw, 11.5px) !important;
+    font-weight: 800 !important;
+    background: rgba(8, 14, 28, 0.88) !important;
+    border: 1.2px solid rgba(255, 209, 102, 0.35) !important;
+    color: #ffd166 !important;
+    box-shadow: 0 0 10px rgba(255, 209, 102, 0.15) !important;
+  }
+
+  .char-souls-capsule .souls-label {
+    display: inline-block !important;
+    font-size: clamp(7px, 1.7vw, 8.5px) !important;
+    letter-spacing: 0.8px !important;
+    color: #8c94a8 !important;
+    font-family: var(--font-body) !important;
+    font-weight: 700 !important;
+  }
+
+  .char-souls-capsule svg {
+    width: 11px !important;
+    height: 11px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 2.2 Reorganização Panorâmica -> Fluxo Vertical Cinemático */
+  .char-panoramic-stage {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
     margin: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
+    padding: 0 !important;
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Tier 1: Palco Superior do Campeão (Proporção equilibrada e visual limpo) */
+  .char-stage-wing {
+    order: 1 !important;
+    flex: 1 1 44% !important;
+    min-height: 180px !important;
+    max-height: 46dvh !important;
+    width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
     position: relative !important;
     overflow: hidden !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
   }
 
-  .char-stage-col.void-hero-stage::before {
+  /* Oculta completamente o nome do herói ("O PALADINO") na versão mobile */
+  #stage-archetype-badge,
+  .char-archetype-beacon {
     display: none !important;
   }
 
-  /* Insígnia do Arquétipo Flutuante no Topo */
-  .char-stage-badge.void-archetype-badge {
+  /* Título Principal "Altar dos Condenados" Centralizado Abaixo da Barra Superior */
+  .char-stage-main-title {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
     position: absolute !important;
-    top: 4px !important;
+    top: 6px !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    font-size: 9px !important;
-    font-weight: 900 !important;
-    letter-spacing: 1.5px !important;
-    padding: 2px 12px !important;
-    border-radius: 12px !important;
-    clip-path: none !important;
-    background: rgba(6, 8, 18, 0.82) !important;
-    backdrop-filter: blur(8px) !important;
-    border: 1px solid var(--showcase-color, #00f5d4) !important;
-    color: var(--showcase-color, #00f5d4) !important;
-    box-shadow: 0 0 14px rgba(0, 0, 0, 0.8), 0 0 12px var(--showcase-color, #00f5d4) !important;
     z-index: 15 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 4px !important;
+    pointer-events: none !important;
+    text-align: center !important;
+    width: max-content !important;
+    max-width: 92% !important;
+    gap: 2px !important;
   }
 
-  .char-stage-viewport.void-stage-viewport {
+  .char-stage-main-title .char-eyebrow-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+  }
+
+  .char-stage-main-title .char-eyebrow-line {
+    width: clamp(16px, 4.5vw, 28px) !important;
+    height: 1px !important;
+    background: linear-gradient(90deg, transparent, var(--showcase-color, #00f5d4)) !important;
+  }
+
+  .char-stage-main-title .char-eyebrow-line.right {
+    background: linear-gradient(90deg, var(--showcase-color, #00f5d4), transparent) !important;
+  }
+
+  .char-stage-main-title .char-brand-sigil {
+    font-size: 11px !important;
+    color: var(--showcase-color, #00f5d4) !important;
+    filter: drop-shadow(0 0 8px currentColor) !important;
+    animation: sigilPulse 2.8s infinite ease-in-out !important;
+  }
+
+  .char-stage-main-title .char-brand-eyebrow {
+    font-family: var(--font-heading) !important;
+    font-size: clamp(7.5px, 2vw, 9px) !important;
+    font-weight: 800 !important;
+    letter-spacing: 2.2px !important;
+    color: var(--showcase-color, #00f5d4) !important;
+    text-transform: uppercase !important;
+    text-shadow: 0 0 8px rgba(0, 245, 212, 0.4) !important;
+  }
+
+  .char-stage-main-title .char-brand-title {
+    font-family: var(--font-display) !important;
+    font-size: clamp(14px, 4.2vw, 18px) !important;
+    font-weight: 900 !important;
+    letter-spacing: clamp(1.2px, 0.4vw, 1.8px) !important;
+    margin: 0 !important;
+    line-height: 1.15 !important;
+    color: #ffffff !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+    text-shadow: 0 0 16px var(--showcase-color, rgba(0, 245, 212, 0.55)), 
+                 0 0 30px rgba(9, 132, 227, 0.4), 
+                 2px 3px 6px #000000 !important;
+    filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.9)) !important;
+  }
+
+  .char-stage-viewport {
     width: 100% !important;
     height: 100% !important;
-    min-height: 120px !important;
-    max-height: none !important;
     position: relative !important;
     display: flex !important;
     align-items: center !important;
@@ -576,1172 +643,982 @@
   #char-preview-canvas {
     width: 100% !important;
     height: 100% !important;
-    max-height: none !important;
-    min-height: 120px !important;
     object-fit: contain !important;
-    cursor: default !important;
     display: block !important;
-    filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.95)) !important;
+    position: relative !important;
+    z-index: 5 !important;
   }
 
-  /* Setas Laterais de Navegação Ergonômicas (Não Obstruem o Personagem) */
-  .stage-nav-arrow {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    line-height: 0 !important;
-    width: 24px !important;
-    height: 38px !important;
-    clip-path: none !important;
-    border-radius: 8px !important;
-    background: rgba(8, 14, 28, 0.45) !important;
-    backdrop-filter: blur(8px) !important;
-    border: 1px solid rgba(0, 245, 212, 0.22) !important;
-    color: #00f5d4 !important;
+  .stage-chevron-nav {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 50% !important;
     z-index: 16 !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
-    transition: all 0.15s ease !important;
+    background: rgba(8, 14, 28, 0.72) !important;
   }
 
-  .stage-nav-arrow:active {
-    background: rgba(0, 245, 212, 0.3) !important;
-    transform: translateY(-50%) scale(0.95) !important;
-  }
+  .stage-chevron-nav.prev { left: max(8px, calc(50% - 155px)) !important; }
+  .stage-chevron-nav.next { right: max(8px, calc(50% - 155px)) !important; }
 
-  .stage-nav-arrow svg {
-    width: 15px !important;
-    height: 15px !important;
-    display: block !important;
-    stroke: currentColor !important;
-    stroke-width: 2.5 !important;
-    pointer-events: none !important;
-    margin: 0 !important;
-  }
-
-  .stage-nav-prev { left: 4px !important; }
-  .stage-nav-next { right: 4px !important; }
-
-  .char-stage-hint.void-stage-hint {
-    display: none !important;
-  }
-
-  /* Controles Flutuantes da Prévia (Pílula Translúcida Compacta) */
-  .char-stage-controls.void-stage-controls {
+  .char-pedestal-console {
     position: absolute !important;
-    bottom: 2px !important;
+    bottom: 4px !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
     width: auto !important;
-    max-width: 92% !important;
-    padding: 1px 4px !important;
-    background: rgba(6, 10, 20, 0.72) !important;
-    backdrop-filter: blur(10px) !important;
-    border: 1px solid rgba(0, 245, 212, 0.2) !important;
-    border-radius: 12px !important;
+    max-width: 95% !important;
+    padding: 3px 8px !important;
+    border-radius: 16px !important;
     z-index: 18 !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .console-action-btn {
+    padding: 3px 8px !important;
+    font-size: 8.5px !important;
+    border-radius: 10px !important;
     gap: 4px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7) !important;
   }
 
-  .stage-ctrl-btn.void-ctrl-btn {
-    padding: 2px 6px !important;
-    font-size: 7.5px !important;
-    border-radius: 8px !important;
-    clip-path: none !important;
-    background: rgba(18, 26, 48, 0.75) !important;
-    border: 1px solid rgba(0, 245, 212, 0.22) !important;
-  }
-
-  .stage-pose-group.void-pose-group {
-    padding: 1px !important;
-    gap: 2px !important;
-    border-radius: 8px !important;
-    border: none !important;
-    background: transparent !important;
+  .console-pose-cluster {
+    gap: 3px !important;
   }
 
   .stage-pose-btn {
-    padding: 2px 5px !important;
-    font-size: 7.5px !important;
-    border-radius: 6px !important;
-    clip-path: none !important;
+    padding: 3px 7px !important;
+    font-size: 8px !important;
+    border-radius: 8px !important;
+    gap: 3px !important;
   }
 
-  /* Tier 2: Hero Pill Dock (Doca de Seleção de Campeões na Thumb Zone) */
-  .char-pedestals-col.void-roster-dock {
+  /* Tier 2: Esteira Horizontal de Sigilos dos Campeões */
+  .char-roster-wing {
     order: 2 !important;
+    width: 100% !important;
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .roster-wing-header,
+  .roster-wing-footer {
+    display: none !important;
+  }
+
+  #char-pedestals.char-sigil-pillar {
     display: flex !important;
     flex-direction: row !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
-    justify-content: flex-start !important;
-    align-items: center !important;
-    gap: 6px !important;
-    padding: 2px 4px !important;
-    margin: 0 !important;
-    background: rgba(6, 10, 22, 0.72) !important;
-    backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(0, 245, 212, 0.16) !important;
-    border-radius: 12px !important;
-    flex-shrink: 0 !important;
-    z-index: 22 !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    max-height: 36px !important;
-    box-sizing: border-box !important;
-    scrollbar-width: none !important;
+    scroll-snap-type: x mandatory !important;
     -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 7px !important;
+    padding: 2px 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
-  .char-pedestals-col.void-roster-dock::-webkit-scrollbar {
+  #char-pedestals.char-sigil-pillar::-webkit-scrollbar {
     display: none !important;
   }
 
-  .char-pedestal-btn {
+  .char-sigil-item {
     flex: 0 0 auto !important;
     width: auto !important;
-    min-width: 82px !important;
-    height: 30px !important;
-    padding: 2px 7px 2px 4px !important;
-    clip-path: none !important;
-    border-radius: 15px !important;
-    background: rgba(14, 20, 36, 0.85) !important;
-    border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 5px !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-    cursor: pointer !important;
+    min-width: 100px !important;
+    height: 42px !important;
+    padding: 3px 10px 3px 6px !important;
+    border-radius: 21px !important;
+    gap: 7px !important;
+    scroll-snap-align: center !important;
+    border: 1.2px solid rgba(255, 255, 255, 0.12) !important;
+    background: rgba(10, 16, 32, 0.8) !important;
   }
 
-  .char-pedestal-emblem {
-    width: 22px !important;
-    height: 22px !important;
-    border-radius: 50% !important;
-    background: rgba(0, 0, 0, 0.5) !important;
-    border: 1px solid currentColor !important;
-    box-shadow: none !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex-shrink: 0 !important;
-    position: relative !important;
+  .char-sigil-item.active {
+    transform: scale(1.03) !important;
+    border-color: var(--showcase-color, #00f5d4) !important;
+    box-shadow: 0 0 14px var(--showcase-color, rgba(0, 245, 212, 0.35)) !important;
   }
 
-  .char-pedestal-emblem svg {
-    width: 14px !important;
-    height: 14px !important;
-  }
-
-  .pedestal-lock-badge {
-    position: absolute !important;
-    bottom: -2px !important;
-    right: -2px !important;
-    width: 13px !important;
-    height: 13px !important;
-    background: #180a10 !important;
-    border: 1px solid #ff7675 !important;
-    border-radius: 50% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    z-index: 2 !important;
-    padding: 0 !important;
-    line-height: 0 !important;
-  }
-
-  .pedestal-lock-badge svg {
-    width: 7.5px !important;
-    height: 7.5px !important;
-  }
-
-  .char-pedestal-btn .char-pedestal-info {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    justify-content: center !important;
-    min-width: 0 !important;
-    line-height: 1 !important;
-  }
-
-  .char-pedestal-btn .char-pedestal-title {
+  .sigil-focus-needle {
     display: none !important;
   }
 
-  .char-pedestal-btn .char-pedestal-name {
-    display: block !important;
-    font-family: var(--font-heading) !important;
-    font-size: 9.5px !important;
+  .sigil-crest-disc {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+  }
+
+  .sigil-crest-disc svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .sigil-identity {
+    display: flex !important;
+    flex-direction: column !important;
+    min-width: 0 !important;
+  }
+
+  .sigil-archetype-tag {
+    display: none !important;
+  }
+
+  .sigil-hero-name {
+    font-size: 11px !important;
     font-weight: 800 !important;
-    color: #cbd5e1 !important;
+    line-height: 1.1 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    line-height: 1.1 !important;
   }
 
-  .char-pedestal-btn .char-pedestal-role-mini {
-    display: block !important;
-    font-size: 7.5px !important;
-    color: #64748b !important;
+  .sigil-meta-row {
+    font-size: 8px !important;
+    line-height: 1 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     margin-top: 1px !important;
   }
 
-  .char-pedestal-btn .pedestal-active-glow {
-    display: none !important;
-  }
-
-  .char-pedestal-btn.active {
-    background: linear-gradient(135deg, rgba(26, 38, 72, 0.95), rgba(12, 18, 36, 0.98)) !important;
-    border-color: var(--btn-theme-color, #00f5d4) !important;
-    box-shadow: 0 0 14px var(--btn-theme-color, rgba(0, 245, 212, 0.5)), inset 0 0 8px rgba(0, 0, 0, 0.4) !important;
-    transform: scale(1.03) !important;
-  }
-
-  .char-pedestal-btn.active .char-pedestal-emblem {
-    box-shadow: 0 0 8px var(--btn-theme-color) !important;
-  }
-
-  .char-pedestal-btn.active .char-pedestal-name {
-    color: #ffffff !important;
-    text-shadow: 0 0 8px var(--btn-theme-color) !important;
-  }
-
-  .char-pedestal-btn.active .char-pedestal-role-mini {
-    color: var(--btn-theme-color) !important;
-    opacity: 0.9 !important;
-  }
-
-  /* Tier 3: Dossiê Tático de Combate (Compacto, Coeso e Ancorado no Rodapé) */
-  .char-vitral-showcase.void-showcase-dossier {
+  /* Tier 3: Dossiê Holográfico com Carrossel de 3 Slides & Catalisador de Despertar */
+  .char-dossier-wing {
     order: 3 !important;
-    flex: 0 0 auto !important;
+    flex: 1 1 50% !important;
     min-height: 0 !important;
-    max-height: calc(100dvh - 170px) !important;
-    overflow: hidden !important;
-    margin-top: 0 !important;
-    padding: 4px 8px calc(env(safe-area-inset-bottom, 6px) + 4px) 8px !important;
-    background: linear-gradient(180deg, rgba(12, 17, 34, 0.98) 0%, #040508 100%) !important;
-    backdrop-filter: blur(24px) !important;
-    border-radius: 14px 14px 0 0 !important;
-    border: 1px solid rgba(0, 245, 212, 0.2) !important;
-    border-bottom: none !important;
-    box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.9) !important;
-    z-index: 25 !important;
+    max-height: 52dvh !important;
+    width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 2px !important;
-    scrollbar-width: none !important;
+    overflow: hidden !important;
+    padding: 8px 12px 6px 12px !important;
+    background: rgba(8, 14, 28, 0.94) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-radius: 16px 16px 0 0 !important;
+    border: 1.2px solid rgba(0, 245, 212, 0.22) !important;
+    border-bottom: none !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.85) !important;
   }
 
-  .char-vitral-showcase.void-showcase-dossier::-webkit-scrollbar {
+  .char-dossier-wing::-webkit-scrollbar {
     display: none !important;
   }
 
-  .showcase-header-v2 {
+  .char-hologram-dossier {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+  }
+
+  /* Identidade do Campeão */
+  .char-identity-monolith {
+    flex-shrink: 0 !important;
+    margin-bottom: 3px !important;
+    padding-bottom: 3px !important;
+    border-bottom: 1px solid rgba(0, 245, 212, 0.12) !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .hero-monolith-eyebrow {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    margin-bottom: 1px !important;
-    flex-shrink: 0 !important;
   }
 
-  .showcase-name-v2 {
-    font-size: 12.5px !important;
-    font-weight: 900 !important;
-    line-height: 1 !important;
+  .hero-archetype-pill {
+    font-size: 8.5px !important;
+    letter-spacing: 1.6px !important;
   }
 
-  .showcase-title-row {
-    display: flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-    margin-bottom: 0 !important;
-  }
-
-  .showcase-archetype-pill {
-    font-size: 7.5px !important;
-    padding: 1px 5px !important;
-    border-radius: 4px !important;
-    clip-path: none !important;
-  }
-
-  .showcase-diff-badge {
-    font-size: 7.5px !important;
-  }
-
-  .showcase-role-tag {
+  .hero-diff-pips {
     font-size: 8px !important;
-    margin-top: 0 !important;
   }
 
-  /* Banner de Selo Primordial Compacto Mobile */
-  .showcase-lock-dossier {
-    background: linear-gradient(135deg, rgba(38, 16, 26, 0.94) 0%, rgba(20, 10, 18, 0.98) 100%) !important;
-    border: 1px solid rgba(255, 118, 117, 0.5) !important;
-    border-radius: 6px !important;
-    padding: 3px 6px !important;
-    margin-bottom: 2px !important;
-    box-shadow: 0 0 10px rgba(255, 118, 117, 0.2) !important;
-    flex-shrink: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 2px !important;
+  .hero-monolith-name {
+    font-size: 19px !important;
+    line-height: 1.1 !important;
+    margin: 1px 0 !important;
   }
 
-  .lock-dossier-header {
+  .hero-monolith-role {
+    font-size: 9px !important;
+    color: #94a3b8 !important;
+  }
+
+  /* 2.3 Navegador de 3 Pílulas dos Slides (Mobile) */
+  .mobile-slide-pills {
     display: flex !important;
+    justify-content: center !important;
     align-items: center !important;
     gap: 6px !important;
-    margin-bottom: 1px !important;
-  }
-
-  .lock-icon-lg {
-    font-size: 13px !important;
-    width: 14px !important;
-    height: 14px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex-shrink: 0 !important;
-  }
-
-  .lock-titles {
-    display: flex !important;
-    flex-direction: column !important;
-    min-width: 0 !important;
-  }
-
-  .lock-eyebrow {
-    font-size: 6.5px !important;
-    color: #ff7675 !important;
-    font-weight: 800 !important;
-    letter-spacing: 0.6px !important;
-  }
-
-  .lock-name {
-    font-size: 10px !important;
-    font-weight: 800 !important;
-    color: #ffd166 !important;
-    line-height: 1 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  .lock-desc {
-    font-size: 7.5px !important;
-    line-height: 1.15 !important;
-    color: #cbd5e1 !important;
-    margin-bottom: 1px !important;
-  }
-
-  .lock-progress-box {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 1px !important;
-  }
-
-  .lock-progress-track {
-    height: 3px !important;
-    width: 100% !important;
-    border-radius: 2px !important;
-    background: rgba(0, 0, 0, 0.6) !important;
-    overflow: hidden !important;
-  }
-
-  .lock-progress-meta {
-    font-size: 7px !important;
-    display: flex !important;
-    justify-content: space-between !important;
-  }
-
-  /* Abas de Navegação Mobile */
-  .showcase-mobile-nav {
-    display: flex !important;
-    gap: 3px !important;
-    margin: 1px 0 !important;
-    flex-shrink: 0 !important;
-  }
-
-  .showcase-tab-btn {
-    flex: 1 !important;
+    margin: 4px 0 6px 0 !important;
     padding: 2px 4px !important;
-    font-size: 8px !important;
-    font-weight: 800 !important;
-    font-family: var(--font-heading) !important;
-    letter-spacing: 0.4px !important;
-    border-radius: 4px !important;
-    clip-path: none !important;
-    border: 1px solid rgba(0, 245, 212, 0.2) !important;
-    background: rgba(14, 20, 36, 0.85) !important;
-    color: #8c9bb5 !important;
-    cursor: pointer !important;
-    display: flex !important;
+    background: rgba(4, 8, 18, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    border-radius: 20px !important;
+    flex-shrink: 0 !important;
+    align-self: center !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .slide-pill-btn {
+    display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 3px !important;
-    height: 21px !important;
-    transition: all 0.15s ease !important;
+    gap: 6px !important;
+    padding: 4px 11px !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: 14px !important;
+    color: #64748b !important;
+    font-family: var(--font-heading) !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    letter-spacing: 1px !important;
+    cursor: pointer !important;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    user-select: none !important;
+    -webkit-tap-highlight-color: transparent !important;
   }
 
-  .showcase-tab-btn.active {
-    background: rgba(0, 245, 212, 0.18) !important;
-    border-color: #00f5d4 !important;
-    color: #00f5d4 !important;
-    box-shadow: 0 0 8px rgba(0, 245, 212, 0.25) !important;
+  .slide-pill-btn .pill-dot {
+    width: 5px !important;
+    height: 5px !important;
+    border-radius: 50% !important;
+    background: #334155 !important;
+    transition: all 0.22s ease !important;
+    flex-shrink: 0 !important;
   }
 
-  .bento-tactical-grid {
+  .slide-pill-btn .pill-text {
+    line-height: 1 !important;
+    transition: color 0.22s ease !important;
+  }
+
+  /* Pílula Ativada */
+  .slide-pill-btn.active {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: var(--showcase-color, #00f5d4) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 10px var(--showcase-color, rgba(0, 245, 212, 0.35)) !important;
+  }
+
+  .slide-pill-btn.active .pill-dot {
+    background: var(--showcase-color, #00f5d4) !important;
+    box-shadow: 0 0 8px var(--showcase-color, #00f5d4) !important;
+    transform: scale(1.3) !important;
+  }
+
+  .slide-pill-btn.active .pill-text {
+    color: #ffffff !important;
+    font-weight: 900 !important;
+    text-shadow: 0 0 8px var(--showcase-color, rgba(0, 245, 212, 0.4)) !important;
+  }
+
+  /* 2.4 Trilho Horizontal de Slides (Scroll-Snap Swipe & Touch) */
+  .mobile-slides-track {
     display: flex !important;
-    flex-direction: column !important;
-    gap: 2px !important;
-    margin: 0 !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 0 !important;
     flex: 1 1 auto !important;
     min-height: 0 !important;
+    touch-action: pan-x pan-y !important;
+    overscroll-behavior-x: contain !important;
+    cursor: grab !important;
+  }
+
+  .mobile-slides-track:active {
+    cursor: grabbing !important;
+  }
+
+  .mobile-slides-track::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .mobile-slide-pane {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    scroll-snap-align: start !important;
+    scroll-snap-stop: always !important;
+    box-sizing: border-box !important;
+    padding: 2px 4px 18px 4px !important;
     overflow-y: auto !important;
-    overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
   }
 
-  .bento-tactical-grid::-webkit-scrollbar {
+  .mobile-slide-pane::-webkit-scrollbar {
     display: none !important;
   }
 
-  .bento-tab-pane {
-    display: none !important;
-    flex-direction: column !important;
-    gap: 2px !important;
-    flex: 0 0 auto !important;
-  }
-
-  .bento-tab-pane.tab-visible {
+  /* Conteúdo Slide 0: Linhagem do Arsenal */
+  .hero-loadout-lineage {
     display: flex !important;
     flex-direction: column !important;
-  }
-
-  .bento-pane-skills.tab-visible {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 3px !important;
-    flex: 0 0 auto !important;
-  }
-
-  .bento-card {
-    padding: 2.5px 5px !important;
-    border-radius: 6px !important;
-    clip-path: none !important;
-    background: rgba(16, 22, 40, 0.9) !important;
-    border: 1px solid rgba(0, 245, 212, 0.14) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 1px !important;
-  }
-
-  .bento-card-weapon,
-  .bento-card-skill {
-    min-height: 34px !important;
-  }
-
-  .bento-card-passive {
-    grid-column: 1 / -1 !important;
-    padding: 2px 5px !important;
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 4px !important;
-  }
-
-  .bento-card-top {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    margin-bottom: 0 !important;
-  }
-
-  .bento-type-tag {
-    font-size: 6.5px !important;
-    font-weight: 800 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 2px !important;
-  }
-
-  .bento-spec-badge {
-    font-size: 6.5px !important;
-    padding: 0.5px 3px !important;
-    border-radius: 3px !important;
-  }
-
-  .bento-card-title {
-    font-size: 9px !important;
-    font-weight: 800 !important;
+    gap: 5px !important;
     margin: 0 !important;
-    line-height: 1.1 !important;
+    width: 100% !important;
   }
 
-  .bento-card-desc {
-    font-size: 7.5px !important;
-    line-height: 1.15 !important;
-    color: #cbd5e1 !important;
+  .loadout-entry {
+    padding: 5px 8px !important;
+    border-radius: 7px !important;
+    gap: 2px !important;
+  }
+
+  .loadout-icon-box {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 5px !important;
+  }
+
+  .loadout-icon-box svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .loadout-entry-badge {
+    font-size: 8px !important;
+    letter-spacing: 0.8px !important;
+  }
+
+  .loadout-entry-chip {
+    font-size: 8px !important;
+    padding: 1px 5px !important;
+  }
+
+  .loadout-entry-title {
+    font-size: 11px !important;
+  }
+
+  .loadout-entry-desc {
+    font-size: 8.5px !important;
+    line-height: 1.25 !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
     -webkit-box-orient: vertical !important;
     overflow: hidden !important;
   }
 
-  .bento-inline-title {
-    font-size: 9px !important;
-    font-weight: 800 !important;
-  }
-
-  .bento-mobile-stats-row {
-    grid-column: 1 / -1 !important;
-    display: block !important;
-    width: 100% !important;
-    margin-top: 1px !important;
-    flex-shrink: 0 !important;
-  }
-
-  .bento-stats-container {
-    display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 3px !important;
-    padding: 2.5px 4px !important;
-    background: rgba(8, 12, 24, 0.85) !important;
-    border-radius: 6px !important;
-    border: 1px solid rgba(0, 245, 212, 0.15) !important;
-  }
-
-  .bento-attr-item {
-    font-size: 7px !important;
-    font-weight: 800 !important;
+  /* Conteúdo Slide 1: Matriz de Telemetria de Combate */
+  .hero-telemetry-cluster {
     display: flex !important;
     flex-direction: column !important;
-    justify-content: center !important;
-    align-items: center !important;
-    gap: 1px !important;
-  }
-
-  .bento-attr-item .segmented-meter {
-    height: 3px !important;
-    width: 100% !important;
-    max-width: 42px !important;
-  }
-
-  /* Stats coloridos — ajustes mobile */
-  .bento-attr-item[data-stat] {
-    border-radius: 4px !important;
-    padding: 4px 2px !important;
-  }
-
-  .showcase-lore-quote {
-    display: block !important;
-    font-size: 8px !important;
-    line-height: 1.25 !important;
-    padding: 3px 5px !important;
-    margin: 2px 0 !important;
-    border-radius: 4px !important;
-  }
-
-  /* Botão Despertar na Thumb Zone (Alto Impacto Visual, Ergonômico e Sem Corte) */
-  .btn-summon-hero {
-    position: relative !important;
-    margin-top: 3px !important;
-    margin-bottom: 0 !important;
-    z-index: 20 !important;
-    padding: 8px 12px !important;
-    font-size: 11px !important;
-    font-weight: 900 !important;
-    letter-spacing: 1px !important;
-    flex-shrink: 0 !important;
-    width: 100% !important;
-    height: 36px !important;
+    padding: 7px 10px !important;
+    margin: 0 !important;
     border-radius: 8px !important;
-    clip-path: none !important;
-    background: linear-gradient(135deg, var(--btn-theme-color, #00f5d4) 0%, #10b981 100%) !important;
-    color: #040810 !important;
-    border: none !important;
-    box-shadow: 0 0 14px var(--btn-theme-color, rgba(0, 245, 212, 0.4)), 0 3px 8px rgba(0, 0, 0, 0.5) !important;
-    transition: transform 0.15s ease, filter 0.15s ease !important;
-    cursor: pointer !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
     gap: 5px !important;
+    width: 100% !important;
     box-sizing: border-box !important;
   }
 
-  .btn-summon-hero:active {
-    transform: scale(0.97) !important;
-    filter: brightness(1.2) !important;
+  .telemetry-header {
+    margin-bottom: 2px !important;
   }
 
-  /* ======================================================== */
-  /* ESPECIALIZAÇÃO: FORMATO CLÁSSICO 9:16 (TELAS MAIS CURTAS) */
-  /* ======================================================== */
-  @media (orientation: portrait) and (min-aspect-ratio: 9/17.5) {
-    .char-stage-col.void-hero-stage {
-      flex: 1 1 0 !important;
-      min-height: 110px !important;
-      max-height: none !important;
-    }
-    #char-preview-canvas {
-      min-height: 110px !important;
-      max-height: none !important;
-    }
-    .char-stage-viewport.void-stage-viewport {
-      min-height: 110px !important;
-      max-height: none !important;
-    }
-    .stage-nav-arrow {
-      width: 22px !important;
-      height: 34px !important;
-    }
-    .char-pedestal-btn {
-      min-width: 76px !important;
-      height: 28px !important;
-    }
-    .btn-summon-hero {
-      height: 34px !important;
-      padding: 7px 10px !important;
-      font-size: 10px !important;
-    }
+  .telemetry-title {
+    font-size: 8px !important;
+    letter-spacing: 1.2px !important;
   }
 
-  /* ======================================================== */
-  /* ESPECIALIZAÇÃO: FORMATO MODERNO 9:19.5 (TELAS ALONGADAS) */
-  /* ======================================================== */
-  @media (orientation: portrait) and (max-aspect-ratio: 9/17.5) {
-    .char-stage-col.void-hero-stage {
-      flex: 1 1 0 !important;
-      min-height: 130px !important;
-      max-height: none !important;
-    }
-    #char-preview-canvas {
-      min-height: 130px !important;
-      max-height: none !important;
-    }
-    .char-stage-viewport.void-stage-viewport {
-      min-height: 130px !important;
-      max-height: none !important;
-    }
-    .stage-nav-arrow {
-      width: 24px !important;
-      height: 38px !important;
-    }
-    .char-pedestal-btn {
-      min-width: 82px !important;
-      height: 30px !important;
-    }
-    .btn-summon-hero {
-      height: 36px !important;
-      padding: 8px 12px !important;
-      font-size: 11px !important;
-    }
+  .telemetry-tracks {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5px !important;
   }
+
+  .telemetry-channel {
+    gap: 7px !important;
+  }
+
+  .channel-label {
+    font-size: 8px !important;
+    width: 34px !important;
+  }
+
+  .channel-laser-track {
+    height: 7px !important;
+    border-radius: 3px !important;
+  }
+
+  .channel-val {
+    font-size: 8px !important;
+    width: 20px !important;
+  }
+
+  /* Conteúdo Slide 2: Lore, Selo & Diretriz */
+  .hero-lore-pane {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5px !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .hero-monolith-quote {
+    font-size: 9.5px !important;
+    line-height: 1.35 !important;
+    padding: 5px 9px !important;
+    margin: 0 !important;
+    border-left-width: 2px !important;
+  }
+
+  .primordial-seal-banner {
+    padding: 7px 10px !important;
+    gap: 3px !important;
+    margin: 0 !important;
+    border-radius: 7px !important;
+  }
+
+  .seal-header {
+    gap: 6px !important;
+  }
+
+  .seal-icon {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .seal-eyebrow {
+    font-size: 7px !important;
+  }
+
+  .seal-name {
+    font-size: 11px !important;
+  }
+
+  .seal-desc {
+    font-size: 8px !important;
+    line-height: 1.25 !important;
+  }
+
+  .seal-track {
+    height: 4px !important;
+  }
+
+  .seal-meta {
+    font-size: 7.5px !important;
+  }
+
+  .hero-tactical-hint {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 6px 9px !important;
+    gap: 3px !important;
+    border-radius: 7px !important;
+  }
+
+  .tactical-hint-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+  }
+
+  .hint-glyph {
+    font-size: 10px !important;
+  }
+
+  .hint-title {
+    font-size: 8px !important;
+    letter-spacing: 1px !important;
+  }
+
+  .hint-text {
+    font-size: 8.5px !important;
+    line-height: 1.3 !important;
+  }
+
+  /* 2.5 Catalisador de Despertar na Thumb Zone */
+  .btn-ignition-catalyst {
+    position: relative !important;
+    bottom: auto !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 8px 16px !important;
+    font-size: 12px !important;
+    letter-spacing: 1.4px !important;
+    margin-top: 4px !important;
+    margin-bottom: max(env(safe-area-inset-bottom, 6px), 6px) !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
+    justify-content: center !important;
+    z-index: 20 !important;
+  }
+
+  .btn-hotkey-hint {
+    display: none !important;
+  }
+
 
   /* ======================================================== */
   /* 3. Astrolábio de Talentos (Void Astral Portrait Fullscreen)*/
   /* ======================================================== */
-  #talents-modal {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100vw !important;
-    width: 100dvw !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    max-width: 100vw !important;
-    max-height: 100dvh !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: radial-gradient(ellipse at 50% 20%, #1a0d36 0%, #071020 48%, #030408 100%) !important;
-    backdrop-filter: blur(20px) !important;
-    display: flex !important;
-    flex-direction: column !important;
+  #talents-modal.astrolabe-screen-overlay,
+  #talents-modal.void-astral-overlay,
+  #talents-modal.modal-overlay {
+    padding: max(env(safe-area-inset-top, 4px), 4px) 
+             max(env(safe-area-inset-right, 6px), 6px) 
+             max(env(safe-area-inset-bottom, 6px), 6px) 
+             max(env(safe-area-inset-left, 6px), 6px) !important;
     overflow: hidden !important;
-    z-index: 105 !important;
   }
 
-  .modal-box-altar.void-modal-box.astrolabe-void-box {
-    max-width: 100vw !important;
-    width: 100% !important;
-    min-height: 100dvh !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
-    border-radius: 0 !important;
-    border: none !important;
-    padding: max(env(safe-area-inset-top, 6px), 6px) 
-             max(env(safe-area-inset-right, 8px), 8px) 
-             max(env(safe-area-inset-bottom, 8px), 8px) 
-             max(env(safe-area-inset-left, 8px), 8px) !important;
-    margin: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    flex-grow: 1 !important;
-    gap: 4px !important;
-  }
-
-  /* Top Bar Mobile do Astrolábio: Botão Voltar Prioritário à Esquerda */
-  #talents-modal .astrolabe-header {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 6px !important;
-    padding: 2px 2px 5px 2px !important;
-    margin-bottom: 2px !important;
-    border-bottom: 1px solid rgba(0, 245, 212, 0.16) !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    flex-shrink: 0 !important;
-    z-index: 30 !important;
-  }
-
-  #talents-modal .astrolabe-header #close-talents-btn {
-    order: 1 !important;
-    flex-shrink: 0 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-    height: 32px !important;
-    padding: 0 10px !important;
-    font-size: 10px !important;
-    font-weight: 800 !important;
-    letter-spacing: 0.5px !important;
-    border-radius: 8px !important;
-    clip-path: none !important;
-    background: rgba(16, 42, 28, 0.95) !important;
-    border: 1.5px solid rgba(46, 204, 113, 0.55) !important;
-    color: #55efc4 !important;
-    box-shadow: 0 0 10px rgba(46, 204, 113, 0.3) !important;
-    user-select: none !important;
-    cursor: pointer !important;
-  }
-
-  #talents-modal .astrolabe-header #close-talents-btn:active {
-    transform: scale(0.96) !important;
-    background: rgba(46, 204, 113, 0.3) !important;
-  }
-
-  #talents-modal .astrolabe-header-info {
-    order: 2 !important;
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    overflow: hidden !important;
-    padding-left: 2px !important;
-  }
-
-  #talents-modal .astrolabe-header-info .void-header-eyebrow {
-    display: none !important;
-  }
-
-  #talents-modal .astrolabe-header-info .void-modal-title {
-    font-size: clamp(11.5px, 3.4vw, 14.5px) !important;
-    line-height: 1.15 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    margin: 0 !important;
-    letter-spacing: 0.8px !important;
-    color: #f8fafc !important;
-    text-shadow: 0 0 8px rgba(0, 245, 212, 0.35) !important;
-  }
-
-  #talents-modal .astrolabe-header-info .void-modal-sub {
-    display: none !important;
-  }
-
-  #talents-modal .astrolabe-header-actions {
-    order: 3 !important;
-    flex-shrink: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-  }
-
-  #talents-modal .astrolabe-header-actions .void-souls-capsule {
-    height: 30px !important;
-    padding: 2px 7px !important;
-    font-size: 10px !important;
+  .astrolabe-intrinsic-stage {
+    max-height: calc(100dvh - 8px) !important;
     gap: 3px !important;
-    border-radius: 6px !important;
-    clip-path: none !important;
-  }
-
-  #talents-modal .astrolabe-header-actions .void-astrolabe-action-btn {
-    height: 30px !important;
-    width: 30px !important;
-    min-width: 30px !important;
+    width: 100% !important;
     padding: 0 !important;
-    justify-content: center !important;
-    align-items: center !important;
-    border-radius: 6px !important;
-    clip-path: none !important;
   }
 
-  #talents-modal .astrolabe-header-actions .void-astrolabe-action-btn svg {
-    margin: 0 !important;
+  /* Cabeçalho Compacto Mobile */
+  .astrolabe-header-group {
+    gap: 1px !important;
+    width: 100% !important;
   }
 
-  #talents-modal .astrolabe-header .btn-text-full {
+  .astrolabe-eyebrow {
+    max-width: 90% !important;
+    gap: 4px !important;
+  }
+
+  .astrolabe-eyebrow-text {
+    font-size: 8px !important;
+    letter-spacing: 1px !important;
+  }
+
+  .astrolabe-monumental-title {
+    font-size: clamp(14px, 4vw, 17px) !important;
+    letter-spacing: 1.2px !important;
+    line-height: 1.1 !important;
+  }
+
+  .astrolabe-monumental-sub {
     display: none !important;
   }
 
-  #talents-modal .astrolabe-header #close-talents-btn .btn-text-full {
+  .astrolabe-meta-chips-row {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    margin-top: 1px !important;
+    width: 100% !important;
+  }
+
+  .astrolabe-meta-chip {
+    padding: 1.5px 6px !important;
+    font-size: 8.5px !important;
+    gap: 4px !important;
+  }
+
+  .astrolabe-meta-chip .chip-label {
+    font-size: 7px !important;
+  }
+
+  .astrolabe-meta-chip .chip-val {
+    font-size: 9.5px !important;
+  }
+
+  .astrolabe-action-chip {
+    padding: 1.5px 6px !important;
+    font-size: 8px !important;
+    gap: 3px !important;
+  }
+
+  .astrolabe-action-chip .btn-text-full {
+    font-size: 8px !important;
+  }
+
+  /* Abas Segmentadas de Constelação no Mobile (4 Abas: Planetário Celeste + 3 Constelações) */
+  .astrolabe-nav-container {
+    width: 100% !important;
+    margin: 1px 0 !important;
+  }
+
+  .astrolabe-tabs-bar {
+    display: flex !important;
+    overflow-x: auto !important;
+    width: 100% !important;
+    gap: 3px !important;
+    padding: 2px !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .astrolabe-tabs-bar::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .tab-text-desktop {
+    display: none !important;
+  }
+
+  .tab-text-mobile {
     display: inline !important;
   }
 
-  .char-altar-layout.astrolabe-altar-layout {
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    flex-grow: 1 !important;
-    gap: 4px !important;
-    margin-top: 1px !important;
-    min-height: 0 !important;
-  }
-
-  /* 1. Abas Segmentadas no Topo (Segmented Control 3-Colunas) */
-  .astrolabe-constellation-dock.void-roster-dock {
-    order: 1 !important;
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 4px !important;
-    padding: 2px !important;
-    min-height: 38px !important;
-    max-height: 40px !important;
-    height: 38px !important;
-    background: rgba(6, 10, 24, 0.85) !important;
-    backdrop-filter: blur(12px) !important;
-    border: 1px solid rgba(0, 245, 212, 0.18) !important;
-    border-radius: 10px !important;
-    flex-shrink: 0 !important;
-    overflow: hidden !important;
-  }
-
-  .astrolabe-constellation-dock [data-constellation="all"] {
-    display: none !important;
-  }
-
-  .astrolabe-constellation-dock .char-pedestal-btn {
+  .astrolabe-tab-btn {
+    flex: 1 1 0 !important;
     min-width: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    padding: 2px 4px !important;
-    gap: 4px !important;
-    flex-shrink: 0 !important;
-    border-radius: 7px !important;
-    clip-path: none !important;
+    padding: 4px 2px !important;
+    font-size: 7.5px !important;
     justify-content: center !important;
-    align-items: center !important;
-    background: rgba(14, 20, 36, 0.65) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    gap: 3px !important;
+    white-space: nowrap !important;
   }
 
-  .astrolabe-constellation-dock .char-pedestal-btn.active {
-    background: linear-gradient(145deg, rgba(28, 40, 72, 0.95), rgba(12, 18, 36, 0.95)) !important;
-    transform: none !important;
-  }
-
-  .astrolabe-constellation-dock .char-pedestal-emblem {
-    width: 18px !important;
-    height: 18px !important;
-    background: transparent !important;
-    border: none !important;
-    color: #ffffff !important;
-  }
-
-  .astrolabe-constellation-dock .char-pedestal-emblem svg {
-    width: 14px !important;
-    height: 14px !important;
-    color: #ffffff !important;
-  }
-
-  .astrolabe-constellation-dock .char-pedestal-info {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 0 !important;
-  }
-
-  .astrolabe-constellation-dock .char-pedestal-title {
-    display: none !important;
-  }
-
-  .astrolabe-constellation-dock .char-pedestal-name {
-    font-size: 8.5px !important;
-    font-weight: 900 !important;
-    line-height: 1.1 !important;
-    letter-spacing: 0.5px !important;
-  }
-
-  .astrolabe-constellation-dock .tab-prog-badge {
-    font-size: 7px !important;
-    opacity: 0.8 !important;
-    margin-top: 0 !important;
-    font-family: monospace !important;
-  }
-
-  /* 2. Palco do Planetário no Meio (Árvore Estelar Expandida Verticalmente) */
-  .astrolabe-stage-col.void-hero-stage {
-    order: 2 !important;
-    flex: 1 1 auto !important;
-    height: auto !important;
-    min-height: 240px !important;
-    max-height: none !important;
-    width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: 1px solid rgba(0, 245, 212, 0.18) !important;
-    border-radius: 12px !important;
-    background: radial-gradient(ellipse at 50% 50%, rgba(26, 12, 48, 0.6) 0%, rgba(6, 12, 26, 0.9) 100%) !important;
-    box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.8) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    position: relative !important;
+  .astrolabe-tab-btn .tab-label {
     overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
-  .astrolabe-stage-col.void-hero-stage::before {
-    display: none !important;
+  .astrolabe-tab-btn .tab-prog-badge {
+    font-size: 6.5px !important;
+    padding: 0 2px !important;
   }
 
-  #astrolabe-active-const-badge {
-    position: absolute !important;
-    top: 4px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    font-size: 8px !important;
-    font-weight: 900 !important;
-    letter-spacing: 1.2px !important;
-    padding: 1px 10px !important;
-    border-radius: 8px !important;
-    clip-path: none !important;
-    background: rgba(6, 8, 18, 0.9) !important;
-    backdrop-filter: blur(8px) !important;
-    border: 1px solid var(--constellation-color, #00f5d4) !important;
-    color: var(--constellation-color, #00f5d4) !important;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.8), 0 0 8px var(--constellation-color, #00f5d4) !important;
-    z-index: 15 !important;
-  }
-
-  .astrolabe-viewport.void-stage-viewport {
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 240px !important;
-    max-height: none !important;
-    margin: 0 !important;
-    border: none !important;
-    background: transparent !important;
+  /* Bento Grid em 1 Coluna Vertical (Palco em Cima, Dossiê em Baixo) */
+  .astrolabe-bento-grid {
     display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  .astrolabe-core {
-    display: none !important;
-  }
-
-  /* Nós Celestes no Mobile: 48px com ícone de 21px (Toque Preciso & Amplo) */
-  .astrolabe-node {
-    width: 48px;
-    height: 48px;
-    border-radius: 13px;
-    border-width: 1.8px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
-  }
-
-  .astrolabe-node.node-keystone {
-    width: 54px;
-    height: 54px;
-    border-radius: 15px;
-    border-width: 2px;
-  }
-
-  .node-svg-icon {
-    width: 21px;
-    height: 21px;
-  }
-
-  .node-lvl-pip {
-    font-size: 8px;
-    font-weight: 800;
-    margin-top: 1px;
-  }
-
-  /* 3. Dossiê Tático da Forja (Bottom Sheet Compacto Sem Espaço Ocioso) */
-  .astrolabe-forge-dossier.void-showcase-dossier {
-    order: 3 !important;
-    flex: 0 0 auto !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    flex: 1 1 0 !important;
     min-height: 0 !important;
-    max-height: none !important;
-    height: auto !important;
-    padding: 6px 10px 8px 10px !important;
-    border-radius: 12px !important;
-    display: flex !important;
-    flex-direction: column !important;
     overflow: hidden !important;
-    background: rgba(8, 14, 28, 0.88) !important;
-    border: 1px solid rgba(0, 245, 212, 0.2) !important;
-    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.7) !important;
-    gap: 4px !important;
+    width: 100% !important;
   }
 
-  .astrolabe-forge-dossier .showcase-header-v2 {
-    padding-bottom: 2px !important;
-    margin-bottom: 2px !important;
+  .astrolabe-pillar {
+    padding: 4px 8px !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  .astrolabe-pillar .pillar-header {
+    padding-bottom: 3px !important;
+    margin-bottom: 3px !important;
     flex-shrink: 0 !important;
   }
 
-  .astrolabe-forge-dossier .showcase-title-row {
-    gap: 4px !important;
-    margin-bottom: 2px !important;
+  .astrolabe-pillar .pillar-tag {
+    font-size: 8px !important;
   }
 
-  .astrolabe-forge-dossier .showcase-archetype-pill,
-  .astrolabe-forge-dossier .showcase-diff-badge {
+  .astrolabe-pillar .pillar-badge-hero {
     font-size: 7.5px !important;
     padding: 1px 6px !important;
   }
 
-  .astrolabe-forge-dossier .showcase-name-v2 {
-    font-size: 13px !important;
-    line-height: 1.2 !important;
-    margin: 1px 0 !important;
+  /* Pilar 1: Palco do Planetário no Mobile */
+  .astrolabe-pillar-stage {
+    flex: 0 0 59% !important;
+    min-height: 238px !important;
+    max-height: 61vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
   }
 
-  .astrolabe-forge-dossier .showcase-role-tag {
+  .astrolabe-viewport-wrap {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .astrolabe-viewport {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    border-radius: 6px !important;
+  }
+
+  .astrolabe-armillary-layer {
+    opacity: 0.5 !important;
+  }
+
+  .astrolabe-core {
+    display: flex !important;
+    width: 58px !important;
+    height: 58px !important;
+  }
+
+  .astrolabe-core .core-rings {
+    inset: -5px !important;
+  }
+
+  .astrolabe-core .core-label {
+    font-size: 6.5px !important;
+  }
+
+  .astrolabe-core .core-val {
+    font-size: 9.5px !important;
+  }
+
+  .astrolabe-node {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .astrolabe-node.node-keystone {
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  .node-svg-icon {
+    width: 19px !important;
+    height: 19px !important;
+  }
+
+  .node-lvl-pip {
+    font-size: 7.5px !important;
+    margin-top: 1px !important;
+  }
+
+  .astrolabe-stage-hint {
     display: none !important;
   }
 
-  /* Corpo Interno do Dossiê */
+  /* Pilar 2: Altar da Forja (Dossiê Completo no Mobile) */
+  .astrolabe-pillar-dossier {
+    flex: 1 1 41% !important;
+    min-height: 172px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 6px 8px !important;
+    gap: 3px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .pillar-view-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .astrolabe-dossier-scroll {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    padding-right: 2px !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .forge-showcase-header {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    padding-bottom: 3px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .forge-showcase-main {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .forge-node-icon-socket {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .forge-node-icon-socket svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .forge-node-titles {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
+    min-width: 0 !important;
+  }
+
+  .forge-node-name {
+    font-size: 13px !important;
+    line-height: 1.15 !important;
+    margin: 0 !important;
+  }
+
+  .forge-node-type {
+    font-size: 8px !important;
+    color: #94a3b8 !important;
+    display: block !important;
+    line-height: 1.1 !important;
+  }
+
   .astrolabe-dossier-body {
     display: flex !important;
     flex-direction: column !important;
-    flex: 0 0 auto !important;
-    overflow: visible !important;
-    min-height: 0 !important;
-    gap: 4px !important;
-    margin: 0 !important;
-    padding-right: 0 !important;
+    gap: 3px !important;
   }
 
   .astrolabe-info-card {
-    padding: 5px 8px !important;
+    padding: 4px 6px !important;
     gap: 2px !important;
     border-radius: 6px !important;
     clip-path: none !important;
+    box-sizing: border-box !important;
   }
 
   .astrolabe-card-title-tag,
   .astrolabe-stat-badge,
   .astrolabe-level-badge {
     font-size: 7.5px !important;
-    padding: 1px 5px !important;
+    padding: 0 4px !important;
   }
 
   .astrolabe-card-desc {
-    font-size: 9.5px !important;
-    line-height: 1.3 !important;
+    font-size: 9px !important;
+    line-height: 1.25 !important;
   }
 
   .comparison-row {
-    padding: 4px 6px !important;
-    gap: 6px !important;
+    padding: 2px 5px !important;
+    gap: 4px !important;
   }
 
   .comp-label {
-    font-size: 7px !important;
+    font-size: 6.5px !important;
   }
 
   .comp-val-cur,
   .comp-val-next {
-    font-size: 11px !important;
+    font-size: 10px !important;
   }
 
   .comp-arrow {
-    width: 12px !important;
-    height: 12px !important;
+    width: 10px !important;
+    height: 10px !important;
   }
 
   .forge-segmented-meter .segment-cell {
-    height: 5px !important;
-    max-width: 12px !important;
+    height: 4px !important;
   }
 
-  /* Oculta Lore Extenso no Celular para Garantir Visibilidade Imediata */
+  /* Ocultar Lore Extenso no Celular para Garantir Visibilidade Imediata */
   #forge-node-lore-card {
     display: none !important;
   }
 
-  /* Botão FUNDIR ALMAS: Fixo no Rodapé do Painel Sem Espaço Vazio */
-  .btn-forge-hero {
+  .forge-action-footer {
     flex-shrink: 0 !important;
-    margin-top: 4px !important;
-    padding: 9px 12px !important;
-    font-size: 11px !important;
-    font-weight: 900 !important;
-    letter-spacing: 0.8px !important;
+    padding-top: 3px !important;
+    margin-top: auto !important;
+  }
+
+  .btn-forge-hero {
     height: 38px !important;
-    border-radius: 8px !important;
+    font-size: 10px !important;
+    letter-spacing: 0.8px !important;
+    border-radius: 6px !important;
     clip-path: none !important;
-    box-shadow: 0 0 16px var(--btn-theme-color, rgba(243, 156, 18, 0.4)) !important;
-    z-index: 10 !important;
+    width: 100% !important;
+    padding: 6px 12px !important;
+    margin: 0 !important;
+    justify-content: center !important;
+  }
+
+  #astrolabe-blessings-panel {
+    display: none !important;
+  }
+
+  /* Barra de Comando Inferior no Mobile */
+  .astrolabe-actions-bar {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding-top: 2px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .btn-astrolabe-return {
+    padding: 6px 10px !important;
+    font-size: 9.5px !important;
+    letter-spacing: 0.6px !important;
+    border-radius: 6px !important;
+    justify-content: center !important;
+  }
+
+  .astrolabe-hotkey-hint {
+    display: none !important;
+  }
+
+  .desktop-map-hint { display: none !important; }
+  .mobile-map-hint { display: inline !important; }
+
+  .astrolabe-stage-hint {
+    bottom: 3px !important;
+    font-size: 7.5px !important;
+    padding: 2px 8px !important;
   }
 
   /* Resumo de Bênçãos Mobile */
-  .blessings-summary-drawer {
-    padding: 8px 10px;
-    max-height: 88%;
-    border-radius: 12px;
+  .blessings-drawer-content {
+    max-height: 90dvh !important;
+    padding: 10px 12px !important;
   }
 
   .blessings-drawer-title {
-    font-size: 11px;
+    font-size: 13px !important;
   }
 
   .blessings-summary-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 4px !important;
   }
 
   .blessing-stat-card {
-    padding: 4px 6px;
-    gap: 4px;
+    padding: 4px 6px !important;
+    gap: 4px !important;
   }
 
   .blessing-icon {
-    font-size: 12px;
+    font-size: 12px !important;
   }
 
   .blessing-label {
-    font-size: 7.5px;
+    font-size: 7.5px !important;
   }
 
   .blessing-val {
-    font-size: 9.5px;
+    font-size: 9.5px !important;
   }
 
   /* 4. Cartas de Tarô de Upgrade & Baú Arcano */
@@ -1946,122 +1823,197 @@
    RESPONSIVIDADE VERTICAL / MOBILE (BESTIÁRIO & GRIMÓRIO)
    ========================================================================== */
 @media (max-width: 850px), (orientation: portrait) {
-  /* 1. Modal do Bestiário */
-  .bestiary-void-box {
-    width: 98vw !important;
-    max-width: 98vw !important;
-    max-height: 96dvh !important;
-    height: 96dvh !important;
-    border-radius: 10px !important;
-    background: radial-gradient(circle at 50% 10%, #151a24 0%, #0a0d14 75%, #05070a 100%) !important;
-    border: 1px solid rgba(0, 245, 212, 0.35) !important;
-    box-shadow: 0 0 45px rgba(0, 245, 212, 0.12), inset 0 0 40px rgba(0, 0, 0, 0.85) !important;
-    padding: 0 !important;
+  /* 1. Modal do Bestiário (Neo-Arcane Intrinsic Stage em Tela Vertical) */
+  .bestiary-screen-overlay {
+    padding: max(env(safe-area-inset-top, 6px), 6px) 
+             max(env(safe-area-inset-right, 6px), 6px) 
+             max(env(safe-area-inset-bottom, 6px), 6px) 
+             max(env(safe-area-inset-left, 6px), 6px) !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
     overflow: hidden !important;
   }
 
-  .bestiary-header {
+  .bestiary-intrinsic-stage {
+    height: 100% !important;
+    max-height: 100% !important;
+    width: 100% !important;
+    max-width: 440px !important;
+    gap: 3px !important;
+    padding: 0 !important;
     display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    padding: 6px 10px !important;
-    gap: 6px !important;
-    flex-shrink: 0 !important;
-    border-bottom: 1px solid rgba(0, 245, 212, 0.2) !important;
-    background: rgba(8, 12, 18, 0.95) !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    margin: 0 auto !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
 
-  .bestiary-header .btn-void-return {
-    padding: 4px 8px !important;
-    font-size: 9.5px !important;
-    height: 27px !important;
+  .bestiary-header-group {
+    gap: 1px !important;
+    margin-bottom: 1px !important;
     flex-shrink: 0 !important;
   }
 
-  .bestiary-header-info {
-    text-align: center !important;
-    flex: 1 !important;
-    min-width: 0 !important;
+  .bestiary-eyebrow {
+    max-width: 300px !important;
+    gap: 4px !important;
   }
 
-  .bestiary-header-info .void-modal-sub {
-    display: none !important;
-  }
-
-  .bestiary-header-info .void-header-eyebrow {
+  .bestiary-eyebrow-text {
     font-size: 7.5px !important;
-    letter-spacing: 1.2px !important;
-  }
-
-  .bestiary-header-info .void-modal-title {
-    font-size: 13px !important;
+    letter-spacing: 0.8px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    letter-spacing: 0.8px !important;
   }
 
-  .bestiary-header-actions {
-    display: flex !important;
-    grid-template-columns: none !important;
-    width: auto !important;
-    flex: 0 0 auto !important;
-    justify-content: flex-end !important;
+  .bestiary-monumental-title {
+    font-size: 16px !important;
+    letter-spacing: 1px !important;
+    margin: 0 !important;
   }
 
-  .bestiary-header-actions .void-souls-capsule {
-    padding: 2px 7px !important;
-    font-size: 9.5px !important;
-    height: 25px !important;
-    flex-shrink: 0 !important;
+  .bestiary-monumental-sub {
+    display: none !important;
   }
 
-  /* Abas em linha horizontal com rolagem suave */
-  .bestiary-tabs-bar {
-    padding: 5px 8px !important;
+  /* Chips: 3 colunas em grid fluido que NUNCA cortam nas laterais */
+  .bestiary-meta-chips-row {
+    margin-top: 2px !important;
     gap: 4px !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1.15fr 1fr !important;
+    width: 100% !important;
+    max-width: 380px !important;
+    box-sizing: border-box !important;
+    padding: 0 4px !important;
+  }
+
+  .bestiary-meta-chip {
+    padding: 2px 4px !important;
     display: flex !important;
-    overflow-x: auto !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 1px !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px) !important;
+  }
+
+  .bestiary-meta-chip .chip-label {
+    font-size: 6.5px !important;
+    letter-spacing: 0.3px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+
+  .bestiary-meta-chip .chip-val {
+    font-size: 9.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Navegação Segmentada em 4 Colunas */
+  .bestiary-nav-container {
+    width: 100% !important;
     flex-shrink: 0 !important;
+  }
+
+  .bestiary-tabs-bar {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    padding: 2px !important;
+    gap: 2px !important;
+    box-sizing: border-box !important;
     scrollbar-width: none !important;
-    -webkit-overflow-scrolling: touch !important;
   }
 
   .bestiary-tabs-bar::-webkit-scrollbar {
-    display: none;
+    display: none !important;
   }
 
   .bestiary-tab-btn {
-    padding: 4px 9px !important;
-    font-size: 9px !important;
-    border-radius: 4px !important;
-    flex-shrink: 0 !important;
+    padding: 3px 2px !important;
+    font-size: 7.5px !important;
+    letter-spacing: 0.2px !important;
+    justify-content: center !important;
+    gap: 2.5px !important;
+    min-width: 0 !important;
   }
 
-  /* Layout Principal em Coluna Vertical Única */
-  .bestiary-main-layout {
+  .bestiary-tab-btn .tab-label {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .bestiary-tab-btn .tab-indicator {
+    width: 3.5px !important;
+    height: 3.5px !important;
+  }
+
+  /* Bento Grid: Coluna Vertical em Tela Móvel */
+  .bestiary-bento-grid {
     display: flex !important;
     flex-direction: column !important;
-    flex: 1 1 0 !important;
+    flex: 1 1 auto !important;
     min-height: 0 !important;
+    height: auto !important;
+    gap: 4px !important;
+    width: 100% !important;
     overflow: hidden !important;
   }
 
-  /* Ribbon Horizontal de Cartões de Monstros (Swipe com Polegar) */
-  .bestiary-roster-column {
+  /* Ribbon Horizontal de Monstros */
+  .bestiary-pillar-roster {
     flex: 0 0 auto !important;
     width: 100% !important;
     max-height: none !important;
-    padding: 6px 8px !important;
-    border-right: none !important;
-    border-bottom: 1px solid rgba(0, 245, 212, 0.15) !important;
+    min-height: 74px !important;
+    height: auto !important;
+    padding: 4px 6px 5px 6px !important;
     background: rgba(7, 9, 14, 0.85) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+  }
+
+  .bestiary-pillar-roster .pillar-header {
+    padding-bottom: 2px !important;
+    margin-bottom: 3px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .bestiary-pillar-roster .pillar-tag {
+    font-size: 7.5px !important;
+    letter-spacing: 0.6px !important;
+  }
+
+  .bestiary-pillar-roster .pillar-badge-count {
+    font-size: 7.5px !important;
+    padding: 1px 4px !important;
+  }
+
+  .bestiary-roster-scroll {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 48px !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
-    scrollbar-width: thin !important;
-    -webkit-overflow-scrolling: touch !important;
+    padding: 2px 1px 5px 1px !important;
     box-sizing: border-box !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important;
   }
 
   .bestiary-cards-grid {
@@ -2069,16 +2021,21 @@
     flex-direction: row !important;
     gap: 6px !important;
     width: max-content !important;
-    padding-bottom: 2px !important;
+    align-items: center !important;
+    height: auto !important;
   }
 
   .bestiary-card {
-    flex: 0 0 135px !important;
-    width: 135px !important;
+    flex: 0 0 122px !important;
+    width: 122px !important;
+    height: 42px !important;
+    min-height: 42px !important;
     padding: 4px 6px !important;
-    gap: 6px !important;
+    gap: 5px !important;
     border-radius: 6px !important;
     box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
     transform: none !important;
   }
 
@@ -2087,30 +2044,31 @@
   }
 
   .bcard-avatar-wrap {
-    width: 28px !important;
-    height: 28px !important;
+    width: 26px !important;
+    height: 26px !important;
     border-radius: 4px !important;
     flex-shrink: 0 !important;
   }
 
   .bcard-avatar-icon {
-    font-size: 13px !important;
+    font-size: 12px !important;
   }
 
   .bcard-info {
     gap: 1px !important;
     min-width: 0 !important;
-  }
-
-  .bcard-top-row {
-    gap: 4px !important;
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
   }
 
   .bcard-name {
-    font-size: 9.5px !important;
+    font-size: 8.5px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    line-height: 1.15 !important;
   }
 
   .bcard-cat-pill {
@@ -2118,277 +2076,1077 @@
   }
 
   .bcard-sub-row {
-    font-size: 7.5px !important;
+    font-size: 6.5px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 2px !important;
+    line-height: 1 !important;
+  }
+
+  .bcard-kills {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   .bcard-threat {
+    font-size: 7px !important;
     letter-spacing: 0.5px !important;
+    flex-shrink: 0 !important;
   }
 
-  /* Painel Dossiê Completo Rolável Verticalmente */
-  .bestiary-dossier-panel {
-    flex: 1 1 0 !important;
+  /* Dossiê Vertical Rolável */
+  .bestiary-pillar-dossier {
+    flex: 1 1 auto !important;
     min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 5px 7px !important;
+    border-radius: 8px !important;
+  }
+
+  .bestiary-pillar-dossier .pillar-header {
+    padding-bottom: 2px !important;
+    margin-bottom: 3px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .bestiary-pillar-dossier .pillar-tag {
+    font-size: 7.5px !important;
+    letter-spacing: 0.6px !important;
+  }
+
+  .pillar-badge-hero {
+    font-size: 7px !important;
+    padding: 1px 4px !important;
+  }
+
+  .bestiary-dossier-scroll {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
     overflow-y: auto !important;
-    padding: 8px 10px 24px !important;
+    padding-right: 3px !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: thin !important;
   }
 
   .dossier-card-wrap {
-    gap: 12px !important;
+    gap: 5px !important;
+    padding-bottom: 4px !important;
   }
 
-  /* Viewport Aprimorado do Canvas para Tela Vertical */
   .bestiary-preview-viewport {
-    height: 210px !important;
-    border-radius: 10px !important;
+    height: clamp(110px, 16vh, 130px) !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .preview-ambient-glow {
+    width: clamp(100px, 15vh, 120px) !important;
+    height: clamp(100px, 15vh, 120px) !important;
   }
 
   #bestiary-preview-canvas {
-    width: 210px !important;
-    height: 210px !important;
+    width: clamp(110px, 16vh, 130px) !important;
+    height: clamp(110px, 16vh, 130px) !important;
   }
 
-  .bestiary-category-pill {
-    top: 8px !important;
-    left: 8px !important;
-    font-size: 8.5px !important;
-    padding: 2px 7px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-  }
-
+  .bestiary-category-pill,
   .bestiary-kills-pill {
-    top: 8px !important;
-    right: 8px !important;
-    font-size: 9px !important;
-    padding: 2px 7px !important;
-    display: inline-flex !important;
-    align-items: center !important;
+    font-size: 7px !important;
+    padding: 1px 5px !important;
+    top: 4px !important;
   }
 
-  .dossier-name-row {
-    gap: 10px !important;
-  }
+  .bestiary-category-pill { left: 4px !important; }
+  .bestiary-kills-pill { right: 4px !important; }
 
   .dossier-name {
-    font-size: 17px !important;
+    font-size: 14px !important;
   }
 
   .dossier-title {
-    font-size: 11px !important;
+    font-size: 9px !important;
   }
 
   .dossier-threat-badge {
-    font-size: 11px !important;
-    padding: 2px 7px !important;
-  }
-
-  .dossier-stats-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 6px !important;
-  }
-
-  .dossier-stat-box {
-    padding: 6px 8px !important;
-    border-radius: 6px !important;
-    gap: 2px !important;
-  }
-
-  .dossier-stat-label {
-    font-size: 8px !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 3px !important;
-  }
-
-  .dossier-stat-value {
-    font-size: 11.5px !important;
-  }
-
-  .dossier-lore-box {
-    padding: 8px 10px !important;
-    border-radius: 8px !important;
-  }
-
-  .dossier-box-header {
-    margin-bottom: 5px !important;
-    gap: 6px !important;
-  }
-
-  .dossier-box-icon {
-    font-size: 12px !important;
-    display: flex !important;
-    align-items: center !important;
-  }
-
-  .dossier-box-title {
-    font-size: 9.5px !important;
-  }
-
-  .dossier-lock-status {
-    font-size: 8px !important;
-    display: flex !important;
-    align-items: center !important;
-  }
-
-  .dossier-box-content {
-    font-size: 11px !important;
-    line-height: 1.45 !important;
-  }
-
-  .dossier-quotes-box {
-    padding: 8px 10px !important;
-    border-radius: 8px !important;
-  }
-
-  .dossier-quotes-list {
-    gap: 4px !important;
-  }
-
-  .dossier-quote-item {
-    font-size: 10.5px !important;
-    padding: 4px 8px !important;
-    line-height: 1.4 !important;
-  }
-
-  /* 2. Grimório de Conquistas em Tela Vertical */
-  .achievements-void-box {
-    width: 98vw !important;
-    max-width: 98vw !important;
-    max-height: 96dvh !important;
-    height: 96dvh !important;
-    border-radius: 10px !important;
-    background: radial-gradient(circle at 50% 10%, #17142b 0%, #0d0b17 75%, #06050a 100%) !important;
-    border: 1px solid rgba(162, 155, 254, 0.35) !important;
-    box-shadow: 0 0 35px rgba(162, 155, 254, 0.15), inset 0 0 20px rgba(0, 0, 0, 0.8) !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-  }
-
-  .achievements-header {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    padding: 6px 10px !important;
-    gap: 6px !important;
-    flex-shrink: 0 !important;
-    border-bottom: 1px solid rgba(162, 155, 254, 0.2) !important;
-    background: rgba(15, 12, 25, 0.95) !important;
-  }
-
-  .achievements-header .btn-void-return {
-    padding: 4px 8px !important;
-    font-size: 9.5px !important;
-    height: 27px !important;
-    flex-shrink: 0 !important;
-  }
-
-  .achievements-header-info {
-    text-align: center !important;
-    flex: 1 !important;
-    min-width: 0 !important;
-  }
-
-  .achievements-header-info .void-modal-sub {
-    display: none !important;
-  }
-
-  .achievements-header-info .void-header-eyebrow {
-    font-size: 7.5px !important;
-    letter-spacing: 1.2px !important;
-  }
-
-  .achievements-header-info .void-modal-title {
-    font-size: 13px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    letter-spacing: 0.8px !important;
-  }
-
-  .achievements-header-actions {
-    display: flex !important;
-    grid-template-columns: none !important;
-    width: auto !important;
-    flex: 0 0 auto !important;
-    justify-content: flex-end !important;
-  }
-
-  .achievements-header-actions .void-souls-capsule {
-    padding: 2px 7px !important;
-    font-size: 9.5px !important;
-    height: 25px !important;
-    flex-shrink: 0 !important;
-  }
-
-  .achievements-modal-body {
-    padding: 6px 8px 16px !important;
-  }
-
-  .achievements-cards-grid {
-    grid-template-columns: 1fr !important;
-    gap: 6px !important;
-  }
-
-  .achievement-card {
-    padding: 7px 9px !important;
-    gap: 8px !important;
-    border-radius: 6px !important;
-  }
-
-  .ach-card-icon-wrap {
-    width: 32px !important;
-    height: 32px !important;
-    font-size: 14px !important;
-    border-radius: 6px !important;
-  }
-
-  .ach-card-details {
-    flex: 1 !important;
-    min-width: 0 !important;
-  }
-
-  .ach-card-top-row {
-    flex-wrap: nowrap !important;
-    gap: 4px !important;
-  }
-
-  .ach-card-name {
-    font-size: 11px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  .ach-status-badge {
-    font-size: 7.5px !important;
-    padding: 1px 4px !important;
-    flex-shrink: 0 !important;
-  }
-
-  .ach-card-desc {
     font-size: 9px !important;
-    line-height: 1.3 !important;
-    margin-bottom: 4px !important;
-  }
-
-  .ach-reward-pill {
-    font-size: 8px !important;
     padding: 1px 5px !important;
   }
 
-  @media (max-width: 450px) {
-    .achievements-header .btn-void-return .btn-text-full,
-    .bestiary-header .btn-void-return .btn-text-full {
-      display: none !important;
-    }
-    .achievements-header .btn-void-return svg,
-    .bestiary-header .btn-void-return svg {
-      margin-right: 0 !important;
-    }
+  .dossier-stats-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 2.5px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .bestiary-stat-card {
+    padding: 2.5px 3.5px !important;
+    border-radius: 4px !important;
+    gap: 0.5px !important;
+  }
+
+  .bestiary-stat-card .stat-label {
+    font-size: 6px !important;
+    letter-spacing: 0.2px !important;
+  }
+
+  .bestiary-stat-card .stat-val {
+    font-size: 9.5px !important;
+  }
+
+  .dossier-lore-box,
+  .dossier-quotes-box {
+    padding: 4px 6px !important;
+    border-radius: 5px !important;
+  }
+
+  .dossier-box-header {
+    margin-bottom: 2px !important;
+    padding-bottom: 1px !important;
+  }
+
+  .dossier-box-title {
+    font-size: 8px !important;
+  }
+
+  .dossier-lock-status {
+    font-size: 6.5px !important;
+  }
+
+  .dossier-box-content {
+    font-size: 9px !important;
+    line-height: 1.3 !important;
+  }
+
+  .dossier-quote-item {
+    font-size: 8.5px !important;
+    padding: 2px 5px !important;
+  }
+
+  /* Rodapé / Barra de Ações em Tela Vertical */
+  .bestiary-actions-bar {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding-top: 2px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .btn-bestiary-return {
+    padding: 6px 10px !important;
+    font-size: 9.5px !important;
+    letter-spacing: 0.6px !important;
+    border-radius: 6px !important;
+    justify-content: center !important;
+  }
+
+  .bestiary-hotkey-hint {
+    display: none !important;
+  }
+
+  /* 2. Grimório de Conquistas em Tela Vertical (Neo-Arcane Intrinsic Stage) */
+  .achievements-screen-overlay {
+    padding: max(env(safe-area-inset-top, 4px), 4px) 
+             max(env(safe-area-inset-right, 6px), 6px) 
+             max(env(safe-area-inset-bottom, 4px), 4px) 
+             max(env(safe-area-inset-left, 6px), 6px) !important;
+  }
+
+  .achievements-intrinsic-stage {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: calc(100dvh - 8px) !important;
+    gap: 3px !important;
+    justify-content: space-between !important;
+  }
+
+  .achievements-header-group {
+    gap: 1px !important;
+    margin-bottom: 1px !important;
+  }
+
+  .achievements-eyebrow {
+    max-width: 260px !important;
+    gap: 4px !important;
+  }
+
+  .achievements-eyebrow-text {
+    font-size: 7.5px !important;
+    letter-spacing: 1px !important;
+  }
+
+  .achievements-monumental-title {
+    font-size: 14px !important;
+    letter-spacing: 1px !important;
+  }
+
+  .achievements-monumental-sub {
+    display: none !important;
+  }
+
+  .achievements-meta-chips-row {
+    gap: 4px !important;
+  }
+
+  .achievements-meta-chip {
+    padding: 1.5px 6px !important;
+    font-size: 8px !important;
+    gap: 4px !important;
+  }
+
+  .achievements-meta-chip .chip-label {
+    font-size: 6.5px !important;
+    letter-spacing: 0.4px !important;
+  }
+
+  .achievements-meta-chip .chip-val {
+    font-size: 8.5px !important;
+  }
+
+  .achievements-nav-container {
+    margin-bottom: 1px !important;
+  }
+
+  .achievements-tabs-bar {
+    padding: 2px !important;
+    gap: 2px !important;
+    border-radius: 6px !important;
+  }
+
+  .achievements-tab-btn {
+    padding: 2.5px 7px !important;
+    font-size: 8px !important;
+    gap: 4px !important;
+  }
+
+  /* Bento Grid: Coluna Vertical em Tela Móvel */
+  .achievements-bento-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    gap: 4px !important;
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  /* Ribbon Horizontal de Conquistas */
+  .achievements-pillar-roster {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-height: none !important;
+    min-height: 74px !important;
+    height: auto !important;
+    padding: 4px 6px 5px 6px !important;
+    background: rgba(7, 9, 14, 0.85) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+  }
+
+  .achievements-pillar-roster .pillar-header {
+    padding-bottom: 2px !important;
+    margin-bottom: 3px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .achievements-pillar-roster .pillar-tag {
+    font-size: 7.5px !important;
+    letter-spacing: 0.6px !important;
+  }
+
+  .achievements-pillar-roster .pillar-badge-count {
+    font-size: 7.5px !important;
+    padding: 1px 4px !important;
+  }
+
+  .achievements-roster-scroll {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 48px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 2px 1px 5px 1px !important;
+    box-sizing: border-box !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important;
+  }
+
+  .achievements-cards-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    width: max-content !important;
+    align-items: center !important;
+    height: auto !important;
+  }
+
+  .achievement-card {
+    flex: 0 0 135px !important;
+    width: 135px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 4px 6px !important;
+    gap: 5px !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    transform: none !important;
+  }
+
+  .achievement-card:hover {
+    transform: none !important;
+  }
+
+  .ach-card-avatar-wrap {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .ach-card-info {
+    gap: 1px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
+
+  .ach-card-name {
+    font-size: 8.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.15 !important;
+  }
+
+  .ach-cat-pill {
+    display: none !important;
+  }
+
+  .ach-card-bottom-row {
+    font-size: 6.5px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 2px !important;
+    line-height: 1 !important;
+  }
+
+  /* Dossiê Vertical Rolável */
+  .achievements-pillar-dossier {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 4px 6px !important;
+    border-radius: 8px !important;
+  }
+
+  .achievements-pillar-dossier .pillar-header {
+    padding-bottom: 2px !important;
+    margin-bottom: 3px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .achievements-pillar-dossier .pillar-tag {
+    font-size: 7.5px !important;
+    letter-spacing: 0.6px !important;
+  }
+
+  .achievements-pillar-dossier .pillar-badge-hero {
+    font-size: 7.5px !important;
+    padding: 1px 5px !important;
+  }
+
+  .ach-preview-viewport {
+    height: 90px !important;
+  }
+
+  .ach-preview-sigil {
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  .ach-stat-card {
+    padding: 2px 4px !important;
+  }
+
+  .ach-stat-card .stat-label {
+    font-size: 6.5px !important;
+  }
+
+  .ach-stat-card .stat-val {
+    font-size: 8.5px !important;
+  }
+
+  .dossier-lore-box, .dossier-tactics-box {
+    padding: 4px 6px !important;
+  }
+
+  .dossier-box-content {
+    font-size: 8.5px !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Santuário da Maior Jornada em Tela Vertical (Layout Minimalista & Premium) */
+  .achievements-bento-grid.is-journey-view {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    gap: 0 !important;
+  }
+
+  .achievements-bento-grid.is-journey-view .achievements-pillar-roster {
+    display: none !important;
+  }
+
+  .achievements-bento-grid.is-journey-view .achievements-pillar-dossier {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 4px 6px !important;
+    box-sizing: border-box !important;
+  }
+
+  .achievements-bento-grid.is-journey-view .achievements-dossier-scroll {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(241, 196, 15, 0.3) transparent !important;
+    padding-right: 2px !important;
+    box-sizing: border-box !important;
+  }
+
+  .achievements-bento-grid.is-journey-view .achievements-dossier-scroll::-webkit-scrollbar {
+    width: 3px !important;
+  }
+
+  .achievements-bento-grid.is-journey-view .achievements-dossier-scroll::-webkit-scrollbar-thumb {
+    background: rgba(241, 196, 15, 0.3) !important;
+    border-radius: 2px !important;
+  }
+
+  /* Container do Monumento sem molduras redundantes e com preenchimento vertical equilibrado */
+  .best-run-monument-box {
+    padding: 2px 1px 14px 1px !important;
+    gap: clamp(9px, 1.3vh, 12px) !important;
+    height: auto !important;
+    min-height: min-content !important;
+    box-sizing: border-box !important;
+    justify-content: flex-start !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* 1. Barra de Cabeçalho & Metadados do Recorde */
+  .monument-header-row {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+    padding-bottom: 7px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+  }
+
+  .monument-title-wrap {
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+  }
+
+  .monument-pulsing-glyph {
+    width: 8px !important;
+    height: 8px !important;
+  }
+
+  .monument-eyebrow-mini {
+    display: none !important;
+  }
+
+  .monument-title-text {
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.9px !important;
+    line-height: 1.2 !important;
+    color: #ffd166 !important;
+  }
+
+  .monument-meta-right {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .monument-date-chip {
+    font-size: 8.5px !important;
+    padding: 3.5px 8px !important;
+    border-radius: 5px !important;
+    gap: 4.5px !important;
+    border: 1px solid rgba(162, 155, 254, 0.2) !important;
+    background: rgba(162, 155, 254, 0.08) !important;
+    color: #cbd5e1 !important;
+  }
+
+  .monument-fate-badge {
+    font-size: 8.5px !important;
+    padding: 3.5px 9px !important;
+    border-radius: 5px !important;
+    gap: 4.5px !important;
+    letter-spacing: 0.4px !important;
+  }
+
+  /* 2. Grade de Apresentação Principal (Fluxo Vertical Consecutivo) */
+  .monument-main-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: clamp(9px, 1.3vh, 12px) !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    flex: none !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 3. Hero Showcase Card (Aumento de ~28% na altura com proporção nobre e distribuição equilibrada) */
+  .tarot-card-wrapper {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    display: block !important;
+    flex: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .tarot-hero-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 158px !important;
+    margin: 0 !important;
+    padding: 8px 11px !important;
+    display: grid !important;
+    grid-template-columns: 95px 1fr !important;
+    grid-template-rows: 1fr auto !important;
+    column-gap: 13px !important;
+    row-gap: 7px !important;
+    align-items: stretch !important;
+    border-radius: 10px !important;
+    border: 1.2px solid rgba(212, 175, 55, 0.35) !important;
+    background: radial-gradient(circle at 20% 50%, rgba(28, 20, 48, 0.85) 0%, rgba(10, 8, 18, 0.95) 100%) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+    box-sizing: border-box !important;
+    flex: none !important;
+  }
+
+  .tarot-hero-card.tarot-defeat {
+    border-color: rgba(231, 76, 60, 0.35) !important;
+    box-shadow: 0 4px 20px rgba(192, 57, 43, 0.25) !important;
+    background: radial-gradient(circle at 20% 50%, rgba(42, 16, 24, 0.85) 0%, rgba(10, 8, 18, 0.95) 100%) !important;
+  }
+
+  .tarot-corner-glyph {
+    display: none !important;
+  }
+
+  /* Canvas Window: Escala reduzida em 5% (148px -> 140px, largura 95px) */
+  .tarot-canvas-window {
+    grid-column: 1 !important;
+    grid-row: 1 / span 2 !important;
+    width: 95px !important;
+    height: 140px !important;
+    min-height: 140px !important;
+    max-height: 140px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(212, 175, 55, 0.28) !important;
+    background: radial-gradient(circle at 50% 60%, rgba(18, 14, 28, 0.95) 0%, rgba(6, 5, 10, 1) 100%) !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+    align-self: center !important;
+    flex: none !important;
+  }
+
+  .tarot-defeat .tarot-canvas-window {
+    border-color: rgba(231, 76, 60, 0.28) !important;
+  }
+
+  .tarot-canvas-border-inner {
+    display: none !important;
+  }
+
+  /* Distribuição vertical equilibrada no lado direito para preencher os 140px com elegância */
+  .tarot-card-header {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    text-align: left !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 3.5px !important;
+    padding: 2px 0 !important;
+  }
+
+  .tarot-card-eyebrow {
+    font-size: 7.6px !important;
+    letter-spacing: 1.1px !important;
+    margin-bottom: 2px !important;
+    opacity: 0.9 !important;
+    color: #ffd166 !important;
+  }
+
+  .tarot-hero-name {
+    font-size: 18px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.7px !important;
+    line-height: 1.15 !important;
+    text-shadow: 0 0 12px rgba(241, 196, 15, 0.35) !important;
+  }
+
+  .tarot-hero-subtitle {
+    font-size: 11px !important;
+    color: #94a3b8 !important;
+    font-style: italic !important;
+    letter-spacing: 0.4px !important;
+  }
+
+  .tarot-card-footer {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    padding-top: 7px !important;
+    padding-bottom: 2px !important;
+    border-top: 1px solid rgba(212, 175, 55, 0.22) !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .tarot-defeat .tarot-card-footer {
+    border-top-color: rgba(231, 76, 60, 0.22) !important;
+  }
+
+  .tarot-verdict-quote {
+    font-size: 9.6px !important;
+    line-height: 1.45 !important;
+    text-align: left !important;
+    padding: 0 !important;
+    color: #cbd5e1 !important;
+    font-style: italic !important;
+  }
+
+  .tarot-quote-mark {
+    font-size: 12px !important;
+    color: rgba(241, 196, 15, 0.6) !important;
+  }
+
+  /* 4. Informações Complementares (Imediatamente abaixo do Card, com espaçamento nobre) */
+  .monument-details-col {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    gap: clamp(9px, 1.3vh, 12px) !important;
+    flex: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin-top: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Grade Simétrica das 6 Métricas (2 Colunas x 3 Linhas com altura confortável) */
+  .monument-metrics-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: clamp(5px, 0.8vh, 7px) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    flex: none !important;
+  }
+
+  .monument-stat-pill {
+    padding: 6px 9px !important;
+    gap: 8px !important;
+    border-radius: 8px !important;
+    background: rgba(12, 16, 26, 0.85) !important;
+    border: 1px solid rgba(162, 155, 254, 0.15) !important;
+    display: flex !important;
+    align-items: center !important;
+    min-height: clamp(44px, 5.5vh, 48px) !important;
+    box-sizing: border-box !important;
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .monument-stat-pill:hover {
+    transform: none !important;
+  }
+
+  /* Pareamento Temático de Ordem */
+  .pill-legendary-score {
+    order: 1 !important;
+    background: linear-gradient(135deg, rgba(46, 32, 14, 0.85) 0%, rgba(18, 14, 28, 0.95) 100%) !important;
+    border: 1px solid rgba(241, 196, 15, 0.45) !important;
+    box-shadow: 0 0 10px rgba(241, 196, 15, 0.12) !important;
+  }
+
+  .pill-souls {
+    order: 2 !important;
+  }
+
+  .pill-time {
+    order: 3 !important;
+  }
+
+  .pill-wave {
+    order: 4 !important;
+  }
+
+  .pill-kills {
+    order: 5 !important;
+  }
+
+  .pill-level {
+    order: 6 !important;
+  }
+
+  .stat-pill-icon-wrap {
+    width: 27px !important;
+    height: 27px !important;
+    border-radius: 7px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .stat-pill-data {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  .monument-stat-pill .stat-pill-label {
+    font-size: 7.2px !important;
+    letter-spacing: 0.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    color: #94a3b8 !important;
+    font-weight: 700 !important;
+  }
+
+  .monument-stat-pill .stat-pill-val {
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .pill-legendary-score .stat-pill-val {
+    font-size: 14.5px !important;
+  }
+
+  .val-unit {
+    font-size: 8.5px !important;
+  }
+
+  /* Cabeçalhos de Seções Secundárias */
+  .monument-section-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding-bottom: 4px !important;
+    margin-bottom: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-shrink: 0 !important;
+  }
+
+  .monument-section-tag {
+    font-size: 9.5px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.8px !important;
+    color: #cbd5e1 !important;
+    gap: 6px !important;
+  }
+
+  /* 5. Seção de Armas (Grid de 2 Colunas com presença marcante) */
+  .monument-weapons-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: clamp(5px, 0.8vh, 7px) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    flex: none !important;
+  }
+
+  .monument-weapon-chip {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 5px 9px !important;
+    border-radius: 8px !important;
+    background: rgba(12, 16, 26, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: clamp(38px, 5vh, 42px) !important;
+    transition: none !important;
+  }
+
+  .monument-weapon-chip.weapon-evolved {
+    border-color: rgba(241, 196, 15, 0.5) !important;
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.12) 0%, rgba(12, 16, 26, 0.9) 100%) !important;
+    box-shadow: 0 0 8px rgba(241, 196, 15, 0.12) !important;
+  }
+
+  .weapon-chip-icon-box {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .weapon-chip-text {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  .weapon-chip-title {
+    font-size: 10px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.15 !important;
+  }
+
+  .weapon-chip-sub {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  .weapon-chip-lvl {
+    font-size: 8.8px !important;
+    font-weight: 700 !important;
+  }
+
+  .weapon-chip-fusion-tag {
+    font-size: 7.5px !important;
+    padding: 1.5px 5px !important;
+    border-radius: 3px !important;
+    letter-spacing: 0.4px !important;
+  }
+
+  /* 6. Seção de Bênçãos & Passivas (Wrap Compacto & Confortável) */
+  .monument-passives-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 5px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    flex: none !important;
+  }
+
+  .monument-passive-chip {
+    padding: 3.5px 7px !important;
+    font-size: 8.5px !important;
+    border-radius: 6px !important;
+    gap: 5px !important;
+    background: rgba(12, 16, 26, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .monument-passive-chip:hover {
+    transform: none !important;
+  }
+
+  .chip-passive-icon {
+    display: flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .chip-passive-name {
+    font-weight: 600 !important;
+  }
+
+  .chip-passive-val {
+    font-size: 7.8px !important;
+    padding: 1px 4.5px !important;
+    border-radius: 3px !important;
+  }
+
+  /* 7. Marcos Históricos da Conta (Micro-Dashboard com escala reduzida em 20%) */
+  .monument-lifetime-strip {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+    padding: clamp(5px, 0.9vh, 7px) 7px !important;
+    background: rgba(10, 14, 24, 0.7) !important;
+    border: 1px solid rgba(162, 155, 254, 0.15) !important;
+    border-radius: 7px !important;
+    margin-top: 0 !important;
+    box-sizing: border-box !important;
+    flex: none !important;
+  }
+
+  .lifetime-strip-title {
+    font-size: 7.2px !important;
+    letter-spacing: 0.6px !important;
+    gap: 4px !important;
+    color: #a29bfe !important;
+    font-weight: 800 !important;
+  }
+
+  .lifetime-strip-title svg {
+    width: 9px !important;
+    height: 9px !important;
+  }
+
+  .lifetime-strip-chips {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .lifetime-bench-chip {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 1.5px !important;
+    padding: 3.5px 3px !important;
+    border-radius: 5px !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    min-height: clamp(30px, 4vh, 35px) !important;
+  }
+
+  .lifetime-bench-chip .bench-label {
+    font-size: 6px !important;
+    letter-spacing: 0.3px !important;
+    color: #94a3b8 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    width: 100% !important;
+    text-align: center !important;
+  }
+
+  .lifetime-bench-chip .bench-val {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+  }
+
+  /* 8. Card de Estado Vazio (Sem Crônica Gravada) */
+  .monument-empty-card {
+    padding: 24px 14px !important;
+    gap: 8px !important;
+    border-radius: 8px !important;
+  }
+
+  .monument-empty-icon-wrap {
+    width: 40px !important;
+    height: 40px !important;
+    margin: 0 auto 4px auto !important;
+  }
+
+  .monument-empty-eyebrow {
+    font-size: 7.5px !important;
+    letter-spacing: 1px !important;
+  }
+
+  .monument-empty-title {
+    font-size: 12px !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  .monument-empty-desc {
+    font-size: 9px !important;
+    line-height: 1.35 !important;
+    max-width: 280px !important;
+    margin: 0 auto !important;
+  }
+
+  .monument-empty-hint {
+    font-size: 8px !important;
+    padding: 4px 8px !important;
+  }
+
+  /* Barra de Rodapé */
+  .achievements-actions-bar {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding-top: 1px !important;
+  }
+
+  .btn-achievements-return {
+    padding: 6px 14px !important;
+    font-size: 10px !important;
+    letter-spacing: 1px !important;
+    border-radius: 6px !important;
+  }
+
+  .achievements-hotkey-hint {
+    font-size: 7.5px !important;
   }
 
   /* 3. Banner de Citação dos Chefes (Boss Barks) em Tela Vertical */

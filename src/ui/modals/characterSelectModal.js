@@ -6,7 +6,8 @@ import { CHARACTERS } from '../../config/characters.js';
 import { 
   HERO_UNLOCK_MAP, 
   isHeroUnlocked, 
-  getAchievementStatus 
+  getAchievementStatus,
+  getHeroRecord
 } from '../../config/achievements.js';
 import { 
   startPreview, 
@@ -14,7 +15,8 @@ import {
   resizePreviewCanvas,
   setPreviewHero, 
   togglePreviewFacing, 
-  setPreviewPose 
+  setPreviewPose,
+  triggerHeroAttack
 } from '../../render/characterPreview.js';
 import { 
   playSfx, 
@@ -36,18 +38,30 @@ export { HERO_EMBLEMS_SVG, CHARACTER_PROFILES } from '../../config/heroProfiles.
 import { HERO_EMBLEMS_SVG, CHARACTER_PROFILES } from '../../config/heroProfiles.js';
 
 export let activeShowcaseHeroKey = 'KNIGHT';
-let activeMobileTab = 'skills'; // 'skills' | 'stats'
+let activeMobileSlideIndex = 0; // 0: Arsenal, 1: Atributos, 2: Biografia
+let charSelectKeydownHandler = null;
 
 export function isMobileScreen() {
   return layoutMetrics.isCompactWidth || 
          layoutMetrics.isCompactHeight || 
          window.innerWidth <= 768 || 
          ('ontouchstart' in window && window.innerWidth <= 950) || 
-         /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
+         /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent) ||
+         (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
 }
 
 export function closeCharSelectModal() {
+  if (charSelectKeydownHandler) {
+    window.removeEventListener('keydown', charSelectKeydownHandler);
+    charSelectKeydownHandler = null;
+  }
   stopPreview();
+  const hud = document.getElementById('hud');
+  if (hud) {
+    hud.classList.add('hud-hidden');
+    hud.style.setProperty('display', 'none', 'important');
+    hud.style.display = 'none';
+  }
   const charModal = document.getElementById('char-modal');
   if (charModal) {
     charModal.classList.add('modal-hidden');
@@ -62,6 +76,13 @@ export function openCharacterSelect() {
   }
   gameState.isPaused = false;
   resetDeathAudioFilter();
+
+  const hud = document.getElementById('hud');
+  if (hud) {
+    hud.classList.add('hud-hidden');
+    hud.style.setProperty('display', 'none', 'important');
+    hud.style.display = 'none';
+  }
   const bloodFilter = document.getElementById('blood-screen-filter');
   if (bloodFilter) bloodFilter.classList.remove('active');
 
@@ -114,10 +135,43 @@ export function openCharacterSelect() {
   charModal.classList.remove('modal-hidden');
   charModal.style.removeProperty('display');
   charModal.style.display = 'flex';
+  window.scrollTo(0, 0);
+  charModal.scrollLeft = 0;
+  if (document.documentElement) document.documentElement.scrollLeft = 0;
+  if (document.body) document.body.scrollLeft = 0;
 
   // Detecção e aplicação de classe mobile para layout responsivo exclusivo
   const isMobile = isMobileScreen();
   charModal.classList.toggle('is-mobile-device', isMobile);
+
+  // Parallax Dinâmico 2.5D no Desktop com o movimento do mouse
+  if (!charModal._hasParallaxAttached && !isMobile) {
+    charModal._hasParallaxAttached = true;
+    window.addEventListener('mousemove', (e) => {
+      if (charModal.classList.contains('modal-hidden') || charModal.style.display === 'none') return;
+      const w = window.innerWidth || 1920;
+      const h = window.innerHeight || 1080;
+      const normX = (e.clientX - w / 2) / (w / 2);
+      const normY = (e.clientY - h / 2) / (h / 2);
+
+      const rift = document.querySelector('.char-void-rift');
+      if (rift) {
+        rift.style.transform = `translate(calc(-50% + ${normX * 14}px), calc(-50% + ${normY * 10}px))`;
+      }
+      const arch = document.querySelector('.char-cathedral-arch-svg');
+      if (arch) {
+        arch.style.transform = `scale(1.02) translate(${normX * 6}px, ${normY * 4}px)`;
+      }
+      const rays = document.querySelector('.char-god-rays');
+      if (rays) {
+        rays.style.transform = `translate(${normX * -10}px, ${normY * -6}px)`;
+      }
+      const canvas = document.getElementById('char-preview-canvas');
+      if (canvas) {
+        canvas.style.transform = `translate(${normX * 4}px, ${normY * 3}px)`;
+      }
+    }, { passive: true });
+  }
 
   // Atualizar contador de Almas no cabeçalho
   const soulsVal = document.getElementById('char-souls-val');
@@ -141,6 +195,15 @@ export function openCharacterSelect() {
     activeShowcaseHeroKey = 'KNIGHT';
   }
 
+  function scrollPedestalToCenter(targetElem) {
+    if (!targetElem || !pedestalsContainer) return;
+    const containerW = pedestalsContainer.clientWidth;
+    const elemLeft = targetElem.offsetLeft;
+    const elemW = targetElem.offsetWidth;
+    const targetScroll = elemLeft - (containerW / 2) + (elemW / 2);
+    pedestalsContainer.scrollTo({ left: Math.max(0, targetScroll), behavior: 'smooth' });
+  }
+
   function selectAdjacentHero(step) {
     const curIdx = heroKeys.indexOf(activeShowcaseHeroKey);
     const nextIdx = (curIdx + step + heroKeys.length) % heroKeys.length;
@@ -148,11 +211,9 @@ export function openCharacterSelect() {
     triggerHaptic('light');
     renderShowcase(heroKeys[nextIdx]);
 
-    // Rola suavemente o botão de pedestal ativo para o centro no carrossel mobile
+    // Rola suavemente APENAS a esteira horizontal de pedestais sem mover o viewport
     const activeBtn = pedestalsContainer.querySelector(`[data-hero="${heroKeys[nextIdx]}"]`);
-    if (activeBtn && activeBtn.scrollIntoView) {
-      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
+    scrollPedestalToCenter(activeBtn);
   }
 
   function renderShowcase(heroKey) {
@@ -162,8 +223,28 @@ export function openCharacterSelect() {
     const unlocked = isHeroUnlocked(heroKey);
     const achId = HERO_UNLOCK_MAP[heroKey];
     const status = achId ? getAchievementStatus(achId) : null;
+    const heroRecord = getHeroRecord(heroKey);
 
     setPreviewHero(heroKey);
+
+    // Efeito suave de transição ao alternar de herói
+    showcaseContainer.classList.remove('hero-shifting');
+    void showcaseContainer.offsetWidth;
+    showcaseContainer.classList.add('hero-shifting');
+
+    const canvasElem = document.getElementById('char-preview-canvas');
+    if (canvasElem) {
+      canvasElem.classList.remove('hero-canvas-shift');
+      void canvasElem.offsetWidth;
+      canvasElem.classList.add('hero-canvas-shift');
+    }
+
+    // Atualiza contador de heróis despertos no topo do roster
+    const rosterCountBadge = document.getElementById('roster-count-badge');
+    if (rosterCountBadge) {
+      const unlockedCount = heroKeys.filter(k => isHeroUnlocked(k)).length;
+      rosterCountBadge.innerText = `${unlockedCount}/${heroKeys.length} DESPERTOS`;
+    }
 
     const badge = document.getElementById('stage-archetype-badge');
     if (badge) {
@@ -175,6 +256,10 @@ export function openCharacterSelect() {
 
     showcaseContainer.style.setProperty('--showcase-color', unlocked ? profile.themeColor : '#747d8c');
     charModal.style.setProperty('--showcase-color', unlocked ? profile.themeColor : '#747d8c');
+    const ambientBloom = document.getElementById('char-ambient-bloom');
+    if (ambientBloom) {
+      ambientBloom.style.setProperty('--showcase-color', unlocked ? profile.themeColor : '#747d8c');
+    }
 
     const diff = char.difficulty || 1;
     let diffDots = '';
@@ -184,139 +269,323 @@ export function openCharacterSelect() {
     const diffLabel = diff === 1 ? 'Iniciante' : (diff === 2 ? 'Equilibrado' : 'Avançado');
 
     showcaseContainer.innerHTML = `
-      <div class="showcase-header-v2">
-        <div class="showcase-title-row">
-          <div class="showcase-archetype-pill" style="color: ${profile.themeColor}; border-color: ${profile.themeColor};">
-            ${char.title}
-          </div>
-          <div class="showcase-diff-badge" title="Dificuldade do Herói">
-            <span class="diff-label">${diffLabel}</span>
-            <span class="diff-dots">${diffDots}</span>
+      <!-- 1. Monólito de Identidade -->
+      <div class="char-identity-monolith">
+        <div class="hero-monolith-eyebrow">
+          <span class="hero-archetype-pill">${char.title}</span>
+          <div class="hero-diff-pips" title="Dificuldade: ${diffLabel}">
+            <span>${diffLabel}</span>
+            <span>${diffDots}</span>
           </div>
         </div>
 
-        <div class="showcase-name-v2">${char.name}</div>
-        <div class="showcase-role-tag">Função: <b>${char.role || 'Guerreiro'}</b></div>
+        <h2 class="hero-monolith-name">${char.name}</h2>
+        <div class="hero-monolith-role">Função: <b>${char.role || 'Guerreiro'}</b></div>
       </div>
 
-      ${!unlocked && status ? `
-        <div class="showcase-lock-dossier">
-          <div class="lock-dossier-header">
-            <span class="lock-icon-lg">${renderIcon('lock', { size: 16, color: '#ff7675' })}</span>
-            <div class="lock-titles">
-              <span class="lock-eyebrow">SELO PRIMORDIAL • REQUISITO DE DESBLOQUEIO</span>
-              <div class="lock-name">${status.title}</div>
-            </div>
-          </div>
-          <div class="lock-desc">${status.desc}</div>
-          <div class="lock-progress-box">
-            <div class="lock-progress-track">
-              <div class="lock-progress-fill" style="width: ${status.percent}%;"></div>
-            </div>
-            <div class="lock-progress-meta">
-              <span class="lock-cur-val">Progresso: <b>${status.label}</b></span>
-              <span class="lock-pct-val">${status.percent}%</span>
-            </div>
-          </div>
-        </div>
-      ` : ''}
-
-      <!-- Navegador Tático Mobile Exclusivo -->
-      <div class="showcase-mobile-nav">
-        <button class="showcase-tab-btn ${activeMobileTab === 'skills' ? 'active' : ''}" data-tab="skills">
-          ${renderIcon('sword', { size: 11, color: activeMobileTab === 'skills' ? profile.themeColor : '#8c94a8' })} COMBATE
+      <!-- 2. Navegador de 3 Pílulas dos Slides (Mobile) -->
+      <div class="mobile-slide-pills" id="mobile-slide-pills">
+        <button class="slide-pill-btn ${activeMobileSlideIndex === 0 ? 'active' : ''}" data-slide="0" type="button" aria-label="Ver Arsenal">
+          <span class="pill-dot"></span>
+          <span class="pill-text">ARSENAL</span>
         </button>
-        <button class="showcase-tab-btn ${activeMobileTab === 'stats' ? 'active' : ''}" data-tab="stats">
-          ${renderIcon('armor', { size: 11, color: activeMobileTab === 'stats' ? profile.themeColor : '#8c94a8' })} BIOGRAFIA & LORE
+        <button class="slide-pill-btn ${activeMobileSlideIndex === 1 ? 'active' : ''}" data-slide="1" type="button" aria-label="Ver Atributos">
+          <span class="pill-dot"></span>
+          <span class="pill-text">ATRIBUTOS</span>
+        </button>
+        <button class="slide-pill-btn ${activeMobileSlideIndex === 2 ? 'active' : ''}" data-slide="2" type="button" aria-label="Ver Biografia">
+          <span class="pill-dot"></span>
+          <span class="pill-text">BIOGRAFIA</span>
         </button>
       </div>
 
-      <!-- Bento Box Tático Responsivo -->
-      <div class="bento-tactical-grid" data-active-tab="${activeMobileTab}">
-        <!-- Bloco 1: Arsenal & Habilidades -->
-        <div class="bento-tab-pane bento-pane-skills ${activeMobileTab === 'skills' ? 'tab-visible' : ''}">
-          <!-- Card 1: Arma Inicial -->
-          <div class="bento-card bento-card-weapon">
-            <div class="bento-card-top">
-              <span class="bento-type-tag">${renderIcon(WEAPON_ICONS[char.startingWeapon] || 'sword', { size: 10, color: profile.themeColor })} ARMA INICIAL</span>
-              <span class="bento-spec-badge" style="color: ${profile.themeColor}; border-color: ${profile.themeColor}55;">${char.weapon?.type || profile.weaponName}</span>
+      <!-- 3. Trilho de Slides (Mobile: Deslize horizontal / Desktop: Fluxo contínuo) -->
+      <div class="mobile-slides-track" id="mobile-slides-track">
+        <!-- Slide 0: Arsenal & Habilidades -->
+        <div class="mobile-slide-pane" data-slide-index="0">
+          <div class="hero-loadout-lineage">
+            <!-- Entrada 1: Arma Inicial -->
+            <div class="loadout-entry">
+              <div class="loadout-entry-main">
+                <div class="loadout-icon-box" style="--icon-accent: ${profile.themeColor};">
+                  ${renderIcon(WEAPON_ICONS[char.startingWeapon] || 'sword', { size: 14, color: profile.themeColor })}
+                </div>
+                <div class="loadout-info-block">
+                  <div class="loadout-entry-header">
+                    <span class="loadout-entry-badge">ARMA INICIAL</span>
+                    <span class="loadout-entry-chip">${char.weapon?.type || profile.weaponName}</span>
+                  </div>
+                  <div class="loadout-entry-title" style="color: ${profile.themeColor};">${char.weapon?.name || profile.weaponName}</div>
+                </div>
+              </div>
+              <div class="loadout-entry-desc">${char.weapon?.desc || ''}</div>
             </div>
-            <div class="bento-card-title" style="color: ${profile.themeColor};">${char.weapon?.name || profile.weaponName}</div>
-            <div class="bento-card-desc">${char.weapon?.desc || ''}</div>
-          </div>
 
-          <!-- Card 2: Poder Ancestral -->
-          <div class="bento-card bento-card-skill">
-            <div class="bento-card-top">
-              <span class="bento-type-tag">${renderIcon('damage', { size: 10, color: profile.themeColor })} PODER ANCESTRAL</span>
-              <span class="bento-spec-badge bento-cd-badge">${renderIcon('timer', { size: 9 })} ${char.skill?.cooldown || '7s'}</span>
+            <!-- Entrada 2: Poder Ancestral -->
+            <div class="loadout-entry">
+              <div class="loadout-entry-main">
+                <div class="loadout-icon-box" style="--icon-accent: ${profile.themeColor};">
+                  ${renderIcon('damage', { size: 14, color: profile.themeColor })}
+                </div>
+                <div class="loadout-info-block">
+                  <div class="loadout-entry-header">
+                    <span class="loadout-entry-badge">PODER ANCESTRAL</span>
+                    <span class="loadout-entry-chip chip-cooldown">
+                      ${renderIcon('timer', { size: 9 })} ${char.skill?.cooldown || '7s'}
+                    </span>
+                  </div>
+                  <div class="loadout-entry-title" style="color: ${profile.themeColor};">${char.skill?.name || 'Habilidade'}</div>
+                </div>
+              </div>
+              <div class="loadout-entry-desc">${char.skill?.desc || ''}</div>
             </div>
-            <div class="bento-card-title" style="color: ${profile.themeColor};">${char.skill?.name || 'Habilidade'}</div>
-            <div class="bento-card-desc">${char.skill?.desc || ''}</div>
-          </div>
 
-          <!-- Card 3: Bênção Passiva -->
-          <div class="bento-card bento-card-passive" style="border-color: ${profile.themeColor}35;">
-            <div class="bento-card-top">
-              <span class="bento-type-tag">${renderIcon('armor', { size: 10, color: profile.themeColor })} BÊNÇÃO PASSIVA</span>
-              <span class="bento-inline-title" style="color: ${profile.themeColor};">${char.passive?.name || 'Aura'}</span>
+            <!-- Entrada 3: Bênção Passiva -->
+            <div class="loadout-entry">
+              <div class="loadout-entry-main">
+                <div class="loadout-icon-box" style="--icon-accent: ${profile.themeColor};">
+                  ${renderIcon('armor', { size: 14, color: profile.themeColor })}
+                </div>
+                <div class="loadout-info-block">
+                  <div class="loadout-entry-header">
+                    <span class="loadout-entry-badge">BÊNÇÃO PASSIVA</span>
+                  </div>
+                  <div class="loadout-entry-title" style="color: ${profile.themeColor};">${char.passive?.name || 'Aura'}</div>
+                </div>
+              </div>
+              <div class="loadout-entry-desc">${char.passive?.desc || ''}</div>
             </div>
-            <div class="bento-card-desc">${char.passive?.desc || ''}</div>
-          </div>
 
-          <!-- Card 4 (Mobile Unificado): Medidores Rápidos de Atributos -->
-          <div class="bento-mobile-stats-row">
-            <div class="bento-stats-container bento-stats-compact">
-              <div class="bento-attr-item" data-stat="dano"><span>DANO</span>${renderSegments(profile.levels.dano)}</div>
-              <div class="bento-attr-item" data-stat="area"><span>ÁREA</span>${renderSegments(profile.levels.area)}</div>
-              <div class="bento-attr-item" data-stat="vel"><span>VEL</span>${renderSegments(profile.levels.vel)}</div>
-              <div class="bento-attr-item" data-stat="res"><span>RES</span>${renderSegments(profile.levels.res)}</div>
+            <!-- Fim do Arsenal (3 Entradas Essenciais: Arma, Habilidade e Passiva) -->
+          </div>
+        </div>
+
+        <!-- Slide 1: Matriz de Atributos Unificada -->
+        <div class="mobile-slide-pane" data-slide-index="1">
+          <div class="hero-telemetry-cluster">
+            <div class="telemetry-header">
+              <span class="telemetry-title">MATRIZ DE COMBATE</span>
+              <span class="telemetry-resonance-line"></span>
+            </div>
+            <div class="telemetry-tracks">
+              <!-- DANO -->
+              <div class="telemetry-channel" data-stat="dano">
+                <span class="channel-label">DANO</span>
+                <div class="channel-laser-track">
+                  <div class="channel-laser-fill" style="width: ${(profile.levels.dano / 5) * 100}%;"></div>
+                  <div class="channel-pips"><span/><span/><span/><span/></div>
+                </div>
+                <span class="channel-val">${profile.levels.dano}/5</span>
+              </div>
+              <!-- ÁREA -->
+              <div class="telemetry-channel" data-stat="area">
+                <span class="channel-label">ÁREA</span>
+                <div class="channel-laser-track">
+                  <div class="channel-laser-fill" style="width: ${(profile.levels.area / 5) * 100}%;"></div>
+                  <div class="channel-pips"><span/><span/><span/><span/></div>
+                </div>
+                <span class="channel-val">${profile.levels.area}/5</span>
+              </div>
+              <!-- VEL -->
+              <div class="telemetry-channel" data-stat="vel">
+                <span class="channel-label">VEL</span>
+                <div class="channel-laser-track">
+                  <div class="channel-laser-fill" style="width: ${(profile.levels.vel / 5) * 100}%;"></div>
+                  <div class="channel-pips"><span/><span/><span/><span/></div>
+                </div>
+                <span class="channel-val">${profile.levels.vel}/5</span>
+              </div>
+              <!-- RES -->
+              <div class="telemetry-channel" data-stat="res">
+                <span class="channel-label">RES</span>
+                <div class="channel-laser-track">
+                  <div class="channel-laser-fill" style="width: ${(profile.levels.res / 5) * 100}%;"></div>
+                  <div class="channel-pips"><span/><span/><span/><span/></div>
+                </div>
+                <span class="channel-val">${profile.levels.res}/5</span>
+              </div>
+            </div>
+
+            <!-- Registro de Honra (Estatísticas Individuais do Campeão) -->
+            <div class="hero-battle-record-panel">
+              <div class="record-panel-header">
+                <span class="record-panel-title">REGISTRO DE BATALHA</span>
+                <span class="record-panel-runs">${heroRecord.runsPlayed > 0 ? `${heroRecord.runsPlayed} ${heroRecord.runsPlayed === 1 ? 'PARTIDA' : 'PARTIDAS'}` : 'SEM REGISTRO'}</span>
+              </div>
+              <div class="record-metrics-row">
+                <div class="record-metric-item">
+                  <span class="metric-label">RECORD TEMPO</span>
+                  <span class="metric-val ${heroRecord.bestSeconds > 0 ? 'highlight-gold' : ''}">${heroRecord.timeStr}</span>
+                </div>
+                <div class="record-metric-item">
+                  <span class="metric-label">ABATES MÁX</span>
+                  <span class="metric-val ${heroRecord.kills > 0 ? 'highlight-crimson' : ''}">${heroRecord.kills.toLocaleString('pt-BR')}</span>
+                </div>
+                <div class="record-metric-item">
+                  <span class="metric-label">STATUS</span>
+                  <span class="metric-val ${heroRecord.statusClass}">${heroRecord.statusLabel}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Bloco 2: Atributos & Biometria -->
-        <div class="bento-tab-pane bento-pane-stats ${activeMobileTab === 'stats' ? 'tab-visible' : ''}">
-          <div class="bento-stats-container">
-            <div class="bento-attr-item" data-stat="dano"><span>DANO</span>${renderSegments(profile.levels.dano)}</div>
-            <div class="bento-attr-item" data-stat="area"><span>ÁREA</span>${renderSegments(profile.levels.area)}</div>
-            <div class="bento-attr-item" data-stat="vel"><span>VEL</span>${renderSegments(profile.levels.vel)}</div>
-            <div class="bento-attr-item" data-stat="res"><span>RES</span>${renderSegments(profile.levels.res)}</div>
-          </div>
+        <!-- Slide 2: Lore & Selo Primordial -->
+        <div class="mobile-slide-pane" data-slide-index="2">
+          <div class="hero-lore-pane">
+            <div class="hero-monolith-quote">
+              “${char.lore || ''}”
+            </div>
 
-          <!-- Citação de Lore Imersiva -->
-          <div class="showcase-lore-quote">
-            “${char.lore || ''}”
+            ${!unlocked && status ? `
+              <div class="primordial-seal-banner">
+                <div class="seal-header">
+                  <span class="seal-icon">${renderIcon('lock', { size: 14, color: '#ff7675' })}</span>
+                  <div class="seal-titles">
+                    <span class="seal-eyebrow">SELO PRIMORDIAL • REQUISITO DE DESBLOQUEIO</span>
+                    <span class="seal-name">${status.title}</span>
+                  </div>
+                </div>
+                <div class="seal-desc">${status.desc}</div>
+                <div class="seal-track">
+                  <div class="seal-fill" style="width: ${status.percent}%;"></div>
+                </div>
+                <div class="seal-meta">
+                  <span>Progresso: <b>${status.label}</b></span>
+                  <span>${status.percent}%</span>
+                </div>
+              </div>
+            ` : `
+              <div class="hero-tactical-hint">
+                <div class="tactical-hint-header">
+                  <span class="hint-glyph">✦</span>
+                  <span class="hint-title">DIRETRIZ ANCESTRAL</span>
+                </div>
+                <p class="hint-text">Arquétipo consagrado no vácuo. Combine a arma inicial com seu poder ativo para romper as investidas da horda.</p>
+              </div>
+            `}
           </div>
         </div>
       </div>
 
+      <!-- 4. Catalisador de Despertar (Start Action Button) -->
       ${unlocked ? `
-        <button class="card-btn btn-summon-hero" id="confirm-hero-btn">
-          ${renderIcon('damage', { size: 13, style: 'margin-right:6px;' })} DESPERTAR NO VÁCUO ${renderIcon('damage', { size: 13, style: 'margin-left:6px;' })}
+        <button class="btn-ignition-catalyst" id="confirm-hero-btn" type="button" aria-label="Iniciar Batalha">
+          <div class="btn-shimmer-sweep"></div>
+          <span class="btn-catalyst-glow"></span>
+          <span class="btn-catalyst-content">
+            ${renderIcon('damage', { size: 15, style: 'margin-right:6px; vertical-align:middle;' })}
+            DESPERTAR NO VÁCUO
+            ${renderIcon('damage', { size: 15, style: 'margin-left:6px; vertical-align:middle;' })}
+          </span>
+          <span class="btn-hotkey-hint">ESPAÇO</span>
         </button>
       ` : `
-        <button class="card-btn btn-summon-hero btn-hero-locked" id="confirm-hero-btn" disabled style="background: #231620; border-color: #ff767555; color: #ff7675; cursor: not-allowed; opacity: 0.9;">
-          ${renderIcon('lock', { size: 12, color: '#ff7675', style: 'margin-right:6px; flex-shrink:0;' })} SELO PRIMORDIAL ATIVO (CUMPRA O REQUISITO)
+        <button class="btn-ignition-catalyst" id="confirm-hero-btn" disabled type="button" aria-label="Herói Bloqueado">
+          <span class="btn-catalyst-content">
+            ${renderIcon('lock', { size: 14, color: '#ff7675', style: 'margin-right:8px; vertical-align:middle;' })}
+            SELO PRIMORDIAL ATIVO
+          </span>
         </button>
       `}
     `;
 
-    // Eventos das Abas Mobile
-    const tabBtns = showcaseContainer.querySelectorAll('.showcase-tab-btn');
-    tabBtns.forEach(tBtn => {
-      tBtn.onclick = () => {
-        activeMobileTab = tBtn.getAttribute('data-tab');
-        try { playSfx('card_hover'); } catch(e) {}
-        triggerHaptic('light');
-        renderShowcase(heroKey);
+    // Interatividade dos 3 Slides Mobile (Pílulas + Scroll-Snap Swipe)
+    const track = showcaseContainer.querySelector('#mobile-slides-track');
+    const pills = showcaseContainer.querySelectorAll('.slide-pill-btn');
+    if (track && pills.length > 0) {
+      const updatePills = (idx) => {
+        pills.forEach((p, i) => {
+          const isActive = (i === idx);
+          p.classList.toggle('active', isActive);
+          p.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
       };
-    });
+
+      const syncSlidePosition = () => {
+        const w = track.clientWidth || 0;
+        if (w > 0 && activeMobileSlideIndex > 0) {
+          track.scrollLeft = activeMobileSlideIndex * w;
+        }
+      };
+      requestAnimationFrame(syncSlidePosition);
+      setTimeout(syncSlidePosition, 60);
+
+      pills.forEach(pBtn => {
+        pBtn.onclick = () => {
+          const idx = parseInt(pBtn.getAttribute('data-slide'), 10) || 0;
+          activeMobileSlideIndex = idx;
+          try { playSfx('card_hover'); } catch(e) {}
+          triggerHaptic('light');
+          const w = track.clientWidth || 0;
+          track.scrollTo({ left: idx * w, behavior: 'smooth' });
+          updatePills(idx);
+        };
+      });
+
+      let isScrolling = false;
+      track.addEventListener('scroll', () => {
+        if (!isScrolling) {
+          requestAnimationFrame(() => {
+            const w = track.clientWidth || 1;
+            const curIdx = Math.max(0, Math.min(pills.length - 1, Math.round(track.scrollLeft / w)));
+            if (curIdx !== activeMobileSlideIndex) {
+              activeMobileSlideIndex = curIdx;
+              updatePills(curIdx);
+            }
+            isScrolling = false;
+          });
+          isScrolling = true;
+        }
+      }, { passive: true });
+
+      // Suporte a arrasto contínuo por ponteiro (mouse ou touch emulados)
+      let pointerDown = false;
+      let startX = 0;
+      let scrollStart = 0;
+      let hasDragged = false;
+
+      track.onpointerdown = (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        pointerDown = true;
+        hasDragged = false;
+        startX = e.clientX;
+        scrollStart = track.scrollLeft;
+        track.style.scrollSnapType = 'none';
+        track.style.scrollBehavior = 'auto';
+        try { track.setPointerCapture(e.pointerId); } catch(err) {}
+      };
+
+      track.onpointermove = (e) => {
+        if (!pointerDown) return;
+        const dx = e.clientX - startX;
+        if (Math.abs(dx) > 4) hasDragged = true;
+        track.scrollLeft = scrollStart - dx;
+      };
+
+      const finishPointer = (e) => {
+        if (!pointerDown) return;
+        pointerDown = false;
+        track.style.scrollSnapType = 'x mandatory';
+        track.style.scrollBehavior = 'smooth';
+        try { track.releasePointerCapture(e.pointerId); } catch(err) {}
+        if (hasDragged) {
+          const w = track.clientWidth || 1;
+          const curIdx = Math.max(0, Math.min(pills.length - 1, Math.round(track.scrollLeft / w)));
+          activeMobileSlideIndex = curIdx;
+          track.scrollTo({ left: curIdx * w, behavior: 'smooth' });
+          updatePills(curIdx);
+        }
+      };
+
+      track.onpointerup = finishPointer;
+      track.onpointercancel = finishPointer;
+    }
 
     const confirmBtn = document.getElementById('confirm-hero-btn');
     if (confirmBtn) {
       if (unlocked) {
-        confirmBtn.style.setProperty('--btn-theme-color', profile.themeColor);
+        confirmBtn.style.setProperty('--showcase-color', profile.themeColor);
         confirmBtn.onclick = () => {
           setSelectedHeroKey(heroKey);
           closeCharSelectModal();
@@ -328,9 +597,9 @@ export function openCharacterSelect() {
       }
     }
 
-    // Atualiza classes ativas nos botões de pedestal
-    const btns = pedestalsContainer.querySelectorAll('.char-pedestal-btn');
-    btns.forEach(b => {
+    // Atualiza classes ativas nos nós de sigilo
+    const sigilItems = pedestalsContainer.querySelectorAll('.char-sigil-item');
+    sigilItems.forEach(b => {
       b.classList.toggle('active', b.getAttribute('data-hero') === heroKey);
     });
   }
@@ -343,39 +612,37 @@ export function openCharacterSelect() {
     let miniDots = '◆'.repeat(diff) + '◇'.repeat(3 - diff);
     const unlocked = isHeroUnlocked(key);
 
-    const btn = document.createElement('div');
-    btn.className = `char-pedestal-btn ${key === activeShowcaseHeroKey ? 'active' : ''} ${!unlocked ? 'hero-locked' : ''}`;
-    btn.setAttribute('data-hero', key);
-    btn.setAttribute('title', `${c.name} (${c.title})${!unlocked ? ' • Bloqueado' : ''}`);
-    btn.style.setProperty('--btn-theme-color', unlocked ? profile.themeColor : '#57606f');
-    btn.innerHTML = `
-      <div class="char-pedestal-emblem" style="border-color: ${unlocked ? profile.themeColor : '#4b5563'}; color: ${unlocked ? profile.themeColor : '#6b7280'}; position: relative;">
+    const sigil = document.createElement('div');
+    sigil.className = `char-sigil-item ${key === activeShowcaseHeroKey ? 'active' : ''} ${!unlocked ? 'sigil-locked' : ''}`;
+    sigil.setAttribute('data-hero', key);
+    sigil.setAttribute('title', `${c.name} (${c.title})${!unlocked ? ' • Bloqueado' : ''}`);
+    sigil.style.setProperty('--showcase-color', unlocked ? profile.themeColor : '#57606f');
+    sigil.innerHTML = `
+      <div class="sigil-focus-needle"></div>
+      <div class="sigil-crest-disc" style="--disc-accent: ${unlocked ? profile.themeColor : '#4b5563'};">
         ${profile.emblemSvg}
-        ${!unlocked ? `<div class="pedestal-lock-badge">${renderIcon('lock', { size: 10, color: '#ff7675' })}</div>` : ''}
+        ${!unlocked ? `<div class="sigil-lock-marker">${renderIcon('lock', { size: 9, color: '#ff7675' })}</div>` : ''}
       </div>
-      <div class="char-pedestal-info">
-        <div class="char-pedestal-title" style="color: ${unlocked ? profile.themeColor : '#9ca3af'};">${c.title}</div>
-        <div class="char-pedestal-name" style="${!unlocked ? 'color: #9ca3af;' : ''}">${c.name}</div>
-        <div class="char-pedestal-role-mini">
+      <div class="sigil-identity">
+        <span class="sigil-archetype-tag">${c.title}</span>
+        <span class="sigil-hero-name">${c.name}</span>
+        <div class="sigil-meta-row">
           ${unlocked 
-            ? `${c.role || ''} · <span class="mini-diff" style="color: ${profile.themeColor};">${miniDots}</span>` 
-            : `<span class="pedestal-locked-label" style="color: #ff7675; font-weight: 700; font-size: 10px; display: inline-flex; align-items: center; gap: 3px;">${renderIcon('lock', { size: 9, color: '#ff7675' })} BLOQUEADO</span>`
+            ? `<span class="sigil-role-label">${c.role || ''}</span><span class="sigil-diff-pips">${miniDots}</span>` 
+            : `<span class="sigil-locked-text">${renderIcon('lock', { size: 8, color: '#ff7675', style: 'vertical-align:middle;' })} BLOQUEADO</span>`
           }
         </div>
       </div>
-      <div class="pedestal-active-glow" style="background: ${unlocked ? profile.themeColor : '#ff7675'}; box-shadow: 0 0 12px ${unlocked ? profile.themeColor : '#ff7675'};"></div>
     `;
 
-    btn.onclick = () => {
+    sigil.onclick = () => {
       try { playSfx('card_hover'); } catch(e) {}
       triggerHaptic('light');
       renderShowcase(key);
-      if (btn.scrollIntoView) {
-        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      }
+      scrollPedestalToCenter(sigil);
     };
 
-    pedestalsContainer.appendChild(btn);
+    pedestalsContainer.appendChild(sigil);
   });
 
   // Setas de Navegação Rápida do Palco (Ideal para touch)
@@ -424,6 +691,9 @@ export function openCharacterSelect() {
           } else {
             selectAdjacentHero(-1); // Deslize para direita -> anterior
           }
+        } else if (Math.abs(deltaX) < 12 && Math.abs(deltaY) < 12 && deltaTime < 350) {
+          // Toque rápido direto no herói -> dispara o golpe característico
+          triggerHeroAttack(true);
         }
       }
     }, { passive: true });
@@ -464,4 +734,42 @@ export function openCharacterSelect() {
 
   // Iniciar loop de animação da prévia em canvas
   startPreview(activeShowcaseHeroKey);
+
+  // Configurar atalhos de navegação por teclado (Desktop)
+  if (charSelectKeydownHandler) {
+    window.removeEventListener('keydown', charSelectKeydownHandler);
+  }
+  charSelectKeydownHandler = (e) => {
+    if (!charModal || charModal.style.display === 'none' || charModal.classList.contains('modal-hidden')) return;
+
+    // Não interceptar se outro modal estiver ativo sobreposto
+    const talentsModal = document.getElementById('talents-modal');
+    const bestiaryModal = document.getElementById('bestiary-modal');
+    const achievementsModal = document.getElementById('achievements-modal');
+    if ((talentsModal && talentsModal.style.display !== 'none' && !talentsModal.classList.contains('modal-hidden')) ||
+        (bestiaryModal && bestiaryModal.style.display !== 'none' && !bestiaryModal.classList.contains('modal-hidden')) ||
+        (achievementsModal && achievementsModal.style.display !== 'none' && !achievementsModal.classList.contains('modal-hidden'))) {
+      return;
+    }
+
+    // Não interceptar se o usuário estiver focando em algum input
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectAdjacentHero(-1);
+    } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectAdjacentHero(1);
+    } else if (e.key === ' ' || e.key === 'Enter') {
+      if (isHeroUnlocked(activeShowcaseHeroKey)) {
+        e.preventDefault();
+        const confirmBtn = document.getElementById('confirm-hero-btn');
+        if (confirmBtn && !confirmBtn.disabled) {
+          confirmBtn.click();
+        }
+      }
+    }
+  };
+  window.addEventListener('keydown', charSelectKeydownHandler);
 }

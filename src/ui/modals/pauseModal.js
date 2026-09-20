@@ -11,6 +11,7 @@ import { WEAPON_ICONS, renderIcon } from '../icons.js';
 import { ITEMS, getSynergyTrackerList } from '../../config/items.js';
 import { gameState, setLastTime } from '../../main.js';
 import { initAudio, applyStasisAudioFilter, resetStasisAudioFilter, playSfx } from '../../core/audio.js';
+import { getJoystickMode, setJoystickMode, JOYSTICK_MODES, resetInput } from '../../core/input.js';
 
 let isTransitioning = false;
 let pauseKeydownHandler = null;
@@ -255,6 +256,23 @@ export function renderPauseInventory() {
       `;
     }).join('');
   }
+
+  // 5. Atualização do Seletor de Tipo de Joystick (Mobile)
+  const currentMode = getJoystickMode();
+  const joyBadge = document.getElementById('joystick-mode-badge');
+  const btnFloating = document.getElementById('btn-joy-floating');
+  const btnDynamic = document.getElementById('btn-joy-dynamic');
+
+  if (joyBadge) {
+    joyBadge.innerText = currentMode === JOYSTICK_MODES.DYNAMIC ? 'DINÂMICO' : 'FLUTUANTE';
+  }
+  if (btnFloating && btnDynamic) {
+    const isDynamic = currentMode === JOYSTICK_MODES.DYNAMIC;
+    btnFloating.classList.toggle('active', !isDynamic);
+    btnFloating.setAttribute('aria-pressed', (!isDynamic).toString());
+    btnDynamic.classList.toggle('active', isDynamic);
+    btnDynamic.setAttribute('aria-pressed', isDynamic.toString());
+  }
 }
 
 /**
@@ -284,6 +302,9 @@ function cleanupPauseKeydown() {
 export function openPause() {
   if (!gameState.isInMatch || gameState.isDead || gameState.isWon || isTransitioning) return;
   if (gameState.isPaused) return;
+
+  // 0. Limpeza defensiva de entradas de toque e teclado
+  resetInput();
 
   // 1. REQUISITO CRÍTICO: O jogo CONGELA IMEDIATAMENTE antes de qualquer animação
   gameState.isPaused = true;
@@ -356,7 +377,10 @@ export function closePause() {
     // 5. Recalibrar o delta time da engine para evitar salto de física
     setLastTime(performance.now());
 
-    // 6. Finalmente retomar o loop do jogo após a interface estar 100% fechada,
+    // 6. Reset defensivo de input antes de reativar
+    resetInput();
+
+    // 7. Finalmente retomar o loop do jogo após a interface estar 100% fechada,
     // garantindo que a partida ainda está ativa
     if (gameState.isInMatch) {
       gameState.isPaused = false;
@@ -371,6 +395,7 @@ export function closePause() {
 export function forceClosePause() {
   isTransitioning = false;
   cleanupPauseKeydown();
+  resetInput();
 
   const pauseModal = document.getElementById('pause-modal');
   if (pauseModal) {

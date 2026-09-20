@@ -13,7 +13,7 @@ import {
 } from '../../main.js';
 import { resetInput } from '../../core/input.js';
 import { triggerHaptic, applyDeathAudioFilter, resetDeathAudioFilter, playSfx } from '../../core/audio.js';
-import { recordRunStats, checkAndRecordBestRun } from '../../config/achievements.js';
+import { recordRunStats, checkAndRecordBestRun, recordHeroRunStats } from '../../config/achievements.js';
 import { BESTIARY_ENTRIES } from '../../config/bestiary.js';
 import { renderIcon, WEAPON_ICONS } from '../icons.js';
 import { player, getPersistentGold, selectedHeroKey } from '../../entities/player.js';
@@ -367,17 +367,31 @@ function animateCountUp(element, targetValue, durationMs = 650) {
   }
 
   // 6. Conquistas Desbloqueadas e Registro de Melhor Run nesta Jornada
-  const newlyUnlocked = recordRunStats({
-    kills: gameState.kills,
-    runFinished: true
-  });
-
-  // Avaliação e gravação da Melhor Run
   const waveMatch = (waveText || '').match(/\d+/);
   const currentWaveNum = waveMatch ? parseInt(waveMatch[0], 10) : 1;
   const currentHeroDef = CHARACTERS[selectedHeroKey] || CHARACTERS.KNIGHT;
   const { weapons: playerWeapons, passives: playerPassives } = harvestPlayerRunArsenal();
+  const survivalSecs = parseTimeToSeconds(survivalTime);
+  const evolvedCount = playerWeapons.filter(w => w.evolved).length;
 
+  const newlyUnlocked = recordRunStats({
+    kills: gameState.kills,
+    survivalSeconds: survivalSecs,
+    level: player.level,
+    wave: currentWaveNum,
+    evolvedWeaponsCount: evolvedCount,
+    runFinished: true
+  });
+
+  // Gravação individual do herói selecionado
+  recordHeroRunStats(selectedHeroKey, {
+    seconds: survivalSecs,
+    timeStr: survivalTime,
+    kills: gameState.kills,
+    isVictory: false
+  });
+
+  // Avaliação e gravação da Melhor Run
   const recordResult = checkAndRecordBestRun({
     heroKey: selectedHeroKey,
     heroName: currentHeroDef.name || 'Sir Roland',
@@ -386,7 +400,7 @@ function animateCountUp(element, targetValue, durationMs = 650) {
     wave: currentWaveNum,
     waveText: waveText || `Onda ${currentWaveNum}`,
     time: survivalTime,
-    seconds: parseTimeToSeconds(survivalTime),
+    seconds: survivalSecs,
     kills: gameState.kills,
     level: player.level,
     souls: getPersistentGold(),
@@ -395,6 +409,10 @@ function animateCountUp(element, targetValue, durationMs = 650) {
     verdictTitle: `ÚLTIMO SUSPIRO NA ONDA ${currentWaveNum}`,
     verdictSub: killerName ? `Caiu perante ${killerName}` : randomVerdict
   });
+
+  if (recordResult && recordResult.bestRun) {
+    recordRunStats({ score: recordResult.bestRun.score });
+  }
 
   const achContainer = document.getElementById('death-achievements-container');
   if (achContainer) {
@@ -464,19 +482,32 @@ export function finalizeVictoryAndReturnToMenu() {
   gameState.isPaused = false;
   resetInput();
 
+  const timerElem = document.getElementById('timer-val');
+  const survivalTime = timerElem ? timerElem.innerText : '00:00';
+  const survivalSecs = parseTimeToSeconds(survivalTime);
+  const currentHeroDef = CHARACTERS[selectedHeroKey] || CHARACTERS.KNIGHT;
+  const { weapons: playerWeapons, passives: playerPassives } = harvestPlayerRunArsenal();
+  const evolvedCount = playerWeapons.filter(w => w.evolved).length;
+
   recordRunStats({
     kills: gameState.kills,
     wave: 10,
     bossDefeated: 4,
+    survivalSeconds: survivalSecs,
+    level: player.level,
+    evolvedWeaponsCount: evolvedCount,
     runFinished: true
   });
 
-  const timerElem = document.getElementById('timer-val');
-  const survivalTime = timerElem ? timerElem.innerText : '00:00';
-  const currentHeroDef = CHARACTERS[selectedHeroKey] || CHARACTERS.KNIGHT;
-  const { weapons: playerWeapons, passives: playerPassives } = harvestPlayerRunArsenal();
+  // Gravação individual de vitória para o herói selecionado
+  recordHeroRunStats(selectedHeroKey, {
+    seconds: survivalSecs,
+    timeStr: survivalTime,
+    kills: gameState.kills,
+    isVictory: true
+  });
 
-  checkAndRecordBestRun({
+  const recordResult = checkAndRecordBestRun({
     heroKey: selectedHeroKey,
     heroName: currentHeroDef.name || 'Sir Roland',
     heroTitle: currentHeroDef.title || 'O Paladino',
@@ -484,7 +515,7 @@ export function finalizeVictoryAndReturnToMenu() {
     wave: 10,
     waveText: 'Onda 10 (Vitória Suprema)',
     time: survivalTime,
-    seconds: parseTimeToSeconds(survivalTime),
+    seconds: survivalSecs,
     kills: gameState.kills,
     level: player.level,
     souls: getPersistentGold(),
@@ -493,6 +524,10 @@ export function finalizeVictoryAndReturnToMenu() {
     verdictTitle: 'VITÓRIA SUPREMA ABSOLUTA',
     verdictSub: 'Expurgou o Soberano do Abismo e consagrou a luz eterna'
   });
+
+  if (recordResult && recordResult.bestRun) {
+    recordRunStats({ score: recordResult.bestRun.score });
+  }
 
   bullets.length = 0;
   enemyBullets.length = 0;

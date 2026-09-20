@@ -276,11 +276,7 @@ export function render() {
 
   renderEnvironment(ctx);
 
-  if (!gameState.isInMatch) {
-    ctx.restore();
-    ctx.restore();
-    return;
-  }
+
 
   const pad = 60;
   const viewLeft = camera.x - pad;
@@ -1762,7 +1758,7 @@ export function render() {
         for (let t = 0; t < b.trail.length; t++) {
           const pt = b.trail[t];
           const tAlpha = (1 - t / b.trail.length) * 0.42;
-          ctx.fillStyle = b.isEvolved ? `rgba(241, 196, 15, ${tAlpha})` : `rgba(0, 245, 212, ${tAlpha})`;
+          ctx.fillStyle = b.isEvolved ? `rgba(241, 196, 15, ${tAlpha})` : `rgba(168, 85, 247, ${tAlpha})`;
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, b.radius * (1 - t / b.trail.length * 0.5), 0, Math.PI * 2);
           ctx.fill();
@@ -1772,8 +1768,8 @@ export function render() {
       ctx.translate(b.x, b.y);
       ctx.rotate(b.angle || 0);
 
-      // Halo translúcido de éter
-      ctx.fillStyle = b.isEvolved ? 'rgba(241, 196, 15, 0.35)' : 'rgba(0, 245, 212, 0.35)';
+      // Halo translúcido espectral
+      ctx.fillStyle = b.isEvolved ? 'rgba(241, 196, 15, 0.35)' : 'rgba(168, 85, 247, 0.35)';
       ctx.beginPath();
       if (b.isEvolved) {
         ctx.moveTo(18, 0);
@@ -1789,8 +1785,8 @@ export function render() {
       ctx.closePath();
       ctx.fill();
 
-      // Corpo da Foice Astral em plasma puro
-      ctx.fillStyle = b.isEvolved ? '#f1c40f' : '#00cec9';
+      // Corpo da Lâmina Espiritual
+      ctx.fillStyle = b.isEvolved ? '#f1c40f' : '#7c3aed';
       ctx.beginPath();
       if (b.isEvolved) {
         ctx.moveTo(16, 0);

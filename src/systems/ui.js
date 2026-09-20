@@ -22,6 +22,10 @@ import { openCharacterSelect, isMobileScreen } from '../ui/modals/characterSelec
 import { 
   openAchievementsModal, 
   closeAchievementsModal, 
+  setCurrentAchievementsCategory,
+  renderAchievementsRoster,
+  renderAchievementDossier,
+  selectedAchievementId,
   openBestiaryModal, 
   closeBestiaryModal, 
   currentBestiaryCategory, 
@@ -33,8 +37,7 @@ import {
 import { 
   openTalentsModal, 
   activeRenderAstrolabe, 
-  setActiveRenderAstrolabe, 
-  renderBlessingsSummary 
+  setActiveRenderAstrolabe 
 } from '../ui/modals/talentsModal.js';
 import { 
   closeBossSelectModal, 
@@ -45,6 +48,7 @@ import { playSfx, setGameVolume, audioCtx } from '../core/audio.js';
 import { gameState, activeBoss, terminateMatch } from '../main.js';
 import { onLayoutChange, updateHudBottomMetric } from '../core/responsive.js';
 import { resizePreviewCanvas } from '../render/characterPreview.js';
+import { setJoystickMode, JOYSTICK_MODES } from '../core/input.js';
 
 /**
  * Inicializador da Interface de Usuário e Fiação de Eventos
@@ -88,6 +92,26 @@ export function initUI() {
     });
   }
 
+  // Abas de Categoria do Grimório de Conquistas
+  document.querySelectorAll('.achievements-tab-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const cat = btn.getAttribute('data-cat') || 'ALL';
+      document.querySelectorAll('.achievements-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      setCurrentAchievementsCategory(cat);
+      if (cat === 'JOURNEY') {
+        renderAchievementsRoster(cat);
+        renderAchievementDossier('JOURNEY');
+      } else {
+        renderAchievementsRoster(cat);
+        // Seleciona a primeira conquista da categoria filtrada se a atual não pertencer a ela
+        renderAchievementDossier();
+      }
+      playSfx('click');
+    });
+  });
+
   bindClick('open-bestiary-btn', openBestiaryModal);
   bindClick('close-bestiary-btn', closeBestiaryModal);
   const bestiaryModalEl = document.getElementById('bestiary-modal');
@@ -115,15 +139,21 @@ export function initUI() {
   bindClick('open-talents-btn', openTalentsModal);
   bindClick('close-talents-btn', () => {
     setActiveRenderAstrolabe(null);
-    const talentsModal = document.getElementById('talents-modal');
-    if (talentsModal) {
-      talentsModal.classList.add('modal-hidden');
-      talentsModal.style.setProperty('display', 'none', 'important');
-      talentsModal.style.display = 'none';
-    }
     const blessingsDrawer = document.getElementById('blessings-summary-drawer');
     if (blessingsDrawer) blessingsDrawer.style.display = 'none';
-    openCharacterSelect();
+    const talentsModal = document.getElementById('talents-modal');
+    if (talentsModal) {
+      talentsModal.classList.add('closing');
+      setTimeout(() => {
+        talentsModal.classList.remove('active', 'closing');
+        talentsModal.classList.add('modal-hidden');
+        talentsModal.style.setProperty('display', 'none', 'important');
+        talentsModal.style.display = 'none';
+        openCharacterSelect();
+      }, 200);
+    } else {
+      openCharacterSelect();
+    }
   });
   bindClick('reset-talents-btn', () => {
     resetMetaTree();
@@ -131,19 +161,6 @@ export function initUI() {
     openTalentsModal();
   });
 
-  bindClick('open-blessings-summary-btn', () => {
-    const drawer = document.getElementById('blessings-summary-drawer');
-    if (drawer) {
-      const isHidden = drawer.style.display === 'none' || !drawer.style.display;
-      if (isHidden) {
-        renderBlessingsSummary();
-        drawer.style.display = 'block';
-        try { playSfx('card_hover'); } catch(e) {}
-      } else {
-        drawer.style.display = 'none';
-      }
-    }
-  });
   bindClick('close-blessings-drawer-btn', () => {
     const drawer = document.getElementById('blessings-summary-drawer');
     if (drawer) drawer.style.display = 'none';
@@ -151,6 +168,16 @@ export function initUI() {
 
   bindClick('close-boss-select-btn', closeBossSelectModal);
   renderBossSelectModal();
+
+  // Seleção de Tipo de Joystick Virtual (Mobile)
+  const handleJoystickModeChange = (mode) => {
+    setJoystickMode(mode);
+    playSfx('click');
+    renderPauseInventory();
+  };
+
+  bindClick('btn-joy-floating', () => handleJoystickModeChange(JOYSTICK_MODES.FLOATING));
+  bindClick('btn-joy-dynamic', () => handleJoystickModeChange(JOYSTICK_MODES.DYNAMIC));
 
   const volumeSlider = document.getElementById('volume-slider');
   if (volumeSlider) {
@@ -269,6 +296,7 @@ export function initUI() {
     const achievementsModal = document.getElementById('achievements-modal');
     if (achievementsModal && achievementsModal.style.display === 'flex') {
       achievementsModal.classList.toggle('is-mobile-device', isMobileScreen());
+      renderAchievementDossier(selectedAchievementId);
     }
 
     const bestiaryModal = document.getElementById('bestiary-modal');

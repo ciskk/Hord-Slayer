@@ -690,6 +690,121 @@
   height: 11px !important;
 }
 
+/* Card de Seleção de Tipo de Joystick (Exclusivo Mobile) */
+.pause-joystick-box {
+  display: none;
+  background: rgba(10, 16, 32, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-top: auto;
+  margin-bottom: 6px;
+  flex-direction: column;
+  gap: 5px;
+  box-sizing: border-box;
+}
+
+.pause-screen-overlay.is-mobile-device .pause-joystick-box,
+.is-mobile-device .pause-joystick-box {
+  display: flex;
+}
+
+.pause-screen-overlay.is-mobile-device .pause-volume-box,
+.is-mobile-device .pause-volume-box {
+  margin-top: 0;
+}
+
+.joystick-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.joystick-box-title {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  letter-spacing: 0.5px;
+  gap: 5px;
+  text-transform: uppercase;
+}
+
+.joystick-box-title .game-icon {
+  width: 13px !important;
+  height: 13px !important;
+}
+
+.joystick-mode-badge {
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #00f5d4;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Toggle Segmentado Estilizado */
+.joystick-toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: rgba(4, 8, 18, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 3px;
+  box-sizing: border-box;
+}
+
+.joystick-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #64748b;
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.joystick-toggle-btn .toggle-indicator {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.joystick-toggle-btn:hover:not(.active) {
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.joystick-toggle-btn.active {
+  background: linear-gradient(135deg, rgba(0, 245, 212, 0.18) 0%, rgba(9, 132, 227, 0.25) 100%);
+  border-color: rgba(0, 245, 212, 0.5);
+  color: #00f5d4;
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.2), inset 0 0 6px rgba(0, 245, 212, 0.12);
+  text-shadow: 0 0 8px rgba(0, 245, 212, 0.4);
+}
+
+.joystick-toggle-btn.active .toggle-indicator {
+  background: #00f5d4;
+  box-shadow: 0 0 6px #00f5d4;
+}
+
 /* Card de Controle de Volume */
 .pause-volume-box {
   background: rgba(10, 16, 32, 0.75);
@@ -1450,12 +1565,59 @@
     font-size: 7.5px !important;
   }
 
+  /* Joystick: Acoplado acima do volume no portrait */
+  .pause-joystick-box {
+    flex-shrink: 0 !important;
+    padding: 3px 6px !important;
+    margin-top: auto !important;
+    margin-bottom: 2.5px !important;
+    border-radius: 5px !important;
+    gap: 2px !important;
+  }
+
+  .joystick-box-title {
+    font-size: 7.5px !important;
+  }
+
+  .joystick-box-title .game-icon {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  .joystick-mode-badge {
+    font-size: 7.5px !important;
+  }
+
+  .joystick-toggle-group {
+    padding: 2px !important;
+    gap: 2px !important;
+    border-radius: 4px !important;
+  }
+
+  .joystick-toggle-btn {
+    padding: 2.5px 4px !important;
+    font-size: 7.5px !important;
+    letter-spacing: 0.4px !important;
+    gap: 3px !important;
+    border-radius: 3px !important;
+  }
+
+  .joystick-toggle-btn .toggle-indicator {
+    width: 4px !important;
+    height: 4px !important;
+  }
+
   /* Volume: Ancorado alinhado no rodapé do card da matriz */
   .pause-volume-box {
     flex-shrink: 0 !important;
     padding: 3px 6px !important;
-    margin-top: auto !important;
+    margin-top: 0 !important;
     border-radius: 5px !important;
+  }
+
+  /* Em PC/Desktop (sem .is-mobile-device), volume mantém margin-top auto */
+  .pause-screen-overlay:not(.is-mobile-device) .pause-volume-box {
+    margin-top: auto !important;
   }
 
   .volume-header {

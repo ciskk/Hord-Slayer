@@ -45,171 +45,40 @@ let arenaBgHeroKey = null;
 const THEME_COLORS = {
   KNIGHT: { primary: '#f1c40f', secondary: '#f39c12', glow: 'rgba(241, 196, 15, 0.35)', accent: '#ffffff' },
   MAGE: { primary: '#ff7675', secondary: '#d35400', glow: 'rgba(231, 76, 60, 0.40)', accent: '#f1c40f' },
-  ROGUE: { primary: '#c084fc', secondary: '#7c3aed', glow: 'rgba(168, 85, 247, 0.42)', accent: '#c4b5d6' },
+  ROGUE: { primary: '#a855f7', secondary: '#7c3aed', glow: 'rgba(168, 85, 247, 0.42)', accent: '#c084fc' },
   BARBARIAN: { primary: '#e74c3c', secondary: '#c0392b', glow: 'rgba(231, 76, 60, 0.45)', accent: '#f39c12' },
   ALCHEMIST: { primary: '#9b59b6', secondary: '#8e44ad', glow: 'rgba(155, 89, 182, 0.40)', accent: '#a29bfe' }
 };
 
 /**
- * Atualiza e renderiza o cenário da arena gótica no canvas offscreen cacheado.
+ * Renderiza um halo volumétrico sutil e aura etérea ao redor do herói,
+ * com transição 100% suave para o transparente, integrando-se perfeitamente
+ * à Catedral e ao Void Rift de fundo sem bordas duras ou texturas borradas.
  */
-function updateArenaBackdrop(width, height, heroKey) {
-  const roundedW = Math.max(1, Math.round(width));
-  const roundedH = Math.max(1, Math.round(height));
-
-  if (arenaBgCanvas && arenaBgW === roundedW && arenaBgH === roundedH && arenaBgHeroKey === heroKey) {
-    return;
-  }
-
-  arenaBgW = roundedW;
-  arenaBgH = roundedH;
-  arenaBgHeroKey = heroKey;
-
-  if (!arenaBgCanvas) {
-    arenaBgCanvas = document.createElement('canvas');
-  }
-  arenaBgCanvas.width = roundedW;
-  arenaBgCanvas.height = roundedH;
-  arenaBgCtx = arenaBgCanvas.getContext('2d');
-  if (!arenaBgCtx) return;
-
-  const bg = arenaBgCtx;
-  const colors = THEME_COLORS[heroKey] || THEME_COLORS.KNIGHT;
-
-  // 1. Fundo base escuro de pedra de catedral
-  bg.fillStyle = '#080b12';
-  bg.fillRect(0, 0, roundedW, roundedH);
-
-  // 2. Grade de lajes góticas da arena
-  const cols = 5;
-  const rows = 7;
-  const cellW = roundedW / cols;
-  const cellH = roundedH / rows;
-
-  for (let r = 0; r < rows; r++) {
-    for (let col = 0; col < cols; col++) {
-      const tileX = col * cellW;
-      const tileY = r * cellH;
-      const isAlt = (r + col) % 2 === 0;
-      const isSide = col === 0 || col === cols - 1;
-
-      // Blocos de lajes alternadas com relevo escuro
-      bg.fillStyle = isSide ? '#0c1018' : (isAlt ? '#141b27' : '#101620');
-      bg.fillRect(tileX + 1.5, tileY + 1.5, cellW - 3, cellH - 3);
-
-      // Rejunte entalhado profundo
-      bg.strokeStyle = '#06080e';
-      bg.lineWidth = 1.6;
-      bg.strokeRect(tileX + 0.5, tileY + 0.5, cellW - 1, cellH - 1);
-
-      // Fissuras ancestrais de batalha
-      if ((r * 3 + col * 7) % 4 === 0) {
-        bg.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-        bg.lineWidth = 1.0;
-        bg.beginPath();
-        bg.moveTo(tileX + cellW * 0.25, tileY + cellH * 0.35);
-        bg.lineTo(tileX + cellW * 0.55, tileY + cellH * 0.65);
-        bg.lineTo(tileX + cellW * 0.8, tileY + cellH * 0.5);
-        bg.stroke();
-      }
-
-      // Glifos / veios de runas sutis no piso
-      if ((r + col) % 3 === 0) {
-        bg.strokeStyle = `${colors.primary}15`;
-        bg.lineWidth = 1.0;
-        bg.beginPath();
-        bg.arc(tileX + cellW * 0.5, tileY + cellH * 0.5, cellW * 0.24, 0, Math.PI * 2);
-        bg.stroke();
-      }
-    }
-  }
-
-  // 3. Pilares Góticos nas extremidades superiores
-  const pWidth = Math.max(32, roundedW * 0.18);
-
-  // Pilar Esquerdo com sombra e volume
-  const lGrad = bg.createLinearGradient(0, 0, pWidth, 0);
-  lGrad.addColorStop(0, '#1c2436');
-  lGrad.addColorStop(0.5, '#121724');
-  lGrad.addColorStop(1, 'rgba(8, 12, 18, 0)');
-  bg.fillStyle = lGrad;
-  bg.fillRect(0, 0, pWidth, roundedH * 0.68);
-
-  // Pilar Direito com sombra e volume
-  const rGrad = bg.createLinearGradient(roundedW, 0, roundedW - pWidth, 0);
-  rGrad.addColorStop(0, '#1c2436');
-  rGrad.addColorStop(0.5, '#121724');
-  rGrad.addColorStop(1, 'rgba(8, 12, 18, 0)');
-  bg.fillStyle = rGrad;
-  bg.fillRect(roundedW - pWidth, 0, pWidth, roundedH * 0.68);
-
-  // 4. Arandelas de tochas com iluminação volumétrica quente
-  const torchY = roundedH * 0.22;
-  const torchPositions = [pWidth * 0.4, roundedW - pWidth * 0.4];
-  torchPositions.forEach((tx) => {
-    // Halo quente de iluminação da tocha
-    const tGlow = bg.createRadialGradient(tx, torchY, 2, tx, torchY, 60);
-    tGlow.addColorStop(0, 'rgba(243, 156, 18, 0.45)');
-    tGlow.addColorStop(0.35, 'rgba(230, 126, 34, 0.18)');
-    tGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    bg.fillStyle = tGlow;
-    bg.beginPath();
-    bg.arc(tx, torchY, 60, 0, Math.PI * 2);
-    bg.fill();
-
-    // Haste de ferro forjado
-    bg.fillStyle = '#2c3e50';
-    bg.fillRect(tx - 2, torchY + 4, 4, 14);
-
-    // Brasa da tocha
-    bg.fillStyle = '#f1c40f';
-    bg.beginPath();
-    bg.arc(tx, torchY, 4, 0, Math.PI * 2);
-    bg.fill();
-  });
-
-  // 5. Névoa gótica e poeira espectral no horizonte da arena
-  const mist = bg.createLinearGradient(0, roundedH * 0.35, 0, roundedH);
-  mist.addColorStop(0, 'rgba(10, 14, 22, 0.05)');
-  mist.addColorStop(0.5, 'rgba(14, 20, 32, 0.35)');
-  mist.addColorStop(1, 'rgba(6, 8, 14, 0.65)');
-  bg.fillStyle = mist;
-  bg.fillRect(0, roundedH * 0.35, roundedW, roundedH * 0.65);
-}
-
-/**
- * Renderiza o backdrop da arena desfocado por trás do altar com depth-of-field.
- */
-function drawBlurredArenaBackground(c, width, height, colors) {
-  updateArenaBackdrop(width, height, currentHeroKey);
-  if (!arenaBgCanvas) return;
-
+function drawHeroAtmosphericGlow(c, width, height, centerX, centerY, colors) {
   c.save();
-  // Depth of field cinematográfico via blur nativo de canvas
-  if (typeof c.filter === 'string') {
-    c.filter = 'blur(6px)';
-  }
-  c.drawImage(arenaBgCanvas, 0, 0, width, height);
-  c.restore();
 
-  const centerX = width / 2;
-  const centerY = height * 0.55;
-
-  // Halo atmosférico dinâmico do elemento do herói fundido com a arena
-  const heroGlow = c.createRadialGradient(centerX, centerY - 15, 8, centerX, centerY, width * 0.68);
+  // 1. Halo central do núcleo elemental do herói
+  const heroGlow = c.createRadialGradient(centerX, centerY - 45, 20, centerX, centerY, Math.max(width, height) * 0.65);
   heroGlow.addColorStop(0, colors.glow);
-  heroGlow.addColorStop(0.5, 'rgba(12, 16, 26, 0.35)');
-  heroGlow.addColorStop(1, 'rgba(4, 6, 10, 0.72)');
+  heroGlow.addColorStop(0.35, `${colors.primary}18`);
+  heroGlow.addColorStop(0.7, 'rgba(6, 10, 20, 0.15)');
+  heroGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
   c.fillStyle = heroGlow;
   c.fillRect(0, 0, width, height);
 
-  // Vinheta perimetral de profundidade (foco total no herói central)
-  const vig = c.createRadialGradient(centerX, height / 2, width * 0.35, centerX, height / 2, width * 0.78);
-  vig.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  vig.addColorStop(0.7, 'rgba(3, 5, 8, 0.50)');
-  vig.addColorStop(1, 'rgba(2, 3, 6, 0.88)');
-  c.fillStyle = vig;
-  c.fillRect(0, 0, width, height);
+  // 2. Coluna de luz mística suave vertical (feixe de ascensão sagrada / astral)
+  const beamW = Math.min(380, width * 0.75);
+  const beam = c.createLinearGradient(centerX - beamW / 2, 0, centerX + beamW / 2, 0);
+  beam.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  beam.addColorStop(0.3, `${colors.primary}08`);
+  beam.addColorStop(0.5, `${colors.primary}16`);
+  beam.addColorStop(0.7, `${colors.primary}08`);
+  beam.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  c.fillStyle = beam;
+  c.fillRect(centerX - beamW / 2, 0, beamW, height);
+
+  c.restore();
 }
 
 /**
@@ -248,6 +117,46 @@ export function initPreviewCanvas(canvasElement) {
     }, { passive: true });
   }
 
+  // Interatividade com Mouse (Drag to Rotate e Click to Attack)
+  if (previewCanvas && !previewCanvas._hasMouseDragAttached) {
+    previewCanvas._hasMouseDragAttached = true;
+    let isMouseDown = false;
+    let mouseStartX = 0;
+    let hasDraggedDistance = 0;
+
+    previewCanvas.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      isMouseDown = true;
+      mouseStartX = e.clientX;
+      hasDraggedDistance = 0;
+      previewCanvas.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isMouseDown) return;
+      const dx = e.clientX - mouseStartX;
+      hasDraggedDistance += Math.abs(dx);
+      if (Math.abs(dx) > 22) {
+        setPreviewFacing(dx > 0 ? 1 : -1);
+        mouseStartX = e.clientX;
+        const facingBtn = document.getElementById('btn-preview-facing');
+        if (facingBtn) facingBtn.classList.toggle('flipped', currentFacing === -1);
+      }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (!isMouseDown) return;
+      isMouseDown = false;
+      previewCanvas.style.cursor = 'grab';
+      // Se foi apenas um clique sem arrasto, dispara ataque característico
+      if (hasDraggedDistance < 6) {
+        triggerHeroAttack(true);
+      }
+    });
+
+    previewCanvas.style.cursor = 'grab';
+  }
+
   resizePreviewCanvas();
   initParticles();
   return true;
@@ -278,14 +187,14 @@ export function resizePreviewCanvas() {
  */
 function initParticles() {
   particles = [];
-  const count = 28;
+  const count = 36;
   for (let i = 0; i < count; i++) {
     particles.push({
-      x: (Math.random() - 0.5) * 180,
-      y: 40 + Math.random() * 80,
-      vy: 0.3 + Math.random() * 0.7,
-      vx: (Math.random() - 0.5) * 0.4,
-      size: 1.2 + Math.random() * 2.4,
+      x: (Math.random() - 0.5) * 340,
+      y: 40 + Math.random() * 120,
+      vy: 0.35 + Math.random() * 0.85,
+      vx: (Math.random() - 0.5) * 0.5,
+      size: 1.8 + Math.random() * 3.2,
       alpha: Math.random(),
       life: Math.random() * 100,
       seed: Math.random() * 10
@@ -377,25 +286,25 @@ export function renderPreviewAtFrame(frame) {
  */
 export function triggerHeroSurge(playSound = true) {
   shockwaves.push({
-    radius: 10,
-    maxRadius: 110,
+    radius: 20,
+    maxRadius: 220,
     alpha: 0.9,
-    speed: 3.5
+    speed: 5.5
   });
 
   const colors = THEME_COLORS[currentHeroKey] || THEME_COLORS.KNIGHT;
-  for (let i = 0; i < 14; i++) {
-    const angle = (i / 14) * Math.PI * 2 + Math.random() * 0.3;
-    const spd = 2 + Math.random() * 3.5;
+  for (let i = 0; i < 16; i++) {
+    const angle = (i / 16) * Math.PI * 2 + Math.random() * 0.3;
+    const spd = 3.5 + Math.random() * 5.0;
     particles.push({
       x: 0,
-      y: 35,
+      y: 70,
       vx: Math.cos(angle) * spd,
-      vy: Math.sin(angle) * spd * 0.6 - 1.2,
-      size: 2.2 + Math.random() * 2.5,
+      vy: Math.sin(angle) * spd * 0.6 - 1.8,
+      size: 3.0 + Math.random() * 3.5,
       alpha: 1.0,
       life: 0,
-      maxLife: 35 + Math.random() * 20,
+      maxLife: 40 + Math.random() * 25,
       color: Math.random() > 0.4 ? colors.primary : colors.secondary
     });
   }
@@ -498,6 +407,24 @@ function syncCanvasDimensions() {
 }
 
 /**
+ * Calcula a escala duplicada do herói e adapta suavemente para não transbordar em janelas menores.
+ */
+function computeHeroScale(width, height) {
+  const isCompact = height < 250 || width < 250;
+  const isTall = height >= 310;
+
+  // Escala dobrada para presença monumental do campeão (de 3.35 para 6.6)
+  const targetScale = isCompact ? 4.8 : (isTall ? 6.6 : 5.8);
+
+  // Proteção adaptativa proporcional às dimensões reais do canvas
+  const maxSafeScaleH = (height * 0.72) / 44;
+  const maxSafeScaleW = (width * 0.82) / 70;
+  const safeScale = Math.min(targetScale, Math.max(3.2, Math.min(maxSafeScaleH, maxSafeScaleW)));
+
+  return { heroScale: safeScale, isCompact, isTall };
+}
+
+/**
  * Desenha o palco completo: Fundo com blur da arena, Altar de pedra, partículas, arma e o herói.
  */
 function renderStage() {
@@ -510,144 +437,305 @@ function renderStage() {
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.scale(dpr, dpr);
 
-  const isCompact = height < 250 || width < 250;
-  const isTall = height >= 310;
+  const { heroScale, isCompact, isTall } = computeHeroScale(width, height);
   const centerX = width / 2;
-  const centerY = isCompact ? height * 0.60 : (isTall ? height * 0.54 : height * 0.58);
-  const pedestalOffsetY = isCompact ? 26 : (isTall ? 38 : 36);
+  const centerY = isCompact ? height * 0.52 : (isTall ? height * 0.46 : height * 0.48);
+  const footY = centerY + Math.round(13.2 * heroScale);
 
   const colors = THEME_COLORS[currentHeroKey] || THEME_COLORS.KNIGHT;
 
-  // 1. Limpeza e Renderização da Visão da Arena Gótica com Depth-of-Field (Blur)
+  // 1. Limpeza do Canvas
   c.clearRect(0, 0, width, height);
-  drawBlurredArenaBackground(c, width, height, colors);
 
-  // 2. Pedestal de Pedra e Círculos Rúnicos Místicos
-  drawSummoningPedestal(c, centerX, centerY + pedestalOffsetY, colors, isCompact);
+  // 2. Pedestal de pedra estilizado com runas arcanas (escala dobrada)
+  drawHeroPedestal(c, centerX, footY, colors, isCompact, width, heroScale);
 
-  // 3. Ondas de Choque Arcanas (Surges)
-  drawShockwaves(c, centerX, centerY + pedestalOffsetY, colors);
+  // 3. Ondas de choque cinéticas sobre o pedestal
+  drawShockwaves(c, centerX, footY, colors);
 
-  // 4. Partículas Elementais Flutuantes
-  drawAtmosphericParticles(c, centerX, centerY + (isCompact ? 14 : 20), colors);
+  // 4. Sombra de contato e oclusão de ambiente sob as botas
+  drawSimpleHeroShadow(c, centerX, footY, isCompact, heroScale);
 
   // 5. Renderização do Modelo do Herói em escala ampliada
-  drawHeroInstance(c, centerX, centerY, colors, isCompact, isTall);
+  drawHeroInstance(c, centerX, centerY, colors, heroScale);
 
-  // 6. Efeitos Visuais Cinéticos de Ataque e Empunhadura de Armas Reais
+  // 6. Partículas atmosféricas elementais
+  drawAtmosphericParticles(c, centerX, centerY + Math.round(10 * heroScale), colors);
+
+  // 7. Efeitos Visuais Cinéticos de Ataque e Empunhadura de Armas Reais
   if (currentPose === 'combat') {
-    const heroScale = isCompact ? 2.5 : (isTall ? 3.35 : 3.1);
     drawHeroWeaponAttack(c, centerX, centerY, currentHeroKey, currentFacing, heroScale, attackTimer, colors);
   }
 }
 
 /**
- * Desenha a base de pedra e os anéis rúnicos rotativos em direções opostas.
+ * Desenha uma sombra realista de contato e oclusão de ambiente (AO) diretamente sobre as lajotas da arena real.
  */
-function drawSummoningPedestal(c, x, y, colors, isCompact = false) {
-  const time = previewTime * 0.02;
-  const scale = isCompact ? 0.82 : 1.0;
-
+function drawSimpleHeroShadow(c, x, y, isCompact = false, heroScale = 6.6) {
+  const rx = Math.round(heroScale * 14.5);
+  const ry = Math.round(heroScale * 3.6);
   c.save();
-  c.translate(x, y);
-  c.scale(scale, scale);
 
-  // Sombra profunda projetada pela base de pedra
-  c.fillStyle = 'rgba(0, 0, 0, 0.65)';
+  // 1. Sombra Difusa Geral do Corpo no Solo da Arena Real
+  const grad = c.createRadialGradient(x, y + 4, 0, x, y + 4, rx);
+  grad.addColorStop(0, 'rgba(0, 0, 0, 0.76)');
+  grad.addColorStop(0.45, 'rgba(0, 0, 0, 0.35)');
+  grad.addColorStop(0.8, 'rgba(0, 0, 0, 0.09)');
+  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  c.fillStyle = grad;
   c.beginPath();
-  c.ellipse(0, 6, 82, 28, 0, 0, Math.PI * 2);
+  c.ellipse(x, y + 4, rx, ry, 0, 0, Math.PI * 2);
   c.fill();
 
-  // Pedestal Inferior (Pedra Escura Entalhada)
-  const slabGrad = c.createLinearGradient(0, -12, 0, 12);
-  slabGrad.addColorStop(0, '#242e42');
-  slabGrad.addColorStop(0.5, '#151c29');
-  slabGrad.addColorStop(1, '#0c1018');
-  c.fillStyle = slabGrad;
-  c.strokeStyle = '#344360';
-  c.lineWidth = 1.8;
-  c.beginPath();
-  c.ellipse(0, 4, 76, 24, 0, 0, Math.PI * 2);
-  c.fill();
-  c.stroke();
+  // 2. Oclusão de Ambiente Direta sob as Botas (ancoragem física perfeita no mármore)
+  const footSpacing = Math.round(heroScale * 4.2);
+  const bootRx = Math.round(heroScale * 3.6);
+  const bootRy = Math.round(heroScale * 1.35);
+  c.fillStyle = 'rgba(0, 0, 0, 0.92)';
 
-  // Borda Chanfrada Superior da Pedra
-  c.fillStyle = '#1a2333';
-  c.strokeStyle = colors.primary;
-  c.lineWidth = 1.2;
   c.beginPath();
-  c.ellipse(0, 0, 72, 22, 0, 0, Math.PI * 2);
-  c.fill();
-  c.stroke();
-
-  // Brilho interior do selo de invocação
-  c.fillStyle = colors.glow;
-  c.beginPath();
-  c.ellipse(0, 0, 66, 19, 0, 0, Math.PI * 2);
+  c.ellipse(x - footSpacing * currentFacing, y, bootRx, bootRy, 0, 0, Math.PI * 2);
   c.fill();
 
-  // Anel rúnico externo
-  c.save();
-  c.scale(1, 0.32);
-  c.rotate(time * 0.6);
-  c.strokeStyle = colors.primary;
-  c.lineWidth = 1.4;
-  c.setLineDash([8, 6, 3, 6]);
   c.beginPath();
-  c.arc(0, 0, 64, 0, Math.PI * 2);
-  c.stroke();
-
-  for (let i = 0; i < 8; i++) {
-    const angle = (i / 8) * Math.PI * 2;
-    const gx = Math.cos(angle) * 64;
-    const gy = Math.sin(angle) * 64;
-    c.fillStyle = colors.primary;
-    c.beginPath();
-    c.arc(gx, gy, 2.2, 0, Math.PI * 2);
-    c.fill();
-  }
-  c.restore();
-
-  // Anel rúnico interno
-  c.save();
-  c.scale(1, 0.32);
-  c.rotate(-time * 0.9);
-  c.strokeStyle = colors.secondary;
-  c.lineWidth = 1.1;
-  c.setLineDash([4, 4]);
-  c.beginPath();
-  c.arc(0, 0, 48, 0, Math.PI * 2);
-  c.stroke();
-
-  // Triângulos arcanos entrelaçados
-  c.setLineDash([]);
-  c.lineWidth = 0.9;
-  c.strokeStyle = `${colors.primary}66`;
-  c.beginPath();
-  for (let t = 0; t < 3; t++) {
-    const a = (t / 3) * Math.PI * 2;
-    const tx = Math.cos(a) * 44;
-    const ty = Math.sin(a) * 44;
-    if (t === 0) c.moveTo(tx, ty);
-    else c.lineTo(tx, ty);
-  }
-  c.closePath();
-  c.stroke();
-
-  c.beginPath();
-  for (let t = 0; t < 3; t++) {
-    const a = (t / 3) * Math.PI * 2 + Math.PI;
-    const tx = Math.cos(a) * 44;
-    const ty = Math.sin(a) * 44;
-    if (t === 0) c.moveTo(tx, ty);
-    else c.lineTo(tx, ty);
-  }
-  c.closePath();
-  c.stroke();
-  c.restore();
+  c.ellipse(x + footSpacing * currentFacing, y, bootRx, bootRy, 0, 0, Math.PI * 2);
+  c.fill();
 
   c.restore();
 }
+
+
+/**
+ * Renderiza uma névoa rasteira abissal ultra-sutil ao redor da base do altar.
+ * Cria a atmosfera solene de catacumba sem clarear o fundo nem criar manchas.
+ */
+function drawSubtleGroundMist(c, x, y, rx, ry, stoneH, t) {
+  c.save();
+  const baseY = y + stoneH * 2.2;
+  const mistPuffs = 5;
+
+  for (let i = 0; i < mistPuffs; i++) {
+    const spd = 0.0035 + i * 0.0012;
+    const phase = i * 1.35;
+    const offsetX = Math.sin(t * spd + phase) * (rx * 0.95) + ((i % 2 === 0 ? 1 : -1) * rx * 0.35);
+    const offsetY = Math.cos(t * (spd * 0.9) + phase) * (ry * 0.28);
+    const puffRx = rx * (1.15 + Math.sin(t * 0.002 + i) * 0.18);
+    const puffRy = ry * (0.65 + Math.cos(t * 0.002 + i) * 0.12);
+
+    const px = x + offsetX;
+    const py = baseY + offsetY;
+
+    const mistGrad = c.createRadialGradient(px, py, 0, px, py, puffRx);
+    // Opacidades ultra-tênues (0.05 max) para garantir máxima sutileza
+    mistGrad.addColorStop(0, 'rgba(16, 24, 42, 0.055)');
+    mistGrad.addColorStop(0.35, 'rgba(10, 16, 30, 0.035)');
+    mistGrad.addColorStop(0.70, 'rgba(6, 10, 20, 0.012)');
+    mistGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    c.fillStyle = mistGrad;
+    c.beginPath();
+    c.ellipse(px, py, puffRx, puffRy, 0, 0, Math.PI * 2);
+    c.fill();
+  }
+  c.restore();
+}
+
+/**
+ * Desenha os 3 degraus monumentais de cantaria gótica (Altar dos Condenados).
+ */
+function drawTieredDais(c, x, y, rx, ry, stoneH, colors, isCompact, t) {
+  // Configuração dos 3 degraus: [escala, offsetY, alturaFace, tomClaro, tomEscuro]
+  const tiers = [
+    { scale: 1.45, offsetY: stoneH * 1.75, faceH: stoneH * 0.75, stoneLight: '#101628', stoneDark: '#050812' },
+    { scale: 1.22, offsetY: stoneH * 0.88, faceH: stoneH * 0.85, stoneLight: '#141c32', stoneDark: '#070a16' },
+    { scale: 1.00, offsetY: 0,            faceH: stoneH,        stoneLight: '#1a2440', stoneDark: '#090d1c' }
+  ];
+
+  for (let i = 0; i < tiers.length; i++) {
+    const tier = tiers[i];
+    const trX = rx * tier.scale;
+    const trY = ry * tier.scale;
+    const ty = y + tier.offsetY;
+    const th = tier.faceH;
+
+    // 1. Sombra de oclusão projetada pelo degrau sobre a base anterior
+    if (i < 2) {
+      c.save();
+      const shadowGrad = c.createRadialGradient(x, ty + th, trX * 0.5, x, ty + th + 6, trX * 1.15);
+      shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+      shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      c.fillStyle = shadowGrad;
+      c.beginPath();
+      c.ellipse(x, ty + th + 3, trX * 1.15, trY * 1.15, 0, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
+    }
+
+    // 2. Face lateral tridimensional de cantaria
+    c.save();
+    c.fillStyle = tier.stoneDark;
+    c.beginPath();
+    c.ellipse(x, ty + th, trX, trY, 0, 0, Math.PI);
+    c.ellipse(x, ty, trX, trY, 0, Math.PI, 0, true);
+    c.closePath();
+    c.fill();
+
+    // Ranhuras verticais de blocos de pedra entalhada
+    const numJoints = 10 + i * 3;
+    c.strokeStyle = 'rgba(0, 0, 0, 0.65)';
+    c.lineWidth = 1.2;
+    for (let j = 1; j < numJoints; j++) {
+      const angle = Math.PI * (j / numJoints);
+      const jx = x + Math.cos(angle) * trX;
+      const jy = ty + Math.sin(angle) * trY;
+      c.beginPath();
+      c.moveTo(jx, jy);
+      c.lineTo(jx, jy + th);
+      c.stroke();
+    }
+
+    // Chanfro e iluminação sutil de cantaria nas bordas laterais
+    const sideGrad = c.createLinearGradient(x - trX, ty, x + trX, ty);
+    sideGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    sideGrad.addColorStop(0.2, `${colors.primary}10`);
+    sideGrad.addColorStop(0.5, `${colors.primary}20`);
+    sideGrad.addColorStop(0.8, `${colors.primary}10`);
+    sideGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = sideGrad;
+    c.beginPath();
+    c.ellipse(x, ty + th, trX, trY, 0, 0, Math.PI);
+    c.ellipse(x, ty, trX, trY, 0, Math.PI, 0, true);
+    c.closePath();
+    c.fill();
+    c.restore();
+
+    // 3. Superfície superior de laje polida
+    c.save();
+    const topGrad = c.createRadialGradient(x, ty - trY * 0.25, 0, x, ty, trX);
+    topGrad.addColorStop(0, tier.stoneLight);
+    topGrad.addColorStop(0.65, tier.stoneDark);
+    topGrad.addColorStop(1, '#030408');
+    c.fillStyle = topGrad;
+    c.beginPath();
+    c.ellipse(x, ty, trX, trY, 0, 0, Math.PI * 2);
+    c.fill();
+
+    // Borda superior entalhada
+    const isTop = (i === 2);
+    const borderAlpha = isTop ? (0.38 + Math.sin(t * 0.03) * 0.1) : 0.14;
+    c.strokeStyle = isTop ? `${colors.primary}${Math.floor(borderAlpha * 255).toString(16).padStart(2, '0')}` : 'rgba(255, 255, 255, 0.12)';
+    c.lineWidth = isTop ? 2.4 : 1.4;
+    c.beginPath();
+    c.ellipse(x, ty, trX, trY, 0, 0, Math.PI * 2);
+    c.stroke();
+
+    // Entalhe de cantaria rúnica discreto nos degraus inferiores
+    if (!isTop) {
+      c.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      c.lineWidth = 1.0;
+      c.beginPath();
+      c.ellipse(x, ty, trX * 0.92, trY * 0.92, 0, 0, Math.PI * 2);
+      c.stroke();
+    }
+
+    c.restore();
+  }
+}
+
+/**
+ * Desenha o Altar dos Condenados: Dais escalonado em 3 degraus, névoa abissal rasteira e anel rúnico.
+ */
+function drawHeroPedestal(c, x, y, colors, isCompact, width, heroScale = 6.6) {
+  const rx = Math.round(heroScale * 24.2);
+  const ry = Math.round(rx * 0.275);
+  const stoneH = Math.round(rx * 0.165);
+  const t = previewTime;
+
+  // 1. Névoa abissal rasteira sutil ao nível do piso
+  drawSubtleGroundMist(c, x, y, rx, ry, stoneH, t);
+
+  // 2. Três degraus monumentais de cantaria gótica
+  drawTieredDais(c, x, y, rx, ry, stoneH, colors, isCompact, t);
+
+  c.save();
+
+  // ── 5. Anel rúnico externo rotativo ──
+  c.save();
+  c.translate(x, y);
+  c.scale(1, ry / rx); // achatar para perspectiva isométrica
+
+  const runeRadius = rx * 0.82;
+  const runeAngle = t * 0.008;
+  const runeCount = 14;
+  const runeAlpha = 0.35 + Math.sin(t * 0.04) * 0.12;
+
+  c.strokeStyle = `${colors.primary}${Math.floor(runeAlpha * 255).toString(16).padStart(2, '0')}`;
+  c.lineWidth = 1.4;
+
+  // Círculo do anel rúnico
+  c.beginPath();
+  c.arc(0, 0, runeRadius, 0, Math.PI * 2);
+  c.stroke();
+
+  // Marcas rúnicas no anel
+  for (let i = 0; i < runeCount; i++) {
+    const a = runeAngle + (i / runeCount) * Math.PI * 2;
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+
+    // Traço radial
+    c.beginPath();
+    c.moveTo(cos * (runeRadius - 8), sin * (runeRadius - 8));
+    c.lineTo(cos * (runeRadius + 8), sin * (runeRadius + 8));
+    c.stroke();
+
+    // Ponto rúnico brilhante
+    const dotAlpha = 0.4 + Math.sin(t * 0.06 + i * 1.2) * 0.3;
+    c.fillStyle = `${colors.primary}${Math.floor(dotAlpha * 255).toString(16).padStart(2, '0')}`;
+    c.beginPath();
+    c.arc(cos * runeRadius, sin * runeRadius, 3.0, 0, Math.PI * 2);
+    c.fill();
+  }
+
+  // ── 6. Anel interno com sigilos ──
+  const innerRadius = rx * 0.48;
+  const innerAlpha = 0.22 + Math.sin(t * 0.05 + 1) * 0.08;
+  c.strokeStyle = `${colors.secondary}${Math.floor(innerAlpha * 255).toString(16).padStart(2, '0')}`;
+  c.lineWidth = 1.2;
+  c.beginPath();
+  c.arc(0, 0, innerRadius, 0, Math.PI * 2);
+  c.stroke();
+
+  // Sigilos internos (triângulo inscrito rotativo reverso)
+  const sigilAngle = -t * 0.012;
+  c.beginPath();
+  for (let i = 0; i < 3; i++) {
+    const a = sigilAngle + (i / 3) * Math.PI * 2;
+    const px = Math.cos(a) * innerRadius;
+    const py = Math.sin(a) * innerRadius;
+    if (i === 0) c.moveTo(px, py);
+    else c.lineTo(px, py);
+  }
+  c.closePath();
+  c.stroke();
+
+  c.restore();
+
+  // ── 7. Brilho focal central (ponto de invocação) ──
+  const coreRx = rx * 0.32;
+  const coreRy = ry * 0.32;
+  const coreGlow = c.createRadialGradient(x, y, 0, x, y, coreRx);
+  const coreAlpha = 0.14 + Math.sin(t * 0.04) * 0.05;
+  coreGlow.addColorStop(0, `${colors.primary}${Math.floor(coreAlpha * 255).toString(16).padStart(2, '0')}`);
+  coreGlow.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = coreGlow;
+  c.beginPath();
+  c.ellipse(x, y, coreRx, coreRy, 0, 0, Math.PI * 2);
+  c.fill();
+
+  c.restore();
+}
+
 
 function drawShockwaves(c, x, y, colors) {
   for (let i = shockwaves.length - 1; i >= 0; i--) {
@@ -664,7 +752,7 @@ function drawShockwaves(c, x, y, colors) {
     c.translate(x, y);
     c.scale(1, 0.35);
     c.strokeStyle = `${colors.primary}${Math.floor(sw.alpha * 255).toString(16).padStart(2, '0')}`;
-    c.lineWidth = 2.5 * sw.alpha;
+    c.lineWidth = 3.8 * sw.alpha;
     c.beginPath();
     c.arc(0, 0, sw.radius, 0, Math.PI * 2);
     c.stroke();
@@ -684,11 +772,11 @@ function drawAtmosphericParticles(c, x, y, colors) {
       if (p.life >= p.maxLife) p.alpha = 0;
     }
 
-    if (p.alpha <= 0 || p.y < -120) {
-      p.x = (Math.random() - 0.5) * 140;
-      p.y = 15 + Math.random() * 25;
+    if (p.alpha <= 0 || p.y < -220) {
+      p.x = (Math.random() - 0.5) * 280;
+      p.y = 25 + Math.random() * 45;
       p.alpha = 0.5 + Math.random() * 0.5;
-      p.vy = 0.4 + Math.random() * 0.8;
+      p.vy = 0.45 + Math.random() * 0.95;
       p.color = undefined;
       p.maxLife = undefined;
     }
@@ -771,24 +859,23 @@ function drawAtmosphericParticles(c, x, y, colors) {
 /**
  * Renderiza o campeão central ampliado com todas as camadas e estados de postura.
  */
-function drawHeroInstance(c, x, y, colors, isCompact = false, isTall = false) {
+function drawHeroInstance(c, x, y, colors, heroScale = 6.6) {
   const isSkill = currentPose === 'skill';
   const isCombat = currentPose === 'combat';
 
   const t = previewTime;
   const bobFactor = isCombat ? 1.2 : 1.0;
-  const breathBob = Math.sin(t * 0.06) * 1.6 * bobFactor;
-  const heroScale = isCompact ? 2.5 : (isTall ? 3.35 : 3.1);
+  const breathBob = Math.sin(t * 0.06) * 2.8 * bobFactor;
 
   // Pulso de energia da aura na habilidade
   if (isSkill || surgeTimer > 0) {
     if (surgeTimer > 0) surgeTimer--;
-    const pulseRadius = 38 + Math.sin(t * 0.2) * 4;
+    const pulseRadius = Math.round(heroScale * 11.5) + Math.sin(t * 0.2) * 8;
     c.save();
     c.strokeStyle = colors.primary;
-    c.lineWidth = 2.5;
+    c.lineWidth = 3.2;
     c.beginPath();
-    c.arc(x, y - 2 + breathBob, pulseRadius, 0, Math.PI * 2);
+    c.arc(x, y - 4 + breathBob, pulseRadius, 0, Math.PI * 2);
     c.stroke();
     c.fillStyle = colors.glow;
     c.fill();
@@ -811,7 +898,7 @@ function drawHeroInstance(c, x, y, colors, isCompact = false, isTall = false) {
     isMoving: false,
     walkCycle: 0,
     frameCount: t,
-    radius: 14,
+    radius: Math.round(heroScale * 4.2),
     showShadow: false,
 
     // KNIGHT & MAGE
@@ -829,6 +916,7 @@ function drawHeroInstance(c, x, y, colors, isCompact = false, isTall = false) {
     isPhasing: isSkill && currentHeroKey === 'ROGUE',
     invisTimer: isSkill && currentHeroKey === 'ROGUE' ? 60 : 0,
     isSwordAttacking: isRogueBladeAttack,
+    showDorsalBlades: currentHeroKey === 'ROGUE',
 
     // MAGE
     isCasting: isMageStaffCast,
@@ -991,7 +1079,7 @@ function drawHeroWeaponAttack(c, cx, cy, heroKey, facing, scale, t, colors) {
     }
   } else if (heroKey === 'ROGUE') {
     // ------------------------------------------------------------------------
-    // 3. KAEL: GOLPE DUPLO EM 'X' COM LÂMINAS ESPIRITUAIS CIANAS
+    // 3. KAEL: GOLPE DUPLO EM 'X' COM LÂMINAS ESPIRITUAIS ROXAS
     // ------------------------------------------------------------------------
     const slashFrame = 14;
     const slashDuration = 26;
@@ -1216,71 +1304,74 @@ function drawSpiritDagger(c, x, y, angle, scale, alpha = 1.0) {
   c.globalAlpha = alpha;
   c.scale(scale, scale);
 
-  // Guarda em meia-lua e garras de platina
-  c.fillStyle = '#c4b5d6';
-  c.fillRect(-2.2, -3.0, 4.4, 1.8);
-  c.fillStyle = '#e8ddf5';
-  c.fillRect(-1.8, -2.8, 1.2, 0.8);
-  c.fillStyle = '#08061a';
-  c.fillRect(-1.2, -6.5, 2.4, 3.5);
-
-  // Pomo em anel cósmico de platina com núcleo brilhante
-  c.strokeStyle = '#c4b5d6';
-  c.lineWidth = 1.3;
-  c.beginPath();
-  c.arc(0, -8.0, 2.2, 0, Math.PI * 2);
-  c.stroke();
+  // Pomo em anel/losango vazado de prata com ametista
+  c.save();
+  c.translate(0, -9.5);
+  c.rotate(Math.PI / 4);
+  c.fillStyle = '#484f63';
+  c.fillRect(-2.2, -2.2, 4.4, 4.4);
   c.fillStyle = '#a855f7';
-  c.beginPath();
-  c.arc(0, -8.0, 1.1, 0, Math.PI * 2);
-  c.fill();
-  c.fillStyle = '#e8ddf5';
-  c.fillRect(-0.4, -8.6, 0.8, 0.8);
+  c.fillRect(-1.2, -1.2, 2.4, 2.4);
+  c.fillStyle = '#ffffff';
+  c.fillRect(-0.5, -0.5, 1.0, 1.0);
+  c.restore();
 
-  // Halo espectral sutil ao redor da foice
-  c.fillStyle = 'rgba(147, 51, 234, 0.35)';
+  // Empunhadura escura com enrolamento de seda e prata
+  c.fillStyle = '#0d0b14';
+  c.fillRect(-1.2, -7.5, 2.4, 6.0);
+  c.strokeStyle = '#9aa3b8';
+  c.lineWidth = 0.7;
   c.beginPath();
-  c.moveTo(-3.2, -1.0);
-  c.lineTo(3.2, -1.0);
-  c.quadraticCurveTo(7.5, 9.0, 3.5, 19.0);
-  c.lineTo(0.5, 24.5);
-  c.quadraticCurveTo(0.5, 10.0, -3.2, -1.0);
+  c.moveTo(-1.2, -6.5); c.lineTo(1.2, -5.5);
+  c.moveTo(-1.2, -4.5); c.lineTo(1.2, -3.5);
+  c.stroke();
+
+  // Guarda transversal em asas de corvo de prata lunar
+  c.fillStyle = '#484f63';
+  c.fillRect(-3.4, -1.6, 6.8, 2.0);
+  c.fillStyle = '#9aa3b8';
+  c.fillRect(-2.0, -1.2, 4.0, 1.2);
+
+  // Halo espectral sutil ao redor da lâmina
+  c.fillStyle = 'rgba(168, 85, 247, 0.35)';
+  c.beginPath();
+  c.moveTo(-4.0, 0);
+  c.lineTo(4.0, 0);
+  c.lineTo(0, 23.0);
   c.closePath();
   c.fill();
 
-  // Lâmina em Foice Curva de Plasma Estelar Cristalizado (Kama Astral)
-  c.fillStyle = '#7c3aed';
+  // Lâmina em losango de aço estelar pontiagudo com fio afiado
+  c.fillStyle = '#3a384d';
   c.beginPath();
-  c.moveTo(-2.5, -1.2);
-  c.lineTo(2.5, -1.2);
-  c.quadraticCurveTo(6.0, 8.5, 2.8, 17.5);
-  c.lineTo(0.5, 22.5); // Ponta penetrante cirúrgica
-  c.quadraticCurveTo(0.5, 9.5, -2.5, -1.2);
+  c.moveTo(-2.8, 0);
+  c.lineTo(2.8, 0);
+  c.lineTo(0, 21.0);
   c.closePath();
   c.fill();
 
-  // Núcleo branco puro incandescente
+  // Chanfro claro de aço estelar
+  c.fillStyle = '#736e94';
+  c.beginPath();
+  c.moveTo(0, 0);
+  c.lineTo(2.8, 0);
+  c.lineTo(0, 21.0);
+  c.closePath();
+  c.fill();
+
+  // Borda incandescente ametista
+  c.strokeStyle = '#c084fc';
+  c.lineWidth = 1.2;
+  c.stroke();
+
+  // Núcleo branco puro de corte central
   c.fillStyle = '#ffffff';
   c.beginPath();
-  c.moveTo(-0.6, 0);
-  c.quadraticCurveTo(3.2, 8.0, 1.4, 16.5);
-  c.lineTo(0.5, 21.0);
-  c.quadraticCurveTo(0.2, 9.0, -0.6, 0);
+  c.moveTo(-0.8, 1.0);
+  c.lineTo(0.8, 1.0);
+  c.lineTo(0, 17.5);
   c.closePath();
   c.fill();
-
-  // Friso de luz cortante no gume
-  c.strokeStyle = '#ede9fe';
-  c.lineWidth = 0.8;
-  c.beginPath();
-  c.moveTo(0.5, 0);
-  c.lineTo(0.5, 21.0);
-  c.stroke();
-
-  // Micro-runa estelar ciano no canal central da lâmina
-  c.fillStyle = '#a855f7';
-  c.fillRect(0.2, 4.0, 1.2, 2.0);
-  c.fillRect(0.2, 9.0, 1.2, 2.0);
 
   c.restore();
 }

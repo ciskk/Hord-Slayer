@@ -137,6 +137,15 @@ export let CAMERA_ZOOM = typeof window !== 'undefined' ? calculateCameraZoom(win
 export let cameraViewW = viewW / CAMERA_ZOOM;
 export let cameraViewH = viewH / CAMERA_ZOOM;
 
+export const gameState = {
+  isInMatch: false,
+  isPaused: false,
+  isDead: false,
+  isWon: false,
+  kills: 0,
+  isWavePaused: false
+};
+
 export function resize() {
   if (!canvas) {
     canvas = document.getElementById('game-canvas');
@@ -149,9 +158,11 @@ export function resize() {
   dpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 2.0);
   viewW = layoutMetrics.viewW || window.innerWidth;
   viewH = layoutMetrics.viewH || window.innerHeight;
-  CAMERA_ZOOM = calculateCameraZoom(viewW, viewH);
-  cameraViewW = viewW / CAMERA_ZOOM;
-  cameraViewH = viewH / CAMERA_ZOOM;
+  if (gameState.isInMatch) {
+    CAMERA_ZOOM = calculateCameraZoom(viewW, viewH);
+    cameraViewW = viewW / CAMERA_ZOOM;
+    cameraViewH = viewH / CAMERA_ZOOM;
+  }
   canvas.width = Math.floor(viewW * dpr);
   canvas.height = Math.floor(viewH * dpr);
   canvas.style.width = '100%';
@@ -161,15 +172,6 @@ export function resize() {
 initResponsive(() => {
   resize();
 });
-
-export const gameState = {
-  isInMatch: false,
-  isPaused: false,
-  isDead: false,
-  isWon: false,
-  kills: 0,
-  isWavePaused: false
-};
 
 export let frameCount = 0;
 export let spawnTimer = 999;
@@ -315,6 +317,13 @@ export function terminateMatch() {
   screenShake = 0;
   freezeTimer = 0;
 
+  // Limpa o canvas do jogo para não exibir a arena atrás do menu
+  const gameCanvas = document.getElementById('game-canvas');
+  if (gameCanvas) {
+    const gc = gameCanvas.getContext('2d');
+    if (gc) gc.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+  }
+
   // 1. Limpeza total de entidades vivas e ativas da partida
   enemies.length = 0;
   dyingEnemies.length = 0;
@@ -420,8 +429,14 @@ export function terminateMatch() {
     bossHud.style.display = 'none';
     bossHud.classList.remove('enraged', 'hit-shake', 'hit-flash');
   }
+  document.body.classList.remove('in-game');
   const hud = document.getElementById('hud');
-  if (hud) hud.classList.remove('boss-active');
+  if (hud) {
+    hud.classList.add('hud-hidden');
+    hud.classList.remove('boss-active');
+    hud.style.setProperty('display', 'none', 'important');
+    hud.style.display = 'none';
+  }
 
   const bossHpFill = document.getElementById('boss-hp-fill');
   if (bossHpFill) {
@@ -444,11 +459,20 @@ export function terminateMatch() {
 
 export function resetGame() {
   terminateMatch();
-  resize();
 
   gameState.isInMatch = true;
   gameState.isPaused = false;
   lastTime = performance.now();
+  document.body.classList.add('in-game');
+
+  const hud = document.getElementById('hud');
+  if (hud) {
+    hud.classList.remove('hud-hidden');
+    hud.style.removeProperty('display');
+    hud.style.display = 'flex';
+  }
+
+  resize();
 
   // Spawna a horda inicial ativa imediatamente ao iniciar a partida
   spawnInitialHorde();
@@ -1113,10 +1137,12 @@ function loop(now) {
   const dt = Math.min(Math.max(rawDt, 0.1), 2.5) * speed;
 
   try {
-    if (gameState.isInMatch && !gameState.isPaused && !gameState.isDead && !gameState.isWon) {
-      update(dt);
+    if (gameState.isInMatch) {
+      if (!gameState.isPaused && !gameState.isDead && !gameState.isWon) {
+        update(dt);
+      }
+      render();
     }
-    render();
   } catch (err) {
     console.error('Erro crítico no loop de jogo:', err);
   }

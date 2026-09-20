@@ -343,253 +343,129 @@
     font-size: 8.5px !important;
   }
 
-  /* 2. Altar dos Condenados (Paisagem Full-Screen) */
-  .modal-box-altar {
-    width: 100vw !important;
-    max-width: 100vw !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
+  /* 2. O Altar dos Condenados (Paisagem Full-Screen) */
+  .char-scene-container {
     padding: max(env(safe-area-inset-top, 4px), 4px) 
              max(env(safe-area-inset-right, 12px), 12px) 
              max(env(safe-area-inset-bottom, 4px), 4px) 
              max(env(safe-area-inset-left, 12px), 12px) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    box-shadow: none !important;
-    border: none !important;
-    border-radius: 0 !important;
+    gap: 4px !important;
   }
 
-  .char-altar-layout {
-    display: grid !important;
-    grid-template-columns: 150px 1.1fr 1.2fr !important;
-    grid-template-rows: 1fr !important;
-    grid-template-areas: "dock stage dossier" !important;
+  .char-panoramic-stage {
+    grid-template-columns: 180px minmax(0, 1fr) 280px !important;
     gap: 8px !important;
-    height: calc(100dvh - 42px) !important;
-    overflow: hidden !important;
-    flex-grow: 1 !important;
-    margin-top: 2px !important;
+    height: calc(100dvh - 40px) !important;
   }
 
-  .char-pedestals-col {
-    grid-area: dock !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    gap: 5px !important;
-    padding-right: 3px !important;
-    max-height: none !important;
-    background: transparent !important;
-  }
-
-  .char-pedestal-btn {
-    padding: 4px 6px !important;
-    min-width: auto !important;
-    flex-direction: row !important;
-    align-items: center !important;
+  .char-sigil-item {
+    height: 48px !important;
+    padding: 4px 8px !important;
     gap: 6px !important;
-    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px) !important;
   }
 
-  .char-pedestal-emblem {
-    width: 24px !important;
-    height: 24px !important;
+  .sigil-crest-disc {
+    width: 28px !important;
+    height: 28px !important;
   }
 
-  .char-pedestal-name {
-    font-size: 9px !important;
+  .sigil-crest-disc svg {
+    width: 16px !important;
+    height: 16px !important;
   }
 
-  .char-stage-col {
-    display: flex !important;
-    flex-direction: column !important;
-    padding: 4px !important;
-    gap: 2px !important;
-    height: 100% !important;
-    justify-content: center !important;
-    border-radius: 8px !important;
+  .sigil-hero-name {
+    font-size: 11px !important;
   }
 
-  .char-stage-viewport {
-    height: calc(100% - 24px) !important;
-    min-height: 100px !important;
-    width: 100% !important;
+  .char-dossier-wing {
+    padding: 8px 12px !important;
   }
 
-  #char-preview-canvas {
-    height: 100% !important;
-    width: 100% !important;
-    object-fit: contain !important;
-    min-height: auto !important;
-    max-height: none !important;
+  .hero-monolith-name {
+    font-size: 18px !important;
   }
 
-  .stage-nav-arrow {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    line-height: 0 !important;
-    width: 46px !important;
-    height: 46px !important;
-  }
-
-  .stage-nav-arrow svg {
-    width: 22px !important;
-    height: 22px !important;
-    display: block !important;
-    stroke: currentColor !important;
-    pointer-events: none !important;
-    margin: 0 !important;
-  }
-
-  .char-stage-controls {
+  .hero-monolith-quote {
     display: none !important;
   }
 
-  .char-vitral-showcase {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-    overflow-y: auto !important;
-    padding: 4px 8px !important;
-    box-shadow: none !important;
-  }
-
-  .showcase-name-v2 {
-    font-size: 13px !important;
-  }
-
-  .bento-tactical-grid {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 4px !important;
-    margin: 2px 0 4px !important;
-  }
-
-  .bento-card {
+  .loadout-entry {
     padding: 3px 6px !important;
   }
 
-  .bento-card-title {
-    font-size: 9px !important;
+  .loadout-entry-title {
+    font-size: 10px !important;
   }
 
-  .bento-card-desc {
+  .loadout-entry-desc {
     font-size: 8px !important;
     line-height: 1.2 !important;
   }
 
-  .btn-summon-hero {
-    padding: 7px 12px !important;
-    font-size: 11px !important;
+  .hero-telemetry-cluster {
+    padding: 4px 8px !important;
+    gap: 3px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .channel-laser-track {
+    height: 5px !important;
+  }
+
+  .btn-ignition-catalyst {
+    height: 36px !important;
+    font-size: 10.5px !important;
+    padding: 6px 12px !important;
     margin-top: auto !important;
     flex-shrink: 0 !important;
   }
 
+
   /* 3. Astrolábio das Almas (Paisagem Full-Screen) */
-  .modal-box-altar.astrolabe-void-box {
-    width: 100vw !important;
-    height: 100dvh !important;
+  #talents-modal.astrolabe-screen-overlay,
+  #talents-modal.void-astral-overlay,
+  #talents-modal.modal-overlay {
     padding: max(env(safe-area-inset-top, 4px), 4px) 
-             max(env(safe-area-inset-right, 12px), 12px) 
+             max(env(safe-area-inset-right, 8px), 8px) 
              max(env(safe-area-inset-bottom, 4px), 4px) 
-             max(env(safe-area-inset-left, 12px), 12px) !important;
+             max(env(safe-area-inset-left, 8px), 8px) !important;
   }
 
-  .char-altar-layout.astrolabe-altar-layout {
-    display: grid !important;
-    grid-template-columns: 140px 1.15fr 1fr !important;
-    grid-template-rows: 1fr !important;
-    grid-template-areas: "dock stage dossier" !important;
-    gap: 8px !important;
-    height: calc(100dvh - 42px) !important;
-    overflow: hidden !important;
-    flex-grow: 1 !important;
-    margin-top: 2px !important;
-  }
-
-  .astrolabe-constellation-dock {
-    grid-area: dock !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    gap: 5px !important;
-    padding: 2px 3px 2px 0 !important;
-    max-height: none !important;
-    background: transparent !important;
-    min-height: 0 !important;
-  }
-
-  .astrolabe-constellation-dock .char-pedestal-btn {
-    padding: 4px 6px !important;
-    min-width: auto !important;
-    height: auto !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 6px !important;
-    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px) !important;
-  }
-
-  .astrolabe-constellation-dock .char-pedestal-emblem {
-    width: 24px !important;
-    height: 24px !important;
-    color: #ffffff !important;
-  }
-
-  .astrolabe-constellation-dock .char-pedestal-emblem svg {
-    width: 16px !important;
-    height: 16px !important;
-    color: #ffffff !important;
-  }
-
-  .astrolabe-constellation-dock .char-pedestal-name {
-    font-size: 9px !important;
-  }
-
-  .astrolabe-stage-col {
-    grid-area: stage !important;
-    display: flex !important;
-    flex-direction: column !important;
-    padding: 4px !important;
-    gap: 2px !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    justify-content: center !important;
-  }
-
-  .astrolabe-viewport {
-    height: calc(100% - 24px) !important;
-    min-height: 100px !important;
+  .astrolabe-intrinsic-stage {
+    max-height: calc(100dvh - 8px) !important;
+    gap: 3px !important;
     width: 100% !important;
   }
 
-  .astrolabe-forge-dossier {
-    grid-area: dossier !important;
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding: 6px 10px !important;
-    box-shadow: none !important;
+  .astrolabe-header-group {
+    gap: 1px !important;
   }
 
-  .astrolabe-dossier-body {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 4px !important;
-    margin: 2px 0 4px !important;
-    min-width: 0 !important;
+  .astrolabe-monumental-title {
+    font-size: clamp(14px, 2.2vw, 19px) !important;
+  }
+
+  .astrolabe-monumental-sub {
+    font-size: 8.5px !important;
+  }
+
+  .astrolabe-bento-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 400px) !important;
+    gap: 8px !important;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .astrolabe-pillar {
+    padding: 6px 10px !important;
   }
 
   .astrolabe-info-card {
     padding: 5px 8px !important;
-    gap: 3px !important;
+    gap: 2px !important;
   }
 
   .astrolabe-card-desc {
@@ -598,10 +474,38 @@
   }
 
   .btn-forge-hero {
-    padding: 7px 12px !important;
-    font-size: 11px !important;
-    margin-top: auto !important;
-    flex-shrink: 0 !important;
+    height: 36px !important;
+    font-size: 10.5px !important;
+  }
+
+  .astrolabe-actions-bar {
+    max-width: 360px !important;
+    margin: 0 auto !important;
+    padding-top: 1px !important;
+  }
+
+  .btn-astrolabe-return {
+    height: 28px !important;
+    padding: 0 16px !important;
+    font-size: 10px !important;
+    border-radius: 6px !important;
+  }
+
+  .astrolabe-map-controls {
+    bottom: 24px !important;
+    right: 10px !important;
+    gap: 4px !important;
+  }
+
+  .map-ctrl-btn {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .astrolabe-stage-hint {
+    bottom: 3px !important;
+    font-size: 7.5px !important;
+    padding: 1px 8px !important;
   }
 
   /* 4. Grimório Tático de Pausa (Paisagem) */

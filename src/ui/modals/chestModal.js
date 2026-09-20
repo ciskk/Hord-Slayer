@@ -265,6 +265,7 @@ export function openChestModal(tier = 'BOSS') {
       chestBox.classList.remove('rumbling');
       chestBox.classList.add('opened');
     }
+    recordRunStats({ chestOpened: true });
     triggerShake(isMini ? 6 : 10);
 
     let currentIdx = 0;

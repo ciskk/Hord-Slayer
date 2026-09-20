@@ -173,12 +173,263 @@ export const ASTROLABE_MOBILE_COORDS = {
 export let selectedAstrolabeNodeId = 'damage';
 export let activeConstellationFilter = 'all'; // 'all' | 'guerra' | 'egide' | 'destino'
 export let activeRenderAstrolabe = null;
+export let activePillarMode = 'forge'; // 'forge' | 'blessings'
+
+export let panState = {
+  scale: 1.0,
+  minScale: 0.5,
+  maxScale: 2.8,
+  tx: 0,
+  ty: 0,
+  isDragging: false,
+  dragStartX: 0,
+  dragStartY: 0,
+  initialTx: 0,
+  initialTy: 0,
+  hasDragged: false,
+  dragDistance: 0,
+  isPinching: false,
+  suppressClickUntil: 0
+};
 
 export function setActiveRenderAstrolabe(fn) {
   activeRenderAstrolabe = fn;
 }
 
+let panRafId = null;
+export function applyPanZoomTransform(smooth = false) {
+  const surface = document.getElementById('astrolabe-panzoom-surface');
+  if (!surface) return;
+  if (smooth) {
+    surface.classList.add('smooth-transition');
+    setTimeout(() => surface.classList.remove('smooth-transition'), 350);
+  } else {
+    surface.classList.remove('smooth-transition');
+  }
+  if (panRafId) cancelAnimationFrame(panRafId);
+  panRafId = requestAnimationFrame(() => {
+    surface.style.transform = `translate(${panState.tx}px, ${panState.ty}px) scale(${panState.scale})`;
+  });
+}
+
+export function recenterAstrolabe(smooth = true) {
+  panState.scale = 1.0;
+  panState.tx = 0;
+  panState.ty = 0;
+  applyPanZoomTransform(smooth);
+}
+
+export function zoomAstrolabeBy(factor, smooth = true) {
+  const viewport = document.getElementById('astrolabe-viewport');
+  if (!viewport) return;
+  const rect = viewport.getBoundingClientRect();
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
+
+  const newScale = Math.max(panState.minScale, Math.min(panState.maxScale, panState.scale * factor));
+  if (Math.abs(newScale - panState.scale) < 0.001) return;
+
+  const actualFactor = newScale / panState.scale;
+  panState.tx = centerX - actualFactor * (centerX - panState.tx);
+  panState.ty = centerY - actualFactor * (centerY - panState.ty);
+  panState.scale = newScale;
+
+  applyPanZoomTransform(smooth);
+}
+
+export function focusAstrolabeNode(nodeId, smooth = true) {
+  const coords = ASTROLABE_NODE_COORDS[nodeId];
+  if (!coords) return;
+
+  const viewport = document.getElementById('astrolabe-viewport');
+  if (!viewport) return;
+  const rect = viewport.getBoundingClientRect();
+
+  const targetX = (coords.x / 100) * rect.width;
+  const targetY = (coords.y / 100) * rect.height;
+
+  panState.scale = Math.max(1.15, panState.scale);
+  panState.tx = (rect.width / 2) - (targetX * panState.scale);
+  panState.ty = (rect.height / 2) - (targetY * panState.scale);
+
+  applyPanZoomTransform(smooth);
+}
+
+export function selectAstrolabeNode(nodeId, shouldFocus = false) {
+  selectedAstrolabeNodeId = nodeId;
+  switchPillarMode('forge');
+  if (shouldFocus) {
+    focusAstrolabeNode(nodeId, true);
+  }
+  const scrollEl = document.getElementById('forge-dossier-scroll');
+  if (scrollEl) {
+    scrollEl.classList.remove('dossier-slide-enter');
+    void scrollEl.offsetWidth;
+    scrollEl.classList.add('dossier-slide-enter');
+  }
+  if (activeRenderAstrolabe) {
+    activeRenderAstrolabe();
+  }
+}
+
+export function switchPillarMode(mode) {
+  activePillarMode = mode;
+  const forgePanel = document.getElementById('astrolabe-forge-panel');
+  const blessingsPanel = document.getElementById('astrolabe-blessings-panel');
+  const tabForge = document.getElementById('tab-pillar-forge');
+  const tabBlessings = document.getElementById('tab-pillar-blessings');
+
+  if (tabForge) {
+    tabForge.classList.toggle('active', mode === 'forge');
+    tabForge.setAttribute('aria-selected', mode === 'forge' ? 'true' : 'false');
+  }
+  if (tabBlessings) {
+    tabBlessings.classList.toggle('active', mode === 'blessings');
+    tabBlessings.setAttribute('aria-selected', mode === 'blessings' ? 'true' : 'false');
+  }
+
+  if (forgePanel && blessingsPanel) {
+    if (mode === 'forge') {
+      forgePanel.style.display = 'flex';
+      blessingsPanel.style.display = 'none';
+    } else {
+      forgePanel.style.display = 'none';
+      blessingsPanel.style.display = 'flex';
+      renderDesktopBlessingsCodex();
+    }
+  }
+}
+
+export function setupAstrolabePanZoom() {
+  const viewport = document.getElementById('astrolabe-viewport');
+  if (!viewport || viewport._panZoomBound) return;
+  viewport._panZoomBound = true;
+
+  // 1. Wheel zoom (Ancorado no cursor)
+  viewport.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = viewport.getBoundingClientRect();
+    const cursorX = e.clientX - rect.left;
+    const cursorY = e.clientY - rect.top;
+
+    const zoomFactor = e.deltaY < 0 ? 1.14 : (1 / 1.14);
+    const newScale = Math.max(panState.minScale, Math.min(panState.maxScale, panState.scale * zoomFactor));
+    if (Math.abs(newScale - panState.scale) < 0.001) return;
+
+    const actualFactor = newScale / panState.scale;
+    panState.tx = cursorX - actualFactor * (cursorX - panState.tx);
+    panState.ty = cursorY - actualFactor * (cursorY - panState.ty);
+    panState.scale = newScale;
+
+    applyPanZoomTransform(false);
+  }, { passive: false });
+
+  // 2. Mouse / Pointer drag (Tracking direto 1:1)
+  viewport.addEventListener('pointerdown', (e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    panState.isDragging = true;
+    panState.dragStartX = e.clientX;
+    panState.dragStartY = e.clientY;
+    panState.initialTx = panState.tx;
+    panState.initialTy = panState.ty;
+    panState.hasDragged = false;
+    panState.dragDistance = 0;
+  });
+
+  viewport.addEventListener('pointermove', (e) => {
+    if (!panState.isDragging || panState.isPinching) return;
+    const dx = e.clientX - panState.dragStartX;
+    const dy = e.clientY - panState.dragStartY;
+    panState.dragDistance = Math.hypot(dx, dy);
+
+    if (panState.dragDistance > 6) {
+      if (!panState.hasDragged) {
+        panState.hasDragged = true;
+        viewport.classList.add('is-panning');
+        try { viewport.setPointerCapture(e.pointerId); } catch(err) {}
+      }
+      panState.tx = panState.initialTx + dx;
+      panState.ty = panState.initialTy + dy;
+      applyPanZoomTransform(false);
+    }
+  });
+
+  const endPointerDrag = (e) => {
+    if (panState.isDragging) {
+      if (panState.hasDragged) {
+        panState.suppressClickUntil = performance.now() + 150;
+      }
+      panState.isDragging = false;
+      viewport.classList.remove('is-panning');
+      try { viewport.releasePointerCapture(e.pointerId); } catch(err) {}
+    }
+  };
+
+  viewport.addEventListener('pointerup', endPointerDrag);
+  viewport.addEventListener('pointercancel', endPointerDrag);
+
+  // 3. Touch Pinch-to-zoom (2 dedos no mobile)
+  let pinchStartDist = 0;
+  let pinchStartMidX = 0;
+  let pinchStartMidY = 0;
+  let pinchStartScale = 1.0;
+  let pinchStartTx = 0;
+  let pinchStartTy = 0;
+
+  viewport.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      panState.isPinching = true;
+      panState.hasDragged = true;
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      pinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const rect = viewport.getBoundingClientRect();
+      pinchStartMidX = (t1.clientX + t2.clientX) / 2 - rect.left;
+      pinchStartMidY = (t1.clientY + t2.clientY) / 2 - rect.top;
+      pinchStartScale = panState.scale;
+      pinchStartTx = panState.tx;
+      pinchStartTy = panState.ty;
+    }
+  }, { passive: false });
+
+  viewport.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && panState.isPinching && pinchStartDist > 0) {
+      e.preventDefault();
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const curDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const rect = viewport.getBoundingClientRect();
+      const curMidX = (t1.clientX + t2.clientX) / 2 - rect.left;
+      const curMidY = (t1.clientY + t2.clientY) / 2 - rect.top;
+
+      const factor = curDist / pinchStartDist;
+      const newScale = Math.max(panState.minScale, Math.min(panState.maxScale, pinchStartScale * factor));
+      const actualFactor = newScale / pinchStartScale;
+
+      panState.tx = curMidX - actualFactor * (pinchStartMidX - pinchStartTx);
+      panState.ty = curMidY - actualFactor * (pinchStartMidY - pinchStartTy);
+      panState.scale = newScale;
+
+      applyPanZoomTransform(false);
+    }
+  }, { passive: false });
+
+  viewport.addEventListener('touchend', (e) => {
+    if (panState.isPinching && e.touches.length < 2) {
+      panState.isPinching = false;
+      panState.suppressClickUntil = performance.now() + 150;
+    }
+  });
+}
+
 export function openTalentsModal() {
+  const hud = document.getElementById('hud');
+  if (hud) {
+    hud.classList.add('hud-hidden');
+    hud.style.setProperty('display', 'none', 'important');
+    hud.style.display = 'none';
+  }
   closeCharSelectModal();
 
   const modal = document.getElementById('talents-modal');
@@ -192,10 +443,26 @@ export function openTalentsModal() {
   const isMobile = isMobileScreen();
   modal.classList.toggle('is-mobile-device', isMobile);
 
-  if (isMobile && (activeConstellationFilter === 'all' || !activeConstellationFilter)) {
-    activeConstellationFilter = 'guerra';
-    const firstInConst = META_TALENTS.find(t => t.constellation === 'guerra');
-    if (firstInConst) selectedAstrolabeNodeId = firstInConst.id;
+  // Reset e inicialização de Pan & Zoom
+  recenterAstrolabe(false);
+  setupAstrolabePanZoom();
+
+  // Escuta delegada de cliques nos nós estelares
+  if (!nodesContainer._clickBound) {
+    nodesContainer._clickBound = true;
+    nodesContainer.addEventListener('click', (e) => {
+      if (panState.hasDragged || performance.now() < panState.suppressClickUntil) {
+        return;
+      }
+      const nodeEl = e.target.closest('.astrolabe-node');
+      if (!nodeEl) return;
+      const talentId = nodeEl.getAttribute('data-talent');
+      if (talentId) {
+        try { playSfx('card_hover'); } catch(err) {}
+        triggerHaptic('light');
+        selectAstrolabeNode(talentId);
+      }
+    });
   }
 
   // Configuração das Abas de Constelação
@@ -211,7 +478,12 @@ export function openTalentsModal() {
 
       if (cTarget !== 'all') {
         const firstInConst = META_TALENTS.find(t => t.constellation === cTarget);
-        if (firstInConst) selectedAstrolabeNodeId = firstInConst.id;
+        if (firstInConst) {
+          selectedAstrolabeNodeId = firstInConst.id;
+          focusAstrolabeNode(firstInConst.id, true);
+        }
+      } else {
+        recenterAstrolabe(true);
       }
 
       tabBtns.forEach(b => b.classList.toggle('active', b === btn));
@@ -219,30 +491,74 @@ export function openTalentsModal() {
     };
   });
 
+  // Configuração dos Botões de Modo do Pilar 2 (Forja vs Bênçãos)
+  const tabForge = document.getElementById('tab-pillar-forge');
+  if (tabForge) {
+    tabForge.onclick = () => {
+      try { playSfx('click'); } catch(err) {}
+      switchPillarMode('forge');
+    };
+  }
+  const tabBlessings = document.getElementById('tab-pillar-blessings');
+  if (tabBlessings) {
+    tabBlessings.onclick = () => {
+      try { playSfx('click'); } catch(err) {}
+      if (isMobileScreen()) {
+        const drawer = document.getElementById('blessings-summary-drawer');
+        if (drawer) {
+          renderBlessingsSummary();
+          drawer.style.display = 'block';
+        }
+      } else {
+        switchPillarMode('blessings');
+      }
+    };
+  }
+
+  const closeBlessingsDrawerBtn = document.getElementById('close-blessings-drawer-btn');
+  if (closeBlessingsDrawerBtn) {
+    closeBlessingsDrawerBtn.onclick = () => {
+      const drawer = document.getElementById('blessings-summary-drawer');
+      if (drawer) drawer.style.display = 'none';
+    };
+  }
+
   function renderAstrolabe() {
     const currentGold = getPersistentGold();
-    if (goldVal) goldVal.innerText = currentGold;
+    if (goldVal) goldVal.innerText = currentGold.toLocaleString('pt-BR');
     const coreGold = document.getElementById('talents-core-gold-val');
-    if (coreGold) coreGold.innerText = currentGold;
+    if (coreGold) coreGold.innerText = currentGold.toLocaleString('pt-BR');
     nodesContainer.innerHTML = '';
 
     const levels = getMetaLevels();
     const isMobileNow = isMobileScreen();
-    const coordsMap = isMobileNow ? ASTROLABE_MOBILE_COORDS : ASTROLABE_NODE_COORDS;
+    const coordsMap = ASTROLABE_NODE_COORDS;
     const centerX = 50;
     const centerY = 50;
 
-    // Se for mobile e ainda estiver 'all', redirecionar para 'guerra'
-    if (isMobileNow && activeConstellationFilter === 'all') {
-      activeConstellationFilter = 'guerra';
-      const firstInConst = META_TALENTS.find(t => t.constellation === 'guerra');
-      if (firstInConst) selectedAstrolabeNodeId = firstInConst.id;
+    // Métricas Agregadas Globais (Chips de Metadados)
+    const totalSpent = META_TALENTS.reduce((acc, t) => acc + (levels[t.id] || 0), 0);
+    const totalMax = META_TALENTS.reduce((acc, t) => acc + t.maxLvl, 0);
+    const totalInvestedEl = document.getElementById('astrolabe-total-invested');
+    if (totalInvestedEl) {
+      totalInvestedEl.innerText = `${totalSpent} / ${totalMax}`;
     }
 
-    // Se for mobile, focar na constelação ativa para manter o pilar despoluído e legível
-    const talentsToRender = (isMobileNow && activeConstellationFilter !== 'all')
-      ? META_TALENTS.filter(t => t.constellation === activeConstellationFilter)
-      : META_TALENTS;
+    const activeBlessingsCount = META_TALENTS.filter(t => (levels[t.id] || 0) > 0).length;
+    const activeBlessingsEl = document.getElementById('astrolabe-active-blessings-count');
+    if (activeBlessingsEl) {
+      activeBlessingsEl.innerText = `${activeBlessingsCount} / ${META_TALENTS.length}`;
+    }
+    const pillarBadge = document.getElementById('pillar-blessings-badge');
+    if (pillarBadge) {
+      pillarBadge.innerText = `${activeBlessingsCount}/${META_TALENTS.length}`;
+    }
+    if (activePillarMode === 'blessings' && !isMobileNow) {
+      renderDesktopBlessingsCodex();
+    }
+
+    // Tanto no desktop quanto no mobile, renderizar todas as 14 bênçãos
+    const talentsToRender = META_TALENTS;
 
     // Atualiza badges numéricas das abas com contagem de níveis investidos
     tabBtns.forEach(btn => {
@@ -268,6 +584,16 @@ export function openTalentsModal() {
         destino: 'CONSTELAÇÃO DO DESTINO'
       };
       stageBadge.innerText = badgeNames[activeConstellationFilter] || 'PLANETÁRIO CELESTE';
+      const badgeColors = {
+        all: '#00f5d4',
+        guerra: '#e74c3c',
+        egide: '#2ecc71',
+        destino: '#a855f7'
+      };
+      const bColor = badgeColors[activeConstellationFilter] || '#00f5d4';
+      stageBadge.style.color = bColor;
+      stageBadge.style.borderColor = bColor;
+      stageBadge.style.boxShadow = `0 0 10px ${bColor}44`;
     }
 
     // 1. Renderização das linhas de filamento SVG interconectadas
@@ -280,24 +606,14 @@ export function openTalentsModal() {
         let startX = centerX;
         let startY = centerY;
 
-        if (isMobileNow) {
-          if (coords.parentId && coordsMap[coords.parentId]) {
-            startX = coordsMap[coords.parentId].x;
-            startY = coordsMap[coords.parentId].y;
-          } else {
-            startX = 50;
-            startY = 96;
-          }
-        } else {
-          if (coords.parentId && coordsMap[coords.parentId]) {
-            startX = coordsMap[coords.parentId].x;
-            startY = coordsMap[coords.parentId].y;
-          }
+        if (coords.parentId && coordsMap[coords.parentId]) {
+          startX = coordsMap[coords.parentId].x;
+          startY = coordsMap[coords.parentId].y;
         }
 
         const targetLvl = levels[t.id] || 0;
         const parentLvl = coords.parentId ? (levels[coords.parentId] || 0) : 1;
-        const isDimmed = !isMobileNow && activeConstellationFilter !== 'all' && t.constellation !== activeConstellationFilter;
+        const isDimmed = activeConstellationFilter !== 'all' && t.constellation !== activeConstellationFilter;
 
         let lineClass = 'filament-line';
         if (targetLvl > 0) lineClass += ' active';
@@ -324,7 +640,7 @@ export function openTalentsModal() {
       const isMax = curLvl >= t.maxLvl;
       const parentLvl = coords.parentId ? (levels[coords.parentId] || 0) : 1;
       const isLocked = parentLvl < 1;
-      const isDimmed = !isMobileNow && activeConstellationFilter !== 'all' && t.constellation !== activeConstellationFilter;
+      const isDimmed = activeConstellationFilter !== 'all' && t.constellation !== activeConstellationFilter;
       const runeSvg = TALENT_RUNES_SVG[t.id] || TALENT_RUNES_SVG.damage;
 
       const node = document.createElement('div');
@@ -347,11 +663,15 @@ export function openTalentsModal() {
         ${t.isKeystone ? '<div class="keystone-crown-glow"></div>' : ''}
       `;
 
-      node.onclick = () => {
-        try { playSfx('card_hover'); } catch(e) {}
+      node.onclick = (e) => {
+        if (panState.hasDragged || performance.now() < panState.suppressClickUntil) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        try { playSfx('card_hover'); } catch(err) {}
         triggerHaptic('light');
-        selectedAstrolabeNodeId = t.id;
-        renderAstrolabe();
+        selectAstrolabeNode(t.id);
       };
 
       nodesContainer.appendChild(node);
@@ -375,6 +695,14 @@ export function openTalentsModal() {
     const activeColor = constColors[activeTalent.constellation] || '#ffd166';
     modal.style.setProperty('--showcase-color', activeColor);
     modal.style.setProperty('--constellation-color', activeColor);
+
+    const runePreview = document.getElementById('forge-rune-preview');
+    if (runePreview) {
+      runePreview.innerHTML = TALENT_RUNES_SVG[activeTalent.id] || TALENT_RUNES_SVG.damage;
+      runePreview.style.borderColor = activeColor;
+      runePreview.style.color = activeColor;
+      runePreview.style.boxShadow = `0 0 16px ${activeColor}44, inset 0 0 10px rgba(0,0,0,0.8)`;
+    }
 
     const constBadge = document.getElementById('forge-constellation-badge');
     const tierBadge = document.getElementById('forge-tier-badge');
@@ -401,6 +729,8 @@ export function openTalentsModal() {
       tierBadge.innerHTML = activeTalent.isKeystone 
         ? `${renderIcon('keystone', { size: 12, color: '#f1c40f', style: 'margin-right:4px;' })} TALENTO MESTRE` 
         : `TIER ${activeTalent.tier}`;
+      tierBadge.style.color = activeTalent.isKeystone ? '#ffd166' : '#00f5d4';
+      tierBadge.style.borderColor = activeTalent.isKeystone ? 'rgba(255, 209, 102, 0.5)' : 'rgba(0, 245, 212, 0.4)';
     }
 
     if (statBadge) {
@@ -411,6 +741,7 @@ export function openTalentsModal() {
 
     if (levelLabel) {
       levelLabel.innerText = isMax ? 'APOGEU (MÁX)' : `NÍVEL ${curLvl}/${activeTalent.maxLvl}`;
+      levelLabel.style.color = isMax ? '#ffd166' : '#00f5d4';
     }
 
     if (nameElem) nameElem.innerText = activeTalent.name;
@@ -438,15 +769,35 @@ export function openTalentsModal() {
       if (isLocked) {
         buyBtn.disabled = true;
         const parentT = META_TALENTS.find(p => p.id === activeTalent.parent);
-        buyBtn.innerHTML = `${renderIcon('lock', { size: 13, style: 'margin-right:4px;' })} REQUER ${parentT ? parentT.name.toUpperCase() : 'NÓ ANTECESSOR'}`;
+        buyBtn.innerHTML = `
+          <div class="btn-shimmer-sweep"></div>
+          <span class="btn-forge-content">
+            ${renderIcon('lock', { size: 13, style: 'margin-right:4px;' })} REQUER ${parentT ? parentT.name.toUpperCase() : 'NÓ ANTECESSOR'}
+          </span>
+        `;
       } else if (isMax) {
         buyBtn.disabled = true;
-        buyBtn.innerHTML = `${renderIcon('sparkle', { size: 13, style: 'margin-right:4px;' })} FORJA MAGISTRAL CONCLUÍDA ${renderIcon('sparkle', { size: 13, style: 'margin-left:4px;' })}`;
+        buyBtn.innerHTML = `
+          <div class="btn-shimmer-sweep"></div>
+          <span class="btn-forge-content">
+            ${renderIcon('sparkle', { size: 13, style: 'margin-right:4px;' })} APOGEU ESTELAR ALCANÇADO ${renderIcon('sparkle', { size: 13, style: 'margin-left:4px;' })}
+          </span>
+        `;
       } else {
         buyBtn.disabled = !canAfford;
         buyBtn.innerHTML = canAfford
-          ? `${renderIcon('damage', { size: 13, style: 'margin-right:4px;' })} FUNDIR ALMAS • ${renderIcon('soul_coin', { size: 12, color: '#ffd166', style: 'margin-right:2px;' })} ${cost}`
-          : `${renderIcon('soul_coin', { size: 12, color: '#ffd166', style: 'margin-right:2px;' })} ${cost} (FALTAM ${cost - getPersistentGold()} ALMAS)`;
+          ? `
+            <div class="btn-shimmer-sweep"></div>
+            <span class="btn-forge-content">
+              ${renderIcon('damage', { size: 14, style: 'margin-right:5px; vertical-align: middle;' })} FUNDIR ALMAS • ${renderIcon('soul_coin', { size: 13, color: '#3d1e00', style: 'margin-right:2px; vertical-align: middle;' })} ${cost}
+            </span>
+          `
+          : `
+            <div class="btn-shimmer-sweep"></div>
+            <span class="btn-forge-content">
+              ${renderIcon('soul_coin', { size: 12, color: '#ffd166', style: 'margin-right:2px;' })} ${cost} (FALTAM ${cost - getPersistentGold()} ALMAS)
+            </span>
+          `;
         buyBtn.onclick = () => {
           if (buyMetaUpgrade(activeTalent.id)) {
             try { playSfx('level'); } catch(e) {}
@@ -461,6 +812,7 @@ export function openTalentsModal() {
   activeRenderAstrolabe = renderAstrolabe;
   renderAstrolabe();
   modal.classList.remove('modal-hidden');
+  modal.classList.add('active');
   modal.style.removeProperty('display');
   modal.style.display = 'flex';
 }
@@ -468,34 +820,171 @@ export function openTalentsModal() {
 export function renderBlessingsSummary() {
   const grid = document.getElementById('blessings-summary-grid');
   if (!grid) return;
-  const meta = getMetaBonuses();
+  const levels = getMetaLevels();
 
-  const cards = [
-    { label: "Dano Global", val: `+${Math.round((meta.damageMult - 1) * 100)}%`, icon: renderIcon('sword', { size: 16, color: '#e74c3c' }), col: "#e74c3c" },
-    { label: "Chance Crítica", val: `+${Math.round(meta.critBonus * 100)}%`, icon: renderIcon('crit', { size: 16, color: '#f39c12' }), col: "#f39c12" },
-    { label: "Redução Recarga", val: `-${Math.round(meta.cooldownReduction * 100)}%`, icon: renderIcon('cooldown', { size: 16, color: '#e67e22' }), col: "#e67e22" },
-    { label: "Fúria Executora", val: `+${Math.round(meta.executeBonus * 100)}%`, icon: renderIcon('execute', { size: 16, color: '#c0392b' }), col: "#c0392b" },
+  const constInfo = {
+    guerra: { name: 'OFENSIVA & GUERRA', color: '#e74c3c' },
+    egide: { name: 'DEFESA & ÉGIDE', color: '#2ecc71' },
+    destino: { name: 'ALQUIMIA & DESTINO', color: '#a855f7' }
+  };
 
-    { label: "Vida Máxima", val: `+${Math.round((meta.hpMult - 1) * 100)}%`, icon: renderIcon('heart', { size: 16, color: '#2ecc71' }), col: "#2ecc71" },
-    { label: "Armadura Direta", val: `-${meta.armorBonus} Dano`, icon: renderIcon('armor', { size: 16, color: '#3498db' }), col: "#3498db" },
-    { label: "Velocidade", val: `+${((meta.speedMult - 1) * 100).toFixed(1)}%`, icon: renderIcon('boot', { size: 16, color: '#1abc9c' }), col: "#1abc9c" },
-    { label: "Regeneração", val: `+${meta.regenBonus.toFixed(1)} HP/s`, icon: renderIcon('regen', { size: 16, color: '#27ae60' }), col: "#27ae60" },
-    { label: "Segunda Chance", val: meta.phoenixRevives > 0 ? "1 Reviver" : "Inativo", icon: renderIcon('phoenix', { size: 16, color: '#f1c40f' }), col: "#f1c40f" },
+  const iconMap = {
+    damage: 'sword',
+    crit: 'crit',
+    cooldown: 'cooldown',
+    execute: 'execute',
+    hp: 'heart',
+    armor: 'armor',
+    speed: 'boot',
+    regen: 'regen',
+    phoenix: 'phoenix',
+    magnet: 'magnet',
+    gold: 'soul_coin',
+    xp: 'xp_tome',
+    reroll: 'dice',
+    transmute: 'transmute'
+  };
 
-    { label: "Raio de Atração", val: `+${meta.magnetBonus} px`, icon: renderIcon('magnet', { size: 16, color: '#9b59b6' }), col: "#9b59b6" },
-    { label: "Bônus de Almas", val: `+${Math.round((meta.goldMult - 1) * 100)}%`, icon: renderIcon('soul_coin', { size: 16, color: '#f1c40f' }), col: "#f1c40f" },
-    { label: "Bônus de XP", val: `+${Math.round((meta.xpMult - 1) * 100)}%`, icon: renderIcon('xp_tome', { size: 16, color: '#8e44ad' }), col: "#8e44ad" },
-    { label: "Rerolls de Tarô", val: `+${meta.rerolls}`, icon: renderIcon('dice', { size: 16, color: '#e056fd' }), col: "#e056fd" },
-    { label: "Transmutação Cósmica", val: meta.doubleChestChance > 0 ? "25% Chance" : "Inativo", icon: renderIcon('transmute', { size: 16, color: '#f39c12' }), col: "#f39c12" }
+  grid.innerHTML = META_TALENTS.map(t => {
+    const lvl = levels[t.id] || 0;
+    const isInvested = lvl > 0;
+    const cInfo = constInfo[t.constellation] || { color: '#00f5d4' };
+    const icon = renderIcon(iconMap[t.id] || 'sparkle', { size: 16, color: isInvested ? cInfo.color : '#64748b' });
+
+    return `
+      <div class="blessing-stat-card ${isInvested ? 'invested' : 'uninvested'}" style="border-left-color: ${isInvested ? cInfo.color : '#334155'};">
+        <span class="blessing-icon">${icon}</span>
+        <div class="blessing-info">
+          <div class="blessing-label" title="${t.name}">${t.name}</div>
+          <div class="blessing-val" style="color: ${isInvested ? cInfo.color : '#64748b'};">
+            ${isInvested ? t.formatVal(lvl) : 'Inativo'}
+            <small style="font-size: 8.5px; color: #64748b; margin-left: 4px; font-weight: normal;">(${lvl}/${t.maxLvl})</small>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+export function renderDesktopBlessingsCodex() {
+  const summaryStrip = document.getElementById('desktop-blessings-summary-strip');
+  const listElem = document.getElementById('desktop-blessings-list');
+  if (!listElem) return;
+
+  const levels = getMetaLevels();
+
+  // Atributos Globais Consolidados da Conta
+  const dmgLvl = levels['damage'] || 0;
+  const critLvl = levels['crit'] || 0;
+  const hpLvl = levels['hp'] || 0;
+  const armorLvl = levels['armor'] || 0;
+  const speedLvl = levels['speed'] || 0;
+  const goldLvl = levels['gold'] || 0;
+
+  if (summaryStrip) {
+    summaryStrip.innerHTML = `
+      <div class="summary-stat-chip stat-dmg" title="Bônus de Dano Global">
+        <svg class="game-icon icon-xs" viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="currentColor"/></svg>
+        <span>DANO: +${dmgLvl * 5}%</span>
+      </div>
+      <div class="summary-stat-chip stat-dmg" title="Chance de Acerto Crítico">
+        <svg class="game-icon icon-xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
+        <span>CRÍT: +${critLvl * 2}%</span>
+      </div>
+      <div class="summary-stat-chip stat-hp" title="Vida Máxima Adicional">
+        <svg class="game-icon icon-xs" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        <span>VIDA: +${hpLvl * 10}</span>
+      </div>
+      <div class="summary-stat-chip stat-hp" title="Redução de Dano">
+        <svg class="game-icon icon-xs" viewBox="0 0 24 24"><polygon points="12,2 20,5 20,11 12,21 4,11 4,5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span>ARMADURA: +${armorLvl * 1}</span>
+      </div>
+      <div class="summary-stat-chip stat-spd" title="Velocidade de Movimento">
+        <svg class="game-icon icon-xs" viewBox="0 0 24 24"><path fill="currentColor" d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/></svg>
+        <span>VELOCIDADE: +${speedLvl * 3}%</span>
+      </div>
+      <div class="summary-stat-chip stat-util" title="Multiplicador de Almas">
+        <svg class="game-icon icon-xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="900" fill="currentColor">✦</text></svg>
+        <span>ALMAS: +${goldLvl * 5}%</span>
+      </div>
+    `;
+  }
+
+  const constellations = [
+    { id: 'guerra', name: 'CONSTELAÇÃO DA GUERRA', color: '#e74c3c' },
+    { id: 'egide', name: 'CONSTELAÇÃO DA ÉGIDE', color: '#2ecc71' },
+    { id: 'destino', name: 'CONSTELAÇÃO DO DESTINO', color: '#a855f7' }
   ];
 
-  grid.innerHTML = cards.map(c => `
-    <div class="blessing-stat-card" style="border-left-color: ${c.col};">
-      <span class="blessing-icon">${c.icon}</span>
-      <div class="blessing-info">
-        <div class="blessing-label">${c.label}</div>
-        <div class="blessing-val" style="color: ${c.col};">${c.val}</div>
+  let totalActive = 0;
+  let html = '';
+
+  constellations.forEach(c => {
+    const cTalents = META_TALENTS.filter(t => t.constellation === c.id);
+    const activeTalents = cTalents.filter(t => (levels[t.id] || 0) > 0);
+    totalActive += activeTalents.length;
+
+    if (activeTalents.length === 0) return;
+
+    html += `
+      <div class="blessings-constellation-group">
+        <div class="constellation-group-title" style="color: ${c.color};">
+          <span>${c.name}</span>
+          <span style="font-size: 8.5px; opacity: 0.8;">(${activeTalents.length}/${cTalents.length})</span>
+        </div>
+    `;
+
+    activeTalents.forEach(t => {
+      const lvl = levels[t.id] || 0;
+      const runeSvg = TALENT_RUNES_SVG[t.id] || TALENT_RUNES_SVG.damage;
+      html += `
+        <div class="blessing-codex-card" data-talent="${t.id}">
+          <div class="blessing-card-left">
+            <div class="blessing-card-icon-wrap" style="color: ${c.color}; border-color: ${c.color}44;">
+              ${runeSvg}
+            </div>
+            <div class="blessing-card-info">
+              <span class="blessing-card-name">${t.name}</span>
+              <span class="blessing-card-stat" style="color: ${c.color};">${t.formatVal(lvl)}</span>
+            </div>
+          </div>
+          <div class="blessing-card-right">
+            <span class="blessing-level-pill">Nv ${lvl}/${t.maxLvl}</span>
+            <button class="btn-locate-node" title="Localizar e Focar no Astrolábio" data-locate="${t.id}" aria-label="Localizar">
+              <svg viewBox="0 0 24 24" class="game-icon icon-xs"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><line x1="12" y1="2" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="2" y1="12" x2="6" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+  });
+
+  if (totalActive === 0) {
+    html = `
+      <div class="blessings-empty-notice">
+        <svg class="game-icon icon-lg" viewBox="0 0 24 24"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+        <div><strong>Nenhuma bênção ativa consagrada ainda.</strong></div>
+        <div>Forje runas no Astrolábio para despertar poderes cósmicos permanentes na sua linhagem.</div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }
+
+  listElem.innerHTML = html;
+
+  // Vincula botões de localização e foco suave
+  listElem.querySelectorAll('.btn-locate-node').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const talentId = btn.getAttribute('data-locate');
+      if (talentId) {
+        selectedAstrolabeNodeId = talentId;
+        focusAstrolabeNode(talentId, true);
+        switchPillarMode('forge');
+        try { playSfx('card_hover'); } catch(err) {}
+        if (activeRenderAstrolabe) activeRenderAstrolabe();
+      }
+    };
+  });
 }

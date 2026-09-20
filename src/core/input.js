@@ -16,7 +16,51 @@ const activeKeyCodes = new Set();
 document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
 document.addEventListener('dblclick', function(e) { e.preventDefault(); }, { passive: false });
 
-// Joystick Virtual Mobile com Follow-Stick Dinâmico e Zonas Mortas
+// Modos de Joystick Virtual Suportados
+export const JOYSTICK_MODES = {
+  FLOATING: 'floating',
+  DYNAMIC: 'dynamic'
+};
+
+const STORAGE_KEY_JOYSTICK = 'hordio_joystick_mode';
+
+let joystickMode = JOYSTICK_MODES.FLOATING;
+
+try {
+  const savedMode = localStorage.getItem(STORAGE_KEY_JOYSTICK);
+  if (savedMode === JOYSTICK_MODES.DYNAMIC || savedMode === JOYSTICK_MODES.FLOATING) {
+    joystickMode = savedMode;
+  }
+} catch (e) {
+  // Fallback silencioso caso localStorage esteja restrito
+}
+
+export function getJoystickMode() {
+  return joystickMode;
+}
+
+export function setJoystickMode(mode) {
+  if (mode !== JOYSTICK_MODES.FLOATING && mode !== JOYSTICK_MODES.DYNAMIC) return;
+  joystickMode = mode;
+  try {
+    localStorage.setItem(STORAGE_KEY_JOYSTICK, mode);
+  } catch (e) {}
+
+  if (stick.active) {
+    stick.mode = mode;
+    if (joystickMode === JOYSTICK_MODES.DYNAMIC) {
+      const dx = stick.curX - stick.startX;
+      const dy = stick.curY - stick.startY;
+      const dist = Math.hypot(dx, dy);
+      if (dist > stick.radius) {
+        stick.curX = stick.startX + (dx / dist) * stick.radius;
+        stick.curY = stick.startY + (dy / dist) * stick.radius;
+      }
+    }
+  }
+}
+
+// Joystick Virtual Mobile com Follow-Stick Dinâmico ou Base Dinâmica Fixa
 export const stick = {
   active: false,
   touchId: null,
@@ -26,7 +70,8 @@ export const stick = {
   curY: 0,
   radius: 48,
   normMag: 0,
-  isSaturated: false
+  isSaturated: false,
+  mode: joystickMode
 };
 
 export let inputX = 0;
@@ -155,49 +200,93 @@ window.addEventListener('touchmove', e => {
       const dy = t.clientY - stick.startY;
       const dist = Math.hypot(dx, dy);
 
-      // Follow-Stick Dinâmico: Se o polegar exceder o raio máximo, a base desliza suavemente
-      // Isso elimina 100% do "turn lag" após arrastos contínuos!
-      if (dist > stick.radius) {
-        const nx = dx / dist;
-        const ny = dy / dist;
-        stick.startX = t.clientX - nx * stick.radius;
-        stick.startY = t.clientY - ny * stick.radius;
-        stick.curX = t.clientX;
-        stick.curY = t.clientY;
-      } else {
-        stick.curX = t.clientX;
-        stick.curY = t.clientY;
-      }
-
-      const curDx = stick.curX - stick.startX;
-      const curDy = stick.curY - stick.startY;
-      const curDist = Math.hypot(curDx, curDy);
-
-      // Zonas Mortas: Interna (12%) para estabilidade e Saturação Externa (88%)
-      const innerDeadzone = stick.radius * 0.12;
-      const outerSaturation = stick.radius * 0.88;
-
-      if (curDist < innerDeadzone) {
-        stick.normMag = 0;
-        stick.isSaturated = false;
-        inputX = 0;
-        inputY = 0;
-      } else {
-        const normMag = Math.min(1.0, (curDist - innerDeadzone) / (outerSaturation - innerDeadzone));
-        // Curva exponencial suave para micro-ajustes cirúrgicos
-        const curvedMag = Math.pow(normMag, 1.15);
-        stick.normMag = curvedMag;
-
-        const wasSaturated = stick.isSaturated;
-        stick.isSaturated = normMag >= 0.99;
-        if (!wasSaturated && stick.isSaturated) {
-          triggerHaptic('light');
+      if (joystickMode === JOYSTICK_MODES.FLOATING) {
+        // ====================================================================
+        // 1. JOYSTICK FLUTUANTE (Comportamento Original Mantido Estritamente)
+        // Follow-Stick: Se o polegar exceder o raio máximo, a base desliza
+        // ====================================================================
+        if (dist > stick.radius) {
+          const nx = dx / dist;
+          const ny = dy / dist;
+          stick.startX = t.clientX - nx * stick.radius;
+          stick.startY = t.clientY - ny * stick.radius;
+          stick.curX = t.clientX;
+          stick.curY = t.clientY;
+        } else {
+          stick.curX = t.clientX;
+          stick.curY = t.clientY;
         }
 
-        const nx = curDist > 0.001 ? curDx / curDist : 0;
-        const ny = curDist > 0.001 ? curDy / curDist : 0;
-        inputX = nx * curvedMag;
-        inputY = ny * curvedMag;
+        const curDx = stick.curX - stick.startX;
+        const curDy = stick.curY - stick.startY;
+        const curDist = Math.hypot(curDx, curDy);
+
+        // Zonas Mortas: Interna (12%) e Saturação Externa (88%)
+        const innerDeadzone = stick.radius * 0.12;
+        const outerSaturation = stick.radius * 0.88;
+
+        if (curDist < innerDeadzone) {
+          stick.normMag = 0;
+          stick.isSaturated = false;
+          inputX = 0;
+          inputY = 0;
+        } else {
+          const normMag = Math.min(1.0, (curDist - innerDeadzone) / (outerSaturation - innerDeadzone));
+          const curvedMag = Math.pow(normMag, 1.15);
+          stick.normMag = curvedMag;
+
+          const wasSaturated = stick.isSaturated;
+          stick.isSaturated = normMag >= 0.99;
+          if (!wasSaturated && stick.isSaturated) {
+            triggerHaptic('light');
+          }
+
+          const nx = curDist > 0.001 ? curDx / curDist : 0;
+          const ny = curDist > 0.001 ? curDy / curDist : 0;
+          inputX = nx * curvedMag;
+          inputY = ny * curvedMag;
+        }
+      } else {
+        // ====================================================================
+        // 2. JOYSTICK DINÂMICO (Base Fixa no Ponto Inicial do Toque)
+        // A base (startX, startY) permanece fixa no ponto inicial.
+        // Somente o controle interno (knob: curX, curY) se desloca até o raio.
+        // ====================================================================
+        if (dist > stick.radius) {
+          const nx = dx / dist;
+          const ny = dy / dist;
+          stick.curX = stick.startX + nx * stick.radius;
+          stick.curY = stick.startY + ny * stick.radius;
+        } else {
+          stick.curX = t.clientX;
+          stick.curY = t.clientY;
+        }
+
+        // Lógica de cálculo baseada na posição real do toque do jogador
+        const innerDeadzone = stick.radius * 0.12;
+        const outerSaturation = stick.radius * 0.88;
+
+        if (dist < innerDeadzone) {
+          stick.normMag = 0;
+          stick.isSaturated = false;
+          inputX = 0;
+          inputY = 0;
+        } else {
+          const normMag = Math.min(1.0, (dist - innerDeadzone) / (outerSaturation - innerDeadzone));
+          const curvedMag = Math.pow(normMag, 1.15);
+          stick.normMag = curvedMag;
+
+          const wasSaturated = stick.isSaturated;
+          stick.isSaturated = normMag >= 0.99;
+          if (!wasSaturated && stick.isSaturated) {
+            triggerHaptic('light');
+          }
+
+          const nx = dist > 0.001 ? dx / dist : 0;
+          const ny = dist > 0.001 ? dy / dist : 0;
+          inputX = nx * curvedMag;
+          inputY = ny * curvedMag;
+        }
       }
       break;
     }

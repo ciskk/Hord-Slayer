@@ -1,171 +1,462 @@
-﻿/* ==========================================================================
-   FASE 3: CÓDICE DO BESTIÁRIO DAS TREVAS (BESTIARY MODAL)
-   ========================================================================== */
-.bestiary-void-box {
-  width: 94vw;
-  max-width: 1060px;
-  max-height: 90vh;
+/* ======================================================== */
+/* HORD.IO: CÓDICE DO BESTIÁRIO DAS TREVAS                 */
+/* Design System: Neo-Arcane / Void Astral                  */
+/* ======================================================== */
+
+/* 1. Overlay Geral: Translúcido, Fume e Diegético */
+.bestiary-screen-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100dvh;
+  background: radial-gradient(circle at 50% 30%, rgba(24, 12, 50, 0.52) 0%, rgba(8, 18, 36, 0.72) 55%, rgba(4, 5, 8, 0.88) 100%), #000000;
+  background-color: #000000;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  justify-content: center;
+  align-items: center;
+  padding: max(env(safe-area-inset-top, 6px), 6px) 
+           max(env(safe-area-inset-right, 12px), 12px) 
+           max(env(safe-area-inset-bottom, 6px), 6px) 
+           max(env(safe-area-inset-left, 12px), 12px);
+  z-index: 100;
+  overflow: hidden; /* Garantia de visualização sem barra de rolagem de página no PC */
+  box-sizing: border-box;
+}
+
+.bestiary-screen-overlay.active {
+  display: flex !important;
+  animation: bestiaryFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.bestiary-screen-overlay.closing {
+  animation: bestiaryFadeOut 0.20s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+  pointer-events: none !important;
+}
+
+/* 2. Véu de Textura Celestial e Partículas Cósmicas */
+.bestiary-stasis-veil {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(0, 245, 212, 0.04) 1px, transparent 1px),
+    linear-gradient(rgba(0, 245, 212, 0.02) 1px, transparent 1px);
+  background-size: 24px 24px, 100% 48px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* 3. Palco Intrínseco Aberto (Auto-Ajuste Rígido à Altura do Viewport) */
+.bestiary-intrinsic-stage {
+  width: 100%;
+  max-width: min(96vw, 1240px);
+  height: 100%;
+  max-height: calc(100dvh - 14px);
   display: flex;
   flex-direction: column;
-  background: radial-gradient(circle at 50% 10%, #151a24 0%, #0a0d14 75%, #05070a 100%) !important;
-  border: 1px solid rgba(0, 245, 212, 0.35) !important;
-  box-shadow: 0 0 45px rgba(0, 245, 212, 0.12), inset 0 0 40px rgba(0, 0, 0, 0.85) !important;
-  padding: 0 !important;
+  align-items: center;
+  position: relative;
+  gap: clamp(4px, 1vh, 8px);
+  margin: auto;
+  padding: 0;
+  box-sizing: border-box;
+  z-index: 2;
   overflow: hidden;
-  border-radius: 14px;
 }
 
-.bestiary-header {
-  padding: 14px 20px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+/* ======================================================== */
+/* 4. CAMADA SUPERIOR: EYEBROW, TÍTULO & CHIPS GLOBAIS      */
+/* ======================================================== */
+
+.bestiary-header-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+  flex-shrink: 0;
+  animation: bestiaryImpact 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.bestiary-eyebrow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  background: rgba(10, 13, 20, 0.6);
-}
-
-.bestiary-header-info {
-  text-align: center;
-  flex: 1;
-}
-
-.btn-bestiary-nav {
-  border-color: rgba(0, 245, 212, 0.5) !important;
-  color: #00f5d4 !important;
-}
-
-.btn-bestiary-nav:hover {
-  background: rgba(0, 245, 212, 0.2) !important;
-  border-color: #00f5d4 !important;
-  box-shadow: 0 0 16px rgba(0, 245, 212, 0.45) !important;
-  color: #fff !important;
-}
-
-.btn-achievements-nav {
-  border-color: rgba(162, 155, 254, 0.5) !important;
-  color: #a29bfe !important;
-}
-
-.btn-achievements-nav:hover {
-  background: rgba(162, 155, 254, 0.2) !important;
-  border-color: #a29bfe !important;
-  box-shadow: 0 0 16px rgba(162, 155, 254, 0.45) !important;
-  color: #fff !important;
-}
-
-/* Barra de Abas / Categorias */
-.bestiary-tabs-bar {
-  display: flex;
   gap: 8px;
-  padding: 10px 20px;
-  background: rgba(7, 10, 16, 0.7);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  width: 100%;
+  max-width: 480px;
+  justify-content: center;
+}
+
+.bestiary-eyebrow-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 245, 212, 0.5), transparent);
+}
+
+.bestiary-eyebrow-text {
+  font-family: var(--font-heading);
+  font-size: clamp(9px, 0.75vw, 11px);
+  font-weight: 800;
+  letter-spacing: clamp(1.5px, 0.2vw, 3px);
+  color: #00f5d4;
+  text-shadow: 0 0 10px rgba(0, 245, 212, 0.5);
+  text-transform: uppercase;
+}
+
+.bestiary-monumental-title {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 1.8vw, 26px);
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: clamp(1.5px, 0.2vw, 2.8px);
+  line-height: 1.1;
+  margin: 0;
+  text-transform: uppercase;
+  text-shadow: 0 0 16px rgba(0, 245, 212, 0.70), 
+               0 0 32px rgba(9, 132, 227, 0.50), 
+               2px 3px 6px #000000;
+}
+
+.bestiary-monumental-sub {
+  font-size: clamp(9.5px, 0.75vw, 11.5px);
+  color: #94a3b8;
+  letter-spacing: 0.3px;
+}
+
+/* Pílulas de Metadados da Coleção */
+.bestiary-meta-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 1px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.bestiary-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  background: rgba(8, 14, 28, 0.85);
+  border: 1px solid rgba(0, 245, 212, 0.28);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  font-family: var(--font-heading);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #c8d6e5;
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.1);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.bestiary-meta-chip:hover {
+  border-color: rgba(0, 245, 212, 0.45);
+  transform: translateY(-1px);
+}
+
+.bestiary-meta-chip .chip-label {
+  color: #64748b;
+  font-size: 8.5px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.bestiary-meta-chip .chip-val {
+  color: #00f5d4;
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.bestiary-meta-chip.highlight-gold .chip-val {
+  color: #ffd166;
+}
+
+.bestiary-meta-chip.highlight-purple .chip-val {
+  color: #c084fc;
+}
+
+/* ======================================================== */
+/* 5. NAVEGAÇÃO SEGMENTADA DE CATEGORIAS                    */
+/* ======================================================== */
+
+.bestiary-nav-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
   flex-shrink: 0;
+}
+
+.bestiary-tabs-bar {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  background: rgba(4, 8, 18, 0.75);
+  border: 1px solid rgba(0, 245, 212, 0.2);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
   overflow-x: auto;
+  max-width: 100%;
 }
 
 .bestiary-tab-btn {
-  background: rgba(22, 28, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
-  font-family: 'Cinzel', serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 6px;
+  color: #64748b;
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  user-select: none;
+  touch-action: manipulation;
   white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.bestiary-tab-btn:hover {
-  border-color: #00f5d4;
-  color: #e2e8f0;
-  background: rgba(0, 245, 212, 0.1);
+.bestiary-tab-btn .tab-indicator {
+  width: 4.5px;
+  height: 4.5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.bestiary-tab-btn:hover:not(.active) {
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .bestiary-tab-btn.active {
-  background: linear-gradient(135deg, rgba(0, 245, 212, 0.25) 0%, rgba(20, 30, 48, 0.8) 100%);
-  border-color: #00f5d4;
+  background: linear-gradient(135deg, rgba(0, 245, 212, 0.18) 0%, rgba(9, 132, 227, 0.25) 100%);
+  border-color: rgba(0, 245, 212, 0.5);
   color: #00f5d4;
-  box-shadow: 0 0 12px rgba(0, 245, 212, 0.25);
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.2), inset 0 0 6px rgba(0, 245, 212, 0.12);
+  text-shadow: 0 0 8px rgba(0, 245, 212, 0.4);
 }
 
-/* Layout Principal de 2 Colunas */
-.bestiary-main-layout {
+.bestiary-tab-btn.active .tab-indicator {
+  background: #00f5d4;
+  box-shadow: 0 0 6px #00f5d4;
+}
+
+/* ======================================================== */
+/* 6. LAYOUT BENTO MODULAR DE 2 PILARES NEO-ARCANOS         */
+/* ======================================================== */
+
+.bestiary-bento-grid {
   display: grid;
-  grid-template-columns: 360px 1fr;
-  flex: 1;
-  min-height: 0;
+  grid-template-columns: minmax(280px, 1fr) minmax(380px, 1.4fr);
+  gap: 10px;
+  width: 100%;
+  flex: 1 1 0; /* Expansão flexível ocupando todo o espaço restante */
+  min-height: 0; /* Permite que containers filhos rolem sem empurrar o rodapé */
+  overflow: hidden;
+  align-items: stretch;
+  text-align: left;
+  animation: bentoPillarSlide 0.48s 0.08s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.bestiary-pillar {
+  background: radial-gradient(ellipse at 50% 15%, rgba(24, 12, 50, 0.7) 0%, rgba(8, 16, 32, 0.85) 60%, rgba(4, 5, 8, 0.94) 100%);
+  border: 1.2px solid rgba(0, 245, 212, 0.24);
+  border-radius: 12px;
+  padding: clamp(6px, 1vh, 10px) clamp(8px, 1vw, 14px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.8), inset 0 0 28px rgba(0, 245, 212, 0.05);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0; /* Comprime-se dinamicamente em qualquer resolução */
   overflow: hidden;
 }
 
-/* Coluna Esquerda: Grade de Monstros */
-.bestiary-roster-column {
-  overflow-y: auto;
-  padding: 14px 14px 20px;
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
-  background: rgba(8, 10, 15, 0.5);
+/* Cabeçalho de Cada Pilar */
+.bestiary-pillar .pillar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1.5px solid rgba(0, 245, 212, 0.18);
+  padding-bottom: 5px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
 }
+
+.bestiary-pillar .pillar-tag {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #00f5d4;
+  text-transform: uppercase;
+}
+
+.pillar-badge-hero {
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #ffd166;
+  background: rgba(255, 209, 102, 0.14);
+  border: 1px solid rgba(255, 209, 102, 0.4);
+  padding: 1.5px 7px;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+}
+
+.pillar-badge-hero.badge-boss {
+  color: #c084fc;
+  background: rgba(162, 155, 254, 0.16);
+  border-color: rgba(162, 155, 254, 0.45);
+}
+
+.pillar-badge-hero.badge-miniboss {
+  color: #ffd166;
+  background: rgba(255, 209, 102, 0.14);
+  border-color: rgba(255, 209, 102, 0.4);
+}
+
+.pillar-badge-hero.badge-horde {
+  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.14);
+  border-color: rgba(46, 204, 113, 0.35);
+}
+
+.pillar-badge-hero.badge-unknown {
+  color: #ff7675;
+  background: rgba(255, 71, 87, 0.14);
+  border-color: rgba(255, 71, 87, 0.35);
+}
+
+.bestiary-pillar .pillar-badge-count {
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #00f5d4;
+  background: rgba(0, 245, 212, 0.14);
+  border: 1px solid rgba(0, 245, 212, 0.35);
+  padding: 1.5px 7px;
+  border-radius: 4px;
+}
+
+/* Scrollbars dos Pilares */
+.bestiary-roster-scroll,
+.bestiary-dossier-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.bestiary-roster-scroll::-webkit-scrollbar,
+.bestiary-dossier-scroll::-webkit-scrollbar {
+  width: 4.5px;
+}
+
+.bestiary-roster-scroll::-webkit-scrollbar-thumb,
+.bestiary-dossier-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 245, 212, 0.28);
+  border-radius: 3px;
+}
+
+.bestiary-roster-scroll::-webkit-scrollbar-thumb:hover,
+.bestiary-dossier-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 245, 212, 0.55);
+}
+
+/* ======================================================== */
+/* 7. PILAR 1: ROL DE ESPÉCIMES & CARDS COMPACTOS           */
+/* ======================================================== */
 
 .bestiary-cards-grid {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 5px;
 }
 
-/* Card Individual de Criatura na Lista */
 .bestiary-card {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  background: rgba(18, 22, 33, 0.65);
+  gap: 8px;
+  padding: clamp(5px, 0.7vh, 7px) 9px;
+  background: rgba(12, 18, 34, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  border-radius: 7px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
+  overflow: hidden;
 }
 
 .bestiary-card:hover {
-  background: rgba(28, 35, 52, 0.75);
+  background: rgba(18, 28, 54, 0.85);
   border-color: rgba(0, 245, 212, 0.4);
-  transform: translateX(3px);
+  transform: translateX(2px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
 }
 
 .bestiary-card.active {
-  background: linear-gradient(90deg, rgba(0, 245, 212, 0.18) 0%, rgba(20, 26, 40, 0.85) 100%);
+  background: linear-gradient(90deg, rgba(0, 245, 212, 0.16) 0%, rgba(14, 22, 42, 0.9) 100%);
   border-color: #00f5d4;
-  box-shadow: 0 0 14px rgba(0, 245, 212, 0.2), inset 0 0 10px rgba(0, 245, 212, 0.08);
+  box-shadow: 0 0 14px rgba(0, 245, 212, 0.2), inset 0 0 8px rgba(0, 245, 212, 0.08);
+}
+
+.bcard-select-edge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #00f5d4;
+  box-shadow: 0 0 6px #00f5d4;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.bestiary-card.active .bcard-select-edge {
+  opacity: 1;
 }
 
 .bestiary-card.undiscovered {
   opacity: 0.65;
-  background: rgba(12, 14, 20, 0.5);
-  border-style: dashed;
+  background: rgba(10, 12, 18, 0.55);
+  border: 1px dashed rgba(255, 71, 87, 0.3);
 }
 
 .bestiary-card.undiscovered:hover {
   opacity: 0.85;
+  border-color: rgba(255, 71, 87, 0.5);
 }
 
 .bcard-avatar-wrap {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
   border: 1.5px solid;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(4, 6, 12, 0.75);
   flex-shrink: 0;
+  transition: all 0.18s ease;
 }
 
 .bcard-avatar-icon {
-  font-size: 16px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .bcard-info {
@@ -173,19 +464,19 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1.5px;
 }
 
 .bcard-top-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 5px;
 }
 
 .bcard-name {
-  font-family: 'Cinzel', serif;
-  font-size: 11.5px;
+  font-family: var(--font-heading);
+  font-size: 11px;
   font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
@@ -194,15 +485,16 @@
 
 .bcard-name.undiscovered-name {
   font-style: italic;
-  letter-spacing: 2px;
+  letter-spacing: 1.2px;
+  color: #94a3b8 !important;
 }
 
 .bcard-cat-pill {
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 800;
   padding: 1px 5px;
   border-radius: 3px;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.5px;
   flex-shrink: 0;
 }
 
@@ -214,168 +506,211 @@
 
 .badge-miniboss {
   background: rgba(243, 156, 18, 0.15);
-  color: #f39c12;
+  color: #ffd166;
   border: 1px solid rgba(243, 156, 18, 0.35);
 }
 
 .badge-boss {
-  background: rgba(155, 89, 182, 0.2);
+  background: rgba(162, 155, 254, 0.18);
   color: #c084fc;
-  border: 1px solid rgba(168, 85, 247, 0.45);
+  border: 1px solid rgba(162, 155, 254, 0.45);
 }
 
 .bcard-sub-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 9px;
-  color: #8395a7;
+  font-size: 8.5px;
+  color: #8c94a8;
 }
 
 .bcard-threat {
-  color: #f1c40f;
+  color: #ffd166;
   letter-spacing: 1px;
+  text-shadow: 0 0 6px rgba(255, 209, 102, 0.4);
 }
 
-/* Coluna Direita: Dossiê e Palco da Criatura */
-.bestiary-dossier-panel {
-  overflow-y: auto;
-  padding: 16px 22px 24px;
-  background: rgba(5, 7, 12, 0.4);
-}
+/* ======================================================== */
+/* 8. PILAR 2: DOSSIÊ, ALTAR DO CANVAS & BIOMETRIA          */
+/* ======================================================== */
 
 .dossier-card-wrap {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 7px;
 }
 
-/* Viewport do Canvas de Prévia */
+.dossier-slide-enter {
+  animation: dossierSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Viewport do Canvas Compacto & Auto-Ajustável */
 .bestiary-preview-viewport {
   position: relative;
   width: 100%;
-  height: 220px;
-  background: radial-gradient(circle at 50% 65%, #182030 0%, #0d121c 60%, #06080e 100%);
-  border: 1px solid rgba(0, 245, 212, 0.25);
-  border-radius: 12px;
+  height: clamp(120px, 16vh, 165px);
+  background: radial-gradient(circle at 50% 65%, rgba(26, 34, 56, 0.8) 0%, rgba(10, 14, 26, 0.95) 60%, rgba(4, 6, 10, 0.98) 100%);
+  border: 1.2px solid rgba(0, 245, 212, 0.25);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.8), 0 4px 18px rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.85), 0 6px 18px rgba(0, 0, 0, 0.5);
   overflow: hidden;
+  flex-shrink: 0;
+}
+
+.preview-ambient-glow {
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: var(--creature-ambient, rgba(0, 245, 212, 0.2));
+  filter: blur(28px);
+  pointer-events: none;
+  opacity: 0.65;
+  animation: previewAmbientPulse 3.5s ease-in-out infinite alternate;
 }
 
 #bestiary-preview-canvas {
-  width: 220px;
-  height: 220px;
+  position: relative;
+  z-index: 2;
+  width: clamp(120px, 16vh, 165px);
+  height: clamp(120px, 16vh, 165px);
 }
 
 .bestiary-category-pill {
   position: absolute;
-  top: 10px;
-  left: 12px;
-  font-size: 9px;
+  top: 7px;
+  left: 9px;
+  z-index: 3;
+  font-size: 8px;
   font-weight: 800;
-  font-family: 'Cinzel', serif;
-  background: rgba(5, 8, 14, 0.85);
+  font-family: var(--font-heading);
+  background: rgba(6, 10, 18, 0.85);
   border: 1px solid;
-  padding: 2px 8px;
-  border-radius: 4px;
-  letter-spacing: 0.8px;
-  backdrop-filter: blur(4px);
+  padding: 2px 7px;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  letter-spacing: 0.6px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
 }
 
 .bestiary-kills-pill {
   position: absolute;
-  top: 10px;
-  right: 12px;
-  font-size: 9.5px;
-  font-weight: 700;
+  top: 7px;
+  right: 9px;
+  z-index: 3;
+  font-size: 8.5px;
+  font-weight: 800;
   color: #ffd166;
-  background: rgba(5, 8, 14, 0.85);
-  border: 1px solid rgba(255, 209, 102, 0.3);
-  padding: 2px 8px;
-  border-radius: 4px;
-  backdrop-filter: blur(4px);
+  background: rgba(6, 10, 18, 0.85);
+  border: 1px solid rgba(255, 209, 102, 0.35);
+  padding: 2px 7px;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
 }
 
-/* Identidade */
+/* Identidade Monumental */
 .dossier-identity {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 1px;
+  flex-shrink: 0;
 }
 
 .dossier-name-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-}
-
-.dossier-name {
-  font-family: 'Cinzel', serif;
-  font-size: 20px;
-  font-weight: 900;
-  margin: 0;
-  letter-spacing: 0.8px;
-  text-shadow: 0 0 12px rgba(0, 0, 0, 0.9);
-}
-
-.dossier-threat-badge {
-  color: #f1c40f;
-  font-size: 13px;
-  letter-spacing: 1.5px;
-  background: rgba(241, 196, 15, 0.1);
-  border: 1px solid rgba(241, 196, 15, 0.3);
-  padding: 2px 8px;
-  border-radius: 6px;
-}
-
-.dossier-title {
-  font-size: 11.5px;
-  color: #94a3b8;
-  font-style: italic;
-  font-family: 'Outfit', sans-serif;
-}
-
-/* Grid de Estatísticas */
-.dossier-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
 
-.dossier-stat-box {
-  background: rgba(18, 23, 35, 0.7);
+.dossier-name {
+  font-family: var(--font-display);
+  font-size: clamp(16px, 1.5vw, 19px);
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: 0.8px;
+  text-shadow: 0 0 12px currentColor, 0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.dossier-threat-badge {
+  color: #ffd166;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  background: rgba(255, 209, 102, 0.12);
+  border: 1px solid rgba(255, 209, 102, 0.35);
+  padding: 2px 7px;
+  border-radius: 5px;
+  box-shadow: 0 0 8px rgba(255, 209, 102, 0.15);
+  white-space: nowrap;
+}
+
+.dossier-title {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  color: #94a3b8;
+  font-style: italic;
+  letter-spacing: 0.3px;
+}
+
+/* Grid Biométrico de Combate */
+.dossier-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.bestiary-stat-card {
+  background: rgba(12, 18, 34, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 6px;
+  padding: 4px 7px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 1px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
-.dossier-stat-label {
-  font-size: 8.5px;
-  font-weight: 800;
-  color: #64748b;
-  letter-spacing: 0.6px;
+.bestiary-stat-card:hover {
+  border-color: rgba(0, 245, 212, 0.35);
+  transform: translateY(-1px);
 }
 
-.dossier-stat-value {
-  font-family: 'Cinzel', serif;
-  font-size: 12px;
+.bestiary-stat-card .stat-label {
+  font-family: var(--font-body);
+  font-size: 8px;
   font-weight: 700;
-  color: #f1f2f6;
+  color: #8c94a8;
+  display: flex;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
-/* Blocos de Lore e Fraquezas */
+.bestiary-stat-card .stat-val {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.bestiary-stat-card .stat-val.highlight-cyan { color: #00f5d4; }
+.bestiary-stat-card .stat-val.highlight-gold { color: #ffd166; }
+.bestiary-stat-card .stat-val.highlight-ruby { color: #ff7675; }
+.bestiary-stat-card .stat-val.highlight-purple { color: #c084fc; }
+
+/* Blocos de Lore, Fraqueza Tática e Citações */
 .dossier-lore-box {
-  background: rgba(14, 18, 28, 0.75);
-  border: 1px solid rgba(0, 245, 212, 0.2);
-  border-radius: 8px;
-  padding: 10px 14px;
+  background: rgba(14, 18, 30, 0.75);
+  border: 1px solid rgba(255, 209, 102, 0.25);
+  border-radius: 7px;
+  padding: 6px 10px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
 }
 
 .dossier-lore-box.is-locked {
@@ -384,40 +719,48 @@
 }
 
 .dossier-tactics-box {
-  border-color: rgba(243, 156, 18, 0.25);
+  border-color: rgba(0, 245, 212, 0.25);
 }
 
 .dossier-box-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.dossier-box-icon {
-  font-size: 13px;
+  gap: 6px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 2px;
 }
 
 .dossier-box-title {
-  font-family: 'Cinzel', serif;
-  font-size: 10.5px;
+  font-family: var(--font-heading);
+  font-size: 9px;
   font-weight: 800;
   color: #cbd5e1;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
 }
 
-.dossier-lock-status {
+.dossier-lock-status.unlocked {
   margin-left: auto;
-  font-size: 9px;
+  font-size: 8px;
+  font-weight: 800;
+  color: #00f5d4;
+  letter-spacing: 0.3px;
+}
+
+.dossier-lock-status.locked {
+  margin-left: auto;
+  font-size: 8px;
   font-weight: 700;
-  color: #ffd166;
+  color: #ff7675;
+  letter-spacing: 0.3px;
 }
 
 .dossier-box-content {
-  font-size: 11.5px;
-  line-height: 1.55;
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  line-height: 1.4;
   color: #cbd5e1;
-  font-family: 'Outfit', sans-serif;
 }
 
 .dossier-lore-box.is-locked .dossier-box-content {
@@ -427,26 +770,28 @@
 
 /* Citações / Quotes */
 .dossier-quotes-box {
-  background: rgba(14, 18, 28, 0.65);
-  border: 1px solid rgba(168, 85, 247, 0.25);
-  border-radius: 8px;
-  padding: 10px 14px;
+  background: rgba(14, 18, 30, 0.65);
+  border: 1px solid rgba(162, 155, 254, 0.25);
+  border-radius: 7px;
+  padding: 6px 10px;
 }
 
 .dossier-quotes-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .dossier-quote-item {
+  font-family: var(--font-body);
   font-style: italic;
-  font-size: 11.5px;
+  font-size: 10px;
   color: #d8b4fe;
-  line-height: 1.45;
-  padding: 4px 8px;
-  border-left: 2px solid rgba(168, 85, 247, 0.5);
-  background: rgba(168, 85, 247, 0.05);
+  line-height: 1.35;
+  padding: 3px 7px;
+  border-left: 2px solid rgba(162, 155, 254, 0.5);
+  background: rgba(162, 155, 254, 0.06);
+  border-radius: 0 4px 4px 0;
 }
 
 .dossier-quote-item.locked-quote {
@@ -455,3 +800,201 @@
   background: transparent;
 }
 
+/* ======================================================== */
+/* 9. BARRA DE AÇÕES NO RODAPÉ (FIXA & SEMPRE VISÍVEL)      */
+/* ======================================================== */
+
+.bestiary-actions-bar {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0; /* IMPEDE que o botão desça além do viewport */
+  padding-top: 2px;
+}
+
+.btn-bestiary-return {
+  position: relative;
+  width: 100%;
+  background: linear-gradient(135deg, #00f5d4 0%, #0984e3 60%, #00cec9 100%) !important;
+  border: 1.5px solid #00f5d4 !important;
+  border-radius: 8px;
+  padding: clamp(7px, 1vh, 10px) 18px;
+  color: #040508 !important;
+  font-family: var(--font-heading);
+  font-size: clamp(11.5px, 1vw, 13px);
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(0, 245, 212, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.btn-bestiary-return:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 245, 212, 0.55), 0 0 16px rgba(0, 245, 212, 0.35);
+  filter: brightness(1.1);
+}
+
+.btn-bestiary-return:active {
+  transform: translateY(1px);
+}
+
+.btn-return-content {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.bestiary-hotkey-hint {
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 800;
+  color: rgba(4, 5, 8, 0.8);
+  letter-spacing: 0.8px;
+  position: relative;
+  z-index: 2;
+}
+
+.btn-bestiary-return .btn-shimmer-sweep {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: skewX(-20deg);
+  animation: bestiaryBtnShimmer 3s infinite;
+  pointer-events: none;
+}
+
+/* ======================================================== */
+/* 10. ANIMAÇÕES COREOGRAFADAS                              */
+/* ======================================================== */
+
+@keyframes bestiaryFadeIn {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+  }
+}
+
+@keyframes bestiaryFadeOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.97);
+    filter: blur(4px);
+  }
+}
+
+@keyframes bestiaryImpact {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+    filter: blur(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes bentoPillarSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes dossierSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes previewAmbientPulse {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 0.75;
+  }
+}
+
+@keyframes bestiaryBtnShimmer {
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  35%, 100% { transform: translateX(350%) skewX(-20deg); }
+}
+
+/* ======================================================== */
+/* 11. TELAS AMPLAS DESKTOP (ESCALA PROPORCIONAL)           */
+/* ======================================================== */
+
+@media (min-width: 1350px) and (min-height: 800px) {
+  .bestiary-intrinsic-stage {
+    max-width: min(94vw, 1340px);
+    gap: 12px;
+  }
+
+  .bestiary-monumental-title {
+    font-size: 28px;
+    letter-spacing: 3px;
+  }
+
+  .bestiary-bento-grid {
+    grid-template-columns: minmax(320px, 1fr) minmax(460px, 1.45fr);
+    gap: 16px;
+  }
+
+  .bestiary-pillar {
+    padding: 12px 16px;
+    border-radius: 14px;
+  }
+
+  .bestiary-preview-viewport {
+    height: 180px;
+  }
+
+  #bestiary-preview-canvas {
+    width: 180px;
+    height: 180px;
+  }
+
+  .dossier-name {
+    font-size: 21px;
+  }
+
+  .bestiary-stat-card .stat-val {
+    font-size: 13.5px;
+  }
+}

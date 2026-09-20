@@ -24,6 +24,33 @@
 
 #talents-modal { z-index: 110; }
 
+/* Camada Universal de Fundo Preto para Transições entre Telas */
+#screen-transition-veil {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  width: 100dvw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  background: #000000 !important;
+  z-index: 95 !important;
+  pointer-events: none !important;
+  display: block;
+}
+
+body.in-game #screen-transition-veil {
+  display: none !important;
+}
+
+body.in-game:has(#talents-modal.active) #screen-transition-veil,
+body.in-game:has(#talents-modal.closing) #screen-transition-veil,
+body.in-game:has(#achievements-modal.active) #screen-transition-veil,
+body.in-game:has(#achievements-modal.closing) #screen-transition-veil,
+body.in-game:has(#bestiary-modal.active) #screen-transition-veil,
+body.in-game:has(#bestiary-modal.closing) #screen-transition-veil {
+  display: block !important;
+}
+
 .modal-box {
   background: linear-gradient(170deg, #151926 0%, #0d1017 100%);
   border: 1.5px solid var(--border-strong);

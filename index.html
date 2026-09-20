@@ -31,7 +31,7 @@
 <div id="victory-fade-overlay"></div>
 
 <!-- HUD de Combate em Alta Fidelidade (Grim Cyber-Gothic) -->
-<div id="hud">
+<div id="hud" class="hud-hidden" style="display: none;">
   <!-- Definições SVG Compartilhadas para Gradientes de Bronze e Ouro Antigo -->
   <svg style="position: absolute; width: 0; height: 0; pointer-events: none;" aria-hidden="true">
     <defs>
@@ -287,352 +287,631 @@
 
 <canvas id="game-canvas"></canvas>
 
-<!-- Modal de Seleção de Herói: Altar do Vácuo Astral -->
-<div id="char-modal" class="modal-overlay void-astral-overlay" style="display: flex;">
-  <div class="modal-box modal-box-altar void-modal-box">
-    <div class="modal-header void-modal-header">
-      <div class="void-header-top-row">
-        <div class="void-header-info">
-          <div class="void-header-eyebrow">
-            <span class="void-pulsing-node"></span> ARQUÉTIPOS ANCESTRAIS
+<!-- Camada Universal de Fundo Preto para Transições entre Telas -->
+<div id="screen-transition-veil"></div>
+
+<!-- Modal de Seleção de Herói: O Altar dos Condenados -->
+<div id="char-modal" class="modal-overlay char-scene-root" style="display: flex;">
+
+
+  <div class="char-scene-container">
+    <!-- Top Bar: Navegação Rúnica Minimalista & Almas Cósmicas -->
+    <header class="char-scene-header">
+      <div class="char-brand-group">
+        <div class="char-brand-text">
+          <div class="char-eyebrow-wrapper">
+            <span class="char-eyebrow-line left"></span>
+            <span class="char-brand-sigil">✦</span>
+            <span class="char-brand-eyebrow">SINTONIA ANCESTRAL</span>
+            <span class="char-eyebrow-line right"></span>
           </div>
-          <h2 class="modal-header-title void-modal-title">ALTAR DO VÁCUO ASTRAL</h2>
-          <div class="modal-header-sub void-modal-sub">Sintonize com uma entidade primordial para desafiar a horda</div>
+          <h1 class="char-brand-title">ALTAR DOS CONDENADOS</h1>
         </div>
-        <div class="char-souls-counter void-souls-capsule" title="Almas Cósmicas para o Astrolábio">
-          <svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="#00f5d4" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#00f5d4"/></svg>
+      </div>
+
+      <div class="char-header-utilities">
+        <!-- Cápsula de Almas (Preserva ID char-souls-val) -->
+        <div class="char-souls-capsule" title="Almas Cósmicas Disponíveis">
+          <svg class="char-header-icon" viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+          <span class="souls-label">ALMAS</span>
           <span id="char-souls-val">0</span>
         </div>
-      </div>
-      <div class="char-modal-header-actions">
-        <button id="open-bestiary-btn" class="hud-btn void-astrolabe-btn btn-bestiary-nav" title="Abrir Códice do Bestiário" style="border-color: #00f5d4aa; color: #00f5d4;">
-          <svg class="inline-gold-icon" viewBox="0 0 24 24" style="margin-right: 4px;"><path fill="none" stroke="#00f5d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path fill="none" stroke="#00f5d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><circle cx="12" cy="9" r="2" fill="#00f5d4"/></svg><span class="nav-btn-label">BESTIÁRIO</span>
-        </button>
-        <button id="open-achievements-btn" class="hud-btn void-astrolabe-btn btn-achievements-nav" title="Abrir Grimório de Conquistas" style="border-color: #a29bfeaa; color: #a29bfe;">
-          <svg class="inline-gold-icon" viewBox="0 0 24 24" style="margin-right: 4px;"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="#a29bfe" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#a29bfe"/></svg><span class="nav-btn-label">CONQUISTAS</span>
-        </button>
-        <button id="open-talents-btn" class="hud-btn void-astrolabe-btn" title="Abrir Astrolábio das Almas">
-          <svg class="inline-gold-icon" viewBox="0 0 24 24" style="margin-right: 4px;"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="#ffd166" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#ffd166"/></svg><span class="nav-btn-label">ASTROLÁBIO</span>
-        </button>
-      </div>
-    </div>
-    
-    <div class="char-altar-layout">
-      <!-- Palco Central de Evocação da Skin (Canvas 2D ao Vivo) -->
-      <div class="char-stage-col void-hero-stage">
-        <div class="char-stage-badge void-archetype-badge" id="stage-archetype-badge">O PALADINO</div>
-        
-        <div class="char-stage-viewport void-stage-viewport">
-          <button class="stage-nav-arrow stage-nav-prev" id="btn-stage-prev" aria-label="Herói Anterior">
-            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
+
+        <!-- Relíquias de Acesso Rápido (Preserva IDs open-bestiary-btn, open-achievements-btn, open-talents-btn) -->
+        <div class="char-header-nav-cluster">
+          <button id="open-bestiary-btn" class="char-relic-btn relic-bestiary" title="Códice do Bestiário">
+            <svg viewBox="0 0 24 24" class="relic-icon"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><circle cx="12" cy="9" r="2" fill="currentColor"/></svg>
+            <span class="relic-label">BESTIÁRIO</span>
           </button>
-          <canvas id="char-preview-canvas" width="340" height="420"></canvas>
-          <button class="stage-nav-arrow stage-nav-next" id="btn-stage-next" aria-label="Próximo Herói">
-            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
+          <button id="open-achievements-btn" class="char-relic-btn relic-achievements" title="Grimório de Conquistas">
+            <svg viewBox="0 0 24 24" class="relic-icon"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+            <span class="relic-label">CONQUISTAS</span>
+          </button>
+          <button id="open-talents-btn" class="char-relic-btn relic-talents" title="Astrolábio das Almas">
+            <svg viewBox="0 0 24 24" class="relic-icon"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+            <span class="relic-label">ASTROLÁBIO</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Composição Panorâmica Principal (3 Alas Cinemáticas) -->
+    <main class="char-panoramic-stage">
+      <!-- Ala 1: Seletor de Arquétipos (Preserva ID char-pedestals) -->
+      <aside class="char-roster-wing">
+        <div class="roster-wing-header">
+          <span class="roster-eyebrow">ARQUÉTIPOS</span>
+          <span class="roster-count-badge" id="roster-count-badge">5 DISPONÍVEIS</span>
+          <span class="roster-accent-line"></span>
+        </div>
+        <div id="char-pedestals" class="char-sigil-pillar"></div>
+        <div class="roster-wing-footer">
+          <span class="roster-key-hint">▲ ▼ Navegar</span>
+        </div>
+      </aside>
+
+      <!-- Ala 2: Palco Livre do Campeão (Canvas 2D ao Vivo) -->
+      <section class="char-stage-wing">
+        <!-- Insígnia Flutuante do Arquétipo no Desktop (Preserva ID stage-archetype-badge) -->
+        <div class="char-archetype-beacon" id="stage-archetype-badge">O PALADINO</div>
+
+        <!-- Título Principal Centralizado Mobile (Ocupa o lugar do nome do herói na versão mobile) -->
+        <div class="char-stage-main-title" id="stage-main-title">
+          <div class="char-eyebrow-wrapper">
+            <span class="char-eyebrow-line left"></span>
+            <span class="char-brand-sigil">✦</span>
+            <span class="char-brand-eyebrow">SINTONIA ANCESTRAL</span>
+            <span class="char-eyebrow-line right"></span>
+          </div>
+          <h2 class="char-brand-title">ALTAR DOS CONDENADOS</h2>
+        </div>
+
+        <!-- Viewport Aberto (Preserva classe char-stage-viewport e ID char-preview-canvas) -->
+        <div class="char-stage-viewport">
+          <!-- Setas Minimalistas Flutuantes (Preserva IDs btn-stage-prev e btn-stage-next) -->
+          <button id="btn-stage-prev" class="stage-chevron-nav prev" aria-label="Herói Anterior" title="Herói Anterior [A / ←]">
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+
+          <canvas id="char-preview-canvas" width="400" height="520"></canvas>
+
+          <button id="btn-stage-next" class="stage-chevron-nav next" aria-label="Próximo Herói" title="Próximo Herói [D / →]">
+            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </button>
         </div>
 
-        <!-- Controles Interativos da Prévia -->
-        <div class="char-stage-controls void-stage-controls">
-          <button id="btn-preview-facing" class="stage-ctrl-btn void-ctrl-btn" title="Inverter Ângulo do Herói">
-            <svg class="game-icon icon-xs" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M20 12A8 8 0 1 1 17.5 6.3"/><polyline points="20 2 20 7 15 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Girar
+        <!-- Controles Diegéticos de Pedestal (Preserva IDs e classes) -->
+        <div class="char-pedestal-console">
+          <button id="btn-preview-facing" class="console-action-btn" title="Inverter Orientação do Campeão">
+            <svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M20 12A8 8 0 1 1 17.5 6.3"/><polyline points="20 2 20 7 15 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+            <span>GIRAR</span>
           </button>
-          <div class="stage-pose-group void-pose-group">
-            <button class="stage-pose-btn active" data-pose="idle" title="Postura Ociosa">
-              <span class="pose-dot"></span> Repouso
+
+          <div class="console-pose-cluster">
+            <button class="stage-pose-btn active" data-pose="idle" title="Postura de Repouso / Guarda">
+              <svg viewBox="0 0 24 24" class="game-icon pose-btn-icon"><path d="M12 2L4 5v6c0 5.2 3.4 10.1 8 11.5 4.6-1.4 8-6.3 8-11.5V5L12 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="11" r="2.5" fill="currentColor"/></svg>
+              <span>REPOUSO</span>
             </button>
-            <button class="stage-pose-btn" data-pose="combat" title="Demonstração de Ataque">
-              <span class="pose-dot"></span> Ataque
+            <button class="stage-pose-btn" data-pose="combat" title="Postura de Ataque / Combate">
+              <svg viewBox="0 0 24 24" class="game-icon pose-btn-icon"><path d="M14.5 17.5L3 6V3h3l11.5 11.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 19l6 2 2-6-2.5-2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 17.5L21 6V3h-3L6.5 14.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="21" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="21" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <span>ATAQUE</span>
             </button>
-            <button class="stage-pose-btn" data-pose="skill" title="Postura de Poder / Habilidade">
-              <span class="pose-dot"></span> Poder
+            <button class="stage-pose-btn" data-pose="skill" title="Postura de Poder / Habilidade Especial">
+              <svg viewBox="0 0 24 24" class="game-icon pose-btn-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
+              <span>PODER</span>
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Dock Horizontal / Pedestais de Escolha (Roster) -->
-      <div id="char-pedestals" class="char-pedestals-col void-roster-dock"></div>
-
-      <!-- Dossiê Tático & Invocação -->
-      <div id="char-showcase" class="char-vitral-showcase void-showcase-dossier"></div>
-    </div>
+      <!-- Ala 3: Interface Contextual do Campeão (Preserva ID char-showcase) -->
+      <aside class="char-dossier-wing">
+        <div id="char-showcase" class="char-hologram-dossier"></div>
+      </aside>
+    </main>
   </div>
 </div>
 
-<!-- Modal da Árvore de Habilidades: Astrolábio das Almas (O Planetário Rúnico Fullscreen) -->
-<div id="talents-modal" class="modal-overlay void-astral-overlay" style="display: none;">
-  <div class="modal-box modal-box-altar void-modal-box astrolabe-void-box">
-    <div class="modal-header void-modal-header astrolabe-header">
-      <button class="hud-btn void-astrolabe-action-btn btn-void-return" id="close-talents-btn" title="Salvar e Retornar ao Altar" aria-label="Voltar">
-        <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:4px;"><polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="btn-text-full">RETORNAR</span>
-      </button>
-      <div class="void-header-info astrolabe-header-info">
-        <div class="void-header-eyebrow">
-          <span class="void-pulsing-node"></span> ARQUIVISTA CELESTE PRIMORDIAL
-        </div>
-        <h2 class="modal-header-title void-modal-title">ASTROLÁBIO DAS ALMAS</h2>
-        <div class="modal-header-sub void-modal-sub">Consagre essências cósmicas em aprimoramentos permanentes</div>
+<!-- Modal da Árvore de Habilidades: Astrolábio das Almas (O Planetário Rúnico Fullscreen Neo-Arcano) -->
+<div id="talents-modal" class="modal-overlay void-astral-overlay astrolabe-screen-overlay modal-hidden" style="display: none;">
+  <!-- Véu de Textura Celestial e Malha Rúnica do Astrolábio -->
+  <div class="astrolabe-stasis-veil"></div>
+
+  <!-- Palco Intrínseco Aberto (Auto-Ajuste Rígido à Altura do Viewport) -->
+  <div class="astrolabe-intrinsic-stage">
+
+    <!-- Camada Superior: Eyebrow Rúnico, Título Monumental & Chips de Metadados -->
+    <div class="astrolabe-header-group">
+      <div class="astrolabe-eyebrow">
+        <span class="astrolabe-eyebrow-line"></span>
+        <span class="void-pulsing-node"></span>
+        <span class="astrolabe-eyebrow-text">MECANISMO CELESTE • FORJA RÚNICA DE META-PROGRESSÃO</span>
+        <span class="astrolabe-eyebrow-line"></span>
       </div>
-      <div class="char-modal-header-actions astrolabe-header-actions">
-        <div class="char-souls-counter void-souls-capsule" title="Almas Cósmicas Disponíveis">
-          <svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="#ffd166" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#ffd166"/></svg>
-          <span id="talents-gold-val">0</span>
+
+      <h1 class="astrolabe-monumental-title">ASTROLÁBIO DAS ALMAS</h1>
+      <div class="astrolabe-monumental-sub">Consagração permanente de essências cósmicas, alinhamento estelar e transcendência das almas</div>
+
+      <!-- Barra de Metadados Globais do Astrolábio -->
+      <div class="astrolabe-meta-chips-row">
+        <!-- Chip 1: Almas Disponíveis -->
+        <div class="astrolabe-meta-chip highlight-gold" title="Almas Cósmicas Disponíveis para Consagração">
+          <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#ffd166; margin-right:2px;">
+            <polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="currentColor" stroke-width="2"/>
+            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+          </svg>
+          <span class="chip-label">ALMAS</span>
+          <span id="talents-gold-val" class="chip-val">0</span>
         </div>
-        <button id="open-blessings-summary-btn" class="hud-btn void-astrolabe-action-btn btn-void-blessings" title="Ver somatório de todas as bênçãos ativas" aria-label="Bênçãos">
-          <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:4px;"><path fill="currentColor" d="M19 3H7a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM7 5h12v11H7a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><line x1="9" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="1.5"/><line x1="9" y1="11" x2="14" y2="11" stroke="currentColor" stroke-width="1.5"/></svg><span class="btn-text-full">BÊNÇÃOS</span>
-        </button>
-        <button id="reset-talents-btn" class="hud-btn void-astrolabe-action-btn btn-void-reset" title="Purificar árvore e reaver 100% das almas" aria-label="Purificar">
-          <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:4px;"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M20 12A8 8 0 1 1 18 6.5"/><polyline points="21 2 21 7 16 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span class="btn-text-full">PURIFICAR (100%)</span>
+
+        <!-- Chip 2: Níveis / Ranks Totais Forjados -->
+        <div class="astrolabe-meta-chip highlight-cyan" title="Total de Ranks Consagrados em Todas as Constelações">
+          <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:2px;">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <polygon points="12,6 13.5,10.5 18,12 13.5,13.5 12,18 10.5,13.5 6,12 10.5,10.5" fill="currentColor"/>
+          </svg>
+          <span class="chip-label">CONSAGRAÇÃO</span>
+          <span id="astrolabe-total-invested" class="chip-val">0 / 77</span>
+        </div>
+
+        <!-- Chip 3: Bênçãos Ativas -->
+        <div class="astrolabe-meta-chip highlight-purple" title="Bênçãos Ativas na Conta">
+          <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#c084fc; margin-right:2px;">
+            <polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="2"/>
+            <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+          </svg>
+          <span class="chip-label">BÊNÇÃOS</span>
+          <span id="astrolabe-active-blessings-count" class="chip-val">0 / 14</span>
+        </div>
+
+
+        <!-- Ação Rápida: Purificar Árvore (100%) -->
+        <button id="reset-talents-btn" class="astrolabe-action-chip btn-action-reset" title="Purificar árvore e reaver 100% das almas" aria-label="Purificar">
+          <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:4px;">
+            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M20 12A8 8 0 1 1 18 6.5"/>
+            <polyline points="21 2 21 7 16 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          <span class="btn-text-full">PURIFICAR (100%)</span>
         </button>
       </div>
     </div>
 
-    <!-- Layout Dividido em Palco do Planetário + Dossiê da Forja -->
-    <div class="char-altar-layout astrolabe-altar-layout">
-      <!-- Palco Central do Planetário Cósmico -->
-      <div class="char-stage-col void-hero-stage astrolabe-stage-col">
-        <div class="char-stage-badge void-archetype-badge" id="astrolabe-active-const-badge">PLANETÁRIO CELESTE</div>
-
-        <!-- Viewport Celestial Ampliado com Textura de Vácuo -->
-        <div class="char-stage-viewport void-stage-viewport astrolabe-viewport" id="astrolabe-viewport">
-          <div class="astrolabe-nebula-bg"></div>
-          <svg id="astrolabe-filaments-svg" class="astrolabe-filaments-layer"></svg>
-
-          <div id="astrolabe-core" class="astrolabe-core" title="Coração Astral do Astrolábio">
-            <div class="core-rings"></div>
-            <div class="core-label">ALMAS</div>
-            <div class="core-val">
-              <svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,2 21,8 21,16 12,22 3,16 3,8" fill="none" stroke="#f1c40f" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#f1c40f"/></svg>
-              <span id="talents-core-gold-val">0</span>
-            </div>
-          </div>
-
-          <div id="astrolabe-nodes-container" class="astrolabe-nodes-container"></div>
-          <div class="char-stage-hint void-stage-hint">Toque em uma runa estelar para forjar poder</div>
-        </div>
-      </div>
-
-      <!-- Dock Horizontal de Constelações (Estilo Pedestais Roster) -->
-      <div id="astrolabe-constellation-tabs" class="char-pedestals-col void-roster-dock astrolabe-constellation-dock">
-        <button class="char-pedestal-btn constellation-tab active" data-constellation="all">
-          <div class="pedestal-active-glow"></div>
-          <div class="char-pedestal-emblem">
-            <svg viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></svg>
-          </div>
-          <div class="char-pedestal-info">
-            <div class="char-pedestal-title">PLANETÁRIO</div>
-            <div class="char-pedestal-name">TODAS</div>
-            <div class="char-pedestal-role-mini">Visão Holística</div>
-          </div>
+    <!-- Navegação Segmentada de Constelações (Estilo Conquistas / Bestiário) -->
+    <div class="astrolabe-nav-container">
+      <div class="astrolabe-tabs-bar" id="astrolabe-constellation-tabs" role="tablist" aria-label="Filtro de Constelações">
+        <button class="astrolabe-tab-btn constellation-tab active" data-constellation="all" role="tab" aria-selected="true">
+          <span class="tab-indicator tab-indicator-all"></span>
+          <span class="tab-label"><span class="tab-text-desktop">PLANETÁRIO CELESTE</span><span class="tab-text-mobile">PLANETÁRIO</span></span>
         </button>
-
-        <button class="char-pedestal-btn constellation-tab tab-guerra" data-constellation="guerra">
-          <div class="pedestal-active-glow"></div>
-          <div class="char-pedestal-emblem">
-            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.5 2.5l-6 6 2 2 6-6-2-2z"/><path fill="currentColor" d="M4.5 17.5l-2 4 4-2 6-6-2-2-6 6z"/><path fill="currentColor" d="M4.5 2.5l2 2 6 6-2 2-6-6-2-2 2-2z"/><path fill="currentColor" d="M19.5 17.5l-6-6-2 2 6 6-2 4 4-2z"/></svg>
-          </div>
-          <div class="char-pedestal-info">
-            <div class="char-pedestal-title">OFENSIVA</div>
-            <div class="char-pedestal-name">GUERRA</div>
-            <div class="char-pedestal-role-mini tab-prog-badge">0/25 Níveis</div>
-          </div>
+        <button class="astrolabe-tab-btn constellation-tab tab-guerra" data-constellation="guerra" role="tab" aria-selected="false">
+          <span class="tab-indicator tab-indicator-guerra"></span>
+          <span class="tab-label">GUERRA</span>
+          <span class="tab-prog-badge">0/25</span>
         </button>
-
-        <button class="char-pedestal-btn constellation-tab tab-egide" data-constellation="egide">
-          <div class="pedestal-active-glow"></div>
-          <div class="char-pedestal-emblem">
-            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L3 6v6c0 6 4.5 11 9 12 4.5-1 9-6 9-12V6l-9-4zm0 17c-3-1-6-4.5-6-9V7.5l6-2.5 6 2.5V10c0 4.5-3 8-6 9z"/><circle cx="12" cy="11" r="3" fill="currentColor"/></svg>
-          </div>
-          <div class="char-pedestal-info">
-            <div class="char-pedestal-title">DEFESA</div>
-            <div class="char-pedestal-name">ÉGIDE</div>
-            <div class="char-pedestal-role-mini tab-prog-badge">0/27 Níveis</div>
-          </div>
+        <button class="astrolabe-tab-btn constellation-tab tab-egide" data-constellation="egide" role="tab" aria-selected="false">
+          <span class="tab-indicator tab-indicator-egide"></span>
+          <span class="tab-label">ÉGIDE</span>
+          <span class="tab-prog-badge">0/27</span>
         </button>
-
-        <button class="char-pedestal-btn constellation-tab tab-destino" data-constellation="destino">
-          <div class="pedestal-active-glow"></div>
-          <div class="char-pedestal-emblem">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><ellipse cx="12" cy="12" rx="10" ry="3.5" fill="none" stroke="currentColor" stroke-width="1.5" transform="rotate(-30 12 12)"/></svg>
-          </div>
-          <div class="char-pedestal-info">
-            <div class="char-pedestal-title">DESTINO</div>
-            <div class="char-pedestal-name">ALQUIMIA</div>
-            <div class="char-pedestal-role-mini tab-prog-badge">0/25 Níveis</div>
-          </div>
+        <button class="astrolabe-tab-btn constellation-tab tab-destino" data-constellation="destino" role="tab" aria-selected="false">
+          <span class="tab-indicator tab-indicator-destino"></span>
+          <span class="tab-label">DESTINO</span>
+          <span class="tab-prog-badge">0/25</span>
         </button>
       </div>
+    </div>
 
-      <!-- Dossiê Tático da Forja do Destino (Coluna Lateral Envidraçada) -->
-      <div id="talent-forge-drawer" class="char-vitral-showcase void-showcase-dossier astrolabe-forge-dossier">
-        <div class="showcase-header-v2">
-          <div class="showcase-title-row">
-            <div id="forge-constellation-badge" class="showcase-archetype-pill">
-              CONSTELAÇÃO DA GUERRA
-            </div>
-            <div id="forge-tier-badge" class="showcase-diff-badge">
-              TIER 1
-            </div>
-          </div>
+    <!-- Bento Grid Modular de 2 Pilares Neo-Arcanos -->
+    <div class="astrolabe-bento-grid">
 
-          <div id="forge-node-name" class="showcase-name-v2">Selecione uma Runa</div>
-          <div id="forge-node-type" class="showcase-role-tag">Canalização Permanente da Alma</div>
+      <!-- PILAR 1: O Palco do Planetário Cósmico -->
+      <div class="astrolabe-pillar astrolabe-pillar-stage">
+        <div class="pillar-header">
+          <span class="pillar-tag">MAPA ESTELAR DO DESTINO</span>
+          <span class="pillar-badge-hero" id="astrolabe-active-const-badge">PLANETÁRIO CELESTE</span>
         </div>
 
-        <!-- Estrutura Tática Vertical da Runa Selecionada -->
-        <div class="astrolabe-dossier-body">
-          <!-- Card 1: Efeito Arcano / Bênção Ativa -->
-          <div class="astrolabe-info-card astrolabe-card-effect">
-            <div class="astrolabe-card-header">
-              <span class="astrolabe-card-title-tag">BÊNÇÃO ATIVA</span>
-              <span class="astrolabe-stat-badge" id="forge-stat-badge">PODER</span>
-            </div>
-            <div class="astrolabe-card-desc" id="forge-node-desc">Toque em qualquer constelação para forjar poder permanente.</div>
-          </div>
+        <div class="astrolabe-viewport-wrap">
+          <!-- Viewport Celestial com Textura de Vácuo e Anéis do Astrolábio -->
+          <div class="astrolabe-viewport" id="astrolabe-viewport">
+            <div class="astrolabe-nebula-bg"></div>
 
-          <!-- Card 2: Comparativo Antes vs Depois (Transcendência) -->
-          <div class="astrolabe-info-card astrolabe-card-progression">
-            <div class="astrolabe-card-header">
-              <span class="astrolabe-card-title-tag">TRANSCENDÊNCIA</span>
-              <span class="astrolabe-level-badge" id="forge-node-level-label">NÍVEL 0</span>
-            </div>
-            <div class="forge-comparison-box">
-              <div class="comparison-row">
-                <div class="comp-col comp-col-current">
-                  <span class="comp-label">ATUAL</span>
-                  <span id="forge-comp-current" class="comp-val-cur">--</span>
-                </div>
-                <div class="comp-arrow-wrapper">
-                  <svg class="game-icon icon-xs comp-arrow" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-5-5l5 5-5 5"/></svg>
-                </div>
-                <div class="comp-col comp-col-next">
-                  <span class="comp-label">PRÓXIMO</span>
-                  <span id="forge-comp-next" class="comp-val-next">--</span>
+            <!-- Superfície Unificada de Pan & Zoom Interativo -->
+            <div class="astrolabe-panzoom-surface" id="astrolabe-panzoom-surface">
+              <!-- Mecanismo de Anéis Celestes do Astrolábio (Rete & Armillary Rings) -->
+              <div class="astrolabe-armillary-layer" aria-hidden="true">
+                <div class="armillary-ring ring-outer"></div>
+                <div class="armillary-ring ring-mid"></div>
+                <div class="armillary-ring ring-inner"></div>
+                <div class="armillary-axis-h"></div>
+                <div class="armillary-axis-v"></div>
+              </div>
+
+              <svg id="astrolabe-filaments-svg" class="astrolabe-filaments-layer"></svg>
+
+              <div id="astrolabe-core" class="astrolabe-core" title="Coração Astral do Astrolábio">
+                <div class="core-rings"></div>
+                <div class="core-label">ESSÊNCIA</div>
+                <div class="core-val">
+                  <svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,2 21,8 21,16 12,22 3,16 3,8" fill="none" stroke="#f1c40f" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#f1c40f"/></svg>
+                  <span id="talents-core-gold-val">0</span>
                 </div>
               </div>
-              <div class="forge-segmented-meter" id="forge-level-meter"></div>
+
+              <div id="astrolabe-nodes-container" class="astrolabe-nodes-container"></div>
+            </div>
+
+
+            <div class="astrolabe-stage-hint">
+              <span class="desktop-map-hint">✦ Arraste para mover • Scroll para zoom no cursor</span>
+              <span class="mobile-map-hint">✦ Arraste com 1 dedo • Pinça com 2 dedos para zoom</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PILAR 2: Dossiê e Altar da Forja do Destino (Modo Dual: Forja & Códice de Bênçãos) -->
+      <div class="astrolabe-pillar astrolabe-pillar-dossier" id="talent-forge-drawer">
+        <div class="pillar-header">
+          <div class="pillar-tabs-group" id="pillar-mode-tabs" role="tablist" aria-label="Modo do Painel">
+            <button class="pillar-mode-tab active" id="tab-pillar-forge" data-pillar-mode="forge" role="tab" aria-selected="true">
+              <svg class="game-icon icon-xs" viewBox="0 0 24 24"><polygon points="13,1 4,14 11,14 9,23 20,9 13,9" fill="currentColor"/></svg>
+              <span>FORJA</span>
+            </button>
+            <button class="pillar-mode-tab" id="tab-pillar-blessings" data-pillar-mode="blessings" role="tab" aria-selected="false">
+              <svg class="game-icon icon-xs" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H7a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM7 5h12v11H7a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><line x1="9" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="1.5"/><line x1="9" y1="11" x2="14" y2="11" stroke="currentColor" stroke-width="1.5"/></svg>
+              <span>BÊNÇÃOS</span>
+              <span id="pillar-blessings-badge" class="pillar-tab-badge">0/14</span>
+            </button>
+          </div>
+          <span class="pillar-badge-hero" id="forge-tier-badge">TIER 1</span>
+        </div>
+
+        <!-- MODO 1: Painel da Forja Rúnica -->
+        <div class="pillar-view-panel active" id="astrolabe-forge-panel">
+          <div class="astrolabe-dossier-scroll" id="forge-dossier-scroll">
+            <!-- Showcase Header da Runa com Vitral Místico -->
+            <div class="forge-showcase-header">
+              <div class="forge-showcase-topline">
+                <span id="forge-constellation-badge" class="showcase-archetype-pill">CONSTELAÇÃO DA GUERRA</span>
+              </div>
+              <div class="forge-showcase-main">
+                <div class="forge-node-icon-socket" id="forge-rune-preview"></div>
+                <div class="forge-node-titles">
+                  <h2 id="forge-node-name" class="forge-node-name">Selecione uma Runa</h2>
+                  <div id="forge-node-type" class="forge-node-type">Canalização Permanente da Alma</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stack de Cards Arcanos -->
+            <div class="astrolabe-dossier-body">
+              <!-- Card 1: Bênção Ativa e Efeito -->
+              <div class="astrolabe-info-card astrolabe-card-effect">
+                <div class="astrolabe-card-header">
+                  <span class="astrolabe-card-title-tag">BÊNÇÃO CÓSMICA</span>
+                  <span class="astrolabe-stat-badge" id="forge-stat-badge">PODER</span>
+                </div>
+                <div class="astrolabe-card-desc" id="forge-node-desc">Toque em qualquer runa para forjar poder permanente.</div>
+              </div>
+
+              <!-- Card 2: Comparativo Antes vs Depois (Transcendência) -->
+              <div class="astrolabe-info-card astrolabe-card-progression">
+                <div class="astrolabe-card-header">
+                  <span class="astrolabe-card-title-tag">TRANSCENDÊNCIA</span>
+                  <span class="astrolabe-level-badge" id="forge-node-level-label">NÍVEL 0</span>
+                </div>
+                <div class="forge-comparison-box">
+                  <div class="comparison-row">
+                    <div class="comp-col comp-col-current">
+                      <span class="comp-label">ATUAL</span>
+                      <span id="forge-comp-current" class="comp-val-cur">--</span>
+                    </div>
+                    <div class="comp-arrow-wrapper">
+                      <svg class="game-icon icon-xs comp-arrow" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-5-5l5 5-5 5"/></svg>
+                    </div>
+                    <div class="comp-col comp-col-next">
+                      <span class="comp-label">PRÓXIMO</span>
+                      <span id="forge-comp-next" class="comp-val-next">--</span>
+                    </div>
+                  </div>
+                  <div class="forge-segmented-meter" id="forge-level-meter"></div>
+                </div>
+              </div>
+
+              <!-- Card 3: Inscrição de Lore Ancestral -->
+              <div class="astrolabe-info-card astrolabe-card-lore" id="forge-node-lore-card">
+                <div class="astrolabe-card-header">
+                  <span class="astrolabe-card-title-tag">GRIMÓRIO DO VÁCUO</span>
+                </div>
+                <div id="forge-node-lore" class="showcase-lore-quote"></div>
+              </div>
             </div>
           </div>
 
-          <!-- Card 3: Inscrição de Lore Ancestral -->
-          <div class="astrolabe-info-card astrolabe-card-lore" id="forge-node-lore-card">
-            <div class="astrolabe-card-header">
-              <span class="astrolabe-card-title-tag">GRIMÓRIO DO VÁCUO</span>
-            </div>
-            <div id="forge-node-lore" class="showcase-lore-quote"></div>
+          <!-- Rodapé do Pilar com o Botão FUNDIR ALMAS -->
+          <div class="forge-action-footer">
+            <button id="forge-buy-btn" class="card-btn btn-summon-hero btn-forge-hero" disabled>
+              <div class="btn-shimmer-sweep"></div>
+              <span class="btn-forge-content">
+                <svg class="game-icon icon-sm" viewBox="0 0 24 24"><polygon points="13,1 4,14 11,14 9,23 20,9 13,9" fill="currentColor"/></svg> FUNDIR ALMAS
+              </span>
+            </button>
           </div>
         </div>
 
-        <button id="forge-buy-btn" class="card-btn btn-summon-hero btn-forge-hero" disabled>
-          <svg class="game-icon icon-sm" viewBox="0 0 24 24"><polygon points="13,1 4,14 11,14 9,23 20,9 13,9" fill="currentColor"/></svg> FUNDIR ALMAS
-        </button>
+        <!-- MODO 2: Códice Integrado das Bênçãos da Conta (Desktop Códice) -->
+        <div class="pillar-view-panel" id="astrolabe-blessings-panel" style="display: none;">
+          <div class="desktop-blessings-scroll" id="desktop-blessings-scroll">
+            <div class="desktop-blessings-header">
+              <div class="desktop-blessings-eyebrow">CÓDICE CELESTE</div>
+              <h3 class="desktop-blessings-title">BÊNÇÃOS ATIVAS</h3>
+              <p class="desktop-blessings-desc">Soma de todos os bônus cósmicos consagrados na conta</p>
+            </div>
+            
+            <!-- Resumo Agregado de Modificadores Globais -->
+            <div class="desktop-blessings-summary-strip" id="desktop-blessings-summary-strip"></div>
+
+            <!-- Lista Estruturada de Bênçãos por Constelação -->
+            <div class="desktop-blessings-list" id="desktop-blessings-list"></div>
+          </div>
+        </div>
       </div>
+
     </div>
 
-    <!-- Modal / Gaveta Retrátil de Resumo das Bênçãos da Conta -->
-    <div id="blessings-summary-drawer" class="blessings-summary-drawer" style="display: none;">
-      <div class="blessings-drawer-header">
-        <div class="blessings-drawer-title">
-          <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="margin-right:6px;"><path fill="currentColor" d="M19 3H7a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM7 5h12v11H7a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><line x1="9" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="1.5"/><line x1="9" y1="11" x2="14" y2="11" stroke="currentColor" stroke-width="1.5"/></svg>BÊNÇÃOS ATIVAS DA CONTA
+    <!-- Barra de Ações de Comando no Rodapé (Idêntico a Conquistas & Bestiário) -->
+    <div class="astrolabe-actions-bar">
+      <button class="btn-astrolabe-return" id="close-talents-btn" aria-label="Retornar ao Altar">
+        <div class="btn-shimmer-sweep"></div>
+        <div class="btn-return-content">
+          <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color: currentColor;"><polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="btn-text">RETORNAR AO ALTAR</span>
         </div>
-        <button id="close-blessings-drawer-btn" class="hud-btn void-astrolabe-action-btn" style="padding: 3px 10px; font-size: 10px;">
-          <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:3px;"><line x1="5" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><line x1="19" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Fechar
-        </button>
+        <span class="astrolabe-hotkey-hint">[ESC]</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Modal / Gaveta Retrátil de Resumo das Bênçãos da Conta -->
+  <div id="blessings-summary-drawer" class="blessings-summary-drawer modal-hidden" style="display: none;">
+    <div class="blessings-drawer-content">
+      <div class="blessings-drawer-header">
+        <div class="blessings-drawer-eyebrow">CÓDICE CELESTE</div>
+        <div class="blessings-drawer-title">
+          <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="margin-right:6px;"><path fill="currentColor" d="M19 3H7a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM7 5h12v11H7a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><line x1="9" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="1.5"/><line x1="9" y1="11" x2="14" y2="11" stroke="currentColor" stroke-width="1.5"/></svg>
+          BÊNÇÃOS ATIVAS DA CONTA
+        </div>
+        <div class="blessings-drawer-sub">Soma consolidada de todos os aprimoramentos consagrados no Astrolábio</div>
       </div>
       <div id="blessings-summary-grid" class="blessings-summary-grid"></div>
+      <div class="blessings-drawer-actions">
+        <button id="close-blessings-drawer-btn" class="btn-astrolabe-return btn-close-blessings">
+          <span class="btn-text">FECHAR COMPÊNDIO</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Modal do Grimório de Conquistas & Desbloqueios -->
-<div id="achievements-modal" class="modal-overlay void-astral-overlay" style="display: none;">
-  <div class="modal-box modal-box-altar void-modal-box achievements-void-box">
-    <div class="modal-header void-modal-header achievements-header">
-      <button class="hud-btn void-astrolabe-action-btn btn-void-return" id="close-achievements-btn" title="Retornar ao Altar" aria-label="Voltar">
-        <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:4px;"><polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="btn-text-full">RETORNAR</span>
+<!-- Modal do Grimório de Conquistas & Glórias Primordiais (Neo-Arcane Intrinsic Stage) -->
+<div id="achievements-modal" class="modal-overlay void-astral-overlay achievements-screen-overlay modal-hidden" style="display: none;">
+  <div class="achievements-stasis-veil"></div>
+
+  <div class="achievements-intrinsic-stage">
+    
+    <!-- Camada Superior: Eyebrow Rúnico, Título Monumental & Chips de Metadados -->
+    <div class="achievements-header-group">
+      <div class="achievements-eyebrow">
+        <span class="achievements-eyebrow-line"></span>
+        <span class="void-pulsing-node"></span>
+        <span class="achievements-eyebrow-text">CÓDICE ANCESTRAL • REGISTRO DE GLÓRIAS & DESTINO</span>
+        <span class="achievements-eyebrow-line"></span>
+      </div>
+
+      <h1 class="achievements-monumental-title">GRIMÓRIO DE CONQUISTAS</h1>
+      <div class="achievements-monumental-sub">Façanhas míticas, purificação de soberanos e consagração do panteão de campeões</div>
+
+      <!-- Barra de Metadados Globais das Conquistas -->
+      <div class="achievements-meta-chips-row">
+        <div class="achievements-meta-chip">
+          <span class="chip-label">CONCLUÍDAS</span>
+          <span class="chip-val"><span id="ach-unlocked-count">0</span> / <span id="ach-total-count">25</span></span>
+          <!-- ID Legado compatível -->
+          <span id="achievements-unlocked-count" style="display:none;">0</span>
+          <span id="achievements-total-count" style="display:none;">25</span>
+        </div>
+        <div class="achievements-meta-chip highlight-gold">
+          <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#ffd166; margin-right:2px;"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+          <span class="chip-label">ALMAS CONQUISTADAS</span>
+          <span id="ach-souls-val" class="chip-val">+0</span>
+        </div>
+        <div class="achievements-meta-chip highlight-purple">
+          <span class="chip-label">COMPLEÇÃO</span>
+          <span id="ach-completion-val" class="chip-val">0%</span>
+        </div>
+        <div class="achievements-meta-chip highlight-cyan">
+          <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:2px;"><polygon points="12,3 15,9 21,5 19,17 5,17 3,5 9,9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
+          <span class="chip-label">HERÓIS DESPERTOS</span>
+          <span id="ach-heroes-val" class="chip-val">1 / 5</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navegação Segmentada de Categorias -->
+    <div class="achievements-nav-container">
+      <div class="achievements-tabs-bar" id="achievements-tabs-bar" role="tablist" aria-label="Filtro de Categorias de Conquistas">
+        <button class="achievements-tab-btn tab-journey active" data-cat="JOURNEY" role="tab" aria-selected="true">
+          <span class="tab-indicator tab-indicator-gold"></span>
+          <span class="tab-label text-gold">MAIOR JORNADA</span>
+        </button>
+        <button class="achievements-tab-btn" data-cat="ALL" role="tab" aria-selected="false">
+          <span class="tab-indicator"></span>
+          <span class="tab-label">TODAS (25)</span>
+        </button>
+        <button class="achievements-tab-btn" data-cat="hero" role="tab" aria-selected="false">
+          <span class="tab-indicator"></span>
+          <span class="tab-label">HERÓIS (5)</span>
+        </button>
+        <button class="achievements-tab-btn" data-cat="combat" role="tab" aria-selected="false">
+          <span class="tab-indicator"></span>
+          <span class="tab-label">COMBATE (6)</span>
+        </button>
+        <button class="achievements-tab-btn" data-cat="boss" role="tab" aria-selected="false">
+          <span class="tab-indicator"></span>
+          <span class="tab-label">CHEFES (6)</span>
+        </button>
+        <button class="achievements-tab-btn" data-cat="arsenal" role="tab" aria-selected="false">
+          <span class="tab-indicator"></span>
+          <span class="tab-label">ARSENAL (4)</span>
+        </button>
+        <button class="achievements-tab-btn" data-cat="mastery" role="tab" aria-selected="false">
+          <span class="tab-indicator"></span>
+          <span class="tab-label">CÓDICE (4)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bento Grid Modular de 2 Pilares Neo-Arcanos -->
+    <div class="achievements-bento-grid">
+      
+      <!-- PILAR 1: Rol de Conquistas -->
+      <div class="achievements-pillar achievements-pillar-roster">
+        <div class="pillar-header">
+          <span class="pillar-tag">ROL DE GLÓRIAS & FEITOS</span>
+          <span id="achievements-filter-badge" class="pillar-badge-count">TODAS (25)</span>
+        </div>
+        <div class="achievements-roster-scroll">
+          <div id="achievements-list-grid" class="achievements-cards-grid"></div>
+        </div>
+      </div>
+
+      <!-- PILAR 2: Altar da Conquista & Dossiê de Consagração -->
+      <div class="achievements-pillar achievements-pillar-dossier">
+        <div class="pillar-header">
+          <span class="pillar-tag" id="achievements-dossier-tag">ALTAR DE CONSAGRAÇÃO</span>
+          <span id="achievements-dossier-tier" class="pillar-badge-hero">HERÓICO</span>
+        </div>
+        <div class="achievements-dossier-scroll" id="achievements-dossier-panel">
+          <!-- Renderizado dinamicamente por renderAchievementDossier() -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Barra de Ações de Comando no Rodapé -->
+    <div class="achievements-actions-bar">
+      <button class="btn-achievements-return" id="close-achievements-btn" aria-label="Retornar ao Altar">
+        <div class="btn-shimmer-sweep"></div>
+        <div class="btn-return-content">
+          <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color: currentColor;"><polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="btn-text">RETORNAR AO ALTAR</span>
+        </div>
+        <span class="achievements-hotkey-hint">[ESC]</span>
       </button>
-      <div class="void-header-info achievements-header-info">
-        <div class="void-header-eyebrow">
-          <span class="void-pulsing-node" style="background:#a29bfe; box-shadow: 0 0 8px #a29bfe;"></span> CÓDICE DOS CONDENADOS
-        </div>
-        <h2 class="modal-header-title void-modal-title" style="color: #a29bfe; text-shadow: 0 0 16px rgba(162, 155, 254, 0.5);">GRIMÓRIO DE CONQUISTAS</h2>
-        <div class="modal-header-sub void-modal-sub">Metas ancestrais para libertar novos heróis e consagrar sua lenda</div>
-      </div>
-      <div class="char-modal-header-actions achievements-header-actions">
-        <div class="char-souls-counter void-souls-capsule" title="Conquistas Concluídas">
-          <svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="#ffd166" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#ffd166"/></svg>
-          <span id="achievements-unlocked-count">0</span> / <span id="achievements-total-count">8</span>
-        </div>
-      </div>
     </div>
 
-    <!-- Lista de Cards de Conquistas com scroll elegante -->
-    <div class="achievements-modal-body">
-      <!-- Monumento à Maior Jornada (Melhor Run - Tarô Arcano) -->
-      <div id="best-run-monument-container" class="best-run-monument-container"></div>
-
-      <!-- Divisor com Glifos de Conquistas -->
-      <div class="achievements-section-divider">
-        <div class="divider-line"></div>
-        <div class="divider-label">
-          <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color: #ffd166; width:13px; height:13px;"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
-          <span>DESAFIOS & GLÓRIAS DO CÓDICE</span>
-        </div>
-        <div class="divider-line"></div>
-      </div>
-
-      <div id="achievements-list-grid" class="achievements-cards-grid"></div>
-    </div>
   </div>
 </div>
 
-<!-- Modal do Códice do Bestiário das Trevas -->
-<div id="bestiary-modal" class="modal-overlay void-astral-overlay modal-hidden" style="display: none;">
-  <div class="modal-box modal-box-altar void-modal-box bestiary-void-box">
-    <div class="modal-header void-modal-header bestiary-header">
-      <button class="hud-btn void-astrolabe-action-btn btn-void-return" id="close-bestiary-btn" title="Retornar ao Altar" aria-label="Voltar">
-        <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:4px;"><polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="btn-text-full">RETORNAR</span>
+<!-- Modal do Códice do Bestiário das Trevas (Neo-Arcane Intrinsic Stage) -->
+<div id="bestiary-modal" class="modal-overlay void-astral-overlay bestiary-screen-overlay modal-hidden" style="display: none;">
+  <div class="bestiary-stasis-veil"></div>
+
+  <div class="bestiary-intrinsic-stage">
+    
+    <!-- Camada Superior: Eyebrow Rúnico, Título Monumental & Chips de Metadados (SEM CÍRCULO ANIMADO) -->
+    <div class="bestiary-header-group">
+      <div class="bestiary-eyebrow">
+        <span class="bestiary-eyebrow-line"></span>
+        <span class="void-pulsing-node"></span>
+        <span class="bestiary-eyebrow-text">CÓDICE ANCESTRAL • REGISTRO DE ABOMINAÇÕES</span>
+        <span class="bestiary-eyebrow-line"></span>
+      </div>
+
+      <h1 class="bestiary-monumental-title">BESTIÁRIO DAS TREVAS</h1>
+      <div class="bestiary-monumental-sub">Anatomia, fraquezas táticas e origens profanas das abominações do Abismo</div>
+
+      <!-- Barra de Metadados Globais do Códice -->
+      <div class="bestiary-meta-chips-row">
+        <div class="bestiary-meta-chip">
+          <span class="chip-label">CATALOGADOS</span>
+          <span class="chip-val"><span id="bestiary-discovered-count">0</span> / <span id="bestiary-total-count">45</span></span>
+        </div>
+        <div class="bestiary-meta-chip highlight-gold">
+          <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#ffd166; margin-right:2px;"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+          <span class="chip-label">ABATES TOTAIS</span>
+          <span id="bestiary-total-kills-val" class="chip-val">0</span>
+        </div>
+        <div class="bestiary-meta-chip highlight-purple">
+          <span class="chip-label">COMPLEÇÃO</span>
+          <span id="bestiary-completion-val" class="chip-val">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navegação Segmentada de Categorias -->
+    <div class="bestiary-nav-container">
+      <div class="bestiary-tabs-bar" role="tablist" aria-label="Filtro de Categorias">
+        <button class="bestiary-tab-btn active" data-cat="ALL" role="tab" aria-selected="true">
+          <span class="tab-indicator"></span>
+          <span class="tab-label">TODOS (45)</span>
+        </button>
+        <button class="bestiary-tab-btn" data-cat="HORDE" role="tab" aria-selected="false">
+          <span class="tab-indicator"></span>
+          <span class="tab-label">HORDAS (25)</span>
+        </button>
+        <button class="bestiary-tab-btn" data-cat="MINIBOSS" role="tab" aria-selected="false">
+          <span class="tab-indicator"></span>
+          <span class="tab-label">MINI-CHEFES (16)</span>
+        </button>
+        <button class="bestiary-tab-btn" data-cat="BOSS" role="tab" aria-selected="false">
+          <span class="tab-indicator"></span>
+          <span class="tab-label">CHEFES SUPREMOS (4)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bento Grid Modular de 2 Pilares Neo-Arcanos -->
+    <div class="bestiary-bento-grid">
+      
+      <!-- PILAR 1: Rol de Espécimes -->
+      <div class="bestiary-pillar bestiary-pillar-roster">
+        <div class="pillar-header">
+          <span class="pillar-tag">ROL DE ESPÉCIMES</span>
+          <span id="bestiary-filter-badge" class="pillar-badge-count">TODOS (45)</span>
+        </div>
+        <div class="bestiary-roster-scroll">
+          <div id="bestiary-roster-grid" class="bestiary-cards-grid"></div>
+        </div>
+      </div>
+
+      <!-- PILAR 2: Dossiê e Altar de Inspeção do Espécime -->
+      <div class="bestiary-pillar bestiary-pillar-dossier">
+        <div class="pillar-header">
+          <span class="pillar-tag">DOSSIÊ DO ESPÉCIME</span>
+          <span id="bestiary-dossier-archetype" class="pillar-badge-hero">ESPÉCIME</span>
+        </div>
+        <div class="bestiary-dossier-scroll" id="bestiary-dossier-panel">
+          <!-- Renderizado dinamicamente por renderBestiaryDossier() -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Barra de Ações de Comando no Rodapé -->
+    <div class="bestiary-actions-bar">
+      <button class="btn-bestiary-return" id="close-bestiary-btn" aria-label="Retornar ao Altar">
+        <div class="btn-shimmer-sweep"></div>
+        <div class="btn-return-content">
+          <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color: currentColor;"><polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="btn-text">RETORNAR AO ALTAR</span>
+        </div>
+        <span class="bestiary-hotkey-hint">[ESC]</span>
       </button>
-      <div class="void-header-info bestiary-header-info">
-        <div class="void-header-eyebrow">
-          <span class="void-pulsing-node" style="background:#00f5d4; box-shadow: 0 0 8px #00f5d4;"></span> ARQUIVISTA DAS TREVAS
-        </div>
-        <h2 class="modal-header-title void-modal-title" style="color: #00f5d4; text-shadow: 0 0 16px rgba(0, 245, 212, 0.5);">CÓDICE DO BESTIÁRIO</h2>
-        <div class="modal-header-sub void-modal-sub">Anatomia, fraquezas táticas e origens profanas das abominações do Abismo</div>
-      </div>
-      <div class="char-modal-header-actions bestiary-header-actions">
-        <div class="char-souls-counter void-souls-capsule" title="Criaturas Catalogadas">
-          <svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="#00f5d4" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#00f5d4"/></svg>
-          <span id="bestiary-discovered-count">0</span> / <span id="bestiary-total-count">45</span>
-        </div>
-      </div>
     </div>
 
-    <!-- Navegação de Categorias do Bestiário -->
-    <div class="bestiary-tabs-bar">
-      <button class="bestiary-tab-btn active" data-cat="ALL">TODOS (45)</button>
-      <button class="bestiary-tab-btn" data-cat="HORDE">HORDAS (25)</button>
-      <button class="bestiary-tab-btn" data-cat="MINIBOSS">MINI-CHEFES (16)</button>
-      <button class="bestiary-tab-btn" data-cat="BOSS">CHEFES SUPREMOS (4)</button>
-    </div>
-
-    <!-- Layout Dividido: Grade de Criaturas + Dossiê Detalhado com Preview Canvas -->
-    <div class="bestiary-main-layout">
-      <!-- Coluna Esquerda: Grade de Cards de Monstros -->
-      <div class="bestiary-roster-column">
-        <div id="bestiary-roster-grid" class="bestiary-cards-grid"></div>
-      </div>
-
-      <!-- Coluna Direita: Dossiê e Palco da Criatura -->
-      <div id="bestiary-dossier-panel" class="bestiary-dossier-panel">
-        <!-- Preenchido dinamicamente por renderBestiaryDossier() -->
-      </div>
-    </div>
   </div>
 </div>
 
@@ -938,6 +1217,29 @@
         <!-- Rastreador de Fusões (Evoluções de Armas) -->
         <div id="pause-synergies-tracker" class="pause-synergies-scroll">
           <!-- Preenchido dinamicamente por getSynergyTrackerList() -->
+        </div>
+
+        <!-- Seletor de Tipo de Joystick (Exclusivo Mobile) -->
+        <div class="pause-joystick-box" id="pause-joystick-box">
+          <div class="joystick-box-header">
+            <span class="joystick-box-title">
+              <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:4px;">
+                <path fill="currentColor" d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/>
+              </svg>
+              TIPO DE JOYSTICK
+            </span>
+            <span id="joystick-mode-badge" class="joystick-mode-badge">FLUTUANTE</span>
+          </div>
+          <div class="joystick-toggle-group" role="radiogroup" aria-label="Tipo de Joystick">
+            <button type="button" class="joystick-toggle-btn active" id="btn-joy-floating" data-mode="floating" aria-pressed="true">
+              <span class="toggle-indicator"></span>
+              <span class="toggle-label">FLUTUANTE</span>
+            </button>
+            <button type="button" class="joystick-toggle-btn" id="btn-joy-dynamic" data-mode="dynamic" aria-pressed="false">
+              <span class="toggle-indicator"></span>
+              <span class="toggle-label">DINÂMICO</span>
+            </button>
+          </div>
         </div>
 
         <!-- Controle de Áudio Integrado -->

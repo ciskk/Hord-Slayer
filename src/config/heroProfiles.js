@@ -132,60 +132,120 @@ export const HERO_EMBLEMS_SVG = {
   `
 };
 
-// Configuração Cromática e Valores Numéricos de Medidores (0 a 5)
+// Configuração Cromática, Especialidades e Sinergias Recomendadas
 export const CHARACTER_PROFILES = {
   KNIGHT: {
     themeColor: '#f1c40f',
     emblemSvg: HERO_EMBLEMS_SVG.PALADIN,
     weaponName: 'Martelo Sagrado',
+    specialty: 'Controle de Horda & Barreira Retaliadora',
+    primaryAttack: 'Esmaga o solo com ondas de choque sagradas em 360°, desintegrando projéteis e abrindo fendas.',
+    recommendedSynergies: [
+      { name: 'Armadura Sagrada', type: 'DEFESA', desc: 'Maximiza reflexão de dano e resiliência' },
+      { name: 'Machado Orbital', type: 'COBERTURA', desc: 'Cria uma zona de morte contínua ao redor' },
+      { name: 'Tomo da Fúria', type: 'DANO', desc: 'Eleva a cadência e o impacto dos esmagamentos' }
+    ],
     levels: { dano: 3, area: 4, vel: 1, res: 5 }
   },
   PALADIN: {
     themeColor: '#f1c40f',
     emblemSvg: HERO_EMBLEMS_SVG.PALADIN,
     weaponName: 'Martelo dos Titãs',
+    specialty: 'Controle de Horda & Barreira Retaliadora',
+    primaryAttack: 'Esmaga o solo com ondas de choque sagradas em 360°, desintegrando projéteis e abrindo fendas.',
+    recommendedSynergies: [
+      { name: 'Armadura Sagrada', type: 'DEFESA', desc: 'Maximiza reflexão de dano e resiliência' },
+      { name: 'Machado Orbital', type: 'COBERTURA', desc: 'Cria uma zona de morte contínua ao redor' },
+      { name: 'Tomo da Fúria', type: 'DANO', desc: 'Eleva a cadência e o impacto dos esmagamentos' }
+    ],
     levels: { dano: 3, area: 4, vel: 1, res: 5 }
   },
   MAGE: {
     themeColor: '#ff7675',
     emblemSvg: HERO_EMBLEMS_SVG.MAGE,
     weaponName: 'Cajado da Tormenta',
+    specialty: 'Artilharia Mágica & Combustão em Massa',
+    primaryAttack: 'Rajadas ultrarrápidas de esferas ígneas concentradas que perfuram alvos em linha reta.',
+    recommendedSynergies: [
+      { name: 'Tomo Arcano', type: 'DANO', desc: 'Eleva a cadência e poder térmico das esferas' },
+      { name: 'Anel do Vácuo', type: 'ÁREA', desc: 'Amplia a área de explosão das labaredas' },
+      { name: 'Botas Aladas', type: 'MOBILIDADE', desc: 'Garante reposicionamento tático constante' }
+    ],
     levels: { dano: 5, area: 3, vel: 3, res: 2 }
   },
   ARCHER: {
     themeColor: '#2ecc71',
     emblemSvg: HERO_EMBLEMS_SVG.ARCHER,
     weaponName: 'Arco Élfico',
+    specialty: 'Disparo de Precisão à Longa Distância',
+    primaryAttack: 'Flechas perfurantes velozes com alta penetração em linha reta.',
+    recommendedSynergies: [
+      { name: 'Trevo Espectral', type: 'CRÍTICO', desc: 'Maximiza a chance de acertos letais imediatos' },
+      { name: 'Botas Aladas', type: 'VELOCIDADE', desc: 'Facilita manter distância da horda' }
+    ],
     levels: { dano: 4, area: 2, vel: 5, res: 2 }
   },
   ROGUE: {
-    themeColor: '#00cec9',
+    themeColor: '#c084fc',
     emblemSvg: HERO_EMBLEMS_SVG.ROGUE,
     weaponName: 'Lâminas Espirituais',
+    specialty: 'Alta Mobilidade, Críticos e Teleguiados',
+    primaryAttack: 'Lâminas astrais arremessadas em cone com alta velocidade que perseguem inimigos próximos.',
+    recommendedSynergies: [
+      { name: 'Trevo Espectral', type: 'CRÍTICO', desc: 'Maximiza a chance de acertos letais imediatos' },
+      { name: 'Cajado da Tormenta', type: 'ALCANCE', desc: 'Combina dano à distância com ataques próximos' },
+      { name: 'Amuleto Sombrio', type: 'VELOCIDADE', desc: 'Acelera a recarga de lâminas para disparos contínuos' }
+    ],
     levels: { dano: 4, area: 2, vel: 5, res: 2 }
   },
   WARRIOR: {
-    themeColor: '#00cec9',
+    themeColor: '#c084fc',
     emblemSvg: HERO_EMBLEMS_SVG.ROGUE,
     weaponName: 'Lâminas Espectrais',
+    specialty: 'Alta Mobilidade, Críticos e Teleguiados',
+    primaryAttack: 'Lâminas astrais arremessadas em cone com alta velocidade que perseguem inimigos próximos.',
+    recommendedSynergies: [
+      { name: 'Trevo Espectral', type: 'CRÍTICO', desc: 'Maximiza a chance de acertos letais imediatos' },
+      { name: 'Amuleto Sombrio', type: 'VELOCIDADE', desc: 'Acelera a recarga de lâminas' }
+    ],
     levels: { dano: 4, area: 2, vel: 5, res: 2 }
   },
   BARBARIAN: {
     themeColor: '#e74c3c',
     emblemSvg: HERO_EMBLEMS_SVG.BARBARIAN,
     weaponName: 'Machado Orbital',
+    specialty: 'Dano em Área Maciço & Rompimento Bruto',
+    primaryAttack: 'Arremesso giratório de machados colossais que circundam o corpo decapitando monstros.',
+    recommendedSynergies: [
+      { name: 'Martelo Sagrado', type: 'IMPACTO', desc: 'Derruba e atordoa enquanto os machados giram' },
+      { name: 'Coração de Titã', type: 'VITALIDADE', desc: 'Garante regeneração contínua no meio da horda' },
+      { name: 'Manopla de Força', type: 'DANO', desc: 'Amplifica o knockback e o raio das lâminas' }
+    ],
     levels: { dano: 5, area: 4, vel: 2, res: 4 }
   },
   ALCHEMIST: {
     themeColor: '#2ecc71',
     emblemSvg: HERO_EMBLEMS_SVG.ALCHEMIST,
     weaponName: 'Frascos Cáusticos',
+    specialty: 'Negação de Terreno & Ácido Corrosivo',
+    primaryAttack: 'Bombardeio em parábola de frascos que se estilhaçam em poças químicas borbulhantes.',
+    recommendedSynergies: [
+      { name: 'Frasco Prolongador', type: 'DURAÇÃO', desc: 'Mantém as poças ativas por tempo estendido' },
+      { name: 'Grimório Tóxico', type: 'ÁREA', desc: 'Expande o diâmetro da poça para cobrir a tela' },
+      { name: 'Ímã de Almas', type: 'COLETA', desc: 'Atrai gemas de longe enquanto o ácido dissolve inimigos' }
+    ],
     levels: { dano: 3, area: 5, vel: 3, res: 2 }
   },
   WARLOCK: {
     themeColor: '#9b59b6',
     emblemSvg: HERO_EMBLEMS_SVG.WARLOCK,
     weaponName: 'Grimório Sombrio',
+    specialty: 'Maldições Entrópicas & Dreno de Almas',
+    primaryAttack: 'Vórtices de energia abissal que drenam vitalidade e reduzem velocidade inimiga.',
+    recommendedSynergies: [
+      { name: 'Anel do Vácuo', type: 'ÁREA', desc: 'Amplifica o raio dos vórtices' },
+      { name: 'Cajado da Tormenta', type: 'DISPARO', desc: 'Adiciona dano de longa distância' }
+    ],
     levels: { dano: 5, area: 4, vel: 2, res: 2 }
   }
 };

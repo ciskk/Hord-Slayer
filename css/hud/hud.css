@@ -36,6 +36,23 @@
   transition: opacity 0.25s ease;
 }
 
+/* Ocultação Absoluta do HUD Fora de Jogo e Durante Telas / Transições */
+#hud.hud-hidden,
+body:not(.in-game) #hud,
+body.modal-open #hud,
+body:has(#char-modal:not(.modal-hidden):not([style*="display: none"])) #hud,
+body:has(#talents-modal.active) #hud,
+body:has(#talents-modal.closing) #hud,
+body:has(#achievements-modal.active) #hud,
+body:has(#achievements-modal.closing) #hud,
+body:has(#bestiary-modal.active) #hud,
+body:has(#bestiary-modal.closing) #hud {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 /* ======================================================== */
 /* 1. BARRA DE TOPO: BADGES, ONDA E MEDALHÃO DE PAUSA      */
 /* ======================================================== */
