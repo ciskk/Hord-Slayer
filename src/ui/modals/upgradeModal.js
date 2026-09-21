@@ -10,6 +10,7 @@ import { playSfx } from '../../core/audio.js';
 import { resetInput, resetInputSoft, restoreKeyboardMovement } from '../../core/input.js';
 import { gameState, setLastTime } from '../../main.js';
 import { renderIcon } from '../icons.js';
+import { updateAllAutoFit } from '../../core/responsive.js';
 
 // Biblioteca de Glifos Vetoriais Leves para Cartas de Poder
 export const UPGRADE_ICONS = {
@@ -382,6 +383,8 @@ export function presentDeferredLevelUpModal() {
     upgradeModal.classList.add('active');
     upgradeModal.style.removeProperty('display');
     upgradeModal.style.display = 'flex';
+    updateAllAutoFit();
+    setTimeout(updateAllAutoFit, 30);
   }
 }
 

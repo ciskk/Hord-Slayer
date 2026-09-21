@@ -33,7 +33,7 @@ export function calculateCameraZoom(w, h) {
   if (minDim >= 650) {
     return 1.25;
   }
-  return Math.min(1.25, Math.max(0.65, minDim / 520));
+  return Math.min(1.25, Math.max(0.70, minDim / 490));
 }
 
 export let baseCameraZoom = typeof window !== 'undefined' ? calculateCameraZoom(window.innerWidth, window.innerHeight) : 1.25;

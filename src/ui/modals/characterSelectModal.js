@@ -30,7 +30,7 @@ import {
   selectedHeroKey,
   setSelectedHeroKey
 } from '../../entities/player.js';
-import { layoutMetrics } from '../../core/responsive.js';
+import { layoutMetrics, updateAllAutoFit } from '../../core/responsive.js';
 import { gameState } from '../../state/gameState.js';
 import { resetGame, terminateMatch } from '../../main.js';
 
@@ -316,7 +316,7 @@ export function openCharacterSelect() {
       <!-- 3. Trilho de Slides (Mobile: Deslize horizontal / Desktop: Fluxo contínuo) -->
       <div class="mobile-slides-track" id="mobile-slides-track">
         <!-- Slide 0: Arsenal & Habilidades -->
-        <div class="mobile-slide-pane" data-slide-index="0">
+        <div class="mobile-slide-pane" data-slide-index="0" data-autofit="true" data-autofit-target=".hero-loadout-lineage">
           <div class="hero-loadout-lineage">
             <!-- Entrada 1: Arma Inicial -->
             <div class="loadout-entry">
@@ -375,7 +375,7 @@ export function openCharacterSelect() {
         </div>
 
         <!-- Slide 1: Matriz de Atributos Unificada -->
-        <div class="mobile-slide-pane" data-slide-index="1">
+        <div class="mobile-slide-pane" data-slide-index="1" data-autofit="true" data-autofit-target=".hero-telemetry-cluster">
           <div class="hero-telemetry-cluster">
             <div class="telemetry-header">
               <span class="telemetry-title">MATRIZ DE COMBATE</span>
@@ -445,7 +445,7 @@ export function openCharacterSelect() {
         </div>
 
         <!-- Slide 2: Lore & Selo Primordial -->
-        <div class="mobile-slide-pane" data-slide-index="2">
+        <div class="mobile-slide-pane" data-slide-index="2" data-autofit="true" data-autofit-target=".hero-lore-pane">
           <div class="hero-lore-pane">
             <div class="hero-monolith-quote">
               “${char.lore || ''}”
@@ -514,6 +514,7 @@ export function openCharacterSelect() {
           p.classList.toggle('active', isActive);
           p.setAttribute('aria-selected', isActive ? 'true' : 'false');
         });
+        updateAllAutoFit();
       };
 
       const syncSlidePosition = () => {
@@ -617,6 +618,9 @@ export function openCharacterSelect() {
     sigilItems.forEach(b => {
       b.classList.toggle('active', b.getAttribute('data-hero') === heroKey);
     });
+
+    // Dispara recálculo de auto-fit proporcional adaptativo
+    updateAllAutoFit();
   }
 
   pedestalsContainer.innerHTML = '';
@@ -737,14 +741,16 @@ export function openCharacterSelect() {
   renderShowcase(activeShowcaseHeroKey);
   charModal.style.display = 'flex';
 
-  // Sincronização garantida de layout e canvas pós-exibição do modal
+  // Sincronização garantida de layout, canvas e auto-fit pós-exibição do modal
   if (typeof requestAnimationFrame !== 'undefined') {
     requestAnimationFrame(() => {
       resizePreviewCanvas();
+      updateAllAutoFit();
     });
   }
   setTimeout(() => {
     resizePreviewCanvas();
+    updateAllAutoFit();
   }, 50);
 
   // Iniciar loop de animação da prévia em canvas

@@ -6,10 +6,74 @@
  * (anti-jank em iOS Safari / Android) e notifica o Canvas e os subsistemas de UI.
  */
 
+export {
+  autoFitElement,
+  updateAllAutoFit,
+  registerAutoFit,
+  unregisterAutoFit,
+  initAutoFitSystem
+} from './responsiveAutoFit.js';
+import { updateAllAutoFit, initAutoFitSystem } from './responsiveAutoFit.js';
+
+export const GRAPHICS_QUALITY = {
+  NATIVE: 'native',       // Adaptação 100% à resolução física real (devicePixelRatio nativo da tela)
+  HIGH: 'high',           // Alta nitidez equilibrada (limitada a 2.0x para telas 3x/4K)
+  PERFORMANCE: 'performance' // Modo econômico / bateria (1.25x)
+};
+
+const STORAGE_KEY_GFX = 'hord_graphics_quality';
+
+let currentGraphicsQuality = GRAPHICS_QUALITY.NATIVE;
+
+if (typeof localStorage !== 'undefined') {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_GFX);
+    if (saved && Object.values(GRAPHICS_QUALITY).includes(saved)) {
+      currentGraphicsQuality = saved;
+    }
+  } catch (e) {
+    // localStorage indisponível
+  }
+}
+
+export function getGraphicsQuality() {
+  return currentGraphicsQuality;
+}
+
+export function resolveTargetDpr(mode = currentGraphicsQuality) {
+  const nativeDpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+  switch (mode) {
+    case GRAPHICS_QUALITY.NATIVE:
+      // Resolução nativa da tela - adaptação direta aos pixels físicos do aparelho
+      return Math.max(1, nativeDpr);
+    case GRAPHICS_QUALITY.HIGH:
+      // Alta qualidade: nítida até 2.0x (excelente para Retina sem carga excessiva de preenchimento)
+      return Math.min(Math.max(1, nativeDpr), 2.0);
+    case GRAPHICS_QUALITY.PERFORMANCE:
+      // Modo econômico: 1.25x
+      return Math.min(Math.max(1, nativeDpr), 1.25);
+    default:
+      return Math.max(1, nativeDpr);
+  }
+}
+
+export function setGraphicsQuality(mode) {
+  if (!Object.values(GRAPHICS_QUALITY).includes(mode)) return;
+  currentGraphicsQuality = mode;
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(STORAGE_KEY_GFX, mode);
+    } catch (e) {}
+  }
+  updateLayoutMetrics();
+}
+
 export const layoutMetrics = {
   viewW: typeof window !== 'undefined' ? window.innerWidth : 1280,
   viewH: typeof window !== 'undefined' ? window.innerHeight : 720,
   dpr: 1,
+  nativeDpr: typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1,
+  graphicsQuality: currentGraphicsQuality,
   aspectRatio: 16 / 9,
   isPortrait: false,
   isLandscape: true,
@@ -90,9 +154,10 @@ export function updateLayoutMetrics() {
 
   layoutMetrics.viewW = Math.max(280, w);
   layoutMetrics.viewH = Math.max(280, h);
-  const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (w < 600 || h < 520);
-  const maxDpr = isMobile ? 1.25 : 1.5;
-  layoutMetrics.dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
+  const nativeDpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+  layoutMetrics.nativeDpr = nativeDpr;
+  layoutMetrics.graphicsQuality = currentGraphicsQuality;
+  layoutMetrics.dpr = resolveTargetDpr(currentGraphicsQuality);
   layoutMetrics.aspectRatio = layoutMetrics.viewW / layoutMetrics.viewH;
 
   layoutMetrics.isPortrait = layoutMetrics.viewH > layoutMetrics.viewW;
@@ -121,6 +186,9 @@ export function updateLayoutMetrics() {
       console.warn('Erro ao executar ouvinte de layout:', e);
     }
   });
+
+  // Atualiza auto-fit adaptativo para interfaces e listas ativas
+  updateAllAutoFit();
 
   return layoutMetrics;
 }
@@ -171,6 +239,8 @@ export function initResponsive(onResizeCallback) {
       updateLayoutMetrics();
     }, { passive: true });
   }
+
+  initAutoFitSystem();
 
   // Medição tardia para garantir pós-carregamento do DOM
   setTimeout(updateLayoutMetrics, 100);

@@ -12,6 +12,7 @@ import { ITEMS, getSynergyTrackerList } from '../../config/items.js';
 import { gameState, setLastTime } from '../../main.js';
 import { initAudio, applyStasisAudioFilter, resetStasisAudioFilter, playSfx } from '../../core/audio.js';
 import { getJoystickMode, setJoystickMode, JOYSTICK_MODES, resetInput } from '../../core/input.js';
+import { updateAllAutoFit, layoutMetrics, getGraphicsQuality, setGraphicsQuality, GRAPHICS_QUALITY } from '../../core/responsive.js';
 
 let isTransitioning = false;
 let pauseKeydownHandler = null;
@@ -274,6 +275,45 @@ export function renderPauseInventory() {
     btnDynamic.classList.toggle('active', isDynamic);
     btnDynamic.setAttribute('aria-pressed', isDynamic.toString());
   }
+
+  // 6. Atualização do Seletor de Resolução / Qualidade Gráfica (Adaptação à Tela)
+  const currentGfx = getGraphicsQuality();
+  const gfxBadge = document.getElementById('graphics-mode-badge');
+  const gfxSubtext = document.getElementById('graphics-subtext');
+  const btnNative = document.getElementById('btn-gfx-native');
+  const btnHigh = document.getElementById('btn-gfx-high');
+  const btnPerf = document.getElementById('btn-gfx-performance');
+
+  const curDpr = layoutMetrics.dpr || 1;
+  const nativeDpr = layoutMetrics.nativeDpr || (typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1);
+  const bufferW = Math.floor((layoutMetrics.viewW || (typeof window !== 'undefined' ? window.innerWidth : 960)) * curDpr);
+  const bufferH = Math.floor((layoutMetrics.viewH || (typeof window !== 'undefined' ? window.innerHeight : 640)) * curDpr);
+
+  if (gfxBadge) {
+    if (currentGfx === GRAPHICS_QUALITY.NATIVE) {
+      gfxBadge.innerText = `NATIVA (${nativeDpr.toFixed(1)}x)`;
+      gfxBadge.style.color = '#00f5d4';
+    } else if (currentGfx === GRAPHICS_QUALITY.HIGH) {
+      gfxBadge.innerText = `ALTA (${curDpr.toFixed(1)}x)`;
+      gfxBadge.style.color = '#ffd166';
+    } else {
+      gfxBadge.innerText = `ECONÔMICA (${curDpr.toFixed(1)}x)`;
+      gfxBadge.style.color = '#ff9f43';
+    }
+  }
+
+  if (gfxSubtext && bufferW > 0 && bufferH > 0) {
+    gfxSubtext.innerText = `Renderizando em ${bufferW} × ${bufferH} px (fator ${curDpr.toFixed(2)}x)`;
+  }
+
+  if (btnNative && btnHigh && btnPerf) {
+    btnNative.classList.toggle('active', currentGfx === GRAPHICS_QUALITY.NATIVE);
+    btnNative.setAttribute('aria-pressed', (currentGfx === GRAPHICS_QUALITY.NATIVE).toString());
+    btnHigh.classList.toggle('active', currentGfx === GRAPHICS_QUALITY.HIGH);
+    btnHigh.setAttribute('aria-pressed', (currentGfx === GRAPHICS_QUALITY.HIGH).toString());
+    btnPerf.classList.toggle('active', currentGfx === GRAPHICS_QUALITY.PERFORMANCE);
+    btnPerf.setAttribute('aria-pressed', (currentGfx === GRAPHICS_QUALITY.PERFORMANCE).toString());
+  }
 }
 
 /**
@@ -332,6 +372,8 @@ export function openPause() {
     pauseModal.classList.add('active');
     pauseModal.style.removeProperty('display');
     pauseModal.style.display = 'flex';
+    updateAllAutoFit();
+    setTimeout(updateAllAutoFit, 30);
   }
 
   // 6. Registro de Teclas de Saída

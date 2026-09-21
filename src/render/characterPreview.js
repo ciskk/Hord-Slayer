@@ -12,6 +12,7 @@ import { renderHeroModel } from './playerRenderer.js';
 import { generateGroundCracks, drawDetailedGroundCracks } from './groundCracks.js';
 import { CHARACTERS } from '../config/characters.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
+import { layoutMetrics } from '../core/responsive.js';
 
 let previewCanvas = null;
 let previewCtx = null;
@@ -165,7 +166,7 @@ export function initPreviewCanvas(canvasElement) {
 export function resizePreviewCanvas() {
   if (!previewCanvas || !previewCtx) return;
   const rect = previewCanvas.getBoundingClientRect();
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 2);
   const w = previewCanvas.clientWidth || rect.width || 0;
   const h = previewCanvas.clientHeight || rect.height || 0;
 
@@ -379,7 +380,7 @@ function syncCanvasDimensions() {
   const rect = previewCanvas.getBoundingClientRect();
   const clientW = previewCanvas.clientWidth || rect.width || 0;
   const clientH = previewCanvas.clientHeight || rect.height || 0;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 2);
 
   if (clientW <= 0 || clientH <= 0) {
     return {

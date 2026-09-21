@@ -690,6 +690,120 @@
   height: 11px !important;
 }
 
+/* Card de Seleção de Resolução de Tela / Qualidade Gráfica */
+.pause-graphics-box {
+  display: flex;
+  background: rgba(10, 16, 32, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-top: auto;
+  margin-bottom: 6px;
+  flex-direction: column;
+  gap: 5px;
+  box-sizing: border-box;
+}
+
+.graphics-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.graphics-box-title {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  letter-spacing: 0.5px;
+  gap: 5px;
+  text-transform: uppercase;
+}
+
+.graphics-box-title .game-icon {
+  width: 13px !important;
+  height: 13px !important;
+}
+
+.graphics-mode-badge {
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #00f5d4;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.graphics-toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+  background: rgba(4, 8, 18, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 3px;
+  box-sizing: border-box;
+}
+
+.graphics-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 3px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #64748b;
+  font-family: var(--font-heading);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.graphics-toggle-btn .toggle-indicator {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.graphics-toggle-btn:hover:not(.active) {
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.graphics-toggle-btn.active {
+  background: linear-gradient(135deg, rgba(0, 245, 212, 0.18) 0%, rgba(9, 132, 227, 0.25) 100%);
+  border-color: rgba(0, 245, 212, 0.5);
+  color: #00f5d4;
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.2), inset 0 0 6px rgba(0, 245, 212, 0.12);
+  text-shadow: 0 0 8px rgba(0, 245, 212, 0.4);
+}
+
+.graphics-toggle-btn.active .toggle-indicator {
+  background: #00f5d4;
+  box-shadow: 0 0 6px #00f5d4;
+}
+
+.graphics-subtext {
+  font-family: var(--font-body);
+  font-size: 8.5px;
+  font-weight: 500;
+  color: #64748b;
+  letter-spacing: 0.3px;
+  text-align: center;
+}
+
 /* Card de Seleção de Tipo de Joystick (Exclusivo Mobile) */
 .pause-joystick-box {
   display: none;
@@ -1563,6 +1677,52 @@
 
   .synergy-status-tag {
     font-size: 7.5px !important;
+  }
+
+  /* Resolução de Tela: Acoplado no portrait mobile */
+  .pause-graphics-box {
+    flex-shrink: 0 !important;
+    padding: 3px 6px !important;
+    margin-top: auto !important;
+    margin-bottom: 2.5px !important;
+    border-radius: 5px !important;
+    gap: 2px !important;
+  }
+
+  .graphics-box-title {
+    font-size: 7.5px !important;
+  }
+
+  .graphics-box-title .game-icon {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  .graphics-mode-badge {
+    font-size: 7.5px !important;
+  }
+
+  .graphics-toggle-group {
+    padding: 2px !important;
+    gap: 2px !important;
+    border-radius: 4px !important;
+  }
+
+  .graphics-toggle-btn {
+    padding: 2px 2px !important;
+    font-size: 7px !important;
+    letter-spacing: 0.3px !important;
+    gap: 2px !important;
+    border-radius: 3px !important;
+  }
+
+  .graphics-toggle-btn .toggle-indicator {
+    width: 3.5px !important;
+    height: 3.5px !important;
+  }
+
+  .graphics-subtext {
+    font-size: 7px !important;
   }
 
   /* Joystick: Acoplado acima do volume no portrait */

@@ -66,7 +66,7 @@ import {
 import { render } from './render/renderer.js';
 import { transitionToArenaTheme, getWaveArenaTheme, resetEnvironment } from './render/environment.js';
 import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
-import { initResponsive, layoutMetrics } from './core/responsive.js';
+import { initResponsive, layoutMetrics, GRAPHICS_QUALITY, getGraphicsQuality, setGraphicsQuality, resolveTargetDpr } from './core/responsive.js';
 import { devCheats } from './systems/devtools.js';
 import { clearActiveBarks } from './systems/barks.js';
 import { forceClosePause } from './ui/modals/pauseModal.js';
@@ -255,6 +255,13 @@ export {
   processEnemyMeleeAttacks
 } from './systems/combat.js';
 
+export {
+  GRAPHICS_QUALITY,
+  getGraphicsQuality,
+  setGraphicsQuality,
+  resolveTargetDpr
+};
+
 export function resize() {
   const currentCanvas = canvas || document.getElementById('game-canvas');
   if (currentCanvas && !canvas) {
@@ -271,7 +278,7 @@ export function resize() {
 
   if (!currentCanvas) return;
 
-  const currentDpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 1.5);
+  const currentDpr = layoutMetrics.dpr || resolveTargetDpr();
   const curW = layoutMetrics.viewW || window.innerWidth;
   const curH = layoutMetrics.viewH || window.innerHeight;
   updateDimensions(curW, curH, currentDpr);
@@ -281,11 +288,21 @@ export function resize() {
   currentCanvas.style.width = '100%';
   currentCanvas.style.height = '100%';
 
+  if (ctx) {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+  }
+
   if (currentBannerCanvas) {
     currentBannerCanvas.width = Math.floor(viewW * dpr);
     currentBannerCanvas.height = Math.floor(viewH * dpr);
     currentBannerCanvas.style.width = '100%';
     currentBannerCanvas.style.height = '100%';
+
+    if (bannerCtx) {
+      bannerCtx.imageSmoothingEnabled = true;
+      bannerCtx.imageSmoothingQuality = 'high';
+    }
   }
 }
 

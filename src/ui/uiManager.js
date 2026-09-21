@@ -51,7 +51,7 @@ import { playSfx, setGameVolume, audioCtx } from '../core/audio.js';
 import { gameState } from '../state/gameState.js';
 import { activeBoss } from '../state/collections.js';
 import { terminateMatch } from '../main.js';
-import { onLayoutChange, updateHudBottomMetric } from '../core/responsive.js';
+import { onLayoutChange, updateHudBottomMetric, updateAllAutoFit, setGraphicsQuality, GRAPHICS_QUALITY } from '../core/responsive.js';
 import { resizePreviewCanvas } from '../render/characterPreview.js';
 import { setJoystickMode, JOYSTICK_MODES } from '../core/input.js';
 
@@ -212,6 +212,16 @@ export function initUI() {
   bindClick('btn-joy-floating', () => handleJoystickModeChange(JOYSTICK_MODES.FLOATING));
   bindClick('btn-joy-dynamic', () => handleJoystickModeChange(JOYSTICK_MODES.DYNAMIC));
 
+  // Controle de Qualidade Gráfica e Resolução de Tela (Adaptação Nativa / Alta / Econômica)
+  const handleGraphicsQualityChange = (mode) => {
+    setGraphicsQuality(mode);
+    playSfx('click');
+    renderPauseInventory();
+  };
+  bindClick('btn-gfx-native', () => handleGraphicsQualityChange(GRAPHICS_QUALITY.NATIVE));
+  bindClick('btn-gfx-high', () => handleGraphicsQualityChange(GRAPHICS_QUALITY.HIGH));
+  bindClick('btn-gfx-performance', () => handleGraphicsQualityChange(GRAPHICS_QUALITY.PERFORMANCE));
+
   const joyFixed = document.getElementById('joy-mode-fixed');
   const joyDynamic = document.getElementById('joy-mode-dynamic');
   if (joyFixed && joyDynamic) {
@@ -246,6 +256,7 @@ export function initUI() {
   onLayoutChange(() => {
     updateHudBottomMetric();
     resizePreviewCanvas();
+    updateAllAutoFit();
   });
 
   // Escuta de Subida de Nível do Jogador (Apresentação de Bênçãos / Upgrades)

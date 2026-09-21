@@ -935,7 +935,7 @@
 </div>
 
 <!-- Palco de Upgrades Intrínseco (Tarô Arcano do Destino) -->
-<div id="upgrade-modal" class="modal-overlay levelup-screen-overlay" style="display: none;">
+<div id="upgrade-modal" class="modal-overlay levelup-screen-overlay" style="display: none;" data-autofit="true" data-autofit-target=".levelup-intrinsic-stage">
   <div class="levelup-stasis-veil"></div>
 
   <div class="levelup-intrinsic-stage">
@@ -1032,7 +1032,7 @@
 </div>
 
 <!-- Palco do Baú de Tesouro Intrínseco (Relicário Espectral & Sarcófago do Soberano) -->
-<div id="chest-modal" class="modal-overlay chest-screen-overlay tier-boss" style="display: none;">
+<div id="chest-modal" class="modal-overlay chest-screen-overlay tier-boss" style="display: none;" data-autofit="true" data-autofit-target=".chest-intrinsic-stage">
   <div class="chest-stasis-veil"></div>
 
   <div class="chest-intrinsic-stage">
@@ -1096,7 +1096,7 @@
 </div>
 
 <!-- Palco de Pausa Intrínseco: Estase Astral (Crônica da Batalha) -->
-<div id="pause-modal" class="modal-overlay pause-screen-overlay" style="display: none;">
+<div id="pause-modal" class="modal-overlay pause-screen-overlay" style="display: none;" data-autofit="true" data-autofit-target=".pause-intrinsic-stage">
   <div class="pause-stasis-veil"></div>
 
   <div class="pause-intrinsic-stage">
@@ -1238,6 +1238,36 @@
           <!-- Preenchido dinamicamente por getSynergyTrackerList() -->
         </div>
 
+        <!-- Seletor de Resolução / Qualidade Gráfica (Adaptação à Tela) -->
+        <div class="pause-graphics-box" id="pause-graphics-box">
+          <div class="graphics-box-header">
+            <span class="graphics-box-title">
+              <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:4px;">
+                <rect x="2" y="3" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                <line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              RESOLUÇÃO DA TELA
+            </span>
+            <span id="graphics-mode-badge" class="graphics-mode-badge">NATIVA</span>
+          </div>
+          <div class="graphics-toggle-group" role="radiogroup" aria-label="Resolução Gráfica">
+            <button type="button" class="graphics-toggle-btn active" id="btn-gfx-native" data-mode="native" aria-pressed="true" title="Adaptação 1:1 aos pixels físicos da tela (máxima nitidez)">
+              <span class="toggle-indicator"></span>
+              <span class="toggle-label">NATIVA</span>
+            </button>
+            <button type="button" class="graphics-toggle-btn" id="btn-gfx-high" data-mode="high" aria-pressed="false" title="Alta fidelidade visual (limitada a 2.0x)">
+              <span class="toggle-indicator"></span>
+              <span class="toggle-label">ALTA</span>
+            </button>
+            <button type="button" class="graphics-toggle-btn" id="btn-gfx-performance" data-mode="performance" aria-pressed="false" title="Modo econômico / bateria">
+              <span class="toggle-indicator"></span>
+              <span class="toggle-label">ECONÔMICA</span>
+            </button>
+          </div>
+          <div class="graphics-subtext" id="graphics-subtext">Adaptação 1:1 aos pixels físicos da tela</div>
+        </div>
+
         <!-- Seletor de Tipo de Joystick (Exclusivo Mobile) -->
         <div class="pause-joystick-box" id="pause-joystick-box">
           <div class="joystick-box-header">
@@ -1322,7 +1352,7 @@
 </div>
 
 <!-- Tela de Morte Intrínseca (Dark Cyber-Gothic Arena Overlay) -->
-<div id="death-modal" class="modal-overlay death-screen-overlay" style="display: none;">
+<div id="death-modal" class="modal-overlay death-screen-overlay" style="display: none;" data-autofit="true" data-autofit-target=".death-intrinsic-stage">
   <!-- Projeção Espectral Colossal de Fundo (Backdrop Watermark) -->
   <div class="death-phantom-backdrop" aria-hidden="true">
     <div class="death-phantom-mist"></div>

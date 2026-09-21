@@ -1,0 +1,35 @@
+/* ==========================================================================
+   HORD.IO: MOTOR RESPONSIVO ADAPTATIVO (SMART AUTO-FIT & ESCALA PROPORCIONAL)
+   Regras de estilo para acomodar interfaces e listas em espaços verticais reduzidos
+   ========================================================================== */
+
+/* 1. Container em Modo Auto-Fit Ativo
+   Quando o conteúdo foi proporcionalmente reduzido para caber no espaço disponível,
+   a rolagem vertical é suprimida para eliminar scrollbars e cortes desnecessários. */
+.autofit-container.autofit-active,
+[data-autofit="true"].autofit-active,
+.mobile-slide-pane.autofit-active,
+.char-dossier-wing.autofit-active,
+.levelup-screen-overlay.autofit-active,
+.pause-screen-overlay.autofit-active,
+.chest-screen-overlay.autofit-active,
+.death-screen-overlay.autofit-active {
+  overflow-y: hidden !important;
+}
+
+/* 2. Elemento Alvo Escalado
+   Garante origem centralizada no topo e transição visual suave durante
+   mudanças dinâmicas de resolução, orientação ou troca de abas/heróis. */
+.autofit-scaled {
+  transform-origin: top center !important;
+  transition: zoom 0.12s cubic-bezier(0.16, 1, 0.3, 1), 
+              transform 0.12s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  will-change: transform;
+}
+
+/* 3. Ajustes Específicos para Slides da Seleção de Heróis no Mobile */
+.mobile-slide-pane.autofit-active .hero-loadout-lineage,
+.mobile-slide-pane.autofit-active .hero-telemetry-cluster,
+.mobile-slide-pane.autofit-active .hero-lore-pane {
+  max-height: 100% !important;
+}

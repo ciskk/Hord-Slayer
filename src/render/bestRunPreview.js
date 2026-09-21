@@ -11,6 +11,7 @@
  */
 import { renderHeroModel } from './playerRenderer.js';
 import { CHARACTERS } from '../config/characters.js';
+import { layoutMetrics } from '../core/responsive.js';
 
 let previewCanvas = null;
 let pCtx = null;
@@ -39,7 +40,7 @@ for (let i = 0; i < 24; i++) {
  */
 export function resizeBestRunCanvas() {
   if (!previewCanvas || !pCtx) return;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 2);
   const rect = previewCanvas.getBoundingClientRect();
   const cssW = previewCanvas.clientWidth || rect.width || 220;
   const cssH = previewCanvas.clientHeight || rect.height || 180;
@@ -64,7 +65,7 @@ function drawTarotFrame() {
   if (!isRunning || !previewCanvas || !pCtx) return;
 
   previewFrameCount++;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 2);
   const cssW = previewCanvas.clientWidth || (previewCanvas.width / dpr) || 220;
   const cssH = previewCanvas.clientHeight || (previewCanvas.height / dpr) || 180;
 
