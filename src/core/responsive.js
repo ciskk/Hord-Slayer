@@ -90,7 +90,9 @@ export function updateLayoutMetrics() {
 
   layoutMetrics.viewW = Math.max(280, w);
   layoutMetrics.viewH = Math.max(280, h);
-  layoutMetrics.dpr = Math.min(window.devicePixelRatio || 1, 2.0);
+  const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (w < 600 || h < 520);
+  const maxDpr = isMobile ? 1.25 : 1.5;
+  layoutMetrics.dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
   layoutMetrics.aspectRatio = layoutMetrics.viewW / layoutMetrics.viewH;
 
   layoutMetrics.isPortrait = layoutMetrics.viewH > layoutMetrics.viewW;

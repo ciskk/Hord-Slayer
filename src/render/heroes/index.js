@@ -58,9 +58,44 @@ export function renderHeroModel(c, heroKey, state = {}) {
   const isAlchemistCombat = !!state.isAlchemistCombat;
   const isDashing = state.isDashing !== undefined ? state.isDashing : (dashDuration > 0 || ignisDashDuration > 0);
 
+  const isDying = !!state.isDying;
+  const fallProgress = state.fallProgress || 0;
+  const evaporateProgress = state.evaporateProgress || 0;
+
   c.save();
   c.translate(x, y);
+
+  // Sombra no solo desacoplada (permanece diegética na horizontal e alarga ao deitar)
+  if (state.showShadow !== false) {
+    const shadowStretch = isDying ? (1.0 + fallProgress * 0.75) : 1.0;
+    const shadowAlpha = 0.45;
+    c.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
+    c.beginPath();
+    c.ellipse(0, 15 + (isDying ? fallProgress * 2 : 0), 14 * shadowStretch, 6 * (isDying ? (1 - fallProgress * 0.2) : 1), 0, 0, Math.PI * 2);
+    c.fill();
+  }
+
   c.scale(facing * scale, scale);
+
+  // Animação de Colapso e Corpo Prostrado no Solo
+  if (isDying) {
+    const fallDir = -1; // tomba para trás
+    const fallAngle = fallProgress * (Math.PI * 0.44) * fallDir;
+    const sinkY = fallProgress * 12;
+    const squishY = 1.0 - (fallProgress * 0.32);
+
+    c.translate(0, sinkY);
+    c.rotate(fallAngle);
+    c.scale(1.0, squishY);
+
+    if (evaporateProgress > 0) {
+      // O corpo do herói permanece deitado no solo; a evaporação adiciona luminescência de alma
+      if (state.soulColor) {
+        c.shadowColor = state.soulColor;
+        c.shadowBlur = 12 * Math.min(1.0, evaporateProgress * 1.5);
+      }
+    }
+  }
 
   if (berserkTimer > 0 || isBerserk) {
     const bPulse = Math.sin(tFrame * 0.3) * 4;
@@ -77,16 +112,9 @@ export function renderHeroModel(c, heroKey, state = {}) {
     c.globalAlpha = 0.45;
   }
 
-  const bob = isMoving ? Math.sin(walkCycle * 2) * 2.5 : Math.sin(tFrame * 0.05) * 0.8;
-  const legSwing = isMoving ? Math.sin(walkCycle) * 5.5 : 0;
-  const capeWave = isMoving ? Math.sin(walkCycle) * 4 : Math.sin(tFrame * 0.08) * 1.5;
-
-  if (state.showShadow !== false) {
-    c.fillStyle = 'rgba(0, 0, 0, 0.45)';
-    c.beginPath();
-    c.ellipse(0, 15, 14, 6, 0, 0, Math.PI * 2);
-    c.fill();
-  }
+  const bob = isDying ? 0 : (isMoving ? Math.sin(walkCycle * 2) * 2.5 : Math.sin(tFrame * 0.05) * 0.8);
+  const legSwing = isDying ? 0 : (isMoving ? Math.sin(walkCycle) * 5.5 : 0);
+  const capeWave = isDying ? 0 : (isMoving ? Math.sin(walkCycle) * 4 : Math.sin(tFrame * 0.08) * 1.5);
 
   const heroOptions = {
     bob, legSwing, capeWave, tFrame,

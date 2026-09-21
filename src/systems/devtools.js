@@ -15,7 +15,8 @@ import {
   openCharacterSelect,
   renderBestiaryRoster,
   renderBestiaryDossier,
-  selectedCreatureId
+  selectedCreatureId,
+  triggerDeath
 } from './ui.js';
 import { levelUp } from '../ui/modals/upgradeModal.js';
 import { openChestModal } from '../ui/modals/chestModal.js';
@@ -585,6 +586,16 @@ function renderCheatsTab(container) {
         <button class="dev-card-action-btn">Curar Herói</button>
       </div>
 
+      <!-- Card Testar Morte Dramática -->
+      <div class="dev-cheat-card action-card" id="card-test-death">
+        <div class="dev-cheat-icon">☠️</div>
+        <div class="dev-cheat-info">
+          <div class="dev-cheat-name" style="color: #ff4757;">Simular Morte Dramática</div>
+          <div class="dev-cheat-desc">Dispara a sequência cinematográfica completa (zoom, colapso, evaporação e Nova).</div>
+        </div>
+        <button class="dev-card-action-btn btn-danger">☠️ Disparar Morte</button>
+      </div>
+
       <!-- Card +5 Rerolls -->
       <div class="dev-cheat-card action-card" id="card-extra-rerolls">
         <div class="dev-cheat-icon">🎲</div>
@@ -677,22 +688,22 @@ function renderCheatsTab(container) {
 
       <!-- Card Invocar Altar de Sangue -->
       <div class="dev-cheat-card action-card" id="card-spawn-blood-altar">
-        <div class="dev-cheat-icon">🩸</div>
+        <div class="dev-cheat-icon" style="display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:#ff3838;"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>
         <div class="dev-cheat-info">
           <div class="dev-cheat-name" style="color: #ff3838;">Invocar Altar de Sangue</div>
-          <div class="dev-cheat-desc">Gera um Altar de Sangue imediatamente próximo ao jogador na arena.</div>
+          <div class="dev-cheat-desc">Gera um Altar de Sangue imediatamente próximo ao jogador na arena (10s).</div>
         </div>
-        <button class="dev-card-action-btn" style="background: #ff3838; color: #fff; font-weight: bold;">🩸 Spawn Altar</button>
+        <button class="dev-card-action-btn" style="background: #ff3838; color: #fff; font-weight: bold;">Spawn Altar</button>
       </div>
 
       <!-- Card Testar Baú do Altar -->
       <div class="dev-cheat-card action-card" id="card-test-altar-chest">
-        <div class="dev-cheat-icon">📦</div>
+        <div class="dev-cheat-icon" style="display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:#ffd166;"><path d="M5 4h14a2 2 0 0 1 2 2v2H3V6a2 2 0 0 1 2-2zm-2 6h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8zm8 2v3h2v-3h-2z"/></svg></div>
         <div class="dev-cheat-info">
           <div class="dev-cheat-name" style="color: #ff3838;">Testar Baú do Altar (Lendário)</div>
           <div class="dev-cheat-desc">Abre o Baú Lendário do Altar de Sangue com dádivas ancestrais.</div>
         </div>
-        <button class="dev-card-action-btn" style="background: #c0392b; color: #fff; font-weight: bold;">📦 Baú do Altar</button>
+        <button class="dev-card-action-btn" style="background: #c0392b; color: #fff; font-weight: bold;">Baú do Altar</button>
       </div>
     </div>
   `;
@@ -716,7 +727,7 @@ function renderCheatsTab(container) {
     closeBossSelectModal();
     if (player) {
       spawnBloodAltar(player, 0, 180);
-      showDevToast('🩸 <b>Altar de Sangue Invocado!</b> Monólito gerado próximo ao herói.');
+      showDevToast('<b>Altar de Sangue Invocado!</b> Monólito de 10s gerado próximo ao herói.');
     }
   };
   cheatsSection.querySelector('#card-test-altar-chest').onclick = () => {
@@ -737,6 +748,14 @@ function renderCheatsTab(container) {
   };
 
   cheatsSection.querySelector('#card-heal-full').onclick = () => healPlayerFull();
+  cheatsSection.querySelector('#card-test-death').onclick = () => {
+    closeBossSelectModal();
+    if (player) {
+      player.hp = 0;
+      triggerDeath();
+      showDevToast('☠️ <b>Morte Dramática Disparada:</b> Sequência cinematográfica em andamento.');
+    }
+  };
   cheatsSection.querySelector('#card-extra-rerolls').onclick = () => grantExtraRerolls(5);
 
   cheatsSection.querySelector('#card-unlock-all-heroes').onclick = () => {

@@ -6,64 +6,37 @@
   /* ======================================================== */
   /* 0. HUD DE COMBATE MOBILE DARK FANTASY (REF. ESPECÍFICA)   */
   /* ======================================================== */
-  /* Desempacota o container horizontal do PC para manter a disposição vertical no mobile */
-  .hud-top-row {
+  /* Desempacota os containers do PC para o layout em Grid mobile */
+  .hud-top-row,
+  .hud-top-bar,
+  .hud-top-cluster-right {
     display: contents !important;
   }
   #hud {
+    position: fixed;
     top: max(env(safe-area-inset-top, 6px), 6px);
     left: max(env(safe-area-inset-left, 6px), 8px);
     right: max(env(safe-area-inset-right, 6px), 8px);
     width: auto;
-    gap: 4px;
     max-width: 100%;
+    display: grid !important;
+    grid-template-columns: auto 1fr auto !important;
+    align-items: center !important;
+    row-gap: 3px !important;
+    column-gap: 6px !important;
   }
 
-  /* Linha 1: Badges de Combate na Esquerda | Banner de Onda + Medalhão de Pausa na Direita */
-  .hud-top-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 6px;
-    min-height: 32px;
-    width: 100%;
-  }
-
-  /* Badges da Esquerda (Kills & Gold) */
-  .hud-meta-group.left {
-    flex: none;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .hud-badge {
-    padding: 3px 8px;
-    font-size: 9.5px;
-    gap: 4px;
-    clip-path: polygon(6px 0%, calc(100% - 6px) 0%, 100% 50%, calc(100% - 6px) 100%, 6px 100%, 0% 50%);
-  }
-
-  .hud-badge .hud-icon {
-    font-size: 10px;
-  }
-
-  .hud-num {
-    font-size: 11px;
-  }
-
-  /* Cluster da Direita: Cronômetro + Medalhão Espinhoso de Pausa */
-  .hud-top-cluster-right {
-    flex: none;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
+  /* Linha 1 - Canto Superior Esquerdo: Cronômetro */
   .timer-badge {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    justify-self: start !important;
+    align-self: center !important;
     padding: 3px 8px;
     gap: 4px;
     clip-path: polygon(6px 0%, calc(100% - 6px) 0%, 100% 50%, calc(100% - 6px) 100%, 6px 100%, 0% 50%);
+    pointer-events: auto;
+    z-index: 2;
   }
 
   .timer-badge .hud-icon {
@@ -76,25 +49,63 @@
     flex-shrink: 0;
   }
 
-  /* Medalhão Espinhoso de Pausa (Barras Simétricas Vetoriais Integradas) */
+  /* Linha 1 - Canto Superior Direito: Botão de Pause */
   #pause-btn.pause-hud-btn {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    justify-self: end !important;
+    align-self: center !important;
     width: 32px !important;
     height: 32px !important;
     padding: 0 !important;
     border-radius: 0 !important;
     flex-shrink: 0;
+    pointer-events: auto;
+    z-index: 2;
   }
 
   .pause-key-hint {
     display: none !important;
   }
 
-  /* Linhas 2 e 3: Vitais (HP e XP) */
+  /* Linha 2: Vitais (Barra de Vida e Barra de XP) - Subiram aproveitando o espaço liberado */
   .hud-vitals-container {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
     display: flex !important;
     flex-direction: column !important;
     gap: 4px !important;
     width: 100% !important;
+    z-index: 1;
+  }
+
+  /* Linha 1 - Esquerda: Elementos Menores do HUD (Kills & Gold) - Imediatamente à direita do cronômetro */
+  .hud-meta-group.left {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    justify-self: start !important;
+    align-self: center !important;
+    flex: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    margin: 0 !important;
+    z-index: 2;
+  }
+
+  .hud-badge {
+    padding: 2.5px 8px;
+    font-size: 9.5px;
+    gap: 4px;
+    clip-path: polygon(6px 0%, calc(100% - 6px) 0%, 100% 50%, calc(100% - 6px) 100%, 6px 100%, 0% 50%);
+  }
+
+  .hud-badge .hud-icon {
+    font-size: 10px;
+  }
+
+  .hud-num {
+    font-size: 11px;
   }
 
   /* Linhas das Barras com Medalhão Acoplado */
@@ -165,42 +176,84 @@
     overflow: hidden !important;
   }
 
-  /* Linha 4: Card do Nome da Horda Centralizado no Lugar do Herói (Escala reduzida em 35% para mobile) */
+  /* Linha 3: Retângulo que exibe a Horda (Abaixo da Barra de XP) */
   #hud-wave-card {
-    display: inline-flex !important;
+    grid-column: 1 / -1 !important;
+    grid-row: 3 !important;
+    justify-self: center !important;
     align-self: center !important;
-    margin: 2px auto -7px auto !important;
-    max-width: 96vw !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    margin: 1px auto 0 auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     width: auto !important;
-    padding: 3.5px 16px !important;
-    gap: 7px !important;
-    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px) !important;
+    padding: 3px 12px !important;
+    gap: 6px !important;
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px) !important;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 234, 167, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.9) !important;
     pointer-events: auto !important;
     justify-content: center !important;
-    transform: scale(0.65) !important;
-    transform-origin: center top !important;
-    transition: opacity 0.55s cubic-bezier(0.2, 0.8, 0.25, 1), transform 0.55s cubic-bezier(0.2, 0.8, 0.25, 1), max-height 0.35s cubic-bezier(0.2, 0.8, 0.25, 1), margin 0.35s ease, padding 0.35s ease !important;
+    transform: scale(0.9) !important;
+    transform-origin: center center !important;
+    transition: opacity 0.55s cubic-bezier(0.2, 0.8, 0.25, 1), transform 0.55s cubic-bezier(0.2, 0.8, 0.25, 1), max-height 0.35s cubic-bezier(0.2, 0.8, 0.25, 1) !important;
+    z-index: 2;
   }
 
   #hud-wave-card.banner-suppressed {
     opacity: 0 !important;
-    transform: translateY(-6px) scale(0.6) !important;
+    transform: translateY(-4px) scale(0.85) !important;
     pointer-events: none !important;
   }
 
   #hud.boss-active #hud-wave-card {
     opacity: 0 !important;
     max-height: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
     border-width: 0 !important;
     box-shadow: none !important;
-    transform: translateY(-8px) scale(0.5) !important;
     pointer-events: none !important;
     overflow: hidden !important;
+  }
+
+  #hud.altar-active #hud-wave-card {
+    opacity: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-width: 0 !important;
+    box-shadow: none !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+  }
+
+  /* Widget Compacto do Altar de Sangue no Grid Portrait (Linha 3) */
+  #blood-altar-hud {
+    grid-column: 1 / -1 !important;
+    grid-row: 3 !important;
+    justify-self: center !important;
+    align-self: center !important;
+    margin: 1px auto 0 auto !important;
+    padding: 3px 10px 5px 10px !important;
+    max-width: 90vw !important;
+    width: auto !important;
+    transform: scale(0.92) !important;
+    transform-origin: center center !important;
+    z-index: 2 !important;
+  }
+
+  #blood-altar-hud .blood-altar-title {
+    font-size: 9.5px !important;
+    letter-spacing: 0.8px !important;
+  }
+
+  #blood-altar-hud .blood-altar-timer {
+    font-size: 12.5px !important;
+  }
+
+  #blood-altar-hud .blood-altar-status {
+    font-size: 9px !important;
   }
 
   #hud-wave-card .wave-icon {
@@ -209,17 +262,19 @@
   }
 
   #hud-wave-card #wave-banner {
-    font-size: clamp(9px, 2.7vw, 11px) !important;
-    letter-spacing: 0.6px !important;
+    font-size: clamp(8.5px, 2.5vw, 10.5px) !important;
+    letter-spacing: 0.5px !important;
     white-space: nowrap !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    max-width: none !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
     display: inline-block !important;
   }
 
-  /* HUD de Chefe Mobile (Design Compacto e Ultra-Limpo) */
+  /* HUD de Chefe Mobile (Design Compacto e Ultra-Limpo na Grid) */
   #boss-hud {
+    grid-column: 1 / -1 !important;
+    grid-row: 4 !important;
     margin-top: 2px !important;
     gap: 2px !important;
     width: 100% !important;
@@ -311,7 +366,8 @@
     height: 36px !important;
   }
 
-  #skill-cooldown-mask {
+  #skill-cooldown-mask,
+  .skill-glass-sheen {
     width: 47px !important;
     height: 47px !important;
   }

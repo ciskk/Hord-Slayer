@@ -6,13 +6,14 @@
  * e despacho para os renderizadores modulares especializados.
  */
 import { stick } from '../core/input.js';
-import { renderEnvironment } from './environment.js';
+import { renderEnvironment, ARENA_PALETTES } from './environment.js';
 import { drawEnemyShape, drawDyingEnemyShape } from './enemiesRenderer.js';
 import { drawPlayerCharacter, drawPlayerEquipment } from './playerRenderer.js';
 import { generateGroundCracks, drawDetailedGroundCracks, drawGroundCraters } from './groundCracks.js';
 import { drawBossVictoryOverlay } from '../entities/bosses/abyssSovereign/render.js';
 import { getHudBottom, layoutMetrics } from '../core/responsive.js';
-import { player } from '../entities/player.js';
+import { player, selectedHeroKey } from '../entities/player.js';
+import { CHARACTERS } from '../config/characters.js';
 import {
   gameState,
   ctx,
@@ -43,9 +44,14 @@ import {
   damageTexts,
   frameCount,
   waveAnnouncement,
-  cinematicCamera
+  cinematicCamera,
+  matchIntro,
+  currentArenaTheme
 } from '../main.js';
+import { deathSequence } from '../state/gameState.js';
+import { renderDeathSequenceWorld, renderDeathSequenceOverlay } from './deathAnimation.js';
 import { getActiveBloodAltar } from '../systems/worldEvents.js';
+import { drawBloodAltarWorld } from './worldEvents/bloodAltarRenderer.js';
 import { renderProps } from './entities/propsRenderer.js';
 import { 
   renderDrops, 
@@ -61,6 +67,7 @@ import {
   renderBossProjectiles 
 } from './entities/hazardsRenderer.js';
 import { 
+  renderEnemiesShadows,
   renderDyingEnemies, 
   renderEnemies, 
   renderMinibossOffscreenRadar 
@@ -70,218 +77,135 @@ import {
 // Reexportações para assegurar total retrocompatibilidade
 export { drawEnemyShape } from './enemiesRenderer.js';
 export { drawPlayerCharacter } from './playerRenderer.js';
+export { drawBloodAltarWorld } from './worldEvents/bloodAltarRenderer.js';
 
 // Cache do layout de texto do banner de onda (Zero Layout Thrashing e Zero measureText contínuo)
 let cachedWaveAnnouncementIndex = -1;
 let cachedWaveTitleText = '';
 let cachedWaveFontSize = 18;
 
+// Buffers estáticos para renderização de rastros balísticos (Zero Alocação no Hot Path)
+const MAX_TRAIL_PTS = 32;
+const _trailAllX = new Float32Array(MAX_TRAIL_PTS);
+const _trailAllY = new Float32Array(MAX_TRAIL_PTS);
+const _trailLeftX = new Float32Array(MAX_TRAIL_PTS);
+const _trailLeftY = new Float32Array(MAX_TRAIL_PTS);
+const _trailRightX = new Float32Array(MAX_TRAIL_PTS);
+const _trailRightY = new Float32Array(MAX_TRAIL_PTS);
+
+
+
 /**
- * Renderização Diegética do Altar de Sangue e seu Círculo Ritual:
- * - Círculo místico de 190px com preenchimento pulsante e runas orbitais
- * - Tolerância visual com aviso luminoso vermelho ao sair do perímetro
- * - Feixe vertical carmesim de alta altitude visível à distância
- * - Monólito de obsidiana com cálice/cristal de sangue e anel de canalização
+ * Renderiza a sobreposição cinematográfica de início de partida:
+ * 1. Vinheta teatral radial com foco no herói que se dissipa na arena.
+ * 2. Cartão de apresentação gótico (Tema da Arena, Nome do Herói, Alcunha e indicação de controle).
  */
-function drawBloodAltarWorld(ctx, altar) {
-  if (!altar) return;
+export function drawMatchIntroOverlay(ctx, viewW, viewH, matchIntro, frameCount) {
+  if (!matchIntro || !matchIntro.active) return;
 
-  ctx.save();
-  if (altar.fadeTimer !== undefined && altar.fadeAlpha !== undefined) {
-    ctx.globalAlpha = altar.fadeAlpha;
+  const progress = matchIntro.zoomProgress || 0;
+  const timer = matchIntro.timer || 0;
+
+  // 1. Vinheta Teatral Cinematográfica: foco de luz no herói que se expande e desvanece
+  const vignetteAlpha = Math.max(0, (1 - progress) * 0.72);
+  if (vignetteAlpha > 0.01) {
+    ctx.save();
+    const cx = viewW / 2;
+    const cy = viewH / 2;
+    const maxDim = Math.max(viewW, viewH);
+    const innerR = Math.max(60, maxDim * 0.12);
+    const outerR = maxDim * 0.68;
+    const vigGrad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+    vigGrad.addColorStop(0, 'rgba(4, 6, 10, 0)');
+    vigGrad.addColorStop(0.5, `rgba(6, 8, 14, ${vignetteAlpha * 0.42})`);
+    vigGrad.addColorStop(1, `rgba(2, 3, 6, ${vignetteAlpha})`);
+    ctx.fillStyle = vigGrad;
+    ctx.fillRect(0, 0, viewW, viewH);
+    ctx.restore();
   }
 
-  // 1. Círculo Ritual no Solo (Quando ACTIVE ou SPAWNED)
-  if (altar.state === 'ACTIVE' || altar.state === 'SPAWNED') {
-    const isAct = altar.state === 'ACTIVE';
-    const rad = altar.ritualRadius;
-
-    // Preenchimento do Círculo com Pulso Místico
-    const pulse = Math.sin(frameCount * 0.1) * 0.03;
-    const bgAlpha = isAct 
-      ? (altar.isWarning ? (0.16 + Math.sin(frameCount * 0.3) * 0.08) : 0.07 + pulse)
-      : 0.025;
-    
-    ctx.fillStyle = altar.isWarning ? `rgba(255, 56, 56, ${bgAlpha})` : `rgba(214, 48, 49, ${bgAlpha})`;
-    ctx.beginPath();
-    ctx.arc(altar.x, altar.y, rad, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Borda Rúnica Pontilhada e Giratória
-    ctx.strokeStyle = altar.isWarning ? '#ff3838' : (isAct ? '#e74c3c' : 'rgba(231, 76, 60, 0.45)');
-    ctx.lineWidth = altar.isWarning ? 3.5 : (isAct ? 2.2 : 1.2);
-    ctx.setLineDash(isAct ? [16, 10] : [8, 8]);
-    ctx.lineDashOffset = -frameCount * (isAct ? 0.8 : 0.2);
-    ctx.beginPath();
-    ctx.arc(altar.x, altar.y, rad, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Anel Interno Fino
-    if (isAct) {
-      ctx.strokeStyle = altar.isWarning ? 'rgba(255, 118, 117, 0.6)' : 'rgba(255, 107, 107, 0.35)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(altar.x, altar.y, rad - 8, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // 6 Runas Orbitais na Periferia do Círculo
-      ctx.save();
-      ctx.translate(altar.x, altar.y);
-      ctx.rotate(altar.runesAngle);
-      for (let r = 0; r < 6; r++) {
-        const rAng = (r * Math.PI * 2) / 6;
-        const rx = Math.cos(rAng) * (rad - 4);
-        const ry = Math.sin(rAng) * (rad - 4);
-        ctx.fillStyle = altar.isWarning ? '#ff7675' : '#ff4757';
-        ctx.beginPath();
-        ctx.arc(rx, ry, 3.8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
+  // 2. Cartão de Apresentação Gótico (Arena + Herói)
+  let textAlpha = 0;
+  if (timer < 22) {
+    textAlpha = timer / 22;
+  } else if (progress < 0.65) {
+    textAlpha = 1.0;
+  } else if (progress < 0.95) {
+    textAlpha = Math.max(0, (0.95 - progress) / 0.30);
   }
 
-  // 2. Feixe de Luz Místico Vertical Carmesim (God Ray Ascendente)
-  ctx.save();
-  const beamH = 1400;
-  const beamW = altar.state === 'ACTIVE' ? 38 : 24;
-  const beamGrad = ctx.createLinearGradient(altar.x, altar.y, altar.x, altar.y - beamH);
-  const alphaMult = altar.state === 'ACTIVE' ? 0.42 : 0.24;
-  beamGrad.addColorStop(0, `rgba(255, 56, 56, ${alphaMult})`);
-  beamGrad.addColorStop(0.25, `rgba(231, 76, 60, ${alphaMult * 0.7})`);
-  beamGrad.addColorStop(0.7, `rgba(192, 57, 43, ${alphaMult * 0.25})`);
-  beamGrad.addColorStop(1, 'rgba(255, 56, 56, 0)');
-  ctx.fillStyle = beamGrad;
-  ctx.fillRect(altar.x - beamW / 2, altar.y - beamH, beamW, beamH);
+  if (textAlpha > 0.01) {
+    ctx.save();
+    ctx.globalAlpha = textAlpha;
 
-  // Núcleo brilhante fino do feixe
-  ctx.strokeStyle = `rgba(255, 255, 255, ${alphaMult * 0.75})`;
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.moveTo(altar.x, altar.y - 12);
-  ctx.lineTo(altar.x, altar.y - beamH);
-  ctx.stroke();
-  ctx.restore();
+    const heroDef = CHARACTERS[selectedHeroKey] || CHARACTERS.KNIGHT;
+    const arenaPal = ARENA_PALETTES[currentArenaTheme] || ARENA_PALETTES.IVORY_OSSUARY;
 
-  // 3. Monólito / Base do Altar
-  // Sombra de contato
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.58)';
-  ctx.beginPath();
-  ctx.ellipse(altar.x, altar.y + 7, 34, 15, 0, 0, Math.PI * 2);
-  ctx.fill();
+    const isCompactH = viewH < 520;
+    // Posição no terço inferior da tela, perfeitamente emoldurado no letterbox
+    const driftY = progress * 12;
+    const baseY = Math.floor(viewH * (isCompactH ? 0.76 : 0.73)) + driftY;
+    const centerX = viewW / 2;
 
-  ctx.save();
-  ctx.translate(altar.x, altar.y);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
 
-  // Hexágono de Obsidiana Lapidada
-  ctx.fillStyle = '#16080b';
-  ctx.strokeStyle = '#c0392b';
-  ctx.lineWidth = 2.4;
-  ctx.beginPath();
-  for (let i = 0; i < 6; i++) {
-    const a = (i * Math.PI) / 3;
-    const px = Math.cos(a) * 26;
-    const py = Math.sin(a) * 15;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  }
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
+    // A. Linha superior dourada: Tema da Arena com ornamentos
+    const arenaLabel = `— ${arenaPal.name.toUpperCase()} —`;
+    ctx.font = `bold ${isCompactH ? 10.5 : 12}px "Cinzel", Georgia, serif`;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    ctx.fillText(arenaLabel, centerX + 1, baseY - (isCompactH ? 24 : 30) + 1);
+    ctx.fillStyle = '#f1c40f';
+    ctx.fillText(arenaLabel, centerX, baseY - (isCompactH ? 24 : 30));
 
-  // Pedestal Central
-  const pedGrad = ctx.createLinearGradient(-13, -22, 13, 0);
-  pedGrad.addColorStop(0, '#2f0f15');
-  pedGrad.addColorStop(1, '#16080b');
-  ctx.fillStyle = pedGrad;
-  ctx.strokeStyle = '#ff3838';
-  ctx.lineWidth = 1.4;
-  ctx.beginPath();
-  ctx.roundRect(-13, -22, 26, 22, [4, 4, 1, 1]);
-  ctx.fill();
-  ctx.stroke();
+    // B. Nome do Herói em destaque imperial
+    const heroName = heroDef.name.toUpperCase();
+    const heroFontSize = isCompactH ? 20 : 26;
+    ctx.font = `900 ${heroFontSize}px "Cinzel Decorative", "Cinzel", Georgia, serif`;
+    // Sombra de contraste
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
+    ctx.fillText(heroName, centerX + 1.5, baseY + 1.5);
+    // Halo dourado sutil
+    ctx.fillStyle = 'rgba(241, 196, 15, 0.35)';
+    ctx.fillText(heroName, centerX, baseY + 1);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(heroName, centerX, baseY);
 
-  // Linhas rúnicas esculpidas no pedestal
-  ctx.strokeStyle = 'rgba(255, 56, 56, 0.7)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(-7, -16); ctx.lineTo(0, -6); ctx.lineTo(7, -16);
-  ctx.moveTo(0, -18); ctx.lineTo(0, -3);
-  ctx.stroke();
+    // C. Alcunha / Subtítulo do Herói
+    const heroSubtitle = heroDef.title || heroDef.role || 'SOBREVIVENTE';
+    ctx.font = `italic ${isCompactH ? 10.5 : 12}px sans-serif`;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+    ctx.fillText(heroSubtitle, centerX + 1, baseY + (isCompactH ? 21 : 26) + 1);
+    ctx.fillStyle = '#dfe4ea';
+    ctx.fillText(heroSubtitle, centerX, baseY + (isCompactH ? 21 : 26));
 
-  // Cristal de Sangue / Cálice Flutuante
-  const floatY = -30 + Math.sin(frameCount * 0.08) * 3;
-  ctx.fillStyle = '#ff3838';
-  ctx.beginPath();
-  ctx.moveTo(0, floatY - 9);
-  ctx.lineTo(7, floatY);
-  ctx.lineTo(0, floatY + 9);
-  ctx.lineTo(-7, floatY);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1.2;
-  ctx.stroke();
-
-  // Se em SPAWNED: Círculo de Interação e Barra de Canalização Diegética
-  if (altar.state === 'SPAWNED') {
-    // Raio de interação tracejado
-    ctx.strokeStyle = 'rgba(255, 56, 56, 0.4)';
-    ctx.lineWidth = 1.4;
-    ctx.setLineDash([6, 6]);
-    ctx.beginPath();
-    ctx.arc(0, 0, altar.interactRadius, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Anel de canalização se houver progresso
-    if (altar.channelProgress > 0) {
-      const startAngle = -Math.PI / 2;
-      const endAngle = startAngle + (Math.PI * 2 * altar.channelProgress);
-      ctx.strokeStyle = '#ffd166';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(0, 0, 34, startAngle, endAngle);
-      ctx.stroke();
+    // D. Indicador não-intrusivo de movimentação livre
+    if (timer > 25 && progress < 0.60) {
+      const hintPulse = 0.35 + Math.sin(frameCount * 0.08) * 0.25;
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = `rgba(223, 228, 234, ${hintPulse * textAlpha})`;
+      ctx.fillText('[ Mova ou toque para iniciar ]', centerX, baseY + (isCompactH ? 40 : 48));
     }
 
-    // Prompt Diegético se o jogador estiver ao alcance
-    if (player) {
-      const distToPlayer = Math.hypot(player.x - altar.x, player.y - altar.y);
-      if (distToPlayer <= altar.interactRadius) {
-        ctx.font = 'bold 10px Outfit, sans-serif';
-        const promptText = "[SEGURE ESPAÇO / E] PACTO DE SANGUE";
-        const pw = ctx.measureText(promptText).width;
-        ctx.fillStyle = 'rgba(10, 5, 8, 0.88)';
-        ctx.strokeStyle = '#ff3838';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.roundRect(-pw / 2 - 8, -54, pw + 16, 18, 4);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = '#ffd166';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(promptText, 0, -45);
-      }
-    }
+    ctx.restore();
   }
-
-  ctx.restore();
-  ctx.restore();
 }
+
+let _isBannerCanvasDirty = false;
 
 /**
  * Pipeline principal de renderização do quadro (Frame Render Loop).
  */
 export function render() {
+  const hasActiveBossTitle = (activeBoss && activeBoss.titleTimer > 0) || (enemies && enemies.some(e => e.isBoss && e.titleTimer > 0));
+  const hasWaveAnnouncement = waveAnnouncement && waveAnnouncement.timer > 0;
+  const isBannerActive = hasActiveBossTitle || hasWaveAnnouncement;
+
   if (bannerCtx && bannerCanvas) {
-    bannerCtx.clearRect(0, 0, bannerCanvas.width, bannerCanvas.height);
+    if (isBannerActive || _isBannerCanvasDirty) {
+      bannerCtx.clearRect(0, 0, bannerCanvas.width, bannerCanvas.height);
+      _isBannerCanvasDirty = isBannerActive;
+    }
   }
 
   ctx.save();
@@ -295,9 +219,13 @@ export function render() {
   // Aplica a aproximação de câmera (~20% menor FOV)
   ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
 
-  // Quantização inteira da posição da câmera: elimina o anti-aliasing cinzento de subpixel no mobile
-  const renderCamX = Math.round(-camera.x + shakeX);
-  const renderCamY = Math.round(-camera.y + shakeY);
+  // Quantização inteira da posição da câmera: elimina o anti-aliasing cinzento de subpixel no mobile,
+  // mantendo coordenadas contínuas de ponto flutuante durante a transição cinematográfica de zoom
+  const isIntroActive = matchIntro && matchIntro.active;
+  const isDeathActive = deathSequence && deathSequence.active;
+  const isContinuousCam = isIntroActive || isDeathActive;
+  const renderCamX = isContinuousCam ? (-camera.x + shakeX) : Math.round(-camera.x + shakeX);
+  const renderCamY = isContinuousCam ? (-camera.y + shakeY) : Math.round(-camera.y + shakeY);
   ctx.translate(renderCamX, renderCamY);
 
   renderEnvironment(ctx);
@@ -406,18 +334,22 @@ export function render() {
       const rad = b.radius || 9;
       const spin = frameCount * 0.25;
 
-      // 1. RASTRO DE FOGO EM CAUDA DE COMETA FLUIDA (Continuous Flame Comet Ribbon)
+      // 1. RASTRO DE FOGO EM CAUDA DE COMETA FLUIDA (Continuous Flame Comet Ribbon - Zero Allocations)
       if (b.trail && b.trail.length > 0) {
         ctx.save();
-        const allPts = [{ x: b.x, y: b.y }, ...b.trail];
-        const numPts = allPts.length;
+        const trailLen = b.trail.length;
+        const numPts = Math.min(MAX_TRAIL_PTS, trailLen + 1);
+        _trailAllX[0] = b.x;
+        _trailAllY[0] = b.y;
+        for (let t = 0; t < trailLen && t + 1 < MAX_TRAIL_PTS; t++) {
+          _trailAllX[t + 1] = b.trail[t].x;
+          _trailAllY[t + 1] = b.trail[t].y;
+        }
 
         if (numPts >= 2) {
-          const leftPoints = [];
-          const rightPoints = [];
-
           for (let t = 0; t < numPts; t++) {
-            const pt = allPts[t];
+            const ptx = _trailAllX[t];
+            const pty = _trailAllY[t];
             const progress = t / (numPts - 1 || 1); // 0 (cabeça) -> 1 (ponta da cauda)
             const taper = Math.pow(1 - progress, 0.82);
             const currentW = (rad * 1.35) * taper;
@@ -425,9 +357,9 @@ export function render() {
             // Vetor tangencial e perpendicular
             let segAngle = b.angle || 0;
             if (t < numPts - 1) {
-              segAngle = Math.atan2(allPts[t + 1].y - pt.y, allPts[t + 1].x - pt.x);
+              segAngle = Math.atan2(_trailAllY[t + 1] - pty, _trailAllX[t + 1] - ptx);
             } else if (t > 0) {
-              segAngle = Math.atan2(pt.y - allPts[t - 1].y, pt.x - allPts[t - 1].x);
+              segAngle = Math.atan2(pty - _trailAllY[t - 1], ptx - _trailAllX[t - 1]);
             }
 
             // Ondulação térmica viva de labareda com o vento e deslocamento
@@ -435,26 +367,22 @@ export function render() {
             const perpX = -Math.sin(segAngle);
             const perpY = Math.cos(segAngle);
 
-            leftPoints.push({
-              x: pt.x + perpX * (currentW + wave),
-              y: pt.y + perpY * (currentW + wave)
-            });
-            rightPoints.push({
-              x: pt.x - perpX * (currentW - wave),
-              y: pt.y - perpY * (currentW - wave)
-            });
+            _trailLeftX[t] = ptx + perpX * (currentW + wave);
+            _trailLeftY[t] = pty + perpY * (currentW + wave);
+            _trailRightX[t] = ptx - perpX * (currentW - wave);
+            _trailRightY[t] = pty - perpY * (currentW - wave);
           }
 
           // A. Manto Externo de Fogo Vivo (Carmesim / Laranja Incandescente)
           ctx.beginPath();
-          ctx.moveTo(leftPoints[0].x, leftPoints[0].y);
-          for (let i = 1; i < leftPoints.length; i++) ctx.lineTo(leftPoints[i].x, leftPoints[i].y);
-          for (let i = rightPoints.length - 1; i >= 0; i--) ctx.lineTo(rightPoints[i].x, rightPoints[i].y);
+          ctx.moveTo(_trailLeftX[0], _trailLeftY[0]);
+          for (let i = 1; i < numPts; i++) ctx.lineTo(_trailLeftX[i], _trailLeftY[i]);
+          for (let i = numPts - 1; i >= 0; i--) ctx.lineTo(_trailRightX[i], _trailRightY[i]);
           ctx.closePath();
 
           const tailGrad = ctx.createLinearGradient(
             b.x, b.y,
-            allPts[numPts - 1].x, allPts[numPts - 1].y
+            _trailAllX[numPts - 1], _trailAllY[numPts - 1]
           );
           tailGrad.addColorStop(0, b.isEvolved ? 'rgba(231, 76, 60, 0.85)' : 'rgba(230, 126, 34, 0.85)');
           tailGrad.addColorStop(0.45, b.isEvolved ? 'rgba(214, 48, 49, 0.55)' : 'rgba(230, 80, 20, 0.55)');
@@ -465,24 +393,20 @@ export function render() {
           // B. Núcleo Interno de Fogo Dourado
           ctx.beginPath();
           ctx.moveTo(
-            b.x + (leftPoints[0].x - b.x) * 0.65,
-            b.y + (leftPoints[0].y - b.y) * 0.65
+            b.x + (_trailLeftX[0] - b.x) * 0.65,
+            b.y + (_trailLeftY[0] - b.y) * 0.65
           );
-          for (let i = 1; i < leftPoints.length; i++) {
-            const lp = leftPoints[i];
-            const pt = allPts[i];
-            ctx.lineTo(pt.x + (lp.x - pt.x) * 0.65, pt.y + (lp.y - pt.y) * 0.65);
+          for (let i = 1; i < numPts; i++) {
+            ctx.lineTo(_trailAllX[i] + (_trailLeftX[i] - _trailAllX[i]) * 0.65, _trailAllY[i] + (_trailLeftY[i] - _trailAllY[i]) * 0.65);
           }
-          for (let i = rightPoints.length - 1; i >= 0; i--) {
-            const rp = rightPoints[i];
-            const pt = allPts[i];
-            ctx.lineTo(pt.x + (rp.x - pt.x) * 0.65, pt.y + (rp.y - pt.y) * 0.65);
+          for (let i = numPts - 1; i >= 0; i--) {
+            ctx.lineTo(_trailAllX[i] + (_trailRightX[i] - _trailAllX[i]) * 0.65, _trailAllY[i] + (_trailRightY[i] - _trailAllY[i]) * 0.65);
           }
           ctx.closePath();
 
           const coreGrad = ctx.createLinearGradient(
             b.x, b.y,
-            allPts[numPts - 1].x, allPts[numPts - 1].y
+            _trailAllX[numPts - 1], _trailAllY[numPts - 1]
           );
           coreGrad.addColorStop(0, 'rgba(255, 240, 150, 0.95)');
           coreGrad.addColorStop(0.35, 'rgba(241, 196, 15, 0.8)');
@@ -499,18 +423,19 @@ export function render() {
           ctx.moveTo(b.x, b.y);
           const spineCut = Math.min(numPts, 6);
           for (let i = 1; i < spineCut; i++) {
-            ctx.lineTo(allPts[i].x, allPts[i].y);
+            ctx.lineTo(_trailAllX[i], _trailAllY[i]);
           }
           ctx.stroke();
 
           // D. Brasas e Faíscas que se desprendem na esteira térmica
           for (let t = 1; t < numPts; t++) {
-            const pt = allPts[t];
+            const ptx = _trailAllX[t];
+            const pty = _trailAllY[t];
             const progress = t / numPts;
             const sparkAngle = frameCount * 0.35 + t * 2.3;
             const sparkDist = (rad * 0.85) * Math.sin(sparkAngle);
-            const sx = pt.x + Math.cos(sparkAngle) * sparkDist;
-            const sy = pt.y + Math.sin(sparkAngle) * sparkDist;
+            const sx = ptx + Math.cos(sparkAngle) * sparkDist;
+            const sy = pty + Math.sin(sparkAngle) * sparkDist;
             const sSize = Math.max(0.8, rad * 0.28 * (1 - progress));
             ctx.fillStyle = (t % 2 === 0) 
               ? `rgba(255, 255, 255, ${0.85 * (1 - progress)})` 
@@ -1013,9 +938,11 @@ export function render() {
   // Defesa em profundidade: garante opacidade integral antes de desenhar entidades e jogador
   ctx.globalAlpha = 1.0;
 
+  renderEnemiesShadows(ctx, enemies, bounds, frameCount);
   renderDyingEnemies(dyingEnemies, bounds);
   renderEnemies(enemies, bounds);
   drawPlayerCharacter();
+  renderDeathSequenceWorld(ctx);
   drawPlayerChestArrows(ctx, chests, player, frameCount);
 
   for (let i = 0; i < particles.length; i++) {
@@ -1057,98 +984,112 @@ export function render() {
   if (waveAnnouncement && waveAnnouncement.timer > 0) {
     const maxT = waveAnnouncement.maxTimer || 180;
     const progress = 1 - (waveAnnouncement.timer / maxT);
-    let alpha = 1.0;
-    if (progress < 0.15) {
-      alpha = progress / 0.15;
-    } else if (progress > 0.82) {
-      alpha = Math.max(0, (1 - progress) / 0.18);
-    }
+    const inRatio = Math.min(1.0, Math.max(0, progress / 0.16));
+    const inEase = inRatio * inRatio * (3 - 2 * inRatio);
+    const outRatio = Math.min(1.0, Math.max(0, (1 - progress) / 0.18));
+    const outEase = outRatio * outRatio * (3 - 2 * outRatio);
+    const alpha = inEase * outEase;
+    if (alpha > 0.001) {
+      const isCompactH = layoutMetrics.isCompactHeight || viewH < 520;
+      const hudBottom = getHudBottom();
+      const bannerW = Math.min(560, Math.floor(viewW * 0.92));
+      const bannerH = isCompactH ? 42 : 52;
+      const bx = (viewW - bannerW) / 2;
+      
+      // Ancoragem dinâmica: SEMPRE abaixo da base do HUD com margem de segurança garantida
+      const safeTop = hudBottom + (isCompactH ? 8 : 14);
+      const by = Math.max(safeTop, Math.floor(viewH * (isCompactH ? 0.12 : 0.15)));
 
-    const isCompactH = layoutMetrics.isCompactHeight || viewH < 520;
-    const hudBottom = getHudBottom();
-    const bannerW = Math.min(560, Math.floor(viewW * 0.92));
-    const bannerH = isCompactH ? 42 : 52;
-    const bx = (viewW - bannerW) / 2;
-    
-    // Ancoragem dinâmica: SEMPRE abaixo da base do HUD com margem de segurança garantida
-    const safeTop = hudBottom + (isCompactH ? 8 : 14);
-    const by = Math.max(safeTop, Math.floor(viewH * (isCompactH ? 0.12 : 0.15)));
+      // Asas de fade lateral estendido
+      const fadeWing = isCompactH ? 50 : 120;
+      const totalW = bannerW + fadeWing * 2;
+      const startX = bx - fadeWing;
+      const endX = bx + bannerW + fadeWing;
 
-    const targetCtx = bannerCtx || ctx;
-    targetCtx.save();
-    if (bannerCtx && targetCtx === bannerCtx) {
-      targetCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    targetCtx.globalAlpha = alpha;
+      // Transição suave de movimento
+      const animOffsetY = (1 - inEase) * -8 + (1 - outEase) * -6;
 
-    // Fundo do Banner Gótico Sombrio com bordas translúcidas
-    const bgGrad = targetCtx.createLinearGradient(bx, by, bx + bannerW, by);
-    bgGrad.addColorStop(0, 'rgba(10, 12, 16, 0)');
-    bgGrad.addColorStop(0.18, 'rgba(14, 18, 28, 0.92)');
-    bgGrad.addColorStop(0.82, 'rgba(14, 18, 28, 0.92)');
-    bgGrad.addColorStop(1, 'rgba(10, 12, 16, 0)');
-    targetCtx.fillStyle = bgGrad;
-    targetCtx.fillRect(bx, by, bannerW, bannerH);
-
-    // Linhas de friso douradas superior e inferior
-    const borderGrad = targetCtx.createLinearGradient(bx, by, bx + bannerW, by);
-    borderGrad.addColorStop(0, 'rgba(241, 196, 15, 0)');
-    borderGrad.addColorStop(0.25, 'rgba(241, 196, 15, 0.85)');
-    borderGrad.addColorStop(0.5, 'rgba(255, 234, 167, 1)');
-    borderGrad.addColorStop(0.75, 'rgba(241, 196, 15, 0.85)');
-    borderGrad.addColorStop(1, 'rgba(241, 196, 15, 0)');
-    targetCtx.strokeStyle = borderGrad;
-    targetCtx.lineWidth = 1.6;
-    targetCtx.beginPath();
-    targetCtx.moveTo(bx, by);
-    targetCtx.lineTo(bx + bannerW, by);
-    targetCtx.moveTo(bx, by + bannerH);
-    targetCtx.lineTo(bx + bannerW, by + bannerH);
-    targetCtx.stroke();
-
-    // Texto Centralizado com Auto-Scaling Cacheado (Zero recalculo por frame)
-    targetCtx.textAlign = 'center';
-    targetCtx.textBaseline = 'middle';
-
-    if (cachedWaveAnnouncementIndex !== waveAnnouncement.index) {
-      cachedWaveAnnouncementIndex = waveAnnouncement.index;
-      const waveTitle = (waveAnnouncement.name || '').toUpperCase();
-      cachedWaveTitleText = `⚜ ${waveTitle} ⚜`;
-      let fontSize = isCompactH ? 14 : 18;
-      targetCtx.font = `bold ${fontSize}px "Cinzel", "Cinzel Decorative", Georgia, serif`;
-      let textWidth = targetCtx.measureText(cachedWaveTitleText).width;
-      const maxTextWidth = bannerW - 32;
-
-      while (textWidth > maxTextWidth && fontSize > 11) {
-        fontSize -= 1;
-        targetCtx.font = `bold ${fontSize}px "Cinzel", "Cinzel Decorative", Georgia, serif`;
-        textWidth = targetCtx.measureText(cachedWaveTitleText).width;
+      const targetCtx = bannerCtx || ctx;
+      targetCtx.save();
+      if (bannerCtx && targetCtx === bannerCtx) {
+        targetCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
-      cachedWaveFontSize = fontSize;
+      targetCtx.globalAlpha = alpha;
+      targetCtx.translate(0, animOffsetY);
+
+      // Fundo do Banner Gótico Sombrio com Fade Estendido nas Laterais
+      const bgGrad = targetCtx.createLinearGradient(startX, by, endX, by);
+      bgGrad.addColorStop(0, 'rgba(10, 12, 16, 0)');
+      bgGrad.addColorStop(0.14, 'rgba(12, 14, 20, 0.25)');
+      bgGrad.addColorStop(0.28, 'rgba(14, 18, 28, 0.90)');
+      bgGrad.addColorStop(0.50, 'rgba(16, 20, 32, 0.96)');
+      bgGrad.addColorStop(0.72, 'rgba(14, 18, 28, 0.90)');
+      bgGrad.addColorStop(0.86, 'rgba(12, 14, 20, 0.25)');
+      bgGrad.addColorStop(1, 'rgba(10, 12, 16, 0)');
+      targetCtx.fillStyle = bgGrad;
+      targetCtx.fillRect(startX, by, totalW, bannerH);
+
+      // Linhas de friso douradas superior e inferior com pontas suaves
+      const borderGrad = targetCtx.createLinearGradient(startX, by, endX, by);
+      borderGrad.addColorStop(0, 'rgba(241, 196, 15, 0)');
+      borderGrad.addColorStop(0.20, 'rgba(241, 196, 15, 0.65)');
+      borderGrad.addColorStop(0.50, 'rgba(255, 234, 167, 1)');
+      borderGrad.addColorStop(0.80, 'rgba(241, 196, 15, 0.65)');
+      borderGrad.addColorStop(1, 'rgba(241, 196, 15, 0)');
+      targetCtx.strokeStyle = borderGrad;
+      targetCtx.lineWidth = 1.6;
+      targetCtx.lineCap = 'round';
+      targetCtx.beginPath();
+      targetCtx.moveTo(startX + fadeWing * 0.3, by);
+      targetCtx.lineTo(endX - fadeWing * 0.3, by);
+      targetCtx.moveTo(startX + fadeWing * 0.3, by + bannerH);
+      targetCtx.lineTo(endX - fadeWing * 0.3, by + bannerH);
+      targetCtx.stroke();
+
+      // Texto Centralizado com Auto-Scaling Cacheado (Zero recalculo por frame)
+      targetCtx.textAlign = 'center';
+      targetCtx.textBaseline = 'middle';
+
+      if (cachedWaveAnnouncementIndex !== waveAnnouncement.index) {
+        cachedWaveAnnouncementIndex = waveAnnouncement.index;
+        const waveTitle = (waveAnnouncement.name || '').toUpperCase();
+        cachedWaveTitleText = `⚜ ${waveTitle} ⚜`;
+        let fontSize = isCompactH ? 14 : 18;
+        targetCtx.font = `bold ${fontSize}px "Cinzel", "Cinzel Decorative", Georgia, serif`;
+        let textWidth = targetCtx.measureText(cachedWaveTitleText).width;
+        const maxTextWidth = bannerW - 32;
+
+        while (textWidth > maxTextWidth && fontSize > 11) {
+          fontSize -= 1;
+          targetCtx.font = `bold ${fontSize}px "Cinzel", "Cinzel Decorative", Georgia, serif`;
+          textWidth = targetCtx.measureText(cachedWaveTitleText).width;
+        }
+        cachedWaveFontSize = fontSize;
+      }
+
+      targetCtx.font = `bold ${cachedWaveFontSize}px "Cinzel", "Cinzel Decorative", Georgia, serif`;
+      const titleX = viewW / 2;
+      const titleY = by + (isCompactH ? 15 : 20);
+
+      // Efeito de Glow Dourado em Camadas (Zero-cost shadow - sem ativação do pipeline de shadowBlur)
+      targetCtx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      targetCtx.fillText(cachedWaveTitleText, titleX + 1, titleY + 1.5);
+      targetCtx.fillStyle = 'rgba(241, 196, 15, 0.35)';
+      targetCtx.fillText(cachedWaveTitleText, titleX, titleY + 1);
+      targetCtx.fillStyle = '#f1c40f';
+      targetCtx.fillText(cachedWaveTitleText, titleX, titleY);
+
+      // Subtítulo descritivo
+      if (!isCompactH || viewH > 370) {
+        targetCtx.font = 'italic 10.5px sans-serif';
+        targetCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        targetCtx.fillText("Sobreviva à maré crescente de horrores", titleX + 1, by + (isCompactH ? 30 : 38));
+        targetCtx.fillStyle = '#dfe4ea';
+        targetCtx.fillText("Sobreviva à maré crescente de horrores", titleX, by + (isCompactH ? 29 : 37));
+      }
+
+      targetCtx.restore();
     }
-
-    targetCtx.font = `bold ${cachedWaveFontSize}px "Cinzel", "Cinzel Decorative", Georgia, serif`;
-    const titleX = viewW / 2;
-    const titleY = by + (isCompactH ? 15 : 20);
-
-    // Efeito de Glow Dourado em Camadas (Zero-cost shadow - sem ativação do pipeline de shadowBlur)
-    targetCtx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    targetCtx.fillText(cachedWaveTitleText, titleX + 1, titleY + 1.5);
-    targetCtx.fillStyle = 'rgba(241, 196, 15, 0.35)';
-    targetCtx.fillText(cachedWaveTitleText, titleX, titleY + 1);
-    targetCtx.fillStyle = '#f1c40f';
-    targetCtx.fillText(cachedWaveTitleText, titleX, titleY);
-
-    // Subtítulo descritivo
-    if (!isCompactH || viewH > 370) {
-      targetCtx.font = 'italic 10.5px sans-serif';
-      targetCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      targetCtx.fillText("Sobreviva à maré crescente de horrores", titleX + 1, by + (isCompactH ? 30 : 38));
-      targetCtx.fillStyle = '#dfe4ea';
-      targetCtx.fillText("Sobreviva à maré crescente de horrores", titleX, by + (isCompactH ? 29 : 37));
-    }
-
-    targetCtx.restore();
   }
 
   if (stick.active) {
@@ -1229,7 +1170,17 @@ export function render() {
     drawBossVictoryOverlay(ctx, sovereignBoss, frameCount);
   }
 
-  // 4. Barras Pretas de Cinema (Letterbox) durante a intro do Boss
+  // 4. Overlay de Introdução Cinematográfica (Vinheta Teatral e Cartão do Herói/Arena)
+  if (matchIntro && matchIntro.active) {
+    drawMatchIntroOverlay(ctx, viewW, viewH, matchIntro, frameCount);
+  }
+
+  // 4.1 Overlay da Sequência de Morte (Spotlight fúnebre e Flash necrótico da Nova)
+  if ((deathSequence && deathSequence.active) || gameState.isDead) {
+    renderDeathSequenceOverlay(ctx, viewW, viewH);
+  }
+
+  // 5. Barras Pretas de Cinema (Letterbox) durante a intro do Boss ou início de partida
   if (cinematicCamera && cinematicCamera.letterboxProgress > 0.005) {
     const barHeight = Math.floor(viewH * 0.11 * cinematicCamera.letterboxProgress);
     ctx.fillStyle = '#000000';
@@ -1263,6 +1214,7 @@ export {
   renderBossTelegraphs,
   renderBossShockwaves,
   renderBossProjectiles,
+  renderEnemiesShadows,
   renderDyingEnemies,
   renderEnemies,
   renderMinibossOffscreenRadar

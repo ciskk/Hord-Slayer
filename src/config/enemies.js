@@ -42,7 +42,7 @@ export const BOSS_TYPES = {
 };
 
 export const MINI_BOSS_TYPES = {
-  BLOOD_GARGOYLE:   { name: 'Gárgula de Sangue', radius: 24, speed: 2.4, hp: 588, color: '#c0392b', behavior: 'dash', damage: 34, xp: 90, gold: 15 },
+  BLOOD_GARGOYLE:   { name: 'Gárgula de Sangue', radius: 24, speed: 1.95, hp: 380, color: '#c0392b', behavior: 'dash', damage: 22, xp: 90, gold: 15 },
   ZOMBIE_ALPHA:     { name: 'Zumbi Alfa', radius: 26, speed: 1.1, hp: 952, color: '#27ae60', behavior: 'chase', damage: 39, xp: 95, gold: 20 },
   PHALANX_LEADER:   { name: 'Centurião da Guarda', radius: 28, speed: 1.2, hp: 1190, color: '#7f8c8d', behavior: 'shielded', damage: 44, xp: 110, gold: 25 },
   SEISMIC_SMASHER:  { name: 'Demolidor Sísmico', radius: 26, speed: 0.9, hp: 1288, color: '#95a5a6', behavior: 'ground_slam', damage: 47, xp: 120, gold: 25 },

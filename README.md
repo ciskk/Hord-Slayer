@@ -171,7 +171,9 @@ Hord.io/
     │   └── upgrades.js         # Lógica de seleção e sorteio ponderado de cartas de tarô
     │
     ├── core/                   # Infraestrutura base e utilitários de engine
-    │   ├── audio.js            # Síntese sonora procedural via Web Audio API, filtros e vibração
+    │   ├── audio.js            # Orquestrador do motor de áudio procedural Web Audio API e filtros
+    │   ├── audio/              # Tabela declarativa O(1) de sintetizadores e cooldowns
+    │   │   └── sfxRegistry.js  # Catálogo com 48 sintetizadores sonoros procedurais
     │   ├── input.js            # Mapeamento unificado de teclado, mouse, touch e joysticks móveis
     │   ├── math.js             # Funções vetoriais, interpolação, ângulos e colisões
     │   ├── responsive.js       # Métricas de layout dinâmico, DPR (limitado a 2.0x) e safe areas
@@ -190,7 +192,8 @@ Hord.io/
     │   │   └── abyssSovereign/ # Módulo desacoplado do Soberano do Abismo (Boss 4)
     │   │
     │   ├── enemies/            # Spawners e máquinas de estados de inimigos
-    │   │   ├── minibossAI.js   # Máquinas de estados finitos (FSM) dos 16 minibosses de elite
+    │   │   ├── minibossAI.js   # Fachada de retrocompatibilidade para controladores dos 16 minibosses
+    │   │   ├── minibosses/     # Módulos atômicos e FSM individuais para cada um dos 16 minibosses
     │   │   └── spawner.js      # Spawner de hordas, esquadrões e monstros comuns
     │   │
     │   └── player/             # Módulos especializados do sobrevivente
@@ -202,11 +205,13 @@ Hord.io/
     │   ├── bestRunPreview.js   # Renderização procedural do monumento da melhor partida
     │   ├── bestiaryPreview.js  # Desenho dinâmico das criaturas no códice do bestiário
     │   ├── characterPreview.js # Desenho procedural dos heróis e armas na tela de seleção
-    │   ├── enemiesRenderer.js  # Renderização procedural de monstros comuns e elites
-    │   ├── environment.js      # Cenários procedurais, altares de sangue e arena 2.5D
+    │   ├── enemiesRenderer.js  # Fachada de retrocompatibilidade para monstros comuns e elites
+    │   ├── enemies/            # Renderizadores procedurais dedicados para cada uma das 24 criaturas comuns
+    │   ├── environment.js      # Fachada e orquestrador de solo, transições de biomas e atmosfera
     │   ├── groundCracks.js     # Fissuras de impacto, crateras e fendas de magma no solo
     │   ├── kaelRenderer.js     # Fachada de compatibilidade para o renderer de Kael
-    │   ├── minibossesRenderer.js # Renderização procedural dos 16 minibosses de elite
+    │   ├── minibossesRenderer.js # Fachada de retrocompatibilidade para os 16 minibosses
+    │   ├── minibosses/         # Renderizadores procedurais dedicados para cada um dos 16 minibosses
     │   ├── playerRenderer.js   # Fachada e renderização de auras sagradas, orbitais e machados
     │   ├── renderer.js         # Orquestrador gráfico principal (câmera, shake, camadas e partículas)
     │   │
@@ -216,20 +221,41 @@ Hord.io/
     │   │   ├── pickupsRenderer.js # Gemas, almas, baús, flechas e radar de borda de tela
     │   │   └── propsRenderer.js # Objetos destrutíveis, lápides ancestrais, tochas e urnas
     │   │
-    │   └── heroes/             # Renderizadores dedicados para cada um dos 5 sobreviventes
-    │       ├── ignisRenderer.js # Efeitos de fogo, cajado estelar e manto da Piromante
-    │       ├── index.js        # Despachante unificado de renderização de heróis
-    │       ├── kaelRenderer.js # Manto espectral em farrapos, adagas duplas e capuz de Kael
-    │       ├── kragdorRenderer.js # Tatuagens rúnicas, machado giratório e fúria do Bárbaro
-    │       ├── rolandRenderer.js # Armadura de placas, elmo sagrado e martelo do Paladino
-    │       └── valeriaRenderer.js # Frascos de vidro, reagentes cáusticos e vidrarias da Alquimista
+    │   ├── environment/        # Módulos especializados de cenários e arenas surreais
+    │   │   ├── abyssArena.js   # Renderizador surreal do Altar do Vazio e Soberano do Abismo
+    │   │   └── biomeProps/     # Despacho O(1) e desenho procedural de props por bioma
+    │   │       ├── ivoryOssuary.js    # Candelabros tombados, mosaicos e anjos decapitados
+    │   │       ├── crimsonSalt.js     # Espículas salinas, fontes eólicas e salmoura carmesim
+    │   │       ├── eclipseBasilica.js # Vitrais estilhaçados, colunas e azulejos de mármore
+    │   │       ├── cemetery.js        # Lápides esculpidas, ossadas expostas e cruzes
+    │   │       ├── vampire.js         # Velas góticas e poças de sangue nobre coagulado
+    │   │       ├── monolith.js        # Menires ciclópicos e fendas arcanas de energia
+    │   │       ├── reaper.js          # Foices oxidadas cravadas e sepulcros profanados
+    │   │       ├── abyss.js           # Olhos cósmicos piscantes e runas astrais gravadas
+    │   │       └── index.js           # Tabela de despacho O(1) de props de arenas
+    │   │
+    │   ├── heroes/             # Renderizadores dedicados para cada um dos 5 sobreviventes
+    │   │   ├── ignisRenderer.js # Efeitos de fogo, cajado estelar e manto da Piromante
+    │   │   ├── index.js        # Despachante unificado de renderização de heróis
+    │   │   ├── kaelRenderer.js # Manto espectral em farrapos, adagas duplas e capuz de Kael
+    │   │   ├── kragdorRenderer.js # Tatuagens rúnicas, machado giratório e fúria do Bárbaro
+    │   │   ├── rolandRenderer.js # Armadura de placas, elmo sagrado e martelo do Paladino
+    │   │   └── valeriaRenderer.js # Frascos de vidro, reagentes cáusticos e vidrarias da Alquimista
+    │   │
+    │   └── worldEvents/        # Eventos mundiais dinâmicos e mecânicas contextuais
+    │       └── bloodAltarRenderer.js # Desenho do Altar de Sangue, círculos de sacrifício e HUD
     │
     ├── systems/                # Regras e subsistemas de jogo
     │   ├── barks.js            # Provocações e falas cinemáticas dos chefes em combate
     │   ├── bossHazards.js      # Perigos de arena (ondas de choque, projéteis e telegrafias)
     │   ├── combat.js           # Resolução de ataques, sangramento, atordoamento e dano
     │   ├── devtools.js         # Painel de desenvolvedor, testes e comandos rápidos (`W + 5`)
-    │   ├── enemyLifecycle.js   # Ciclo de vida, animações de dissolução e drops de monstros
+    │   ├── enemyLifecycle.js   # Fachada modular para ciclo de vida e IA de monstros
+    │   ├── enemyLifecycle/     # Subsistema modular de ciclo de vida (status, morte, comportamentos)
+    │   │   ├── behaviors/      # 33 módulos especializados de IA e despacho O(1) de monstros
+    │   │   ├── deathHandler.js # Resolução de abates, drops, baús, Bestiário e chefes
+    │   │   ├── index.js        # Orquestrador do laço principal de atualização de inimigos
+    │   │   └── statusEffects.js # Knockback suave, timers de emerge e DoTs cáusticos
     │   ├── fieldEffects.js     # Efeitos de terreno, poças ácidas e desaceleração
     │   ├── physics.js          # Separação elástica de multidão e colisões de corpos
     │   ├── pickups.js          # Coleta e atração gravitacional de gemas, ouro e baús
@@ -243,7 +269,17 @@ Hord.io/
         ├── hudController.js    # Controle da HUD de combate, vitais, banners e cooldowns
         ├── icons.js            # Gerador procedural de ícones SVG e glifos rúnicos
         ├── uiManager.js        # Gerenciador central da UI, fiação de modais e escutas de eventos DOM
-        └── modals/             # Modais modulares desacoplados (seleção, astrolábio, baú, pausa, etc.)
+        └── modals/             # Modais modulares desacoplados
+            ├── achievementsModal.js # Grimório de Conquistas e Monumento da Maior Jornada
+            ├── bestiaryModal.js     # Códice do Bestiário das Trevas e preview procedural
+            ├── bossSelectModal.js   # Painel de seleção de chefes para duelo
+            ├── characterSelectModal.js # Tela monumental de seleção dos 5 heróis
+            ├── chestModal.js        # Abertura de baús de tesouro e fusões lendárias
+            ├── codexModal.js        # Fachada de retrocompatibilidade do Códice Ancestral
+            ├── gameOverModal.js     # Tela de derrota e necrofiltro com resumo de run
+            ├── pauseModal.js        # Estase temporal, inventário pausado e opções
+            ├── talentsModal.js      # Astrolábio Cósmico e Árvore Rúnica de Talentos
+            └── upgradeModal.js      # Cartas de Tarô Arcano no avanço de nível
 ```
 
 ---

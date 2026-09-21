@@ -45,8 +45,9 @@ export function insertIntoGrid(e, index) {
   e.gridCy = cy;
 }
 
-export function getNeighborIndices(x, y, radius) {
-  neighborIndicesBuffer.length = 0;
+export function getNeighborIndices(x, y, radius, targetArray = null) {
+  const target = targetArray || neighborIndicesBuffer;
+  target.length = 0;
   const minCx = Math.floor((x - radius) / SPATIAL_CELL_SIZE);
   const maxCx = Math.floor((x + radius) / SPATIAL_CELL_SIZE);
   const minCy = Math.floor((y - radius) / SPATIAL_CELL_SIZE);
@@ -59,10 +60,10 @@ export function getNeighborIndices(x, y, radius) {
       const list = spatialGrid.get(key);
       if (list) {
         for (let i = 0; i < list.length; i++) {
-          neighborIndicesBuffer.push(list[i]);
+          target.push(list[i]);
         }
       }
     }
   }
-  return neighborIndicesBuffer;
+  return target;
 }

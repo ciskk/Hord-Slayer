@@ -509,125 +509,170 @@ function drawCinematicScreenTitle(ctx, e, frameCount) {
   const maxT = e.titleMaxTimer || 220;
   const titleProgress = 1 - Math.max(0, e.titleTimer / maxT);
 
-  // Transição suave de entrada e saída (duração ajustada: ~3.6s total)
-  let bannerAlpha = 1.0;
-  if (titleProgress < 0.08) {
-    bannerAlpha = titleProgress / 0.08;
-  } else if (titleProgress > 0.80) {
-    bannerAlpha = Math.max(0, (1 - titleProgress) / 0.20);
-  }
+  // Easing suave de Fade In e Fade Out (Curva Smoothstep)
+  const inRatio = Math.min(1.0, Math.max(0, titleProgress / 0.16));
+  const inEase = inRatio * inRatio * (3 - 2 * inRatio);
+
+  const outRatio = Math.min(1.0, Math.max(0, (1 - titleProgress) / 0.20));
+  const outEase = outRatio * outRatio * (3 - 2 * outRatio);
+
+  const bannerAlpha = inEase * outEase;
+  if (bannerAlpha <= 0.001) return;
+
+  const screenW = viewW || (typeof window !== 'undefined' ? window.innerWidth : 1280);
+  const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
+  const isVertical = screenH > screenW || screenW < 640;
+  const isCompactH = screenH < 520;
+  const hudBottom = getHudBottom();
+
+  const centerX = screenW / 2;
+  const contentW = isVertical 
+    ? Math.min(screenW - 24, 380) 
+    : (isCompactH ? Math.min(screenW - 48, 680) : Math.min(screenW - 64, 880));
+  const bannerH = isVertical ? 60 : (isCompactH ? 56 : 96);
+
+  // Fade estendido nas laterais: asas amplas que se estendem e dissolvem suavemente
+  const fadeWing = isVertical ? 50 : Math.max(160, screenW * 0.22);
+  const totalW = contentW + fadeWing * 2;
+  const startX = centerX - totalW / 2;
+  const endX = centerX + totalW / 2;
+
+  const calculatedY = Math.round((screenH / 2) - bannerH - (isVertical ? 45 : (isCompactH ? 20 : 65)));
+  const by = Math.max(hudBottom + 8, calculatedY);
+  const centerY = by + bannerH / 2;
+
+  // Animação de transição cinematográfica
+  const entrySlideY = (1 - inEase) * -12;
+  const exitSlideY = (1 - outEase) * -8;
+  const ambientFloat = Math.sin(frameCount * 0.04) * 1.5;
+  const animOffsetY = entrySlideY + exitSlideY + ambientFloat;
+  const animScaleX = (0.93 + 0.07 * inEase) * (1.0 + (1 - outEase) * 0.025);
 
   ctx.save();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.globalAlpha = bannerAlpha;
 
-  const screenW = viewW || (typeof window !== 'undefined' ? window.innerWidth : 1280);
-  const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
-  const isVertical = screenH > screenW || screenW < 640;
+  // Aplica movimento com pivô central
+  ctx.translate(centerX, centerY + animOffsetY);
+  ctx.scale(animScaleX, 1.0);
+  ctx.translate(-centerX, -centerY);
 
-  // Em telas verticais (smartphones) e horizontais (desktop):
-  // O banner é centralizado horizontalmente e ancorado com evasão garantida do HUD
-  const isCompactH = screenH < 520;
-  const hudBottom = getHudBottom();
-  const bannerW = isVertical 
-    ? Math.min(380, screenW * 0.94) 
-    : (isCompactH ? Math.min(640, screenW * 0.88) : Math.min(880, screenW * 0.90));
-  const bannerH = isVertical ? 58 : (isCompactH ? 56 : 94);
-  const bx = (screenW - bannerW) / 2;
-  const calculatedY = Math.round((screenH / 2) - bannerH - (isVertical ? 45 : (isCompactH ? 20 : 65)));
-  const by = Math.max(hudBottom + 8, calculatedY);
-
-  // 1. Fundo Cósmico Carmesim Profundo com Gradiente Translúcido
-  const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  // 1. Fundo Cósmico Carmesim Profundo com Fade Estendido nas Laterais
+  const bgGrad = ctx.createLinearGradient(startX, by, endX, by);
   bgGrad.addColorStop(0, 'rgba(15, 0, 4, 0)');
-  bgGrad.addColorStop(0.15, 'rgba(28, 2, 8, 0.95)');
-  bgGrad.addColorStop(0.5, 'rgba(52, 4, 14, 0.98)');
-  bgGrad.addColorStop(0.85, 'rgba(28, 2, 8, 0.95)');
+  bgGrad.addColorStop(0.12, 'rgba(22, 1, 6, 0.22)');
+  bgGrad.addColorStop(0.28, 'rgba(38, 3, 10, 0.90)');
+  bgGrad.addColorStop(0.50, 'rgba(52, 4, 14, 0.98)');
+  bgGrad.addColorStop(0.72, 'rgba(38, 3, 10, 0.90)');
+  bgGrad.addColorStop(0.88, 'rgba(22, 1, 6, 0.22)');
   bgGrad.addColorStop(1, 'rgba(15, 0, 4, 0)');
   ctx.fillStyle = bgGrad;
-  ctx.fillRect(bx, by, bannerW, bannerH);
+  ctx.fillRect(startX, by, totalW, bannerH);
 
-  // 2. Frisos de Neon Vermelho Carmesim Superior e Inferior
-  const borderGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  // 2. Frisos de Neon Vermelho Carmesim Superior e Inferior com Taper Suave nas Pontas
+  const lineStart = startX + fadeWing * 0.25;
+  const lineEnd = endX - fadeWing * 0.25;
+  const borderGrad = ctx.createLinearGradient(lineStart, by, lineEnd, by);
   borderGrad.addColorStop(0, 'rgba(255, 23, 68, 0)');
-  borderGrad.addColorStop(0.2, 'rgba(255, 23, 68, 0.95)');
-  borderGrad.addColorStop(0.5, 'rgba(255, 107, 129, 1)');
-  borderGrad.addColorStop(0.8, 'rgba(255, 23, 68, 0.95)');
+  borderGrad.addColorStop(0.18, 'rgba(255, 23, 68, 0.65)');
+  borderGrad.addColorStop(0.35, 'rgba(255, 23, 68, 0.95)');
+  borderGrad.addColorStop(0.50, 'rgba(255, 107, 129, 1.0)');
+  borderGrad.addColorStop(0.65, 'rgba(255, 23, 68, 0.95)');
+  borderGrad.addColorStop(0.82, 'rgba(255, 23, 68, 0.65)');
   borderGrad.addColorStop(1, 'rgba(255, 23, 68, 0)');
 
   ctx.strokeStyle = borderGrad;
   ctx.lineWidth = isVertical ? 2.0 : 2.6;
+  ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(bx, by);
-  ctx.lineTo(bx + bannerW, by);
-  ctx.moveTo(bx, by + bannerH);
-  ctx.lineTo(bx + bannerW, by + bannerH);
+  ctx.moveTo(lineStart, by);
+  ctx.lineTo(lineEnd, by);
+  ctx.moveTo(lineStart, by + bannerH);
+  ctx.lineTo(lineEnd, by + bannerH);
   ctx.stroke();
 
-  // Frisos internos finos
-  ctx.strokeStyle = 'rgba(255, 150, 160, 0.35)';
-  ctx.lineWidth = 1;
-  const padX = isVertical ? 24 : 45;
+  // Frisos internos com acabamento em ouro rosé e fade nas pontas
+  const innerStart = centerX - contentW * 0.44;
+  const innerEnd = centerX + contentW * 0.44;
+  const innerGrad = ctx.createLinearGradient(innerStart, by, innerEnd, by);
+  innerGrad.addColorStop(0, 'rgba(255, 150, 160, 0)');
+  innerGrad.addColorStop(0.20, 'rgba(255, 150, 160, 0.45)');
+  innerGrad.addColorStop(0.50, 'rgba(255, 210, 215, 0.75)');
+  innerGrad.addColorStop(0.80, 'rgba(255, 150, 160, 0.45)');
+  innerGrad.addColorStop(1, 'rgba(255, 150, 160, 0)');
+
+  ctx.strokeStyle = innerGrad;
+  ctx.lineWidth = 1.1;
+  const innerPadY = isVertical ? 3.5 : 4.5;
   ctx.beginPath();
-  ctx.moveTo(bx + padX, by + 3);
-  ctx.lineTo(bx + bannerW - padX, by + 3);
-  ctx.moveTo(bx + padX, by + bannerH - 3);
-  ctx.lineTo(bx + bannerW - padX, by + bannerH - 3);
+  ctx.moveTo(innerStart, by + innerPadY);
+  ctx.lineTo(innerEnd, by + innerPadY);
+  ctx.moveTo(innerStart, by + bannerH - innerPadY);
+  ctx.lineTo(innerEnd, by + bannerH - innerPadY);
   ctx.stroke();
 
-  // 3. Cantoneiras Geométricas Rubras
-  const cornerSize = isVertical ? 10 : 16;
-  ctx.fillStyle = '#ff1744';
-  ctx.fillRect(bx + padX * 0.7, by - 1.5, cornerSize, 3);
-  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by - 1.5, cornerSize, 3);
-  ctx.fillStyle = '#b71540';
-  ctx.fillRect(bx + padX * 0.7, by + bannerH - 1.5, cornerSize, 3);
-  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by + bannerH - 1.5, cornerSize, 3);
+  // Cantoneiras em losango de rubi abissal
+  [-contentW * 0.42, contentW * 0.42].forEach(ox => {
+    ctx.fillStyle = '#ff1744';
+    ctx.beginPath();
+    ctx.moveTo(centerX + ox, by);
+    ctx.lineTo(centerX + ox + 3, by - 3);
+    ctx.lineTo(centerX + ox + 6, by);
+    ctx.lineTo(centerX + ox + 3, by + 3);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(centerX + ox, by + bannerH);
+    ctx.lineTo(centerX + ox + 3, by + bannerH - 3);
+    ctx.lineTo(centerX + ox + 6, by + bannerH);
+    ctx.lineTo(centerX + ox + 3, by + bannerH + 3);
+    ctx.closePath();
+    ctx.fill();
+  });
 
   // 4. Textos do Banner
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-
-  const pulseGlow = 12 + Math.sin(frameCount * 0.14) * 6;
 
   if (isVertical) {
     // --- LAYOUT PARA TELAS VERTICAIS (Compacto & Legível) ---
     // Tag Superior
     ctx.font = 'bold 9px monospace';
     ctx.fillStyle = '#ff6b81';
-    ctx.fillText("[ ALERTA DE CATACLISMA ]", screenW / 2, by + 13);
+    ctx.fillText("[ ALERTA DE CATACLISMA ]", centerX, by + 13);
 
     // Título Central
     const titleY = by + 31;
     ctx.font = 'bold 17px "Cinzel", "Cinzel Decorative", Georgia, serif';
     ctx.fillStyle = 'rgba(255, 23, 68, 0.5)';
-    ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2 + 1, titleY + 1.5);
+    ctx.fillText("❖ SOBERANO DO ABISMO ❖", centerX + 1, titleY + 1.5);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2, titleY);
+    ctx.fillText("❖ SOBERANO DO ABISMO ❖", centerX, titleY);
 
     // Subtítulo
     ctx.font = 'italic 10px "Cinzel", Georgia, serif';
     ctx.fillStyle = '#ffd1d1';
-    ctx.fillText("✦ SENHOR DO VÁZIO PRIMORDIAL ✦", screenW / 2, by + 46);
+    ctx.fillText("✦ SENHOR DO VÁZIO PRIMORDIAL ✦", centerX, by + 46);
   } else {
     // --- LAYOUT PARA TELAS HORIZONTAIS (Majestoso & Completo) ---
     // Tag Superior
     ctx.font = 'bold 11px monospace';
     ctx.fillStyle = '#ff4d4d';
-    ctx.fillText("[ ALERTA DE CATACLISMA // AMEAÇA EXISTENCIAL ]", screenW / 2, by + 20);
+    ctx.fillText("[ ALERTA DE CATACLISMA // AMEAÇA EXISTENCIAL ]", centerX, by + 20);
 
     // Título Central
     const titleY = by + 48;
     ctx.font = 'bold 28px "Cinzel", "Cinzel Decorative", Georgia, serif';
     ctx.fillStyle = 'rgba(255, 23, 68, 0.5)';
-    ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2 + 1.5, titleY + 2);
+    ctx.fillText("❖ SOBERANO DO ABISMO ❖", centerX + 1.5, titleY + 2);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2, titleY);
+    ctx.fillText("❖ SOBERANO DO ABISMO ❖", centerX, titleY);
 
     // Subtítulo
     ctx.font = 'italic 12px "Cinzel", Georgia, serif';
     ctx.fillStyle = '#ffd1d1';
-    ctx.fillText("✦ O DEVORADOR DAS ERAS E SENHOR DO VÁZIO PRIMORDIAL ✦", screenW / 2, by + 74);
+    ctx.fillText("✦ O DEVORADOR DAS ERAS E SENHOR DO VÁZIO PRIMORDIAL ✦", centerX, by + 74);
   }
 
   ctx.restore();

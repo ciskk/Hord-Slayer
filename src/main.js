@@ -70,6 +70,7 @@ import { initResponsive, layoutMetrics } from './core/responsive.js';
 import { devCheats } from './systems/devtools.js';
 import { clearActiveBarks } from './systems/barks.js';
 import { forceClosePause } from './ui/modals/pauseModal.js';
+import { updateDeathSequence, resetDeathSequence, skipDeathSequence } from './render/deathAnimation.js';
 
 // Subsistemas Especializados Extraídos
 import { updateFieldEffects } from './systems/fieldEffects.js';
@@ -131,7 +132,15 @@ import {
   setFreezeTimer,
   setDeferredLevelUpGraceTimer,
   setLastAnnouncedWaveIndex,
-  updateDimensions
+  updateDimensions,
+  baseCameraZoom,
+  setCameraZoom,
+  resetCameraZoom,
+  matchIntro,
+  startMatchIntro,
+  endMatchIntro,
+  deathSequence,
+  resetDeathSequenceState
 } from './state/gameState.js';
 
 import {
@@ -191,6 +200,13 @@ export {
   gameState,
   camera,
   cinematicCamera,
+  baseCameraZoom,
+  setCameraZoom,
+  resetCameraZoom,
+  matchIntro,
+  startMatchIntro,
+  endMatchIntro,
+  deathSequence,
   frameCount,
   spawnTimer,
   screenShake,
@@ -255,7 +271,7 @@ export function resize() {
 
   if (!currentCanvas) return;
 
-  const currentDpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 2.0);
+  const currentDpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 1.5);
   const curW = layoutMetrics.viewW || window.innerWidth;
   const curH = layoutMetrics.viewH || window.innerHeight;
   updateDimensions(curW, curH, currentDpr);
@@ -356,6 +372,16 @@ export function terminateMatch() {
   cinematicCamera.isCinematic = false;
   cinematicCamera.returningToPlayer = false;
   cinematicCamera.letterboxProgress = 0;
+  endMatchIntro();
+  resetDeathSequence();
+  const hudElem = document.getElementById('hud');
+  if (hudElem) {
+    hudElem.classList.remove('hud-cinematic-intro');
+  }
+  const skillBtn = document.getElementById('skill-btn-container');
+  if (skillBtn) {
+    skillBtn.classList.remove('hud-cinematic-intro');
+  }
   resetEnvironment();
   resetWorldEvents();
 
@@ -480,8 +506,22 @@ export function resetGame() {
 
   resize();
 
-  // Spawna a horda inicial ativa imediatamente ao iniciar a partida
+  // Spawna a horda inicial ativa imediatamente nas bordas da arena
   spawnInitialHorde();
+
+  // Inicia a introdução cinematográfica com câmera aproximada no herói
+  startMatchIntro();
+
+  if (hud) {
+    hud.classList.add('hud-cinematic-intro');
+  }
+  const skillBtn = document.getElementById('skill-btn-container');
+  if (skillBtn) {
+    skillBtn.classList.add('hud-cinematic-intro');
+  }
+
+  // Toque sutil atmosférico de abertura dos portões
+  playSfx('warp', 0.5);
 
   const hideEl = id => {
     const el = document.getElementById(id);
@@ -510,13 +550,82 @@ function update(dt) {
     }
   }
 
+  // =========================================================================
+  // INTRODUÇÃO CINEMATOGRÁFICA DE INÍCIO DE PARTIDA
+  // Durante a introdução:
+  // 1. O relógio da partida (frameCount/segundos) NÃO inicia nem avança (fica 00:00).
+  // 2. As hordas NÃO se movem, não atacam e novos monstros não surgem.
+  // 3. O jogador permanece em pose normal de descanso sem animações de ult/skill.
+  // 4. A câmera realiza o afastamento gradual suave revelando a arena.
+  // =========================================================================
+  if (matchIntro.active) {
+    // Detecta intenção de movimento ou toque do jogador para acelerar suavemente (skip fluido)
+    const hasMoveInput = (Math.abs(inputX) > 0.08 || Math.abs(inputY) > 0.08);
+    if (hasMoveInput && !matchIntro.skipped) {
+      matchIntro.skipped = true;
+      if (matchIntro.timer < matchIntro.holdDuration) {
+        matchIntro.timer = matchIntro.holdDuration;
+      }
+    }
+
+    // Cronômetro exclusivo da introdução cinematográfica
+    matchIntro.timer += matchIntro.skipped ? dt * 3.5 : dt;
+
+    const zoomPhase = Math.max(1, matchIntro.duration - matchIntro.holdDuration);
+    const elapsedZoom = Math.max(0, matchIntro.timer - matchIntro.holdDuration);
+    const rawProgress = Math.min(1.0, elapsedZoom / zoomPhase);
+
+    // Curva cúbica suave (smoothstep: 3t^2 - 2t^3)
+    const easedProgress = rawProgress * rawProgress * (3 - 2 * rawProgress);
+    matchIntro.zoomProgress = easedProgress;
+
+    // Recuo gradual e cinematográfico do zoom da câmera até o zoom da arena
+    const startZoom = baseCameraZoom * matchIntro.startZoomMult;
+    const curZoom = startZoom + (baseCameraZoom - startZoom) * easedProgress;
+    setCameraZoom(curZoom);
+
+    // Câmera perfeitamente centrada no herói
+    camera.x = player.x - cameraViewW / 2;
+    camera.y = player.y - cameraViewH / 2;
+
+    // Barras pretas de cinema (letterbox) com friso dourado
+    const targetLetterbox = rawProgress < 0.60 ? 1.0 : Math.max(0, 1.0 - (rawProgress - 0.60) / 0.40);
+    cinematicCamera.letterboxProgress += (targetLetterbox - cinematicCamera.letterboxProgress) * (1 - Math.pow(1 - 0.08, dt));
+
+    // Fade-in suave do HUD e do botão de ULT nos 35% finais do afastamento
+    if (rawProgress >= 0.65) {
+      const hudEl = document.getElementById('hud');
+      if (hudEl && hudEl.classList.contains('hud-cinematic-intro')) {
+        hudEl.classList.remove('hud-cinematic-intro');
+      }
+      const skillBtn = document.getElementById('skill-btn-container');
+      if (skillBtn && skillBtn.classList.contains('hud-cinematic-intro')) {
+        skillBtn.classList.remove('hud-cinematic-intro');
+      }
+    }
+
+    // Finalização da introdução cinematográfica
+    if (matchIntro.timer >= matchIntro.duration) {
+      endMatchIntro();
+      cinematicCamera.letterboxProgress = 0;
+      cinematicCamera.isCinematic = false;
+      const hudEl = document.getElementById('hud');
+      if (hudEl) hudEl.classList.remove('hud-cinematic-intro');
+      const skillBtn = document.getElementById('skill-btn-container');
+      if (skillBtn) skillBtn.classList.remove('hud-cinematic-intro');
+    }
+
+    // Retorna imediatamente: durante a introdução o tempo não corre, inimigos não se movem e armas não disparam!
+    return;
+  }
+
   advanceFrameCount(dt);
   const seconds = Math.floor(frameCount / 60);
   const hordeSeconds = getEffectiveHordeSeconds(seconds);
   const currentWave = getCurrentWave(hordeSeconds);
 
   // Gatilho de Anúncio Cinematográfico de Transição de Onda
-  if (!activeBoss && currentWave && currentWave.index !== lastAnnouncedWaveIndex) {
+  if (!activeBoss && currentWave && currentWave.index !== lastAnnouncedWaveIndex && !matchIntro.active) {
     setLastAnnouncedWaveIndex(currentWave.index);
     waveAnnouncement.name = currentWave.name;
     waveAnnouncement.index = currentWave.index;
@@ -1034,10 +1143,16 @@ function update(dt) {
   }
 
   // 2. Reconstrução Única da Spatial Grid por quadro (alimenta armas, auras e física)
-  player.weapons.forEach(w => { w.timer += dt; });
-  rebuildSpatialGrid(enemies);
-  fireWeapons();
-  updateSpinningAxes(dt);
+  if (!matchIntro.active) {
+    player.weapons.forEach(w => { w.timer += dt; });
+    rebuildSpatialGrid(enemies);
+    fireWeapons();
+    updateSpinningAxes(dt);
+  } else {
+    // Durante o zoom-out de introdução, mantém armas preparadas para disparar logo na abertura
+    player.weapons.forEach(w => { w.timer = Math.max(w.timer, (w.cooldown || 60) * 0.9); });
+    rebuildSpatialGrid(enemies);
+  }
 
   // 3. Efeitos de Campo (Aura Sagrada, Bíblias Orbitais e Miasma)
   updateFieldEffects(dt, {
@@ -1147,8 +1262,12 @@ function loop(now) {
 
   try {
     if (gameState.isInMatch) {
-      if (!gameState.isPaused && !gameState.isDead && !gameState.isWon) {
-        update(dt);
+      if (!gameState.isPaused && !gameState.isWon) {
+        if (deathSequence && deathSequence.active) {
+          updateDeathSequence(dt);
+        } else if (!gameState.isDead) {
+          update(dt);
+        }
       }
       render();
     }

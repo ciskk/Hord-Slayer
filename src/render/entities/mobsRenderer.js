@@ -15,6 +15,32 @@ export function renderDyingEnemies(dyingEnemies, bounds) {
   }
 }
 
+export function renderEnemiesShadows(ctx, enemies, bounds, frameCount) {
+  const { viewLeft, viewRight, viewTop, viewBottom } = bounds;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
+  ctx.beginPath();
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    if (!e || e.isBoss || e.isBossSubTarget) continue;
+    if (e.x < viewLeft || e.x > viewRight || e.y < viewTop || e.y > viewBottom) continue;
+
+    const isFlying = e.baseType === 'BAT' || e.baseType === 'NECRO';
+    const shadowBob = e.baseType === 'BAT' ? Math.sin(frameCount * 0.42) * 1.2 : 0;
+    const shadowR = e.baseType === 'ZOMBIE' ? e.radius * 1.38 : e.radius;
+    const shadowY = e.y + shadowR * (isFlying ? 0.95 : 0.8) + shadowBob;
+
+    const jumpAlt = Math.max(0, e.jumpZ || 0);
+    const altRatio = Math.min(1, jumpAlt / 28);
+    const shadowScale = Math.max(0.45, 1 - altRatio * 0.38);
+    const shadowRx = Math.max(2.2, (shadowR * (isFlying ? 0.7 : 0.85) - shadowBob * 0.5) * shadowScale);
+    const shadowRy = shadowRx * 0.38;
+
+    ctx.moveTo(e.x + shadowRx, shadowY);
+    ctx.ellipse(e.x, shadowY, shadowRx, shadowRy, 0, 0, Math.PI * 2);
+  }
+  ctx.fill();
+}
+
 export function renderEnemies(enemies, bounds) {
   const { viewLeft, viewRight, viewTop, viewBottom } = bounds;
   for (let i = 0; i < enemies.length; i++) {

@@ -10,32 +10,91 @@
 @media (orientation: landscape) and (max-height: 520px),
        html.compact-height {
   /* 0. HUD de combate dark fantasy em paisagem móvel */
-  /* Desempacota o container horizontal do PC para o layout de paisagem móvel */
-  .hud-top-row {
+  /* Desempacota os containers do PC para o layout em Grid mobile */
+  .hud-top-row,
+  .hud-top-bar,
+  .hud-top-cluster-right {
     display: contents !important;
   }
   #hud {
+    position: fixed;
     top: max(env(safe-area-inset-top, 4px), 4px);
     left: max(env(safe-area-inset-left, 12px), 16px);
     right: max(env(safe-area-inset-right, 12px), 16px);
-    gap: 2px;
+    width: auto;
     max-width: 100%;
-  }
-
-  .hud-top-bar {
-    display: flex !important;
-    justify-content: space-between !important;
+    display: grid !important;
+    grid-template-columns: auto 1fr auto !important;
     align-items: center !important;
-    gap: 8px !important;
-    min-height: 24px !important;
-    width: 100% !important;
+    row-gap: 2px !important;
+    column-gap: 8px !important;
   }
 
+  /* Linha 1 - Canto Superior Esquerdo: Cronômetro */
+  .timer-badge {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    justify-self: start !important;
+    align-self: center !important;
+    padding: 2px 6px !important;
+    gap: 3px !important;
+    clip-path: polygon(5px 0%, calc(100% - 5px) 0%, 100% 50%, calc(100% - 5px) 100%, 5px 100%, 0% 50%) !important;
+    pointer-events: auto;
+    z-index: 2;
+  }
+
+  .timer-badge .hud-icon {
+    font-size: 9px !important;
+  }
+
+  .hud-timer {
+    font-size: 10.5px !important;
+    letter-spacing: 0.5px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Linha 1 - Canto Superior Direito: Botão de Pause */
+  #pause-btn.pause-hud-btn {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    justify-self: end !important;
+    align-self: center !important;
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    flex-shrink: 0 !important;
+    pointer-events: auto;
+    z-index: 2;
+  }
+
+  .pause-key-hint {
+    display: none !important;
+  }
+
+  /* Linha 2: Vitais em Paisagem Móvel - Subiram aproveitando o espaço liberado */
+  .hud-vitals-container {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    width: 100% !important;
+    z-index: 1;
+  }
+
+  /* Linha 1 - Esquerda: Elementos Menores do HUD (Kills & Gold) - Imediatamente à direita do cronômetro */
   .hud-meta-group.left {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    justify-self: start !important;
+    align-self: center !important;
     flex: none !important;
     display: flex !important;
     align-items: center !important;
     gap: 4px !important;
+    margin: 0 !important;
+    z-index: 2;
   }
 
   .hud-badge {
@@ -51,50 +110,6 @@
 
   .hud-num {
     font-size: 10px !important;
-  }
-
-  .hud-top-cluster-right {
-    flex: none !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-  }
-
-  .timer-badge {
-    padding: 2px 6px !important;
-    gap: 3px !important;
-    clip-path: polygon(5px 0%, calc(100% - 5px) 0%, 100% 50%, calc(100% - 5px) 100%, 5px 100%, 0% 50%) !important;
-  }
-
-  .timer-badge .hud-icon {
-    font-size: 9px !important;
-  }
-
-  .hud-timer {
-    font-size: 10.5px !important;
-    letter-spacing: 0.5px !important;
-    flex-shrink: 0 !important;
-  }
-
-  /* Medalhão Espinhoso de Pausa (Barras Simétricas Vetoriais Integradas) */
-  #pause-btn.pause-hud-btn {
-    width: 28px !important;
-    height: 28px !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    flex-shrink: 0 !important;
-  }
-
-  .pause-key-hint {
-    display: none !important;
-  }
-
-  /* Vitais em Paisagem Móvel */
-  .hud-vitals-container {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 2px !important;
-    width: 100% !important;
   }
 
   .hud-bar-row {
@@ -165,41 +180,83 @@
     overflow: hidden !important;
   }
 
-  /* Card da Horda Centralizado no Lugar do Herói (Escala reduzida em 35% para mobile) */
+  /* Linha 3: Retângulo que exibe a Horda (Abaixo da Barra de XP) */
   #hud-wave-card {
-    display: inline-flex !important;
+    grid-column: 1 / -1 !important;
+    grid-row: 3 !important;
+    justify-self: center !important;
     align-self: center !important;
-    margin: 1px auto -5px auto !important;
-    max-width: 92vw !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    margin: 1px auto 0 auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     width: auto !important;
     padding: 2px 10px !important;
     gap: 5px !important;
     clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px) !important;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 234, 167, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.9) !important;
+    pointer-events: auto !important;
     justify-content: center !important;
-    transform: scale(0.65) !important;
-    transform-origin: center top !important;
-    transition: opacity 0.55s cubic-bezier(0.2, 0.8, 0.25, 1), transform 0.55s cubic-bezier(0.2, 0.8, 0.25, 1), max-height 0.35s cubic-bezier(0.2, 0.8, 0.25, 1), margin 0.35s ease, padding 0.35s ease !important;
+    transform: scale(0.9) !important;
+    transform-origin: center center !important;
+    transition: opacity 0.55s cubic-bezier(0.2, 0.8, 0.25, 1), transform 0.55s cubic-bezier(0.2, 0.8, 0.25, 1), max-height 0.35s cubic-bezier(0.2, 0.8, 0.25, 1) !important;
+    z-index: 2;
   }
 
   #hud-wave-card.banner-suppressed {
     opacity: 0 !important;
-    transform: translateY(-5px) scale(0.6) !important;
+    transform: translateY(-3px) scale(0.85) !important;
     pointer-events: none !important;
   }
 
   #hud.boss-active #hud-wave-card {
     opacity: 0 !important;
     max-height: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
     border-width: 0 !important;
     box-shadow: none !important;
-    transform: translateY(-6px) scale(0.5) !important;
     pointer-events: none !important;
     overflow: hidden !important;
+  }
+
+  #hud.altar-active #hud-wave-card {
+    opacity: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-width: 0 !important;
+    box-shadow: none !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
+  }
+
+  /* Widget Compacto do Altar de Sangue no Grid Landscape (Linha 3) */
+  #blood-altar-hud {
+    grid-column: 1 / -1 !important;
+    grid-row: 3 !important;
+    justify-self: center !important;
+    align-self: center !important;
+    margin: 1px auto 0 auto !important;
+    padding: 2px 8px 4px 8px !important;
+    max-width: 80vw !important;
+    width: auto !important;
+    transform: scale(0.88) !important;
+    transform-origin: center center !important;
+    z-index: 2 !important;
+  }
+
+  #blood-altar-hud .blood-altar-title {
+    font-size: 9px !important;
+  }
+
+  #blood-altar-hud .blood-altar-timer {
+    font-size: 11.5px !important;
+  }
+
+  #blood-altar-hud .blood-altar-status {
+    font-size: 8.5px !important;
   }
 
   #hud-wave-card .wave-icon {
@@ -211,14 +268,16 @@
     font-size: 8.5px !important;
     letter-spacing: 0.4px !important;
     white-space: nowrap !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    max-width: none !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
     display: inline-block !important;
   }
 
-  /* HUD de Chefe em Landscape */
+  /* HUD de Chefe em Landscape (Design Compacto e Ultra-Limpo na Grid) */
   #boss-hud {
+    grid-column: 1 / -1 !important;
+    grid-row: 4 !important;
     margin-top: 1px !important;
     gap: 1px !important;
     width: 100% !important;
@@ -302,7 +361,8 @@
     height: 31px !important;
   }
 
-  #skill-cooldown-mask {
+  #skill-cooldown-mask,
+  .skill-glass-sheen {
     width: 39px !important;
     height: 39px !important;
   }

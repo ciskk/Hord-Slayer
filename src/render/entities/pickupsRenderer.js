@@ -11,6 +11,9 @@ import { player } from '../../entities/player.js';
 import { chests } from '../../state/collections.js';
 import { frameCount } from '../../state/gameState.js';
 
+const _chestWoodGradCache = {};
+const _chestLidGradCache = {};
+
 export function renderDrops(ctx, drops, bounds) {
   const { viewLeft, viewRight, viewTop, viewBottom } = bounds;
   for (let i = 0; i < drops.length; i++) {
@@ -103,11 +106,16 @@ export function renderChests(ctx, chests, bounds, frameCount) {
     ctx.save();
     ctx.translate(ch.x, ch.y + z);
 
-    // Caixa de madeira reforçada
-    const woodGrad = ctx.createLinearGradient(-hw, -hh, -hw, hh);
-    woodGrad.addColorStop(0, isAltarChest ? '#3d0c11' : '#542d18');
-    woodGrad.addColorStop(0.5, isAltarChest ? '#25070a' : '#3a1e0f');
-    woodGrad.addColorStop(1, isAltarChest ? '#120305' : '#241208');
+    // Caixa de madeira reforçada (reutiliza gradiente estático por tier)
+    const tierKey = isAltarChest ? 'ALTAR' : (isMini ? 'MINI' : 'NORMAL');
+    let woodGrad = _chestWoodGradCache[tierKey];
+    if (!woodGrad) {
+      woodGrad = ctx.createLinearGradient(-hw, -hh, -hw, hh);
+      woodGrad.addColorStop(0, isAltarChest ? '#3d0c11' : '#542d18');
+      woodGrad.addColorStop(0.5, isAltarChest ? '#25070a' : '#3a1e0f');
+      woodGrad.addColorStop(1, isAltarChest ? '#120305' : '#241208');
+      _chestWoodGradCache[tierKey] = woodGrad;
+    }
     ctx.fillStyle = woodGrad;
     ctx.beginPath();
     ctx.roundRect(-hw, -hh + 3, bw, bh - 3, 3);
@@ -116,11 +124,15 @@ export function renderChests(ctx, chests, bounds, frameCount) {
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Tampa arredondada superior (Lid)
-    const lidGrad = ctx.createLinearGradient(-hw, -hh - 4, -hw, -hh + 5);
-    lidGrad.addColorStop(0, isAltarChest ? '#5c1017' : (isMini ? '#47535e' : '#733c1d'));
-    lidGrad.addColorStop(0.5, isAltarChest ? '#3b0a0e' : (isMini ? '#2f3640' : '#542d18'));
-    lidGrad.addColorStop(1, isAltarChest ? '#1c0507' : (isMini ? '#1e272e' : '#33190c'));
+    // Tampa arredondada superior (Lid, reutiliza gradiente estático)
+    let lidGrad = _chestLidGradCache[tierKey];
+    if (!lidGrad) {
+      lidGrad = ctx.createLinearGradient(-hw, -hh - 4, -hw, -hh + 5);
+      lidGrad.addColorStop(0, isAltarChest ? '#5c1017' : (isMini ? '#47535e' : '#733c1d'));
+      lidGrad.addColorStop(0.5, isAltarChest ? '#3b0a0e' : (isMini ? '#2f3640' : '#542d18'));
+      lidGrad.addColorStop(1, isAltarChest ? '#1c0507' : (isMini ? '#1e272e' : '#33190c'));
+      _chestLidGradCache[tierKey] = lidGrad;
+    }
     ctx.fillStyle = lidGrad;
     ctx.beginPath();
     ctx.roundRect(-hw - 1, -hh - 3, bw + 2, 7, [4, 4, 1, 1]);
@@ -236,7 +248,9 @@ export function renderGems(ctx, gems, bounds, frameCount, player) {
     ctx.fill();
 
     // 3. Ponto Especular e Cintilação Estelar (Sparkle Glint)
-    const glintPhase = Math.sin(frameCount * 0.22 + pulseOffset);
+    // LOD: quando há muitas gemas na tela (> 35), limita o glint cruzado a super gemas ou 1 a cada 3 gemas
+    const allowGlint = gems.length <= 35 || g.isSuper || (i % 3 === 0);
+    const glintPhase = allowGlint ? Math.sin(frameCount * 0.22 + pulseOffset) : -1;
     if (glintPhase > 0.3) {
       const glintSize = (g.isSuper ? 4.5 : 3.0) * glintPhase;
       ctx.fillStyle = '#ffffff';
@@ -285,24 +299,17 @@ export function drawPlayerChestArrows(ctx, chestsParam, playerParam, frameCountP
   const chList = chestsParam || chests;
   const fc = (typeof frameCountParam === 'number') ? frameCountParam : frameCount;
 
-  const targets = [];
-  if (chList && chList.length > 0) {
-    for (let i = 0; i < chList.length; i++) {
-      targets.push({ x: chList[i].x, y: chList[i].y, tier: chList[i].tier });
-    }
-  }
-
+  const numChests = (chList && chList.length) || 0;
   const altar = getActiveBloodAltar();
-  if (altar && (altar.state === 'SPAWNED' || altar.state === 'ACTIVE')) {
-    targets.push({ x: altar.x, y: altar.y, tier: 'ALTAR' });
-  }
+  const hasAltar = altar && (altar.state === 'SPAWNED' || altar.state === 'ACTIVE');
+  const totalTargets = numChests + (hasAltar ? 1 : 0);
+  if (totalTargets === 0) return;
 
-  if (targets.length === 0) return;
-
-  for (let i = 0; i < targets.length; i++) {
-    const ch = targets[i];
-    const dx = ch.x - player.x;
-    const dy = ch.y - player.y;
+  for (let i = 0; i < totalTargets; i++) {
+    const ch = i < numChests ? chList[i] : altar;
+    const chTier = i < numChests ? ch.tier : 'ALTAR';
+    const dx = ch.x - p.x;
+    const dy = ch.y - p.y;
     const dist = Math.hypot(dx, dy);
     if (dist <= 0) continue;
 
@@ -311,8 +318,8 @@ export function drawPlayerChestArrows(ctx, chestsParam, playerParam, frameCountP
     if (proximityAlpha <= 0) continue;
 
     const angle = Math.atan2(dy, dx);
-    const isAltar = ch.tier === 'ALTAR' || ch.tier === 'LEGENDARY_ALTAR';
-    const isMini = ch.tier === 'MINI_BOSS';
+    const isAltar = chTier === 'ALTAR' || chTier === 'LEGENDARY_ALTAR';
+    const isMini = chTier === 'MINI_BOSS';
 
     const primaryColor = isAltar ? '#ff3838' : (isMini ? '#00cec9' : '#f1c40f');
     const glowColor = isAltar ? 'rgba(255, 56, 56, 0.95)' : (isMini ? 'rgba(0, 206, 201, 0.85)' : 'rgba(241, 196, 15, 0.9)');
@@ -322,10 +329,10 @@ export function drawPlayerChestArrows(ctx, chestsParam, playerParam, frameCountP
     ctx.save();
     const startR = 18;
     const orbitR = 44 + Math.sin(frameCount * 0.15) * 3.5;
-    const x1 = player.x + Math.cos(angle) * startR;
-    const y1 = player.y + Math.sin(angle) * startR;
-    const x2 = player.x + Math.cos(angle) * (orbitR - 6);
-    const y2 = player.y + Math.sin(angle) * (orbitR - 6);
+    const x1 = p.x + Math.cos(angle) * startR;
+    const y1 = p.y + Math.sin(angle) * startR;
+    const x2 = p.x + Math.cos(angle) * (orbitR - 6);
+    const y2 = p.y + Math.sin(angle) * (orbitR - 6);
 
     const beamGrad = ctx.createLinearGradient(x1, y1, x2, y2);
     beamGrad.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
@@ -345,8 +352,8 @@ export function drawPlayerChestArrows(ctx, chestsParam, playerParam, frameCountP
 
     // 2. Seta Rúnica em Formato de Lança / Chevron na Órbita
     ctx.save();
-    const arrowX = player.x + Math.cos(angle) * orbitR;
-    const arrowY = player.y + Math.sin(angle) * orbitR;
+    const arrowX = p.x + Math.cos(angle) * orbitR;
+    const arrowY = p.y + Math.sin(angle) * orbitR;
     ctx.translate(arrowX, arrowY);
     ctx.rotate(angle);
     ctx.globalAlpha = (0.9 + Math.sin(frameCount * 0.18) * 0.1) * proximityAlpha;
@@ -461,20 +468,44 @@ export function drawOffscreenChestRadar(ctx, chests, player, camera, CAMERA_ZOOM
     ctx.save();
     ctx.translate(badgeX, badgeY);
 
-    ctx.fillStyle = 'rgba(10, 10, 16, 0.88)';
-    ctx.strokeStyle = glowColor;
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.roundRect(-22, -10, 44, 20, 5);
-    ctx.fill();
-    ctx.stroke();
+    if (isAltar) {
+      ctx.fillStyle = 'rgba(26, 6, 12, 0.94)';
+      ctx.strokeStyle = '#ff3838';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(-29, -10, 58, 20, 5);
+      ctx.fill();
+      ctx.stroke();
 
-    ctx.fillStyle = primaryColor;
-    ctx.font = 'bold 9px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const label = isAltar ? '✦' : (isMini ? '💎' : '👑');
-    ctx.fillText(`${label} ${distMeters}m`, 0, 0.5);
+      // Ícone vetorial de gota de sangue (sem emojis)
+      ctx.fillStyle = '#ff3838';
+      ctx.beginPath();
+      ctx.moveTo(-19, -4);
+      ctx.bezierCurveTo(-22, 0, -22, 4, -19, 4);
+      ctx.bezierCurveTo(-16, 4, -16, 0, -19, -4);
+      ctx.fill();
+
+      // Texto de identificação e distância
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 9px Outfit, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${distMeters}m`, -11, 0.5);
+    } else {
+      ctx.fillStyle = 'rgba(10, 10, 16, 0.88)';
+      ctx.strokeStyle = glowColor;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.roundRect(-22, -10, 44, 20, 5);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = primaryColor;
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${distMeters}m`, 0, 0.5);
+    }
 
     ctx.restore();
     ctx.restore();

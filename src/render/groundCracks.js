@@ -12,6 +12,7 @@
  */
 import { enemies, frameCount } from '../main.js';
 import { addDamageText, createHitParticles } from '../systems/combat.js';
+import { getNeighborIndices } from '../core/spatialGrid.js';
 
 function pseudoRand(seed) {
   const x = Math.sin(seed) * 10000;
@@ -19,6 +20,7 @@ function pseudoRand(seed) {
 }
 
 export const groundCraters = [];
+const _craterCandidates = [];
 
 /**
  * Adiciona ou re-energiza uma cratera de impacto telúrico no solo.
@@ -88,9 +90,11 @@ export function updateGroundCraters(dt) {
       const progress = 1 - (c.life / c.maxLife);
       if (progress < 0.65 && c.damage > 0 && typeof enemies !== 'undefined' && enemies.length > 0) {
         const burnDmg = Math.max(1, Math.round(c.damage * 0.08));
-        const radSq = (c.radius * 0.90) * (c.radius * 0.90);
-        for (let j = 0; j < enemies.length; j++) {
-          const e = enemies[j];
+        const effectiveR = c.radius * 0.90;
+        const radSq = effectiveR * effectiveR;
+        const candidates = getNeighborIndices(c.x, c.y, effectiveR + 35, _craterCandidates);
+        for (let j = 0; j < candidates.length; j++) {
+          const e = enemies[candidates[j]];
           if (!e || e.hp <= 0 || e.isTargetable === false) continue;
           const dx = e.x - c.x;
           const dy = e.y - c.y;

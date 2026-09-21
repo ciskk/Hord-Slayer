@@ -152,6 +152,12 @@ export function updateCombatVisuals(dt) {
   dyingEnemies.length = deWrite;
 }
 
+const NON_MELEE_BEHAVIORS_SET = new Set([
+  'shooter', 'kamikaze', 'kamikaze_spread', 'boulder_throw', 
+  'mortar_barrage', 'summoner', 'protect_aura', 'gravity_ritual', 
+  'bat_spawner', 'vortex_carrier', 'anchor'
+]);
+
 /**
  * Máquina de Estados de Ataque Melee dos Inimigos:
  * CHASE -> WINDUP (desaceleração e telegrafia) -> STRIKE (dano exclusivo) -> RECOVERY (vulnerabilidade).
@@ -166,12 +172,7 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
     const e = enemies[i];
     if (!e || e.isBoss || e.isBossSubTarget) continue;
 
-    const nonMeleeBehaviors = [
-      'shooter', 'kamikaze', 'kamikaze_spread', 'boulder_throw', 
-      'mortar_barrage', 'summoner', 'protect_aura', 'gravity_ritual', 
-      'bat_spawner', 'vortex_carrier', 'anchor'
-    ];
-    if (nonMeleeBehaviors.includes(e.behavior)) continue;
+    if (NON_MELEE_BEHAVIORS_SET.has(e.behavior)) continue;
 
     if (e.stunTimer > 0) {
       if (e.combatState === 'WINDUP' || e.combatState === 'STRIKE') {
@@ -220,7 +221,7 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
         if (e.attackCooldown > 0) {
           e.attackCooldown -= dt;
         } else if (distSq <= strikeLimit * strikeLimit) {
-          if ((e.emergeTimer || 0) <= 0) {
+          if ((e.emergeTimer || 0) <= 0 && (!e.leapState || e.leapState === 'none')) {
             e.combatState = 'WINDUP';
             e.attackTimer = e.attackWindupFrames;
             e.attackAngle = Math.atan2(dy, dx);
@@ -284,6 +285,8 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
               let strikeName = 'Golpe Melee';
               if (e.baseType === 'BAT') strikeName = 'Mordida Vampírica';
               else if (e.baseType === 'GOLEM') strikeName = 'Esmagamento de Concreto';
+              else if (e.baseType === 'SPLITTER_MINI') strikeName = 'Bote Predatório da Larva';
+              else if (e.baseType === 'SPLITTER') strikeName = 'Mordida Cáustica do Verme';
               else if (e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER') strikeName = 'Investida com Escudo';
               else if (e.baseType === 'DULLAHAN_VANGUARD') strikeName = 'Estocada de Lança Decapitadora';
               else if (e.isElite) strikeName = 'Golpe Feroz de Elite';

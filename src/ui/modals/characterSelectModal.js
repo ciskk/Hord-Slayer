@@ -36,6 +36,7 @@ import { resetGame, terminateMatch } from '../../main.js';
 
 import { renderIcon, WEAPON_ICONS } from '../icons.js';
 import { closeDeathModal } from './gameOverModal.js';
+import { applyHeroVisuals } from '../hudController.js';
 
 // Brasões Heráldicos Vetoriais e Perfis dos Campeões (Centralizados em heroProfiles.js)
 export { HERO_EMBLEMS_SVG, CHARACTER_PROFILES } from '../../config/heroProfiles.js';
@@ -601,6 +602,7 @@ export function openCharacterSelect() {
         confirmBtn.style.setProperty('--showcase-color', profile.themeColor);
         confirmBtn.onclick = () => {
           setSelectedHeroKey(heroKey);
+          applyHeroVisuals(heroKey);
           closeCharSelectModal();
           resetGame();
           try { playSfx('warp'); } catch(e) {}

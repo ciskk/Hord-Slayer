@@ -50,7 +50,7 @@ export const MONOLITH_CONFIG = Object.freeze({
 
   // Geometria e Dimensões de Ataque
   SLAM_RADIUS: 185,
-  SLAM_ARC: Math.PI * 0.38, // ~135° cone frontal
+  SLAM_ARC: Math.PI * 0.31, // ~112° cone frontal calibrado (flancos e retaguarda seguros)
   EPICENTER_RADIUS: 115,
   OUTER_SURGE_MIN_RADIUS: 140,
   OUTER_SURGE_MAX_RADIUS: 245,

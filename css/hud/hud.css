@@ -33,20 +33,36 @@
   max-width: 1380px;
   margin: 0 auto;
   --hero-theme-color: #f1c40f;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Ocultação Absoluta do HUD Fora de Jogo e Durante Telas / Transições */
+/* Ocultação e Fade Suave do HUD e Botão de ULT Durante a Introdução Cinematográfica */
+#hud.hud-cinematic-intro,
+#skill-btn-container.hud-cinematic-intro,
+body:has(#hud.hud-cinematic-intro) #skill-btn-container,
+body:has(#hud.hud-cinematic-intro) #blood-altar-touch-btn {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+/* Ocultação Absoluta do HUD e Botão de ULT Fora de Jogo e Durante Telas / Transições */
 #hud.hud-hidden,
 body:not(.in-game) #hud,
+body:not(.in-game) #skill-btn-container,
 body.modal-open #hud,
+body.modal-open #skill-btn-container,
 body:has(#char-modal:not(.modal-hidden):not([style*="display: none"])) #hud,
+body:has(#char-modal:not(.modal-hidden):not([style*="display: none"])) #skill-btn-container,
 body:has(#talents-modal.active) #hud,
 body:has(#talents-modal.closing) #hud,
+body:has(#talents-modal.active) #skill-btn-container,
 body:has(#achievements-modal.active) #hud,
 body:has(#achievements-modal.closing) #hud,
+body:has(#achievements-modal.active) #skill-btn-container,
 body:has(#bestiary-modal.active) #hud,
-body:has(#bestiary-modal.closing) #hud {
+body:has(#bestiary-modal.closing) #hud,
+body:has(#bestiary-modal.active) #skill-btn-container {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -1105,14 +1121,14 @@ body:has(#bestiary-modal.closing) #hud {
 }
 
 /* ======================================================== */
-/* 5. BOTÃO DE HABILIDADE SUPREMA (ULT / MEDALHÃO ESPINHOSO)*/
+/* 5. BOTÃO DE HABILIDADE SUPREMA (ULT / MEDALHÃO ARCANO)   */
 /* ======================================================== */
 #skill-btn-container {
   position: fixed;
   bottom: max(env(safe-area-inset-bottom, 24px), 24px);
   right: max(env(safe-area-inset-right, 20px), 24px);
-  width: 68px;
-  height: 68px;
+  width: 72px;
+  height: 72px;
   z-index: 15;
   cursor: pointer;
   touch-action: none;
@@ -1123,18 +1139,26 @@ body:has(#bestiary-modal.closing) #hud {
   align-items: center;
   justify-content: center;
   --skill-theme-color: #f1c40f;
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease, opacity 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.85));
+  overflow: visible;
+}
+
+#skill-btn-container.ready {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 14px var(--skill-theme-color));
 }
 
 #skill-btn-container:hover {
   transform: scale(1.08) translateY(-2px);
-  filter: drop-shadow(0 0 12px var(--gold-hud-glow));
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 16px var(--skill-theme-color));
 }
 
 #skill-btn-container:active {
   transform: scale(0.92);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.95));
 }
 
+.skill-chassis-frame,
 .skill-spikes-frame {
   position: absolute;
   inset: 0;
@@ -1144,139 +1168,243 @@ body:has(#bestiary-modal.closing) #hud {
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  overflow: visible;
 }
 
-.ult-spikes-svg {
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.95));
+.skill-medallion-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  overflow: visible !important;
+}
+
+/* Anel SVG de Progresso Energético Circular */
+.skill-progress-ring {
+  transition: stroke-dashoffset 0.08s linear, stroke 0.3s ease;
+  pointer-events: none;
+}
+
+/* Brackets / Garras Rúnicas Cardinais */
+.skill-bracket {
+  transition: fill 0.3s ease, stroke 0.3s ease, opacity 0.3s ease;
 }
 
 /* Container do Emblema do Herói dentro do Medalhão */
 .skill-emblem-wrap {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 2;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--skill-theme-color, #f1c40f);
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9));
-  transition: transform 0.2s ease, filter 0.25s ease, opacity 0.25s ease;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  pointer-events: none;
 }
 
 .skill-emblem-wrap svg {
   width: 100%;
   height: 100%;
+  display: block;
   color: inherit !important;
 }
 
-/* Máscara Circular de Cooldown */
+/* Máscara Circular de Cooldown no Núcleo */
 #skill-cooldown-mask {
   position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 44px;
   height: 44px;
   border-radius: 50%;
   pointer-events: none;
-  background: transparent;
+  background: conic-gradient(rgba(8, 10, 16, 0.85) var(--skill-deg, 0deg), transparent var(--skill-deg, 0deg));
   z-index: 3;
-  transition: background 0.05s linear;
+}
+
+/* Reflexo de Lente de Vidro 3D */
+.skill-glass-sheen {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 4;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 38%, transparent 60%);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2), inset 0 -2px 4px rgba(0, 0, 0, 0.5);
 }
 
 /* Texto de Contagem */
 #skill-timer-text {
   position: absolute;
-  z-index: 4;
-  font-family: var(--font-heading);
-  font-size: 13.5px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  font-family: var(--font-heading, 'Cinzel', serif);
+  font-size: 14px;
   font-weight: 900;
   color: #fff;
-  text-shadow: 0 1px 4px #000, 0 0 10px rgba(0, 0, 0, 0.95);
+  text-shadow: 0 1px 4px #000, 0 0 10px rgba(0, 0, 0, 0.95), 0 0 14px var(--skill-theme-color);
   pointer-events: none;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 /* Em Cooldown: Frio / Dessaturado */
 #skill-btn-container:not(.ready) .skill-emblem-wrap {
-  opacity: 0.55;
-  filter: grayscale(0.7) brightness(0.75);
+  opacity: 0.45;
+  filter: grayscale(0.85) brightness(0.65);
 }
 
-/* Halo Orbital Pulsante (Ativado quando Ready) */
+#skill-btn-container:not(.ready) .skill-bracket {
+  opacity: 0.7;
+}
+
+/* Halo Orbital Pulsante (Ativado quando Ready) - Expansão suave e difusa sem cortes */
 .skill-halo-pulse {
   position: absolute;
-  inset: -6px;
+  inset: -28px;
   border-radius: 50%;
-  background: var(--skill-theme-color, #f1c40f);
+  background: radial-gradient(circle,
+    var(--skill-theme-color, #f1c40f) 0%,
+    rgba(241, 196, 15, 0.45) 28%,
+    rgba(241, 196, 15, 0.2) 50%,
+    rgba(241, 196, 15, 0.04) 72%,
+    transparent 88%
+  );
   opacity: 0;
   pointer-events: none;
   z-index: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.4s ease;
+  filter: blur(10px);
 }
 
 /* ESTADO PRONTO PARA DISPARO (READY) */
-#skill-btn-container.ready .skill-spikes-frame polygon {
-  filter: drop-shadow(0 0 8px var(--skill-theme-color));
+#skill-btn-container.ready .skill-halo-pulse {
+  opacity: 0.85;
+  animation: ultHaloPulse 2.6s infinite ease-in-out;
+}
+
+#skill-btn-container.ready .skill-bracket {
+  opacity: 1;
+  fill: #ffffff;
+  stroke: var(--skill-theme-color);
+  stroke-width: 1.2px;
+}
+
+#skill-btn-container.ready .skill-progress-ring {
+  stroke: var(--skill-theme-color);
+  animation: ultRingReadyPulse 2.4s infinite ease-in-out;
 }
 
 #skill-btn-container.ready .skill-emblem-wrap {
   opacity: 1;
-  filter: drop-shadow(0 0 12px var(--skill-theme-color));
-  animation: emblemReadyPulse 2s infinite ease-in-out;
+  filter: drop-shadow(0 0 10px var(--skill-theme-color));
+  animation: ultEmblemReadyPulse 2.4s infinite ease-in-out;
 }
 
-#skill-btn-container.ready .skill-halo-pulse {
-  opacity: 0.3;
-  animation: haloPulseWave 2s infinite ease-in-out;
+@keyframes ultHaloPulse {
+  0%, 100% {
+    transform: scale(0.92);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.16);
+    opacity: 0.95;
+  }
 }
 
-@keyframes haloPulseWave {
-  0%, 100% { transform: scale(0.95); opacity: 0.2; }
-  50% { transform: scale(1.12); opacity: 0.5; filter: blur(3px); }
+@keyframes ultRingReadyPulse {
+  0%, 100% {
+    stroke-width: 3.4px;
+    opacity: 0.92;
+  }
+  50% {
+    stroke-width: 4.4px;
+    opacity: 1;
+  }
 }
 
-@keyframes emblemReadyPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.12); filter: drop-shadow(0 0 18px var(--skill-theme-color)); }
+@keyframes ultEmblemReadyPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.10);
+  }
 }
 
 /* Flash de Recarga Completa */
 .skill-ready-flare {
   position: absolute;
-  width: 44px;
-  height: 44px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(241, 196, 15, 0.45) 35%, transparent 72%);
   opacity: 0;
   pointer-events: none;
-  z-index: 5;
+  z-index: 6;
 }
 
 #skill-btn-container.ready .skill-ready-flare {
-  animation: flarePop 0.6s ease-out;
+  animation: ultFlarePop 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes flarePop {
-  0% { transform: scale(0.2); opacity: 1; }
-  100% { transform: scale(1.5); opacity: 0; }
+@keyframes ultFlarePop {
+  0% {
+    transform: translate(-50%, -50%) scale(0.15);
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.6);
+    opacity: 0;
+  }
 }
 
 /* Badge de Tecla de Atalho (PC) */
 .skill-key-badge {
   position: absolute;
-  bottom: -9px;
-  background: linear-gradient(180deg, #241606 0%, #0d121f 100%);
-  border: 1px solid var(--bronze-gold);
-  clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px);
-  padding: 1px 7px;
-  font-family: var(--font-heading);
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #1c2230 0%, #0c0f17 100%);
+  border: 1px solid rgba(212, 175, 55, 0.55);
+  border-radius: 4px;
+  padding: 1.5px 7.5px;
+  font-family: var(--font-heading, 'Cinzel', serif);
   font-size: 8.5px;
   font-weight: 800;
-  color: #fff;
-  letter-spacing: 0.8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  color: #e2e8f0;
+  letter-spacing: 0.9px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   pointer-events: none;
-  z-index: 6;
+  z-index: 7;
   white-space: nowrap;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
+}
+
+#skill-btn-container.ready .skill-key-badge {
+  border-color: var(--skill-theme-color);
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.85), 0 0 8px var(--skill-theme-color), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 /* ======================================================== */
@@ -1344,81 +1472,226 @@ body:has(#bestiary-modal.closing) #hud {
 }
 
 /* ======================================================== */
-/* 7. EVENTOS DINÂMICOS DE ARENA: ALTAR DE SANGUE          */
+/* 7. EVENTOS DINÂMICOS DE ARENA: ALTAR DE SANGUE (COMPACTO)*/
 /* ======================================================== */
+
+/* Suprime suavemente o banner de onda durante o pacto ritual para manter o topo limpo */
+#hud.altar-active #hud-wave-card {
+  opacity: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+  transform: translateY(-6px) scale(0.95);
+  pointer-events: none !important;
+  overflow: hidden !important;
+}
+
 .blood-altar-hud {
-  position: fixed;
-  top: max(env(safe-area-inset-top, 14px), 78px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 18;
-  display: flex;
+  position: relative;
+  align-self: center;
+  margin: 2px auto 0 auto;
+  display: inline-flex;
   flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  background: linear-gradient(180deg, rgba(28, 7, 12, 0.94) 0%, rgba(12, 4, 6, 0.96) 100%);
-  border: 1px solid #ff3838;
-  border-radius: 8px;
-  padding: 8px 20px;
-  box-shadow: 0 6px 24px rgba(255, 56, 56, 0.35), inset 0 0 14px rgba(255, 56, 56, 0.2);
-  pointer-events: none;
-  min-width: 290px;
-  max-width: min(92vw, 480px);
-  animation: altarHudSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  background: linear-gradient(180deg, #2a0b10 0%, #120406 50%, #080203 100%);
+  border: 1.5px solid rgba(255, 56, 56, 0.65);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  padding: 4px 14px 6px 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.85), 0 0 14px rgba(255, 56, 56, 0.3), inset 0 1px 0 rgba(255, 120, 120, 0.35);
+  pointer-events: auto;
+  min-width: 0;
+  max-width: min(92vw, 340px);
+  height: auto;
+  animation: altarHudSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  z-index: 5;
+  overflow: hidden;
 }
 
 @keyframes altarHudSlide {
-  from { opacity: 0; transform: translate(-50%, -10px) scale(0.96); }
-  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  from { opacity: 0; transform: translateY(-4px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.blood-altar-header {
+.blood-altar-hud.is-warning {
+  border-color: #ff1744;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 23, 68, 0.7), inset 0 0 10px rgba(255, 23, 68, 0.35);
+  animation: hudWarningFlash 0.35s infinite alternate ease-in-out;
+}
+
+@keyframes hudWarningFlash {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.03); }
+}
+
+.blood-altar-hud.is-completed {
+  border-color: #ffd166;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.9), 0 0 18px rgba(255, 209, 102, 0.5), inset 0 0 8px rgba(255, 209, 102, 0.3);
+}
+
+.blood-altar-hud.is-failed {
+  border-color: #e056fd;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.9), 0 0 18px rgba(224, 86, 253, 0.4), inset 0 0 8px rgba(224, 86, 253, 0.25);
+}
+
+.blood-altar-compact-row {
   display: flex;
   align-items: center;
-  gap: 7px;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.blood-altar-info-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.blood-altar-hud.is-warning .blood-altar-info-group,
+.blood-altar-hud.is-completed .blood-altar-info-group,
+.blood-altar-hud.is-failed .blood-altar-info-group {
+  display: none;
 }
 
 .blood-altar-icon-wrap {
   display: flex;
   align-items: center;
-  filter: drop-shadow(0 0 6px rgba(255, 56, 56, 0.8));
+  justify-content: center;
+  color: #ff3838;
+  filter: drop-shadow(0 0 5px rgba(255, 56, 56, 0.8));
+}
+
+.altar-hud-icon {
+  width: 13px;
+  height: 13px;
 }
 
 .blood-altar-title {
   font-family: var(--font-heading);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 1.5px;
-  color: #ff7675;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ff8b8b;
   text-transform: uppercase;
-  text-shadow: 0 0 8px rgba(255, 56, 56, 0.6);
+  text-shadow: 0 0 6px rgba(255, 56, 56, 0.6);
 }
 
+.altar-mod-pill.danger {
+  font-family: var(--font-heading);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #ff7675;
+  background: rgba(255, 56, 56, 0.16);
+  border: 1px solid rgba(255, 56, 56, 0.45);
+  padding: 1px 5px;
+  border-radius: 3px;
+  line-height: 1.2;
+}
+
+.blood-altar-timer-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #ff6b6b;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.blood-altar-timer {
+  font-family: var(--font-mono, 'Outfit', monospace);
+  font-size: 13.5px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(255, 56, 56, 0.8), 0 1px 3px rgba(0, 0, 0, 0.8);
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+}
+
+.blood-altar-hud.is-climax .blood-altar-timer {
+  color: #ffd166;
+  text-shadow: 0 0 10px rgba(255, 209, 102, 0.9);
+  animation: timerClimaxPulse 0.35s infinite alternate ease-in-out;
+}
+
+@keyframes timerClimaxPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.08); }
+}
+
+.blood-altar-status {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.blood-altar-hud.is-warning .blood-altar-status,
+.blood-altar-hud.is-completed .blood-altar-status,
+.blood-altar-hud.is-failed .blood-altar-status {
+  display: flex;
+}
+
+.altar-warning-alert {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #ff3838;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  animation: warningPulse 0.3s infinite alternate;
+}
+
+@keyframes warningPulse {
+  0% { opacity: 0.8; transform: scale(0.98); }
+  100% { opacity: 1; transform: scale(1.02); }
+}
+
+.altar-status-icon {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+
+/* Barra de Progresso Embutida no Rodapé do Pill */
 .blood-altar-bar-wrap {
+  position: absolute;
+  bottom: 0;
+  left: 0;
   width: 100%;
-  height: 9px;
+  height: 2.5px;
   background: rgba(0, 0, 0, 0.65);
-  border: 1px solid rgba(255, 56, 56, 0.4);
-  border-radius: 4px;
   overflow: hidden;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .blood-altar-fill {
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, #d63031 0%, #ff7675 100%);
-  box-shadow: 0 0 10px rgba(255, 56, 56, 0.6);
-  transition: width 0.1s linear, background 0.2s ease;
+  background: linear-gradient(90deg, #c0392b 0%, #ff3838 100%);
+  box-shadow: 0 0 6px rgba(255, 56, 56, 0.7);
+  transition: width 0.1s linear, background 0.25s ease;
 }
 
-.blood-altar-status {
-  font-family: var(--font-body);
-  font-size: 10.5px;
-  letter-spacing: 0.5px;
-  color: #eee;
-  text-align: center;
-  white-space: nowrap;
+.blood-altar-bar-sheen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  pointer-events: none;
+  animation: altarSheen 2.2s infinite linear;
+}
+
+@keyframes altarSheen {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 /* ======================================================== */

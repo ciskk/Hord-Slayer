@@ -85,10 +85,19 @@ export const REAPER_CONFIG = Object.freeze({
   COLOR_SOUL_EMERALD: '#00b894',
   COLOR_BONE_WHITE: '#e6f2f2',
   COLOR_BONE_SHADE: '#1a333d',
+  COLOR_BONE_DEEP: '#0c1921',
   COLOR_ENRAGED: '#ff4757',
   COLOR_ENRAGED_GLOW: '#ff6b81',
   COLOR_ENRAGED_DARK: '#2c080d',
   COLOR_P3: '#ff4757',
+  COLOR_P3_GLOW: '#ff7675',
   COLOR_RECOVERY: '#81ecec',
-  COLOR_GOLD_TRIM: '#f1c40f'
+  COLOR_GOLD_TRIM: '#f1c40f',
+  COLOR_ASTRAL_GOLD: '#f39c12',
+  COLOR_VOID_PLASMA: '#81ecec',
+  COLOR_VOID_PURPLE: '#8e44ad',
+
+  // Parâmetros Visuais de Thanatos 2.0
+  HALO_RADIUS: 25,
+  HALO_TILT: 0.44
 });

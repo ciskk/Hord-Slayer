@@ -232,6 +232,7 @@ function drawVampireSpawnIntro(ctx, e, frameCount) {
 
   drawFluidCape(ctx, bob, frameCount, false, false);
   drawGothicArmor(ctx, bob, frameCount, false, false);
+  drawAristocraticJabot(ctx, bob, frameCount, false, false);
   drawHeadAndFace(ctx, bob, frameCount, false, false);
   drawClawsAndArms(ctx, bob, frameCount, false, false, progress >= 0.76, false);
   ctx.restore();
@@ -244,16 +245,15 @@ function drawCinematicScreenTitle(ctx, e, frameCount) {
   const maxT = e.titleMaxTimer || 180;
   const titleProgress = 1 - Math.max(0, e.titleTimer / maxT);
 
-  let bannerAlpha = 1.0;
-  if (titleProgress < 0.10) {
-    bannerAlpha = titleProgress / 0.10;
-  } else if (titleProgress > 0.80) {
-    bannerAlpha = Math.max(0, (1 - titleProgress) / 0.20);
-  }
+  // Easing suave de Fade In e Fade Out (Curva Smoothstep)
+  const inRatio = Math.min(1.0, Math.max(0, titleProgress / 0.18));
+  const inEase = inRatio * inRatio * (3 - 2 * inRatio);
 
-  ctx.save();
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.globalAlpha = bannerAlpha;
+  const outRatio = Math.min(1.0, Math.max(0, (1 - titleProgress) / 0.22));
+  const outEase = outRatio * outRatio * (3 - 2 * outRatio);
+
+  const bannerAlpha = inEase * outEase;
+  if (bannerAlpha <= 0.001) return;
 
   const screenW = viewW || (typeof window !== 'undefined' ? window.innerWidth : 1280);
   const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
@@ -261,89 +261,141 @@ function drawCinematicScreenTitle(ctx, e, frameCount) {
   const isCompactH = screenH < 520;
   const hudBottom = getHudBottom();
 
-  const bannerW = isVertical 
-    ? Math.min(380, screenW * 0.94) 
-    : (isCompactH ? Math.min(640, screenW * 0.88) : Math.min(840, screenW * 0.90));
-  const bannerH = isVertical ? 60 : (isCompactH ? 56 : 96);
-  const bx = (screenW - bannerW) / 2;
+  const centerX = screenW / 2;
+  const contentW = isVertical 
+    ? Math.min(screenW - 24, 380) 
+    : (isCompactH ? Math.min(screenW - 48, 680) : Math.min(screenW - 64, 880));
+  const bannerH = isVertical ? 62 : (isCompactH ? 58 : 96);
+
+  // Fade estendido nas laterais: asas amplas que se estendem e dissolvem suavemente
+  const fadeWing = isVertical ? 50 : Math.max(160, screenW * 0.22);
+  const totalW = contentW + fadeWing * 2;
+  const startX = centerX - totalW / 2;
+  const endX = centerX + totalW / 2;
+
   const calculatedY = Math.round((screenH / 2) - bannerH - (isVertical ? 45 : (isCompactH ? 20 : 75)));
   const by = Math.max(hudBottom + 8, calculatedY);
+  const centerY = by + bannerH / 2;
 
-  // 1. Fundo de Veludo Carmesim e Obsidiana
-  const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  // Animação de transição: desliza suavemente do topo na entrada e flutua na saída
+  const entrySlideY = (1 - inEase) * -12;
+  const exitSlideY = (1 - outEase) * -8;
+  const ambientFloat = Math.sin(frameCount * 0.04) * 1.5;
+  const animOffsetY = entrySlideY + exitSlideY + ambientFloat;
+  const animScaleX = (0.93 + 0.07 * inEase) * (1.0 + (1 - outEase) * 0.025);
+
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.globalAlpha = bannerAlpha;
+
+  // Aplica movimento sutil com pivô central no banner
+  ctx.translate(centerX, centerY + animOffsetY);
+  ctx.scale(animScaleX, 1.0);
+  ctx.translate(-centerX, -centerY);
+
+  // 1. Fundo de Veludo Carmesim e Obsidiana com Fade Estendido nas Laterais
+  const bgGrad = ctx.createLinearGradient(startX, by, endX, by);
   bgGrad.addColorStop(0, 'rgba(12, 1, 3, 0)');
-  bgGrad.addColorStop(0.18, 'rgba(32, 3, 9, 0.95)');
-  bgGrad.addColorStop(0.5, 'rgba(64, 5, 18, 0.98)');
-  bgGrad.addColorStop(0.82, 'rgba(32, 3, 9, 0.95)');
+  bgGrad.addColorStop(0.12, 'rgba(20, 2, 6, 0.22)');
+  bgGrad.addColorStop(0.28, 'rgba(38, 4, 11, 0.90)');
+  bgGrad.addColorStop(0.50, 'rgba(64, 5, 18, 0.98)');
+  bgGrad.addColorStop(0.72, 'rgba(38, 4, 11, 0.90)');
+  bgGrad.addColorStop(0.88, 'rgba(20, 2, 6, 0.22)');
   bgGrad.addColorStop(1, 'rgba(12, 1, 3, 0)');
   ctx.fillStyle = bgGrad;
-  ctx.fillRect(bx, by, bannerW, bannerH);
+  ctx.fillRect(startX, by, totalW, bannerH);
 
-  // 2. Frisos de Neon Escarlate Superior e Inferior
-  const borderGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  // 2. Frisos de Neon Escarlate Superior e Inferior com Taper Suave nas Pontas
+  const lineStart = startX + fadeWing * 0.25;
+  const lineEnd = endX - fadeWing * 0.25;
+  const borderGrad = ctx.createLinearGradient(lineStart, by, lineEnd, by);
   borderGrad.addColorStop(0, 'rgba(255, 23, 68, 0)');
-  borderGrad.addColorStop(0.2, 'rgba(255, 23, 68, 0.95)');
-  borderGrad.addColorStop(0.5, 'rgba(255, 107, 129, 1)');
-  borderGrad.addColorStop(0.8, 'rgba(255, 23, 68, 0.95)');
+  borderGrad.addColorStop(0.18, 'rgba(255, 23, 68, 0.65)');
+  borderGrad.addColorStop(0.35, 'rgba(255, 23, 68, 0.95)');
+  borderGrad.addColorStop(0.50, 'rgba(255, 107, 129, 1.0)');
+  borderGrad.addColorStop(0.65, 'rgba(255, 23, 68, 0.95)');
+  borderGrad.addColorStop(0.82, 'rgba(255, 23, 68, 0.65)');
   borderGrad.addColorStop(1, 'rgba(255, 23, 68, 0)');
 
   ctx.strokeStyle = borderGrad;
-  ctx.lineWidth = isVertical ? 2.0 : 2.8;
+  ctx.lineWidth = isVertical ? 2.0 : 2.6;
+  ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(bx, by);
-  ctx.lineTo(bx + bannerW, by);
-  ctx.moveTo(bx, by + bannerH);
-  ctx.lineTo(bx + bannerW, by + bannerH);
+  ctx.moveTo(lineStart, by);
+  ctx.lineTo(lineEnd, by);
+  ctx.moveTo(lineStart, by + bannerH);
+  ctx.lineTo(lineEnd, by + bannerH);
   ctx.stroke();
 
-  // Frisos internos com acabamento dourado
-  ctx.strokeStyle = 'rgba(241, 196, 15, 0.45)';
+  // Frisos internos com acabamento dourado e fade nas pontas
+  const innerStart = centerX - contentW * 0.44;
+  const innerEnd = centerX + contentW * 0.44;
+  const innerGrad = ctx.createLinearGradient(innerStart, by, innerEnd, by);
+  innerGrad.addColorStop(0, 'rgba(241, 196, 15, 0)');
+  innerGrad.addColorStop(0.20, 'rgba(241, 196, 15, 0.45)');
+  innerGrad.addColorStop(0.50, 'rgba(255, 234, 167, 0.75)');
+  innerGrad.addColorStop(0.80, 'rgba(241, 196, 15, 0.45)');
+  innerGrad.addColorStop(1, 'rgba(241, 196, 15, 0)');
+
+  ctx.strokeStyle = innerGrad;
   ctx.lineWidth = 1.2;
-  const padX = isVertical ? 24 : 45;
+  const innerPadY = isVertical ? 3.5 : 5;
   ctx.beginPath();
-  ctx.moveTo(bx + padX, by + 4);
-  ctx.lineTo(bx + bannerW - padX, by + 4);
-  ctx.moveTo(bx + padX, by + bannerH - 4);
-  ctx.lineTo(bx + bannerW - padX, by + bannerH - 4);
+  ctx.moveTo(innerStart, by + innerPadY);
+  ctx.lineTo(innerEnd, by + innerPadY);
+  ctx.moveTo(innerStart, by + bannerH - innerPadY);
+  ctx.lineTo(innerEnd, by + bannerH - innerPadY);
   ctx.stroke();
 
-  // Cantoneiras Góticas
-  const cornerSize = isVertical ? 10 : 16;
-  ctx.fillStyle = '#ff1744';
-  ctx.fillRect(bx + padX * 0.7, by - 2, cornerSize, 4);
-  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by - 2, cornerSize, 4);
-  ctx.fillRect(bx + padX * 0.7, by + bannerH - 2, cornerSize, 4);
-  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by + bannerH - 2, cornerSize, 4);
+  // Detalhes heráldicos em losango nas extremidades dos frisos internos
+  [-contentW * 0.42, contentW * 0.42].forEach(ox => {
+    ctx.fillStyle = '#ff1744';
+    ctx.beginPath();
+    ctx.moveTo(centerX + ox, by);
+    ctx.lineTo(centerX + ox + 3, by - 3);
+    ctx.lineTo(centerX + ox + 6, by);
+    ctx.lineTo(centerX + ox + 3, by + 3);
+    ctx.closePath();
+    ctx.fill();
 
-  // Ornamento Central Superior: Morcego / Joia de Rubi
+    ctx.beginPath();
+    ctx.moveTo(centerX + ox, by + bannerH);
+    ctx.lineTo(centerX + ox + 3, by + bannerH - 3);
+    ctx.lineTo(centerX + ox + 6, by + bannerH);
+    ctx.lineTo(centerX + ox + 3, by + bannerH + 3);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  // Ornamento Central Superior: Brasão Gótico / Rubi
   ctx.fillStyle = '#f1c40f';
   ctx.beginPath();
-  ctx.moveTo(screenW / 2, by - 8);
-  ctx.lineTo(screenW / 2 + 10, by);
-  ctx.lineTo(screenW / 2, by + 8);
-  ctx.lineTo(screenW / 2 - 10, by);
+  ctx.moveTo(centerX, by - 8);
+  ctx.lineTo(centerX + 10, by);
+  ctx.lineTo(centerX, by + 8);
+  ctx.lineTo(centerX - 10, by);
   ctx.closePath();
   ctx.fill();
   ctx.fillStyle = '#ff1744';
   ctx.beginPath();
-  ctx.arc(screenW / 2, by, 3.5, 0, Math.PI * 2);
+  ctx.arc(centerX, by, 3.5, 0, Math.PI * 2);
   ctx.fill();
 
   // 3. Tipografia Majestosa
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const titleY = by + (isVertical ? 22 : 36);
+  const titleY = by + (isVertical ? 23 : 37);
   ctx.font = isVertical ? '900 21px "Cinzel", "Times New Roman", serif' : '900 34px "Cinzel", "Times New Roman", serif';
   ctx.fillStyle = 'rgba(255, 23, 68, 0.5)';
-  ctx.fillText('LORDE VAMPÍRICO', screenW / 2 + 1, titleY + 1.5);
+  ctx.fillText('LORDE VAMPÍRICO', centerX + 1, titleY + 1.5);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('LORDE VAMPÍRICO', screenW / 2, titleY);
+  ctx.fillText('LORDE VAMPÍRICO', centerX, titleY);
 
   ctx.font = isVertical ? '600 10px "Cinzel", sans-serif' : '700 13px "Cinzel", sans-serif';
   ctx.letterSpacing = isVertical ? '3px' : '6px';
   ctx.fillStyle = '#f1c40f';
-  ctx.fillText('SOBERANO DA ESTIRPE CARMESIM', screenW / 2, by + (isVertical ? 44 : 70));
+  ctx.fillText('SOBERANO DA ESTIRPE CARMESIM', centerX, by + (isVertical ? 45 : 71));
   ctx.letterSpacing = '0px';
 
   ctx.restore();
@@ -474,46 +526,343 @@ function drawVulnerabilityGliph(ctx, e, frameCount) {
   }
 }
 
+/**
+ * Renderiza a Coroa Imperial de Ferro Negro & Rubi de Sangue na fronte do Lorde.
+ */
+function drawImperialCrown(ctx, headY, bob, frameCount, isVuln, isEnraged) {
+  ctx.save();
+  const crownBaseY = headY - 15;
+  const pulse = Math.sin(frameCount * (isEnraged ? 0.22 : 0.12));
+  
+  const goldTrim = isVuln ? '#634c02' : (isEnraged ? '#ff4757' : '#f1c40f');
+  const ironBase = isVuln ? '#0d0407' : (isEnraged ? '#350610' : '#141416');
+  const ironHighlight = isVuln ? '#240a12' : (isEnraged ? '#700c22' : '#323438');
+
+  // 1. Arco inferior da tiara / diadema gótico
+  ctx.fillStyle = ironBase;
+  ctx.beginPath();
+  ctx.moveTo(-13, crownBaseY);
+  ctx.quadraticCurveTo(0, crownBaseY - 3, 13, crownBaseY);
+  ctx.lineTo(11, crownBaseY + 4);
+  ctx.quadraticCurveTo(0, crownBaseY + 1, -11, crownBaseY + 4);
+  ctx.closePath();
+  ctx.fill();
+  
+  ctx.strokeStyle = goldTrim;
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+
+  // 2. Os 5 Espigões Reais de Ferro e Ouro (Fleurons Góticos)
+  const spikes = [
+    { x: -11, w: 3.5, h: 8, slant: -2 },
+    { x: -6,  w: 4.0, h: 14, slant: -1 },
+    { x: 0,   w: 5.0, h: 20 + (isEnraged ? 3 : 0), slant: 0 },
+    { x: 6,   w: 4.0, h: 14, slant: 1 },
+    { x: 11,  w: 3.5, h: 8, slant: 2 }
+  ];
+
+  for (let i = 0; i < spikes.length; i++) {
+    const sp = spikes[i];
+    const tipX = sp.x + sp.slant;
+    const tipY = crownBaseY - sp.h;
+
+    // Gradiente metálico nos espigões
+    const spGrad = ctx.createLinearGradient(sp.x, crownBaseY, tipX, tipY);
+    spGrad.addColorStop(0, ironBase);
+    spGrad.addColorStop(0.5, ironHighlight);
+    spGrad.addColorStop(1, isEnraged ? '#ff1744' : goldTrim);
+
+    ctx.fillStyle = spGrad;
+    ctx.beginPath();
+    ctx.moveTo(sp.x - sp.w * 0.5, crownBaseY);
+    ctx.lineTo(tipX, tipY);
+    ctx.lineTo(sp.x + sp.w * 0.5, crownBaseY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = goldTrim;
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
+
+    // Brilho especular no ápice do espigão central
+    if (i === 2) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(tipX - 1, tipY - 1, 2, 2);
+    }
+  }
+
+  // 3. Rubi Central Imperial na Fronte
+  const rubyY = crownBaseY + 1;
+  const rubyR = 3.2 + (isEnraged ? pulse * 0.6 : pulse * 0.3);
+
+  // Halo do rubi da coroa
+  const rubyGlow = ctx.createRadialGradient(0, rubyY, 1, 0, rubyY, rubyR * 2.6);
+  rubyGlow.addColorStop(0, isEnraged ? 'rgba(255, 0, 55, 0.85)' : 'rgba(231, 76, 60, 0.7)');
+  rubyGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = rubyGlow;
+  ctx.beginPath();
+  ctx.arc(0, rubyY, rubyR * 2.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Engaste dourado
+  ctx.fillStyle = goldTrim;
+  ctx.beginPath();
+  ctx.arc(0, rubyY, rubyR + 1.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Pedra lapidada
+  ctx.fillStyle = isVuln ? '#4a0815' : (isEnraged ? '#ff0037' : '#ff1744');
+  ctx.beginPath();
+  ctx.arc(0, rubyY, rubyR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ponto especular de lapidação
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-1, rubyY - 1.5, 1.4, 1.4);
+
+  // Micro-fagulhas do modo Enraged emanando da coroa
+  if (isEnraged && Math.floor(frameCount) % 4 === 0) {
+    const sparkX = (Math.random() - 0.5) * 26;
+    const sparkY = crownBaseY - 10 - Math.random() * 12;
+    ctx.fillStyle = '#ff7675';
+    ctx.fillRect(sparkX, sparkY, 1.8, 1.8);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Renderiza o Jabot Aristocrático Vitoriano em Seda Pura com Camafeu Imperial.
+ */
+function drawAristocraticJabot(ctx, bob, frameCount, isVuln, isEnraged) {
+  ctx.save();
+  const jY = -20 + bob;
+  const sway = Math.sin(frameCount * 0.12) * 1.5;
+
+  const laceBorder = isVuln ? '#718093' : '#dcdde1';
+  const laceBody1 = isVuln ? '#8395a7' : '#f5f6fa';
+  const laceBody2 = isVuln ? '#95a5a6' : '#ffffff';
+  const goldTrim = isVuln ? '#634c02' : (isEnraged ? '#ff4757' : '#f1c40f');
+
+  // 1. Três camadas escalonadas de babados de seda (Jabot Rococó)
+  const tiers = [
+    { w: 16, h: 7, yOff: 0, col: laceBorder },
+    { w: 12, h: 13, yOff: 4, col: laceBody1 },
+    { w: 8, h: 18, yOff: 9, col: laceBody2 }
+  ];
+
+  for (let i = 0; i < tiers.length; i++) {
+    const t = tiers[i];
+    const topY = jY + t.yOff;
+    const botY = jY + t.yOff + t.h;
+
+    ctx.fillStyle = t.col;
+    ctx.beginPath();
+    ctx.moveTo(-t.w * 0.5, topY);
+    ctx.quadraticCurveTo(-t.w * 0.6 + sway * 0.4, (topY + botY) * 0.5, -t.w * 0.2 + sway, botY);
+    ctx.lineTo(t.w * 0.2 + sway, botY);
+    ctx.quadraticCurveTo(t.w * 0.6 + sway * 0.4, (topY + botY) * 0.5, t.w * 0.5, topY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Fricção de sombra nas dobras do tecido
+    ctx.strokeStyle = 'rgba(47, 53, 66, 0.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0 + sway * 0.5, topY);
+    ctx.lineTo(sway, botY);
+    ctx.stroke();
+
+    // Contorno fino de renda
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+
+  // 2. Correntes Douradas em Arco Duplo suspensas sob o broche
+  ctx.strokeStyle = goldTrim;
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.moveTo(-7, jY + 4);
+  ctx.quadraticCurveTo(0, jY + 12, 7, jY + 4);
+  ctx.moveTo(-9, jY + 6);
+  ctx.quadraticCurveTo(0, jY + 16, 9, jY + 6);
+  ctx.stroke();
+
+  // 3. Broche Imperial com Camafeu de Crânio / Rubi
+  ctx.fillStyle = goldTrim;
+  ctx.beginPath();
+  ctx.ellipse(0, jY + 2, 4.2, 3.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = isEnraged ? '#ff0037' : '#800020';
+  ctx.beginPath();
+  ctx.ellipse(0, jY + 2, 3.0, 2.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Mini-camafeu (silhueta de crânio/gema no centro)
+  ctx.fillStyle = '#f5f6fa';
+  ctx.fillRect(-1, jY + 1, 2, 1.6);
+  ctx.fillRect(-0.6, jY + 2.6, 1.2, 0.8);
+
+  ctx.restore();
+}
+
+/**
+ * Renderiza as Asas Secundárias Inferiores ativadas no modo FÚRIA (Metamorfose Hexa-Alar).
+ */
+function drawSecondaryWings(ctx, flap, span, frameCount) {
+  const secFlap = Math.sin(frameCount * 0.28 + 0.8) * 10;
+  const secSpan = span * 0.72;
+
+  ctx.save();
+  for (let s of [-1, 1]) {
+    ctx.save();
+    ctx.scale(s, 1);
+    ctx.translate(0, 14); // Origem mais baixa no dorso
+
+    const boneCol = '#590a18';
+    const boneHighlight = '#c0392b';
+    const rootX = -6;
+    const rootY = 0;
+    const elbowX = -38 * secSpan;
+    const elbowY = (-25 + secFlap) * secSpan;
+
+    const tip1X = -72 * secSpan;
+    const tip1Y = (-10 + secFlap * 1.2) * secSpan;
+    const tip2X = -65 * secSpan;
+    const tip2Y = (28 + secFlap * 0.9) * secSpan;
+    const tip3X = -45 * secSpan;
+    const tip3Y = (58 + secFlap * 0.5) * secSpan;
+
+    // Membrana translúcida com degradê carmesim
+    const secGrad = ctx.createRadialGradient(elbowX, elbowY, 5, elbowX, elbowY, 65 * secSpan);
+    secGrad.addColorStop(0, 'rgba(255, 23, 68, 0.75)');
+    secGrad.addColorStop(0.5, 'rgba(180, 15, 45, 0.85)');
+    secGrad.addColorStop(1, 'rgba(45, 3, 10, 0.9)');
+
+    ctx.fillStyle = secGrad;
+    ctx.beginPath();
+    ctx.moveTo(rootX, rootY);
+    ctx.lineTo(elbowX, elbowY);
+    ctx.lineTo(tip1X, tip1Y);
+    ctx.quadraticCurveTo(tip1X + 10 * secSpan, tip1Y + 20 * secSpan, tip2X, tip2Y);
+    ctx.quadraticCurveTo(tip2X + 8 * secSpan, tip2Y + 16 * secSpan, tip3X, tip3Y);
+    ctx.quadraticCurveTo(tip3X + 10 * secSpan, tip3Y - 10 * secSpan, rootX, rootY + 30);
+    ctx.closePath();
+    ctx.fill();
+
+    // Nervuras de sangue
+    ctx.strokeStyle = 'rgba(255, 71, 87, 0.7)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(elbowX, elbowY);
+    ctx.quadraticCurveTo(elbowX - 5, elbowY + 15, tip1X, tip1Y);
+    ctx.moveTo(elbowX, elbowY);
+    ctx.quadraticCurveTo(elbowX, elbowY + 30, tip2X, tip2Y);
+    ctx.moveTo(elbowX * 0.6, elbowY * 0.6 + 5);
+    ctx.quadraticCurveTo(elbowX + 10, elbowY + 45, tip3X, tip3Y);
+    ctx.stroke();
+
+    // Ossatura
+    ctx.strokeStyle = boneCol;
+    ctx.lineWidth = 3.0;
+    ctx.beginPath();
+    ctx.moveTo(rootX, rootY);
+    ctx.lineTo(elbowX, elbowY);
+    ctx.lineTo(tip1X, tip1Y);
+    ctx.moveTo(elbowX, elbowY);
+    ctx.lineTo(tip2X, tip2Y);
+    ctx.moveTo(elbowX, elbowY);
+    ctx.lineTo(tip3X, tip3Y);
+    ctx.stroke();
+
+    // Brilho no osso
+    ctx.strokeStyle = boneHighlight;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(rootX, rootY - 1);
+    ctx.lineTo(elbowX, elbowY - 1);
+    ctx.lineTo(tip1X + 2, tip1Y - 1);
+    ctx.stroke();
+
+    // Garras nas pontas das falanges
+    ctx.fillStyle = '#ff4757';
+    for (let d of [[tip1X, tip1Y], [tip2X, tip2Y], [tip3X, tip3Y]]) {
+      ctx.beginPath();
+      ctx.arc(d[0], d[1], 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(d[0] - 0.8, d[1] - 0.8, 1.6, 1.6);
+      ctx.fillStyle = '#ff4757';
+    }
+
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/**
+ * Renderiza uma asa individual com transluscência de sangue (Subsurface Scattering) e ossatura articulada.
+ */
 function drawSingleWing(ctx, side, flap, span, isVuln, isEnraged, frameCount = 0) {
   ctx.save();
   ctx.scale(side, 1);
 
   const boneCol = isVuln ? '#1a0b12' : (isEnraged ? '#590a18' : '#1a040b');
-  const boneHighlight = isVuln ? '#3a1b25' : (isEnraged ? '#c0392b' : '#3d0814');
-  const membraneBase = isVuln ? 'rgba(35, 6, 15, 0.75)' : (isEnraged ? 'rgba(180, 15, 45, 0.88)' : 'rgba(95, 7, 24, 0.85)');
-  const membraneShade = isVuln ? 'rgba(12, 2, 5, 0.85)' : (isEnraged ? 'rgba(80, 5, 18, 0.88)' : 'rgba(34, 3, 9, 0.88)');
-  const veinCol = isVuln ? 'rgba(70, 10, 20, 0.3)' : (isEnraged ? 'rgba(255, 71, 87, 0.75)' : 'rgba(231, 76, 60, 0.45)');
+  const boneHighlight = isVuln ? '#3a1b25' : (isEnraged ? '#ff4757' : '#b38f4d');
+  const veinCol = isVuln ? 'rgba(70, 10, 20, 0.3)' : (isEnraged ? 'rgba(255, 71, 87, 0.85)' : 'rgba(231, 76, 60, 0.55)');
 
   const rootX = -8;
   const rootY = -18;
   const elbowX = -52 * span;
   const elbowY = (-62 + flap) * span;
 
-  // 4 Dígitos afiados de asa de morcego gótico
-  const tip1X = -95 * span;
-  const tip1Y = (-48 + flap * 1.35) * span;
-  const tip2X = -88 * span;
+  // 4 Falanges alongadas de morcego gótico
+  const tip1X = -98 * span;
+  const tip1Y = (-50 + flap * 1.35) * span;
+  const tip2X = -92 * span;
   const tip2Y = (-2 + flap * 1.05) * span;
-  const tip3X = -68 * span;
-  const tip3Y = (34 + flap * 0.7) * span;
-  const tip4X = -42 * span;
-  const tip4Y = (62 + flap * 0.3) * span;
+  const tip3X = -72 * span;
+  const tip3Y = (36 + flap * 0.7) * span;
+  const tip4X = -44 * span;
+  const tip4Y = (64 + flap * 0.3) * span;
 
-  // 1. Membrana alar principal (camada base)
-  ctx.fillStyle = membraneBase;
+  // 1. Membrana alar principal com efeito Subsurface Scattering (Luz translúcida através da carne de sangue)
+  const sssGrad = ctx.createRadialGradient(elbowX * 0.7, elbowY * 0.6, 8, elbowX, elbowY, 115 * span);
+  if (isVuln) {
+    sssGrad.addColorStop(0, 'rgba(45, 10, 20, 0.8)');
+    sssGrad.addColorStop(0.4, 'rgba(25, 4, 10, 0.85)');
+    sssGrad.addColorStop(1, 'rgba(12, 2, 5, 0.95)');
+  } else if (isEnraged) {
+    sssGrad.addColorStop(0, 'rgba(255, 40, 80, 0.92)');
+    sssGrad.addColorStop(0.35, 'rgba(210, 15, 45, 0.90)');
+    sssGrad.addColorStop(0.75, 'rgba(120, 8, 26, 0.92)');
+    sssGrad.addColorStop(1, 'rgba(40, 3, 9, 0.98)');
+  } else {
+    sssGrad.addColorStop(0, 'rgba(255, 23, 68, 0.82)');
+    sssGrad.addColorStop(0.35, 'rgba(150, 10, 35, 0.86)');
+    sssGrad.addColorStop(0.75, 'rgba(74, 5, 18, 0.90)');
+    sssGrad.addColorStop(1, 'rgba(22, 2, 6, 0.95)');
+  }
+
+  ctx.fillStyle = sssGrad;
   ctx.beginPath();
   ctx.moveTo(rootX, rootY);
   ctx.lineTo(elbowX, elbowY);
   ctx.lineTo(tip1X, tip1Y);
-  ctx.quadraticCurveTo(tip1X + 12 * span, tip1Y + 24 * span, tip2X, tip2Y);
-  ctx.quadraticCurveTo(tip2X + 10 * span, tip2Y + 20 * span, tip3X, tip3Y);
-  ctx.quadraticCurveTo(tip3X + 12 * span, tip3Y + 18 * span, tip4X, tip4Y);
-  ctx.quadraticCurveTo(tip4X + 14 * span, tip4Y - 12 * span, rootX, rootY + 40);
+  ctx.quadraticCurveTo(tip1X + 14 * span, tip1Y + 24 * span, tip2X, tip2Y);
+  ctx.quadraticCurveTo(tip2X + 12 * span, tip2Y + 20 * span, tip3X, tip3Y);
+  ctx.quadraticCurveTo(tip3X + 14 * span, tip3Y + 18 * span, tip4X, tip4Y);
+  ctx.quadraticCurveTo(tip4X + 15 * span, tip4Y - 12 * span, rootX, rootY + 40);
   ctx.closePath();
   ctx.fill();
 
   // 2. Sombra e volume de profundidade na dobra da asa
-  ctx.fillStyle = membraneShade;
+  const shadeGrad = ctx.createLinearGradient(rootX, rootY, elbowX, elbowY);
+  shadeGrad.addColorStop(0, 'rgba(10, 1, 3, 0.85)');
+  shadeGrad.addColorStop(1, 'rgba(10, 1, 3, 0.2)');
+  ctx.fillStyle = shadeGrad;
   ctx.beginPath();
   ctx.moveTo(rootX, rootY);
   ctx.lineTo(elbowX, elbowY);
@@ -523,23 +872,33 @@ function drawSingleWing(ctx, side, flap, span, isVuln, isEnraged, frameCount = 0
   ctx.closePath();
   ctx.fill();
 
-  // 3. Nervuras de sangue rúnico pulsante nas membranas
+  // 3. Rede de Micro-Nervuras de Sangue Pulsantes (Capilares Étnicos)
+  const pulseVein = Math.sin(frameCount * 0.15) * 0.3 + 0.7;
+  ctx.save();
+  ctx.globalAlpha = pulseVein;
   ctx.strokeStyle = veinCol;
-  ctx.lineWidth = isEnraged ? 2.0 : 1.2;
+  ctx.lineWidth = isEnraged ? 2.2 : 1.3;
   ctx.beginPath();
+  // Ramo primário
   ctx.moveTo(elbowX * 0.6, elbowY * 0.6);
-  ctx.quadraticCurveTo(elbowX - 10 * span, elbowY + 5, tip1X, tip1Y);
+  ctx.quadraticCurveTo(elbowX - 12 * span, elbowY + 5, tip1X, tip1Y);
   ctx.moveTo(elbowX, elbowY);
-  ctx.quadraticCurveTo(elbowX - 6 * span, elbowY + 25 * span, tip2X, tip2Y);
+  ctx.quadraticCurveTo(elbowX - 8 * span, elbowY + 25 * span, tip2X, tip2Y);
   ctx.moveTo(elbowX, elbowY);
   ctx.quadraticCurveTo(elbowX + 4 * span, elbowY + 45 * span, tip3X, tip3Y);
   ctx.moveTo(elbowX * 0.5, elbowY * 0.5 + 10);
-  ctx.quadraticCurveTo(elbowX + 12 * span, elbowY + 65 * span, tip4X, tip4Y);
+  ctx.quadraticCurveTo(elbowX + 14 * span, elbowY + 65 * span, tip4X, tip4Y);
+  // Capilares secundários
+  ctx.moveTo(elbowX - 25 * span, elbowY + 15 * span);
+  ctx.lineTo(elbowX - 45 * span, elbowY + 28 * span);
+  ctx.moveTo(elbowX + 5 * span, elbowY + 30 * span);
+  ctx.lineTo(elbowX - 15 * span, elbowY + 48 * span);
   ctx.stroke();
+  ctx.restore();
 
-  // 4. Estrutura óssea primária (braço, antebraço e falanges)
+  // 4. Estrutura Óssea Primária (Braço, Antebraço e Juntas das Falanges)
   ctx.strokeStyle = boneCol;
-  ctx.lineWidth = 3.6;
+  ctx.lineWidth = 4.0;
   ctx.beginPath();
   ctx.moveTo(rootX, rootY);
   ctx.lineTo(elbowX, elbowY);
@@ -552,23 +911,24 @@ function drawSingleWing(ctx, side, flap, span, isVuln, isEnraged, frameCount = 0
   ctx.lineTo(tip4X, tip4Y);
   ctx.stroke();
 
-  // 5. Brilho no topo dos ossos
+  // 5. Brilho no Topo dos Ossos (Rim-Light Metálico / Mineral)
   ctx.strokeStyle = boneHighlight;
-  ctx.lineWidth = 1.4;
+  ctx.lineWidth = 1.6;
   ctx.beginPath();
   ctx.moveTo(rootX, rootY - 1);
   ctx.lineTo(elbowX, elbowY - 1);
   ctx.lineTo(tip1X + 2 * span, tip1Y - 1);
   ctx.stroke();
 
-  // 6. Esporão e garras de obsidiana pontiagudas
-  const clawColor = isEnraged ? '#ff4757' : (isVuln ? '#7f8c8d' : '#dfe4ea');
+  // 6. Esporão e Garras de Obsidiana Lapidadas com Realce de Luz
+  const clawColor = isEnraged ? '#ff4757' : (isVuln ? '#7f8c8d' : '#f1c40f');
   ctx.fillStyle = clawColor;
-  // Garra do cotovelo
+  
+  // Garra do cotovelo principal
   ctx.beginPath();
-  ctx.moveTo(elbowX, elbowY - 2);
-  ctx.lineTo(elbowX - 10 * span, elbowY - 12);
-  ctx.lineTo(elbowX + 2 * span, elbowY + 2);
+  ctx.moveTo(elbowX, elbowY - 3);
+  ctx.lineTo(elbowX - 12 * span, elbowY - 14);
+  ctx.lineTo(elbowX + 3 * span, elbowY + 2);
   ctx.closePath();
   ctx.fill();
 
@@ -576,166 +936,227 @@ function drawSingleWing(ctx, side, flap, span, isVuln, isEnraged, frameCount = 0
   const digits = [[tip1X, tip1Y], [tip2X, tip2Y], [tip3X, tip3Y], [tip4X, tip4Y]];
   for (let k = 0; k < digits.length; k++) {
     ctx.beginPath();
-    ctx.arc(digits[k][0], digits[k][1], 2.8, 0, Math.PI * 2);
+    ctx.arc(digits[k][0], digits[k][1], 3.0, 0, Math.PI * 2);
     ctx.fill();
-    if (isEnraged) {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(digits[k][0] - 1, digits[k][1] - 1, 2, 2);
-      ctx.fillStyle = clawColor;
-    }
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(digits[k][0] - 1, digits[k][1] - 1, 2, 2);
+    ctx.fillStyle = clawColor;
   }
 
   ctx.restore();
 }
 
+/**
+ * Renderiza o Manto Imperial de Veludo com Forro Damasceno e Bainha de Sombras Vivas.
+ */
 function drawFluidCape(ctx, bob, frameCount, isVuln, isEnraged) {
-  const wave1 = Math.sin(frameCount * 0.12) * 8;
-  const wave2 = Math.cos(frameCount * 0.15) * 7;
-  const wave3 = Math.sin(frameCount * 0.19) * 5;
+  const wave1 = Math.sin(frameCount * 0.12) * 9;
+  const wave2 = Math.cos(frameCount * 0.15) * 8;
+  const wave3 = Math.sin(frameCount * 0.19) * 6;
 
-  const capeOuter = isVuln ? '#140206' : (isEnraged ? '#450411' : '#180208');
-  const capeInner = isVuln ? '#380511' : (isEnraged ? '#c01535' : '#7a0720');
+  const capeOuter = isVuln ? '#140206' : (isEnraged ? '#3d040f' : '#140207');
+  const capeInner = isVuln ? '#380511' : (isEnraged ? '#b80f2d' : '#72081d');
   const goldTrim = isVuln ? '#634c02' : (isEnraged ? '#ff4757' : '#f1c40f');
 
   // 1. Gola Gótica Alta Majestosa (erguida atrás da nuca estilo Drácula)
   ctx.fillStyle = '#0a0104';
   ctx.beginPath();
   ctx.moveTo(-18, -26 + bob);
-  ctx.lineTo(-38, -66 + bob);
+  ctx.lineTo(-40, -68 + bob);
   ctx.lineTo(-24, -42 + bob);
   ctx.lineTo(-12, -40 + bob);
   ctx.lineTo(12, -40 + bob);
   ctx.lineTo(24, -42 + bob);
-  ctx.lineTo(38, -66 + bob);
+  ctx.lineTo(40, -68 + bob);
   ctx.lineTo(18, -26 + bob);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = goldTrim;
-  ctx.lineWidth = 2.0;
-  ctx.stroke();
-
-  // Forro carmesim no interior da gola
-  ctx.fillStyle = capeInner;
-  ctx.beginPath();
-  ctx.moveTo(-16, -28 + bob);
-  ctx.lineTo(-32, -60 + bob);
-  ctx.lineTo(-10, -42 + bob);
-  ctx.lineTo(10, -42 + bob);
-  ctx.lineTo(32, -60 + bob);
-  ctx.lineTo(16, -28 + bob);
-  ctx.closePath();
-  ctx.fill();
-
-  // 2. Forro interno do manto carmesim (visível pelo movimento lateral)
-  ctx.fillStyle = capeInner;
-  ctx.beginPath();
-  ctx.moveTo(-26, -18 + bob);
-  ctx.bezierCurveTo(-50 + wave1, 24 + bob, -36 + wave2, 64 + bob, -14 + wave3, 72 + bob);
-  ctx.lineTo(14 + wave3, 72 + bob);
-  ctx.bezierCurveTo(36 + wave2, 64 + bob, 50 + wave1, 24 + bob, 26, -18 + bob);
-  ctx.closePath();
-  ctx.fill();
-
-  // 3. Manto exterior de seda de obsidiana com cauda recortada em asas de morcego
-  ctx.fillStyle = capeOuter;
-  ctx.beginPath();
-  ctx.moveTo(-28, -18 + bob);
-  ctx.bezierCurveTo(-54 + wave1, 26 + bob, -40 + wave2, 66 + bob, -24 + wave1, 74 + bob);
-  ctx.quadraticCurveTo(-14 + wave2, 66 + bob, -6 + wave3, 76 + bob);
-  ctx.quadraticCurveTo(0, 68 + bob, 6 + wave3, 76 + bob);
-  ctx.quadraticCurveTo(14 + wave2, 66 + bob, 24 + wave1, 74 + bob);
-  ctx.bezierCurveTo(40 + wave2, 66 + bob, 54 + wave1, 26 + bob, 28, -18 + bob);
-  ctx.closePath();
-  ctx.fill();
-
-  // 4. Filete bordado a ouro / carmesim ao longo do manto
-  ctx.strokeStyle = goldTrim;
-  ctx.lineWidth = 2.2;
-  ctx.beginPath();
-  ctx.moveTo(-28, -18 + bob);
-  ctx.bezierCurveTo(-54 + wave1, 26 + bob, -40 + wave2, 66 + bob, -24 + wave1, 74 + bob);
-  ctx.quadraticCurveTo(-14 + wave2, 66 + bob, -6 + wave3, 76 + bob);
-  ctx.quadraticCurveTo(0, 68 + bob, 6 + wave3, 76 + bob);
-  ctx.quadraticCurveTo(14 + wave2, 66 + bob, 24 + wave1, 74 + bob);
-  ctx.bezierCurveTo(40 + wave2, 66 + bob, 54 + wave1, 26 + bob, 28, -18 + bob);
-  ctx.stroke();
-
-  // 5. Morcegos espectrais esvoaçando discretamente perto da cauda do manto
-  const batTime = frameCount * 0.08;
-  ctx.fillStyle = isEnraged ? '#4a0815' : '#080104';
-  for (let b = 0; b < 2; b++) {
-    const bOffset = b * Math.PI;
-    const bFlap = Math.sin(frameCount * 0.4 + b) * 3.5;
-    const bx = (b === 0 ? -38 : 38) + Math.cos(batTime + bOffset) * 12;
-    const by = 48 + bob + Math.sin(batTime * 1.5 + bOffset) * 14;
-
-    ctx.beginPath();
-    ctx.moveTo(bx, by);
-    ctx.lineTo(bx - 5, by - 4 + bFlap);
-    ctx.lineTo(bx - 2, by + 3);
-    ctx.lineTo(bx + 2, by + 3);
-    ctx.lineTo(bx + 5, by - 4 + bFlap);
-    ctx.closePath();
-    ctx.fill();
-  }
-}
-
-function drawGothicArmor(ctx, bob, frameCount, isVuln, isEnraged) {
-  const armorSteel = isVuln ? '#100307' : (isEnraged ? '#380512' : '#1c050f');
-  const armorShade = isVuln ? '#070103' : (isEnraged ? '#200208' : '#0e0207');
-  const goldTrim = isVuln ? '#634c02' : (isEnraged ? '#ff4757' : '#f1c40f');
-  const darkGold = isVuln ? '#3d2e01' : (isEnraged ? '#c0392b' : '#b78b02');
-
-  // 1. Placa Peitoral de Obsidiana Lapidada
-  ctx.fillStyle = armorSteel;
-  ctx.beginPath();
-  ctx.moveTo(-24, -26 + bob);
-  ctx.lineTo(24, -26 + bob);
-  ctx.lineTo(18, 18 + bob);
-  ctx.lineTo(0, 28 + bob);
-  ctx.lineTo(-18, 18 + bob);
   ctx.closePath();
   ctx.fill();
   ctx.strokeStyle = goldTrim;
   ctx.lineWidth = 2.4;
   ctx.stroke();
 
-  // Detalhe de chanfro interno na couraça
-  ctx.fillStyle = armorShade;
+  // Forro carmesim no interior da gola com costura de ouro
+  ctx.fillStyle = capeInner;
+  ctx.beginPath();
+  ctx.moveTo(-16, -28 + bob);
+  ctx.lineTo(-34, -62 + bob);
+  ctx.lineTo(-10, -42 + bob);
+  ctx.lineTo(10, -42 + bob);
+  ctx.lineTo(34, -62 + bob);
+  ctx.lineTo(16, -28 + bob);
+  ctx.closePath();
+  ctx.fill();
+
+  // 2. Forro Interno do Manto Carmesim com Damasco Procedural
+  ctx.fillStyle = capeInner;
+  ctx.beginPath();
+  ctx.moveTo(-26, -18 + bob);
+  ctx.bezierCurveTo(-52 + wave1, 24 + bob, -38 + wave2, 64 + bob, -14 + wave3, 74 + bob);
+  ctx.lineTo(14 + wave3, 74 + bob);
+  ctx.bezierCurveTo(38 + wave2, 64 + bob, 52 + wave1, 24 + bob, 26, -18 + bob);
+  ctx.closePath();
+  ctx.fill();
+
+  // Padrão de Damasco / Arabescos Sutis no forro interno
+  ctx.strokeStyle = isEnraged ? 'rgba(255, 71, 87, 0.25)' : 'rgba(241, 196, 15, 0.2)';
+  ctx.lineWidth = 1.0;
+  ctx.beginPath();
+  for (let d = -20; d <= 20; d += 10) {
+    ctx.moveTo(d + wave2 * 0.3, 15 + bob);
+    ctx.lineTo(d * 0.7 + wave3 * 0.5, 55 + bob);
+  }
+  ctx.stroke();
+
+  // 3. Manto Exterior de Seda de Obsidiana com cauda recortada em asas de morcego
+  ctx.fillStyle = capeOuter;
+  ctx.beginPath();
+  ctx.moveTo(-28, -18 + bob);
+  ctx.bezierCurveTo(-56 + wave1, 26 + bob, -42 + wave2, 66 + bob, -26 + wave1, 76 + bob);
+  ctx.quadraticCurveTo(-15 + wave2, 68 + bob, -6 + wave3, 78 + bob);
+  ctx.quadraticCurveTo(0, 70 + bob, 6 + wave3, 78 + bob);
+  ctx.quadraticCurveTo(15 + wave2, 68 + bob, 26 + wave1, 76 + bob);
+  ctx.bezierCurveTo(42 + wave2, 66 + bob, 56 + wave1, 26 + bob, 28, -18 + bob);
+  ctx.closePath();
+  ctx.fill();
+
+  // 4. Filete Bordado a Ouro Imperial ao longo do contorno
+  ctx.strokeStyle = goldTrim;
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(-28, -18 + bob);
+  ctx.bezierCurveTo(-56 + wave1, 26 + bob, -42 + wave2, 66 + bob, -26 + wave1, 76 + bob);
+  ctx.quadraticCurveTo(-15 + wave2, 68 + bob, -6 + wave3, 78 + bob);
+  ctx.quadraticCurveTo(0, 70 + bob, 6 + wave3, 78 + bob);
+  ctx.quadraticCurveTo(15 + wave2, 68 + bob, 26 + wave1, 76 + bob);
+  ctx.bezierCurveTo(42 + wave2, 66 + bob, 56 + wave1, 26 + bob, 28, -18 + bob);
+  ctx.stroke();
+
+  // 5. Morcegos Espectrais e Motes de Sombra se desprendendo da cauda
+  const batTime = frameCount * 0.08;
+  ctx.fillStyle = isEnraged ? '#ff4757' : '#080104';
+  for (let b = 0; b < 3; b++) {
+    const bOffset = b * (Math.PI * 2 / 3);
+    const bFlap = Math.sin(frameCount * 0.45 + b) * 4;
+    const bx = (b === 0 ? -38 : (b === 1 ? 38 : 0)) + Math.cos(batTime + bOffset) * 14;
+    const by = 52 + bob + Math.sin(batTime * 1.6 + bOffset) * 16;
+
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx - 6, by - 4 + bFlap);
+    ctx.lineTo(bx - 2, by + 3);
+    ctx.lineTo(bx + 2, by + 3);
+    ctx.lineTo(bx + 6, by - 4 + bFlap);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+/**
+ * Renderiza a Armadura Gótica Cinzelada 2.5D, Ombreiras de Gárgula e Relicário Giroscópico.
+ */
+function drawGothicArmor(ctx, bob, frameCount, isVuln, isEnraged) {
+  const armorSteel = isVuln ? '#100307' : (isEnraged ? '#340510' : '#18040d');
+  const goldTrim = isVuln ? '#634c02' : (isEnraged ? '#ff4757' : '#f1c40f');
+  const darkGold = isVuln ? '#3d2e01' : (isEnraged ? '#c0392b' : '#b78b02');
+
+  // 1. Placa Peitoral de Obsidiana com Shading Volumétrico 2.5D
+  const cuirassGrad = ctx.createLinearGradient(0, -28 + bob, 0, 28 + bob);
+  cuirassGrad.addColorStop(0, isEnraged ? '#4a0815' : '#2b0716');
+  cuirassGrad.addColorStop(0.5, armorSteel);
+  cuirassGrad.addColorStop(1, '#0c0206');
+
+  ctx.fillStyle = cuirassGrad;
+  ctx.beginPath();
+  ctx.moveTo(-25, -26 + bob);
+  ctx.lineTo(25, -26 + bob);
+  ctx.lineTo(19, 18 + bob);
+  ctx.lineTo(0, 29 + bob);
+  ctx.lineTo(-19, 18 + bob);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = goldTrim;
+  ctx.lineWidth = 2.4;
+  ctx.stroke();
+
+  // Chanfros e placas anatômicas cinzeladas no peito
+  ctx.fillStyle = 'rgba(10, 1, 4, 0.65)';
   ctx.beginPath();
   ctx.moveTo(-16, -24 + bob);
   ctx.lineTo(0, -18 + bob);
   ctx.lineTo(16, -24 + bob);
-  ctx.lineTo(12, 14 + bob);
+  ctx.lineTo(13, 14 + bob);
   ctx.lineTo(0, 24 + bob);
-  ctx.lineTo(-12, 14 + bob);
+  ctx.lineTo(-13, 14 + bob);
   ctx.closePath();
   ctx.fill();
 
-  // 2. Ombreiras Góticas em Camadas Escalonadas (Pauldrons)
+  // 2. Fissuras de Sangue Fervente (Modo Enraged)
+  if (isEnraged && !isVuln) {
+    ctx.strokeStyle = 'rgba(255, 0, 85, 0.85)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(0, -8 + bob);
+    ctx.lineTo(-14, -18 + bob);
+    ctx.lineTo(-20, -12 + bob);
+    ctx.moveTo(0, -8 + bob);
+    ctx.lineTo(14, -18 + bob);
+    ctx.lineTo(20, -12 + bob);
+    ctx.moveTo(0, -8 + bob);
+    ctx.lineTo(-6, 12 + bob);
+    ctx.moveTo(0, -8 + bob);
+    ctx.lineTo(6, 12 + bob);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+
+  // 3. Ombreiras Góticas de Gárgula em 3 Lâminas Segmentadas
   for (let s of [-1, 1]) {
     ctx.save();
     ctx.scale(s, 1);
 
-    // Nível superior
+    // Lâmina 1 (Superior / Espigão de Gárgula curvado)
     ctx.fillStyle = isEnraged ? '#5a071a' : '#2e0817';
     ctx.strokeStyle = goldTrim;
-    ctx.lineWidth = 1.8;
+    ctx.lineWidth = 2.0;
     ctx.beginPath();
-    ctx.moveTo(18, -30 + bob);
-    ctx.lineTo(44, -40 + bob);
-    ctx.lineTo(40, -22 + bob);
+    ctx.moveTo(18, -32 + bob);
+    ctx.lineTo(46, -44 + bob);
+    ctx.lineTo(42, -22 + bob);
     ctx.lineTo(22, -18 + bob);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
 
-    // Nível intermediário
+    // Espigão adicional superior
+    ctx.fillStyle = goldTrim;
+    ctx.beginPath();
+    ctx.moveTo(40, -38 + bob);
+    ctx.lineTo(50, -48 + bob);
+    ctx.lineTo(44, -32 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // Lâmina 2 (Intermediária)
+    ctx.fillStyle = isEnraged ? '#450614' : '#220612';
     ctx.beginPath();
     ctx.moveTo(20, -20 + bob);
-    ctx.lineTo(42, -22 + bob);
-    ctx.lineTo(36, -8 + bob);
+    ctx.lineTo(44, -22 + bob);
+    ctx.lineTo(38, -8 + bob);
     ctx.lineTo(18, -8 + bob);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Lâmina 3 (Inferior de articulação sobre o braço)
+    ctx.fillStyle = isEnraged ? '#33040e' : '#17030c';
+    ctx.beginPath();
+    ctx.moveTo(20, -8 + bob);
+    ctx.lineTo(38, -8 + bob);
+    ctx.lineTo(32, 4 + bob);
+    ctx.lineTo(18, 4 + bob);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -743,7 +1164,7 @@ function drawGothicArmor(ctx, bob, frameCount, isVuln, isEnraged) {
     ctx.restore();
   }
 
-  // 3. Arabescos e Filigranas Douradas no Peito
+  // 4. Filigranas Douradas no Peito
   ctx.strokeStyle = goldTrim;
   ctx.lineWidth = 1.6;
   ctx.beginPath();
@@ -755,21 +1176,38 @@ function drawGothicArmor(ctx, bob, frameCount, isVuln, isEnraged) {
   ctx.lineTo(10, -6 + bob);
   ctx.stroke();
 
-  // 4. Coração de Rubi (Heartbeat Ruby) com Batimento Cardíaco Duplo Realista
+  // 5. Coração Relicário Giroscópico com Batimento Cardíaco Duplo Realista
   const tHeart = (frameCount * (isEnraged ? 0.24 : 0.13)) % (Math.PI * 2);
-  const beat = Math.pow(Math.sin(tHeart), 8) * 2.2 + Math.pow(Math.sin(tHeart + 0.35), 8) * 1.5;
-  const gemRadius = 5.0 + (isVuln ? 0 : beat);
+  const beat = Math.pow(Math.sin(tHeart), 8) * 2.5 + Math.pow(Math.sin(tHeart + 0.35), 8) * 1.6;
+  const gemRadius = 5.2 + (isVuln ? 0 : beat);
 
-  // Brilho difuso ao redor do rubi
-  const rubyGlow = ctx.createRadialGradient(0, -8 + bob, 2, 0, -8 + bob, gemRadius * 2.2);
-  rubyGlow.addColorStop(0, isEnraged ? 'rgba(255, 0, 55, 0.75)' : 'rgba(231, 76, 60, 0.6)');
+  // Halo de pulsação arterial
+  const rubyGlow = ctx.createRadialGradient(0, -8 + bob, 2, 0, -8 + bob, gemRadius * 2.5);
+  rubyGlow.addColorStop(0, isEnraged ? 'rgba(255, 0, 55, 0.85)' : 'rgba(231, 76, 60, 0.7)');
   rubyGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
   ctx.fillStyle = rubyGlow;
   ctx.beginPath();
-  ctx.arc(0, -8 + bob, gemRadius * 2.2, 0, Math.PI * 2);
+  ctx.arc(0, -8 + bob, gemRadius * 2.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // Moldura do engaste dourado do rubi
+  // Anel giroscópico do relicário
+  const gyroRot = frameCount * 0.04;
+  ctx.save();
+  ctx.translate(0, -8 + bob);
+  ctx.rotate(gyroRot);
+  ctx.strokeStyle = goldTrim;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.arc(0, 0, gemRadius + 3.5, 0, Math.PI * 2);
+  ctx.stroke();
+  for (let q = 0; q < 4; q++) {
+    const qAng = q * Math.PI * 0.5;
+    ctx.fillStyle = goldTrim;
+    ctx.fillRect(Math.cos(qAng) * (gemRadius + 3.5) - 1, Math.sin(qAng) * (gemRadius + 3.5) - 1, 2, 2);
+  }
+  ctx.restore();
+
+  // Moldura do engaste dourado
   ctx.fillStyle = darkGold;
   ctx.beginPath();
   ctx.arc(0, -8 + bob, gemRadius + 1.8, 0, Math.PI * 2);
@@ -784,50 +1222,55 @@ function drawGothicArmor(ctx, bob, frameCount, isVuln, isEnraged) {
   ctx.lineWidth = 1.2;
   ctx.stroke();
 
-  // Reflexo especular no rubi
+  // Reflexo especular
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(-1.5, -10 + bob, 1.8, 1.8);
+  ctx.fillRect(-1.5, -10 + bob, 2, 2);
 
-  // 5. Cinto Nobre com Fecho Rúnico
+  // 6. Cinto Nobre com Fecho Rúnico e Cantoneiras de Ouro
   ctx.fillStyle = '#0b0205';
   ctx.fillRect(-16, 14 + bob, 32, 6);
   ctx.fillStyle = goldTrim;
-  ctx.fillRect(-6, 13 + bob, 12, 8);
+  ctx.fillRect(-7, 13 + bob, 14, 8);
   ctx.strokeStyle = '#0a0104';
   ctx.lineWidth = 1;
-  ctx.strokeRect(-4, 15 + bob, 8, 4);
+  ctx.strokeRect(-5, 15 + bob, 10, 4);
 }
 
+/**
+ * Renderiza a Cabeça, Cabelos Platinados Volumétricos, Olhos Predatórios e a Coroa Imperial.
+ */
 function drawHeadAndFace(ctx, bob, frameCount, isVuln, isEnraged) {
   const headY = (isVuln ? -22 : -32) + bob;
 
-  // 1. Cabelos Prateados Nobres (Camada Traseira)
-  const hairSway = Math.sin(frameCount * 0.14) * 4.5;
+  // 1. Cabelos Prateados Nobres em Múltiplas Camadas (Camada Traseira Esvoaçante)
+  const hairSway = Math.sin(frameCount * 0.14) * 5.0;
+  
+  // Mecha traseira esquerda
   ctx.fillStyle = '#dfe4ea';
   ctx.beginPath();
   ctx.moveTo(-10, headY - 15);
-  ctx.quadraticCurveTo(-28 + hairSway, headY - 8, -38 + hairSway * 1.3, headY + 16);
-  ctx.lineTo(-24, headY + 6);
+  ctx.quadraticCurveTo(-30 + hairSway, headY - 8, -42 + hairSway * 1.4, headY + 18);
+  ctx.lineTo(-26, headY + 6);
   ctx.quadraticCurveTo(-16, headY - 2, -6, headY - 12);
   ctx.closePath();
   ctx.fill();
 
-  // Mecha do lado direito
+  // Mecha traseira direita
   ctx.beginPath();
   ctx.moveTo(10, headY - 15);
-  ctx.quadraticCurveTo(28 - hairSway, headY - 8, 36 - hairSway * 1.3, headY + 16);
-  ctx.lineTo(24, headY + 6);
+  ctx.quadraticCurveTo(30 - hairSway, headY - 8, 40 - hairSway * 1.4, headY + 18);
+  ctx.lineTo(26, headY + 6);
   ctx.quadraticCurveTo(16, headY - 2, 6, headY - 12);
   ctx.closePath();
   ctx.fill();
 
-  // 2. Rosto Pálido Aristocrático
+  // 2. Rosto Pálido Aristocrático com Shading Volumétrico 2.5D
   ctx.fillStyle = isVuln ? '#8395a7' : '#ecf0f1';
   ctx.beginPath();
   ctx.moveTo(0, headY - 17);
   ctx.lineTo(14, headY - 4);
   ctx.lineTo(9, headY + 13);
-  ctx.lineTo(0, headY + 18);
+  ctx.lineTo(0, headY + 19);
   ctx.lineTo(-9, headY + 13);
   ctx.lineTo(-14, headY - 4);
   ctx.closePath();
@@ -836,142 +1279,178 @@ function drawHeadAndFace(ctx, bob, frameCount, isVuln, isEnraged) {
   ctx.lineWidth = 1.4;
   ctx.stroke();
 
-  // Sombreamento sob o queixo e bochechas
-  ctx.fillStyle = 'rgba(47, 53, 66, 0.2)';
+  // Sombreamento sob o queixo, mandíbula e maçãs do rosto
+  ctx.fillStyle = 'rgba(47, 53, 66, 0.22)';
   ctx.beginPath();
   ctx.moveTo(-9, headY + 13);
-  ctx.lineTo(0, headY + 18);
+  ctx.lineTo(0, headY + 19);
   ctx.lineTo(9, headY + 13);
-  ctx.lineTo(0, headY + 12);
+  ctx.lineTo(0, headY + 13);
   ctx.closePath();
   ctx.fill();
 
-  // 3. Franja e Topete Prateado
+  // 3. Franja e Topete Platinado Real (Camada Frontal)
   ctx.fillStyle = '#f5f6fa';
   ctx.beginPath();
-  ctx.moveTo(-12, headY - 17);
-  ctx.lineTo(4, headY - 7);
+  ctx.moveTo(-13, headY - 17);
+  ctx.lineTo(5, headY - 7);
   ctx.lineTo(-2, headY - 3);
-  ctx.lineTo(-14, headY - 11);
+  ctx.lineTo(-15, headY - 11);
   ctx.closePath();
   ctx.fill();
 
-  // 4. Olhos Demoníacos Incandescentes com Efeito de Flare e Rastro de Luz
+  ctx.beginPath();
+  ctx.moveTo(13, headY - 17);
+  ctx.lineTo(-2, headY - 8);
+  ctx.lineTo(3, headY - 4);
+  ctx.lineTo(14, headY - 12);
+  ctx.closePath();
+  ctx.fill();
+
+  // 4. Coroa Imperial Gótica na Fronte
+  drawImperialCrown(ctx, headY, bob, frameCount, isVuln, isEnraged);
+
+  // 5. Olhos Demoníacos Incandescentes com Pupilas Verticais e Rastro de Éter
   const eyeCol = isVuln ? '#590a18' : (isEnraged ? '#ff0055' : '#ff1744');
   
-  // Flare e Rastro de Fumaça Espectral saindo dos olhos
   if (!isVuln) {
-    const flareLen = isEnraged ? 18 : 10;
-    const flarePulse = Math.sin(frameCount * 0.3) * 2;
+    const flareLen = isEnraged ? 24 : 12;
+    const flarePulse = Math.sin(frameCount * 0.3) * 2.5;
     
-    ctx.strokeStyle = isEnraged ? 'rgba(255, 0, 85, 0.65)' : 'rgba(255, 23, 68, 0.45)';
-    ctx.lineWidth = 2.0;
+    // Rastro contínuo de fumaça espectral saindo dos olhos
+    ctx.strokeStyle = isEnraged ? 'rgba(255, 0, 85, 0.75)' : 'rgba(255, 23, 68, 0.55)';
+    ctx.lineWidth = isEnraged ? 2.5 : 1.8;
     ctx.beginPath();
     ctx.moveTo(-6, headY - 1);
-    ctx.lineTo(-6 - flareLen - flarePulse, headY - 3 - flarePulse * 0.5);
+    ctx.quadraticCurveTo(-14 - flarePulse, headY - 8, -6 - flareLen - flarePulse, headY - 4 - flarePulse * 0.5);
     ctx.moveTo(6, headY - 1);
-    ctx.lineTo(6 + flareLen + flarePulse, headY - 3 - flarePulse * 0.5);
+    ctx.quadraticCurveTo(14 + flarePulse, headY - 8, 6 + flareLen + flarePulse, headY - 4 - flarePulse * 0.5);
     ctx.stroke();
   }
 
   // Olho Esquerdo
   ctx.fillStyle = eyeCol;
   ctx.beginPath();
-  ctx.ellipse(-6, headY - 1, 3.6, 2.0, 0.2, 0, Math.PI * 2);
+  ctx.ellipse(-6, headY - 1, 3.8, 2.2, 0.2, 0, Math.PI * 2);
   ctx.fill();
 
   // Olho Direito
   ctx.beginPath();
-  ctx.ellipse(6, headY - 1, 3.6, 2.0, -0.2, 0, Math.PI * 2);
+  ctx.ellipse(6, headY - 1, 3.8, 2.2, -0.2, 0, Math.PI * 2);
   ctx.fill();
 
-  // Pupilas em fenda felina e ponto especular branco
+  // Pupilas em fenda felina predatória e brilho especular branco
   if (!isVuln) {
     ctx.fillStyle = '#0a0104';
-    ctx.fillRect(-6.5, headY - 2.8, 1.4, 3.6);
-    ctx.fillRect(5.1, headY - 2.8, 1.4, 3.6);
+    ctx.fillRect(-6.5, headY - 2.8, 1.3, 3.6);
+    ctx.fillRect(5.2, headY - 2.8, 1.3, 3.6);
 
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(-5.5, headY - 2.2, 1.2, 1.2);
-    ctx.fillRect(6.1, headY - 2.2, 1.2, 1.2);
+    ctx.fillRect(6.2, headY - 2.2, 1.2, 1.2);
   }
 
-  // 5. Presas Vampíricas (visíveis em modo Enraged)
-  if (isEnraged && !isVuln) {
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.moveTo(-3, headY + 9);
-    ctx.lineTo(-2, headY + 13);
-    ctx.lineTo(-1, headY + 9);
-    ctx.closePath();
-    ctx.fill();
+  // 6. Presas Vampíricas Aristocráticas
+  ctx.fillStyle = '#ffffff';
+  // Presa esquerda
+  ctx.beginPath();
+  ctx.moveTo(-4, headY + 10);
+  ctx.lineTo(-2.5, headY + 14 + (isEnraged ? 2 : 0));
+  ctx.lineTo(-1.5, headY + 10);
+  ctx.closePath();
+  ctx.fill();
 
-    ctx.beginPath();
-    ctx.moveTo(1, headY + 9);
-    ctx.lineTo(2, headY + 13);
-    ctx.lineTo(3, headY + 9);
-    ctx.closePath();
-    ctx.fill();
-  }
+  // Presa direita
+  ctx.beginPath();
+  ctx.moveTo(1.5, headY + 10);
+  ctx.lineTo(2.5, headY + 14 + (isEnraged ? 2 : 0));
+  ctx.lineTo(4, headY + 10);
+  ctx.closePath();
+  ctx.fill();
 }
 
+/**
+ * Renderiza as Braçadeiras Articuladas, Manoplas de Obsidiana e Garras de Sangue Cristalino.
+ */
 function drawClawsAndArms(ctx, bob, frameCount, isVuln, isEnraged, isWindup, isChanneling) {
   const armCol = isVuln ? '#140308' : (isEnraged ? '#380512' : '#220815');
   const clawCol = isVuln ? '#7f1d1d' : (isEnraged ? '#f1c40f' : '#ff4757');
 
-  const reach = (isWindup || isChanneling) ? 14 : 0;
+  const reach = (isWindup || isChanneling) ? 15 : 0;
   const armDrop = isVuln ? 14 : 0;
 
-  // Braço esquerdo secundário em perspectiva
+  // 1. Braço Esquerdo Secundário (Guarda Defensiva com Manopla de Aço)
   ctx.strokeStyle = isEnraged ? '#28030b' : '#14030a';
-  ctx.lineWidth = 3.5;
+  ctx.lineWidth = 4.0;
   ctx.beginPath();
   ctx.moveTo(-18, -16 + bob);
-  ctx.lineTo(-30 - reach * 0.7, -2 + bob + armDrop);
-  ctx.lineTo(-38 - reach * 0.7, 8 + bob + armDrop);
+  ctx.lineTo(-32 - reach * 0.7, -2 + bob + armDrop);
+  ctx.lineTo(-40 - reach * 0.7, 8 + bob + armDrop);
   ctx.stroke();
 
-  // Braço direito principal
+  // Cotoveleira pontiaguda esquerda
+  ctx.fillStyle = isEnraged ? '#ff4757' : '#f1c40f';
+  ctx.beginPath();
+  ctx.arc(-32 - reach * 0.7, -2 + bob + armDrop, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. Braço Direito Principal (Postura de Duelo Ofensiva)
   ctx.strokeStyle = armCol;
-  ctx.lineWidth = 4.5;
+  ctx.lineWidth = 5.0;
   ctx.beginPath();
   ctx.moveTo(18, -16 + bob);
-  ctx.lineTo(34 + reach, -2 + bob + armDrop);
-  ctx.lineTo(44 + reach, 8 + bob + armDrop);
+  ctx.lineTo(36 + reach, -2 + bob + armDrop);
+  ctx.lineTo(46 + reach, 8 + bob + armDrop);
   ctx.stroke();
 
-  // Garras afiadas de obsidiana
-  ctx.strokeStyle = clawCol;
-  ctx.lineWidth = 2.4;
-  const cX = 44 + reach;
+  // Cotoveleira (Couter) articulada direita
+  ctx.fillStyle = isEnraged ? '#ff4757' : '#f1c40f';
+  ctx.beginPath();
+  ctx.moveTo(36 + reach, -5 + bob + armDrop);
+  ctx.lineTo(42 + reach, -2 + bob + armDrop);
+  ctx.lineTo(36 + reach, 1 + bob + armDrop);
+  ctx.closePath();
+  ctx.fill();
+
+  // 3. Manopla Articulada e Garras de Sangue Cristalino Alongadas
+  const cX = 46 + reach;
   const cY = 8 + bob + armDrop;
 
+  ctx.strokeStyle = clawCol;
+  ctx.lineWidth = 2.6;
   ctx.beginPath();
-  ctx.moveTo(cX, cY - 4);
-  ctx.lineTo(cX + 13, cY - 7);
-  ctx.moveTo(cX + 1, cY);
-  ctx.lineTo(cX + 16, cY);
-  ctx.moveTo(cX, cY + 4);
-  ctx.lineTo(cX + 13, cY + 7);
+  // Garra superior
+  ctx.moveTo(cX - 1, cY - 5);
+  ctx.lineTo(cX + 14, cY - 9);
+  // Garra média-superior
+  ctx.moveTo(cX, cY - 1.5);
+  ctx.lineTo(cX + 18, cY - 2);
+  // Garra média-inferior
+  ctx.moveTo(cX, cY + 2);
+  ctx.lineTo(cX + 17, cY + 3);
+  // Garra inferior
+  ctx.moveTo(cX - 1, cY + 5.5);
+  ctx.lineTo(cX + 14, cY + 9);
   ctx.stroke();
 
-  // Brilho de corte nas pontas das garras
+  // Fio cortante branco brilhante nas pontas das 4 garras
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(cX + 12, cY - 7.5, 2, 2);
-  ctx.fillRect(cX + 15, cY - 0.5, 2, 2);
-  ctx.fillRect(cX + 12, cY + 6.5, 2, 2);
+  ctx.fillRect(cX + 13, cY - 9.5, 2, 2);
+  ctx.fillRect(cX + 17, cY - 2.5, 2, 2);
+  ctx.fillRect(cX + 16, cY + 2.5, 2, 2);
+  ctx.fillRect(cX + 13, cY + 8.5, 2, 2);
 
-  // Efeito de garras flamejantes de sangue carregando o ataque em leque
+  // Efeito de Garras Flamejantes de Sangue carregando o ataque em leque
   if (isWindup) {
-    const clawGlow = (Math.sin(frameCount * 0.3) + 1) * 2;
-    ctx.fillStyle = isEnraged ? 'rgba(255, 71, 87, 0.75)' : 'rgba(231, 76, 60, 0.65)';
+    const clawGlow = (Math.sin(frameCount * 0.3) + 1) * 2.5;
+    ctx.fillStyle = isEnraged ? 'rgba(255, 71, 87, 0.85)' : 'rgba(231, 76, 60, 0.75)';
     ctx.beginPath();
-    ctx.arc(cX + 16, cY, 5 + clawGlow, 0, Math.PI * 2);
+    ctx.arc(cX + 16, cY, 6 + clawGlow, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(cX + 16, cY, 2.5, 0, Math.PI * 2);
+    ctx.arc(cX + 16, cY, 2.8, 0, Math.PI * 2);
     ctx.fill();
   }
 }
@@ -1122,6 +1601,11 @@ export function drawVampireLord(ctx, e, frameCount) {
     ctx.translate((Math.random() - 0.5) * 2.5, (Math.random() - 0.5) * 2.5);
   }
 
+  // 2. Asas Secundárias Inferiores (Exclusivas do Modo Enraged / Metamorfose Hexa-Alar)
+  if (isEnraged && !isVuln) {
+    drawSecondaryWings(ctx, wingFlap, wingSpan, frameCount);
+  }
+
   drawSingleWing(ctx, -1, wingFlap, wingSpan, isVuln, isEnraged, frameCount);
   drawSingleWing(ctx, 1, wingFlap, wingSpan, isVuln, isEnraged, frameCount);
 
@@ -1183,6 +1667,7 @@ export function drawVampireLord(ctx, e, frameCount) {
 
   drawFluidCape(ctx, bob, frameCount, isVuln, isEnraged);
   drawGothicArmor(ctx, bob, frameCount, isVuln, isEnraged);
+  drawAristocraticJabot(ctx, bob, frameCount, isVuln, isEnraged);
   drawHeadAndFace(ctx, bob, frameCount, isVuln, isEnraged);
   drawClawsAndArms(ctx, bob, frameCount, isVuln, isEnraged, isWindup, isChanneling);
 

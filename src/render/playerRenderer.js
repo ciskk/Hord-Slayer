@@ -5,7 +5,9 @@
  * (phasing, invisibilidade, fúria berserk, investida sagrada, passo ígneo),
  * auras sagradas, bíblias orbitais e machados giratórios nórdicos.
  */
-import { ctx, frameCount, bullets } from '../main.js';
+import { ctx, frameCount, bullets, matchIntro } from '../main.js';
+import { deathSequence, gameState } from '../state/gameState.js';
+import { HERO_SOUL_PALETTES } from './deathAnimation.js';
 import { player, selectedHeroKey } from '../entities/player.js';
 import { CHARACTERS } from '../config/characters.js';
 import { renderHeroModel } from './heroes/index.js';
@@ -516,6 +518,9 @@ export function drawSpinningAxes() {
  * Renderiza todos os equipamentos orbitais e auras ativas do jogador.
  */
 export function drawPlayerEquipment() {
+  if (matchIntro && matchIntro.active) return;
+  if (deathSequence && deathSequence.active) return;
+  if (gameState && gameState.isDead) return;
   drawPlayerAura();
   drawPlayerOrbitals();
   drawSpinningAxes();
@@ -526,42 +531,55 @@ export function drawPlayerEquipment() {
  * Renderiza proceduralmente o personagem jogável selecionado na arena de combate.
  */
 export function drawPlayerCharacter() {
-  const isInvulnBlink = player.iFrames > 0 && Math.floor(player.iFrames / 4) % 2 === 0;
+  const isIntro = !!(matchIntro && matchIntro.active);
+  const isDying = !!(deathSequence && deathSequence.active) || !!(gameState && gameState.isDead);
+
+  const isInvulnBlink = !isIntro && !isDying && player.iFrames > 0 && Math.floor(player.iFrames / 4) % 2 === 0;
 
   ctx.save();
   if (isInvulnBlink) {
     ctx.globalAlpha = 0.35;
   }
 
+  const soulPal = HERO_SOUL_PALETTES[selectedHeroKey] || HERO_SOUL_PALETTES.KNIGHT;
+  const fallProgress = (deathSequence && deathSequence.active) ? deathSequence.fallProgress : ((gameState && gameState.isDead) ? 1.0 : 0);
+  const evaporateProgress = (deathSequence && deathSequence.active) ? deathSequence.evaporateProgress : 0;
+
   renderHeroModel(ctx, selectedHeroKey, {
     x: player.x,
     y: player.y,
     facing: player.facing,
     scale: 1,
-    isMoving: player.isMoving,
-    walkCycle: player.walkCycle,
-    frameCount: frameCount,
-    berserkTimer: player.berserkTimer,
-    invisTimer: player.invisTimer,
-    dashDuration: player.dashDuration,
-    ignisDashDuration: player.ignisDashDuration,
-    staffCastTimer: player.staffCastTimer,
-    isPhasing: player.isPhasing,
+    isDying,
+    fallProgress,
+    evaporateProgress,
+    soulColor: soulPal.primary,
+    isMoving: (isIntro || isDying) ? false : player.isMoving,
+    walkCycle: (isIntro || isDying) ? 0 : player.walkCycle,
+    frameCount: (isIntro || isDying) ? 0 : frameCount,
+    berserkTimer: (isIntro || isDying) ? 0 : player.berserkTimer,
+    invisTimer: (isIntro || isDying) ? 0 : player.invisTimer,
+    dashDuration: (isIntro || isDying) ? 0 : player.dashDuration,
+    ignisDashDuration: (isIntro || isDying) ? 0 : player.ignisDashDuration,
+    staffCastTimer: (isIntro || isDying) ? 0 : player.staffCastTimer,
+    isPhasing: (isIntro || isDying) ? false : player.isPhasing,
     evolvedPotion: player.evolvedPotion,
-    iFrames: player.iFrames,
+    iFrames: (isIntro || isDying) ? 0 : player.iFrames,
+    isRetaliating: (isIntro || isDying) ? false : undefined,
+    isDashing: (isIntro || isDying) ? false : undefined,
     radius: player.radius,
-    hammerProgress: (() => {
+    hammerProgress: (isIntro || isDying) ? -1 : (() => {
       const hb = bullets.find(b => b.type === 'HAMMER_SLAM');
       return hb ? Math.max(0, Math.min(1, 1 - (hb.life / hb.maxLife))) : -1;
     })(),
-    isHammerAttacking: bullets.some(b => b.type === 'HAMMER_SLAM' && b.life > 0),
+    isHammerAttacking: (isIntro || isDying) ? false : bullets.some(b => b.type === 'HAMMER_SLAM' && b.life > 0),
     evolvedHammer: player.evolvedHammer,
-    isStaffCasting: bullets.some(b => b.type === 'STAFF' && b.life > 48),
-    isSwordAttacking: bullets.some(b => b.type === 'SWORD' && b.life > 45),
-    potionThrowTimer: player.potionThrowTimer || 0,
-    alchemistSkillTimer: player.alchemistSkillTimer || 0,
-    isThrowingPotion: (player.potionThrowTimer > 0) || bullets.some(b => b.type === 'POTION' && b.life > 18),
-    isAlchemistSkill: (player.alchemistSkillTimer > 0)
+    isStaffCasting: (isIntro || isDying) ? false : bullets.some(b => b.type === 'STAFF' && b.life > 48),
+    isSwordAttacking: (isIntro || isDying) ? false : bullets.some(b => b.type === 'SWORD' && b.life > 45),
+    potionThrowTimer: (isIntro || isDying) ? 0 : (player.potionThrowTimer || 0),
+    alchemistSkillTimer: (isIntro || isDying) ? 0 : (player.alchemistSkillTimer || 0),
+    isThrowingPotion: (isIntro || isDying) ? false : ((player.potionThrowTimer > 0) || bullets.some(b => b.type === 'POTION' && b.life > 18)),
+    isAlchemistSkill: (isIntro || isDying) ? false : (player.alchemistSkillTimer > 0)
   });
 
   ctx.restore();

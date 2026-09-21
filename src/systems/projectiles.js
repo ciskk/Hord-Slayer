@@ -14,6 +14,8 @@ import { triggerDeath } from './ui.js';
 
 export { bullets, enemyBullets, acidPuddles, MAX_CONCURRENT_ENEMY_BULLETS, canSpawnEnemyBullet };
 
+const _potionCandidates = [];
+const _bulletCandidates = [];
 
 /**
  * Atualiza projéteis do jogador e dos inimigos, aplicando regras de adrenalina melee (+25% se <= 130px).
@@ -62,9 +64,10 @@ export function updateProjectiles(dt) {
         const puddleLife = b.puddleDuration || Math.round(340 / 1.5);
 
         // Impacto do ataque ao atingir o solo (dano de impacto 40% menor já calculado em b.damage)
-        for (let j = 0; j < enemies.length; j++) {
-          const e = enemies[j];
-          if (e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
+        const candidates = getNeighborIndices(b.x, b.y, puddleRadius + 45, _potionCandidates);
+        for (let j = 0; j < candidates.length; j++) {
+          const e = enemies[candidates[j]];
+          if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
           if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
           if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
           const dx = e.x - b.x;
@@ -169,10 +172,11 @@ export function updateProjectiles(dt) {
     }
 
     const bRadius = b.radius || 6;
+    const candidates = getNeighborIndices(b.x, b.y, bRadius + 45, _bulletCandidates);
 
-    for (let j = 0; j < enemies.length; j++) {
-      const e = enemies[j];
-      if (e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
+    for (let j = 0; j < candidates.length; j++) {
+      const e = enemies[candidates[j]];
+      if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
       if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
       if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
 

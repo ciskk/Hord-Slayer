@@ -517,6 +517,30 @@ export const destinyCardsPool = [
       });
     },
     isAvailable: () => !player.destinyPacts || !player.destinyPacts.some(p => p.id === 'destiny_spectral')
+  },
+  {
+    id: 'destiny_temporal_rift',
+    isDestinyCard: true,
+    title: "Pacto da Fenda Temporal",
+    rarity: "card-cursed",
+    badge: "Pacto Proibido",
+    desc: "Dobra o fluxo temporal para recuperar sua habilidade suprema em ritmo vertiginoso, ao custo da potência destrutiva de todas as suas armas convencionais.",
+    bonusText: "-40% Tempo de Recarga da ULT",
+    penaltyText: "-25% Dano das Armas Convencionais",
+    stat: "-40% Recarga ULT | Armas -25% Dano",
+    apply: () => {
+      player.skillMaxCd = Math.max(120, Math.round(player.skillMaxCd * 0.60));
+      player.skillCd = Math.min(player.skillCd, player.skillMaxCd);
+      player.damagePercentBonus = (player.damagePercentBonus || 0) - 0.25;
+      player.destinyPacts = player.destinyPacts || [];
+      player.destinyPacts.push({
+        id: 'destiny_temporal_rift',
+        title: "Pacto da Fenda Temporal",
+        bonus: "-40% Recarga da ULT",
+        penalty: "Armas -25% Dano"
+      });
+    },
+    isAvailable: () => !player.destinyPacts || !player.destinyPacts.some(p => p.id === 'destiny_temporal_rift')
   }
 ];
 

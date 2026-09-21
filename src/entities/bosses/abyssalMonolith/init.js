@@ -30,8 +30,8 @@ export function initAbyssalMonolith(boss) {
 
   // Punhos / Manoplas Megalíticas Flutuantes do Titã
   boss.gauntlets = {
-    left: { x: -64, y: 10, lift: 0, rot: 0.15 },
-    right: { x: 64, y: 10, lift: 0, rot: -0.15 }
+    left: { x: -64, y: 10, lift: 0, rot: 0.15, grip: 0.15 },
+    right: { x: 64, y: 10, lift: 0, rot: -0.15, grip: 0.15 }
   };
 
   // Velocidade Dinâmica Calibrada (Colosso Ativo)
@@ -41,7 +41,7 @@ export function initAbyssalMonolith(boss) {
   // Mira e Controle de Esmagamento Frontal
   boss.aimAngle = 0;
   boss.aimLocked = false;
-  boss.slamArc = MONOLITH_CONFIG.SLAM_ARC; // ~135° frontal (costas 100% seguras)
+  boss.slamArc = MONOLITH_CONFIG.SLAM_ARC; // ~112° frontal (flancos e costas 100% seguros)
   boss.slamRadius = MONOLITH_CONFIG.SLAM_RADIUS;
 
   // Fila de Ações Agendadas

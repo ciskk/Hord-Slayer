@@ -98,6 +98,11 @@ export function selectNextSkill(e, dist, player = null) {
     weights[e.lastUsedSkill] *= 0.20;
   }
 
+  // Anti-Combo Excessivo: impede terminantemente conjurar Fendas Vulcânicas logo após o Esmagamento Tectônico
+  if (e.lastUsedSkill === MONOLITH_SKILLS.TECTONIC_SLAM) {
+    weights[MONOLITH_SKILLS.VOLCANIC_FISSURE] = 0;
+  }
+
   // 5. Sorteio Ponderado por Roleta
   let totalWeight = 0;
   for (const skillKey in weights) {
@@ -219,37 +224,10 @@ export function executeTectonicSlam(e, context) {
     }
   }
 
-  // Na Fase 2/3: solta 3 fendas em leque para frente (alcance 2x adicional: 700px)
-  if (e.isEnraged || e.isPhase3) {
-    const fCount = 3;
-    const fSpread = 0.34;
-    for (let f = 0; f < fCount; f++) {
-      const fAng = e.aimAngle + (f - 1) * fSpread;
-      for (let n = 1; n <= 12; n++) {
-        const nodeDist = impactDist + n * 55;
-        const nx = e.x + Math.cos(fAng) * nodeDist;
-        const ny = e.y + Math.sin(fAng) * nodeDist;
-
-        context.bossTelegraphs.push({
-          type: 'FISSURE_NODE',
-          x: nx,
-          y: ny,
-          originX: e.x,
-          originY: e.y,
-          lineIndex: f,
-          nodeIndex: n,
-          angle: fAng,
-          radius: 26,
-          timer: 14 + n * 4,
-          maxTimer: 14 + n * 4,
-          damage: Math.round(e.damage * 0.38)
-        });
-      }
-    }
-  }
-
+  // Fim do combo instantâneo: o Slam é focado no cone de impacto limpo.
+  // As Fendas Vulcânicas continuam como uma habilidade própria e telegrafada.
   e.actionState = MONOLITH_STATES.POST_ATTACK_RECOVERY;
-  e.actionTimer = e.isPhase3 ? 30 : (e.isEnraged ? 34 : 40);
+  e.actionTimer = e.isPhase3 ? 48 : (e.isEnraged ? 54 : 60);
 }
 
 /**
@@ -425,14 +403,14 @@ export function executeMagmaSiphonRelease(e, context) {
     });
   }
 
-  e.comboNext = MONOLITH_SKILLS.TECTONIC_SLAM;
+  e.comboNext = null;
   e.actionState = MONOLITH_STATES.POST_ATTACK_RECOVERY;
   e.actionTimer = 34;
 }
 
 /**
  * SKILL 5: FENDAS VULCÂNICAS (VOLCANIC FISSURE)
- * Sequência de círculos explosivos em leque com alcance 2x adicional (1040px).
+ * Sequência de círculos explosivos em leque com cadência de propagação rítmica telegrafada.
  * @param {Object} e
  * @param {Object} context
  */
@@ -451,14 +429,15 @@ export function executeVolcanicFissure(e, context) {
 
   for (let l = 0; l < lineCount; l++) {
     const lineAng = startAngle + (l * step);
-    const nodeCount = 13; // Dobrado de 7 para 13 nós consecutivos
+    const nodeCount = 13; // 13 nós consecutivos em cada leque
     for (let n = 1; n <= nodeCount; n++) {
-      const distNode = n * 80; // Alcance estendido 2x adicional: atinge até 1040px (antes 525px)
+      const distNode = n * 80;
       const nodeX = e.x + Math.cos(lineAng) * distNode;
       const nodeY = e.y + Math.sin(lineAng) * distNode;
 
-      const baseFissureTimer = e.isPhase3 ? 48 : (e.isEnraged ? 48 : 60);
-      const fissureNodeTimer = baseFissureTimer + n * 4;
+      // Aviso amplo (1.0s a 1.2s no início) e propagação em onda rítmica (+7 frames por nó consecutivo)
+      const baseFissureTimer = e.isPhase3 ? 55 : (e.isEnraged ? 60 : 70);
+      const fissureNodeTimer = baseFissureTimer + n * 7;
       bossTelegraphs.push({
         type: 'FISSURE_NODE',
         x: nodeX,

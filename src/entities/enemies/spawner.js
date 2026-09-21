@@ -206,8 +206,18 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     isElite: !!isElite,
     eliteMod,
     // Emergência do Solo (Zumbis, Rastejadores e Vermes Terrestres)
-    emergeTimer: (typeKey === 'ZOMBIE' || typeKey === 'SPLITTER' || typeKey === 'TRAIL_CRAWLER') ? 34 : 0,
-    emergeDuration: (typeKey === 'ZOMBIE' || typeKey === 'SPLITTER' || typeKey === 'TRAIL_CRAWLER') ? 34 : 0,
+    emergeTimer: (typeKey === 'ZOMBIE' || typeKey === 'SPLITTER' || typeKey === 'TRAIL_CRAWLER' || typeKey === 'SPLITTER_MINI') ? 34 : 0,
+    emergeDuration: (typeKey === 'ZOMBIE' || typeKey === 'SPLITTER' || typeKey === 'TRAIL_CRAWLER' || typeKey === 'SPLITTER_MINI') ? 34 : 0,
+    // Cinética & Salto Predatório dos Mobs Vermes (SPLITTER_MINI)
+    leapState: 'none',
+    leapTimer: 0,
+    leapDuration: 0,
+    leapAngle: 0,
+    leapSpeed: 0,
+    jumpZ: 0,
+    jumpMaxZ: 0,
+    leapCooldown: (typeKey === 'SPLITTER_MINI') ? Math.floor(Math.random() * 35) : 60,
+    landingSplashTimer: 0,
     // Máquina de Estados Melee (src/systems/combat.js)
     combatState: 'CHASE',
     attackTimer: 0,

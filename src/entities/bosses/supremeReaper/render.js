@@ -24,16 +24,15 @@ export function drawCinematicScreenTitle(ctx, e, frameCount) {
   const maxT = e.titleMaxTimer || 180;
   const titleProgress = 1 - Math.max(0, e.titleTimer / maxT);
 
-  let bannerAlpha = 1.0;
-  if (titleProgress < 0.10) {
-    bannerAlpha = titleProgress / 0.10;
-  } else if (titleProgress > 0.80) {
-    bannerAlpha = Math.max(0, (1 - titleProgress) / 0.20);
-  }
+  // Easing suave de Fade In e Fade Out (Curva Smoothstep)
+  const inRatio = Math.min(1.0, Math.max(0, titleProgress / 0.18));
+  const inEase = inRatio * inRatio * (3 - 2 * inRatio);
 
-  ctx.save();
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.globalAlpha = bannerAlpha;
+  const outRatio = Math.min(1.0, Math.max(0, (1 - titleProgress) / 0.22));
+  const outEase = outRatio * outRatio * (3 - 2 * outRatio);
+
+  const bannerAlpha = inEase * outEase;
+  if (bannerAlpha <= 0.001) return;
 
   const screenW = viewW || (typeof window !== 'undefined' ? window.innerWidth : 1280);
   const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
@@ -41,60 +40,111 @@ export function drawCinematicScreenTitle(ctx, e, frameCount) {
   const isCompactH = screenH < 520;
   const hudBottom = getHudBottom();
 
-  const bannerW = isVertical 
-    ? Math.min(380, screenW * 0.94) 
-    : (isCompactH ? Math.min(640, screenW * 0.88) : Math.min(880, screenW * 0.90));
-  const bannerH = isVertical ? 60 : (isCompactH ? 56 : 100);
-  const bx = (screenW - bannerW) / 2;
+  const centerX = screenW / 2;
+  const contentW = isVertical 
+    ? Math.min(screenW - 24, 380) 
+    : (isCompactH ? Math.min(screenW - 48, 680) : Math.min(screenW - 64, 880));
+  const bannerH = isVertical ? 62 : (isCompactH ? 58 : 100);
+
+  // Fade estendido nas laterais: asas amplas que se estendem e dissolvem suavemente
+  const fadeWing = isVertical ? 50 : Math.max(160, screenW * 0.22);
+  const totalW = contentW + fadeWing * 2;
+  const startX = centerX - totalW / 2;
+  const endX = centerX + totalW / 2;
+
   const calculatedY = Math.round((screenH / 2) - bannerH - (isVertical ? 45 : (isCompactH ? 20 : 75)));
   const by = Math.max(hudBottom + 8, calculatedY);
-  const centerX = screenW / 2;
+  const centerY = by + bannerH / 2;
 
-  // 1. Fundo Gradiente de Cripta de Obsidiana e Névoa Espectral
-  const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  // Animação de transição cinematográfica
+  const entrySlideY = (1 - inEase) * -12;
+  const exitSlideY = (1 - outEase) * -8;
+  const ambientFloat = Math.sin(frameCount * 0.04) * 1.5;
+  const animOffsetY = entrySlideY + exitSlideY + ambientFloat;
+  const animScaleX = (0.93 + 0.07 * inEase) * (1.0 + (1 - outEase) * 0.025);
+
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.globalAlpha = bannerAlpha;
+
+  // Aplica movimento com pivô central
+  ctx.translate(centerX, centerY + animOffsetY);
+  ctx.scale(animScaleX, 1.0);
+  ctx.translate(-centerX, -centerY);
+
+  // 1. Fundo Gradiente de Cripta de Obsidiana e Névoa Espectral com Fade Estendido nas Laterais
+  const bgGrad = ctx.createLinearGradient(startX, by, endX, by);
   bgGrad.addColorStop(0, 'rgba(2, 5, 9, 0)');
-  bgGrad.addColorStop(0.18, 'rgba(5, 14, 22, 0.96)');
-  bgGrad.addColorStop(0.5, 'rgba(9, 28, 40, 0.98)');
-  bgGrad.addColorStop(0.82, 'rgba(5, 14, 22, 0.96)');
+  bgGrad.addColorStop(0.12, 'rgba(4, 10, 16, 0.22)');
+  bgGrad.addColorStop(0.28, 'rgba(6, 18, 28, 0.90)');
+  bgGrad.addColorStop(0.50, 'rgba(9, 28, 40, 0.98)');
+  bgGrad.addColorStop(0.72, 'rgba(6, 18, 28, 0.90)');
+  bgGrad.addColorStop(0.88, 'rgba(4, 10, 16, 0.22)');
   bgGrad.addColorStop(1, 'rgba(2, 5, 9, 0)');
   ctx.fillStyle = bgGrad;
-  ctx.fillRect(bx, by, bannerW, bannerH);
+  ctx.fillRect(startX, by, totalW, bannerH);
 
-  // 2. Frisos de Neon Ciano e Ectoplasma
-  const borderGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  // 2. Frisos de Neon Ciano e Ectoplasma com Taper Suave nas Pontas
+  const lineStart = startX + fadeWing * 0.25;
+  const lineEnd = endX - fadeWing * 0.25;
+  const borderGrad = ctx.createLinearGradient(lineStart, by, lineEnd, by);
   borderGrad.addColorStop(0, 'rgba(0, 206, 201, 0)');
-  borderGrad.addColorStop(0.2, 'rgba(0, 206, 201, 0.95)');
-  borderGrad.addColorStop(0.5, 'rgba(129, 236, 236, 1)');
-  borderGrad.addColorStop(0.8, 'rgba(0, 206, 201, 0.95)');
+  borderGrad.addColorStop(0.18, 'rgba(0, 206, 201, 0.65)');
+  borderGrad.addColorStop(0.35, 'rgba(0, 206, 201, 0.95)');
+  borderGrad.addColorStop(0.50, 'rgba(129, 236, 236, 1.0)');
+  borderGrad.addColorStop(0.65, 'rgba(0, 206, 201, 0.95)');
+  borderGrad.addColorStop(0.82, 'rgba(0, 206, 201, 0.65)');
   borderGrad.addColorStop(1, 'rgba(0, 206, 201, 0)');
 
   ctx.strokeStyle = borderGrad;
   ctx.lineWidth = isVertical ? 2.0 : 2.8;
+  ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(bx, by);
-  ctx.lineTo(bx + bannerW, by);
-  ctx.moveTo(bx, by + bannerH);
-  ctx.lineTo(bx + bannerW, by + bannerH);
+  ctx.moveTo(lineStart, by);
+  ctx.lineTo(lineEnd, by);
+  ctx.moveTo(lineStart, by + bannerH);
+  ctx.lineTo(lineEnd, by + bannerH);
   ctx.stroke();
 
-  // Frisos internos com acabamento dourado antigo
-  ctx.strokeStyle = 'rgba(241, 196, 15, 0.40)';
+  // Frisos internos com acabamento dourado antigo e fade nas pontas
+  const innerStart = centerX - contentW * 0.44;
+  const innerEnd = centerX + contentW * 0.44;
+  const innerGrad = ctx.createLinearGradient(innerStart, by, innerEnd, by);
+  innerGrad.addColorStop(0, 'rgba(241, 196, 15, 0)');
+  innerGrad.addColorStop(0.20, 'rgba(241, 196, 15, 0.40)');
+  innerGrad.addColorStop(0.50, 'rgba(255, 234, 167, 0.70)');
+  innerGrad.addColorStop(0.80, 'rgba(241, 196, 15, 0.40)');
+  innerGrad.addColorStop(1, 'rgba(241, 196, 15, 0)');
+
+  ctx.strokeStyle = innerGrad;
   ctx.lineWidth = 1.2;
-  const padX = isVertical ? 24 : 45;
+  const innerPadY = isVertical ? 3.5 : 5;
   ctx.beginPath();
-  ctx.moveTo(bx + padX, by + 4);
-  ctx.lineTo(bx + bannerW - padX, by + 4);
-  ctx.moveTo(bx + padX, by + bannerH - 4);
-  ctx.lineTo(bx + bannerW - padX, by + bannerH - 4);
+  ctx.moveTo(innerStart, by + innerPadY);
+  ctx.lineTo(innerEnd, by + innerPadY);
+  ctx.moveTo(innerStart, by + bannerH - innerPadY);
+  ctx.lineTo(innerEnd, by + bannerH - innerPadY);
   ctx.stroke();
 
-  // Cantoneiras Góticas em Ferro Espectral
-  const cornerSize = isVertical ? 10 : 16;
-  ctx.fillStyle = '#00cec9';
-  ctx.fillRect(bx + padX * 0.7, by - 2, cornerSize, 4);
-  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by - 2, cornerSize, 4);
-  ctx.fillRect(bx + padX * 0.7, by + bannerH - 2, cornerSize, 4);
-  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by + bannerH - 2, cornerSize, 4);
+  // Cantoneiras em losango de ferro espectral
+  [-contentW * 0.42, contentW * 0.42].forEach(ox => {
+    ctx.fillStyle = '#00cec9';
+    ctx.beginPath();
+    ctx.moveTo(centerX + ox, by);
+    ctx.lineTo(centerX + ox + 3, by - 3);
+    ctx.lineTo(centerX + ox + 6, by);
+    ctx.lineTo(centerX + ox + 3, by + 3);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(centerX + ox, by + bannerH);
+    ctx.lineTo(centerX + ox + 3, by + bannerH - 3);
+    ctx.lineTo(centerX + ox + 6, by + bannerH);
+    ctx.lineTo(centerX + ox + 3, by + bannerH + 3);
+    ctx.closePath();
+    ctx.fill();
+  });
 
   // Ornamento Central Superior: Brasão Alado com Joia de Fogo Fátuo
   ctx.fillStyle = '#f1c40f';
@@ -380,7 +430,7 @@ export function drawReaperSpawnIntro(ctx, e, frameCount) {
     ctx.translate(18 - 36, Math.min(22, scytheY) + 10);
     ctx.rotate(0.24); // Levemente inclinada ao penetrar a terra
     const fakeBoss = { scytheAngle: 0, scytheGlow: 1.0, crankAngle: 0 };
-    drawOrnateScythe(ctx, fakeBoss, 0, false, false, 0);
+    drawOrnateScythe(ctx, fakeBoss, 0, false, false, 0, frameCount);
     ctx.restore();
 
     // 5. Silhueta do Ceifador Condensando no Cabo da Foice
@@ -437,10 +487,14 @@ export function drawReaperSpawnIntro(ctx, e, frameCount) {
 
     drawReaperShadow(ctx, e, bob, false, 0);
     drawSpectralWings(ctx, e, bob, false, false, flap, wingSpan);
+    drawEclipseHalo(ctx, e, bob, frameCount, false, false, false, 0);
+    drawDorsalSpineAndBackRibs(ctx, bob, frameCount, false, false, 0);
     drawReaperRobe(ctx, e, bob, frameCount, false, false, 0, 0);
-    drawRibcageAndCore(ctx, bob, frameCount, false, false, 0);
+    drawSoulNexusCore(ctx, bob, frameCount, false, false, 0, false);
+    drawFrontRibcageArmor(ctx, bob, frameCount, false, false, 0);
+    drawReaperArmsAndGauntlets(ctx, e, bob, frameCount, false, false, 0.4, 0);
     drawMaskAndEyes(ctx, e, bob, frameCount, false, false, 0);
-    drawOrnateScythe(ctx, e, bob, false, false, 0);
+    drawOrnateScythe(ctx, e, bob, false, false, 0, frameCount);
     drawGothicLanterns(ctx, e, bob, frameCount, false);
 
     ctx.restore();
@@ -483,10 +537,14 @@ export function drawReaperSpawnIntro(ctx, e, frameCount) {
   // 3. Renderização Plena de Thanatos em Prontidão de Batalha
   drawReaperShadow(ctx, e, bob, false, 0);
   drawSpectralWings(ctx, e, bob, false, false, flap, wingSpan);
+  drawEclipseHalo(ctx, e, bob, frameCount, false, false, false, 0);
+  drawDorsalSpineAndBackRibs(ctx, bob, frameCount, false, false, 0);
   drawReaperRobe(ctx, e, bob, frameCount, false, false, 0, 0);
-  drawRibcageAndCore(ctx, bob, frameCount, false, false, 0);
+  drawSoulNexusCore(ctx, bob, frameCount, false, false, 0, false);
+  drawFrontRibcageArmor(ctx, bob, frameCount, false, false, 0);
+  drawReaperArmsAndGauntlets(ctx, e, bob, frameCount, false, false, 0.4, 0);
   drawMaskAndEyes(ctx, e, bob, frameCount, false, false, 0);
-  drawOrnateScythe(ctx, e, bob, false, false, 0);
+  drawOrnateScythe(ctx, e, bob, false, false, 0, frameCount);
   drawGothicLanterns(ctx, e, bob, frameCount, false);
 
   ctx.restore();
@@ -518,6 +576,7 @@ export function drawReaperShadow(ctx, e, bob, isVuln, collapseProg = 0) {
  * Renderiza o rastro fantasma espectral deixado pela movimentação do Ceifador.
  */
 export function drawGhostTrail(ctx, e) {
+  if (!e.ghostTrail || !e.ghostTrail.length) return;
   for (let t of e.ghostTrail) {
     if (t.alpha <= 0) continue;
     ctx.save();
@@ -614,27 +673,30 @@ export function drawRecoveryGliph(ctx, e, frameCount) {
 }
 
 /**
- * Desenha as 6 Asas de Serafim Esquelético (3 pares de asas articuladas).
+ * Desenha as 6 Asas de Serafim da Morte diferenciadas em 3 pares anatômicos únicos:
+ * Par 1 (Superior): Asas do Julgamento Celestial (Penas metálicas afiadas em navalha)
+ * Par 2 (Médio): Asas dos Ossos Fúnebres & Runas (Falanges articuladas e nós com glifos)
+ * Par 3 (Inferior): Asas do Vácuo e Fumaça (Caudas de fumaça cósmica ondulante)
  */
 export function drawSpectralWings(ctx, e, bob, isVuln, isEnraged, flap = 0, customSpan = null) {
   const baseSpan = customSpan !== null ? customSpan : (e.wingSpan || 0.60);
-  const boneCol = isVuln ? '#636e72' : (isEnraged ? '#ff6b81' : '#81ecec');
-  const boneShade = isVuln ? '#2d3436' : (isEnraged ? '#5a0d14' : '#0f323d');
+  const isP3 = e.isPhase3 || false;
+  const boneCol = isVuln ? '#636e72' : (isP3 ? '#ff7675' : (isEnraged ? '#ff6b81' : '#81ecec'));
+  const boneShade = isVuln ? '#2d3436' : (isP3 ? '#3a070e' : (isEnraged ? '#5a0d14' : '#0f323d'));
   const ectoFill = isVuln 
     ? 'rgba(45, 52, 54, 0.35)' 
-    : (isEnraged ? 'rgba(255, 71, 87, 0.28)' : 'rgba(0, 206, 201, 0.25)');
+    : (isP3 ? 'rgba(255, 71, 87, 0.38)' : (isEnraged ? 'rgba(255, 71, 87, 0.28)' : 'rgba(0, 206, 201, 0.25)'));
   const ectoGlow = isVuln
     ? 'rgba(99, 110, 114, 0.2)'
-    : (isEnraged ? 'rgba(255, 107, 129, 0.4)' : 'rgba(129, 236, 236, 0.4)');
+    : (isP3 ? 'rgba(255, 118, 117, 0.55)' : (isEnraged ? 'rgba(255, 107, 129, 0.4)' : 'rgba(129, 236, 236, 0.4)'));
 
   ctx.save();
   ctx.translate(0, -18 + bob);
 
-  // 3 Pares de Asas: Superior (Maior), Média (Horizontal), Inferior (Estabilizador)
   const wingPairs = [
-    { spanScale: 1.00, angleOffset: -0.32 + flap, originY: -8, length: 105 },
-    { spanScale: 0.82, angleOffset: 0.05 + flap * 0.7, originY: 6, length: 88 },
-    { spanScale: 0.62, angleOffset: 0.42 - flap * 0.4, originY: 20, length: 70 }
+    { type: 'JUDGEMENT', spanScale: isP3 ? 1.45 : (isEnraged ? 1.25 : 1.05), angleOffset: -0.34 + flap, originY: -10, length: 112 },
+    { type: 'BONE_RUNES', spanScale: isP3 ? 1.15 : (isEnraged ? 1.00 : 0.85), angleOffset: 0.06 + flap * 0.7, originY: 6, length: 90 },
+    { type: 'VOID_MIST', spanScale: isP3 ? 0.95 : (isEnraged ? 0.80 : 0.65), angleOffset: 0.44 - flap * 0.4, originY: 22, length: 75 }
   ];
 
   for (let side of [-1, 1]) {
@@ -646,66 +708,152 @@ export function drawSpectralWings(ctx, e, bob, isVuln, isEnraged, flap = 0, cust
       ctx.translate(10, pair.originY);
 
       if (isVuln) {
-        ctx.rotate(0.65); // Asas caídas em prostração
+        ctx.rotate(0.68); // Asas caídas em prostração
       } else {
         ctx.rotate(pair.angleOffset * baseSpan);
       }
 
       const wLen = pair.length * baseSpan * pair.spanScale;
 
-      // 1. Membranas Translúcidas em Camadas (Penas Espectrais)
-      ctx.fillStyle = ectoFill;
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.quadraticCurveTo(wLen * 0.45, -wLen * 0.32, wLen * 0.90, -wLen * 0.22);
-      ctx.lineTo(wLen * 1.02, -wLen * 0.08);
-      ctx.lineTo(wLen * 0.82, wLen * 0.20);
-      ctx.lineTo(wLen * 0.52, wLen * 0.35);
-      ctx.lineTo(wLen * 0.25, wLen * 0.25);
-      ctx.closePath();
-      ctx.fill();
-
-      // Borda luminosa de ectoplasma
-      ctx.strokeStyle = ectoGlow;
-      ctx.lineWidth = 1.8;
-      ctx.stroke();
-
-      // 2. Espinha Óssea Principal Arqueada
-      ctx.strokeStyle = boneShade;
-      ctx.lineWidth = 4.2;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.quadraticCurveTo(wLen * 0.42, -wLen * 0.36, wLen * 0.92, -wLen * 0.22);
-      ctx.stroke();
-
-      ctx.strokeStyle = boneCol;
-      ctx.lineWidth = 2.2;
-      ctx.stroke();
-
-      // 3. Esporão e Falanges Articuladas
-      ctx.strokeStyle = boneCol;
-      ctx.lineWidth = 1.8;
-      const spurs = [
-        { tx: wLen * 1.02, ty: -wLen * 0.08 },
-        { tx: wLen * 0.82, ty: wLen * 0.20 },
-        { tx: wLen * 0.52, ty: wLen * 0.35 }
-      ];
-      for (let sp of spurs) {
+      if (pair.type === 'JUDGEMENT') {
+        // PAR 1: Penas Metálicas Afiadas em Lâmina
+        ctx.fillStyle = ectoFill;
         ctx.beginPath();
-        ctx.moveTo(wLen * 0.42, -wLen * 0.12);
-        ctx.lineTo(sp.tx, sp.ty);
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(wLen * 0.45, -wLen * 0.36, wLen * 0.92, -wLen * 0.24);
+        ctx.lineTo(wLen * 1.04, -wLen * 0.08);
+        ctx.lineTo(wLen * 0.84, wLen * 0.22);
+        ctx.lineTo(wLen * 0.54, wLen * 0.34);
+        ctx.lineTo(wLen * 0.25, wLen * 0.24);
+        ctx.closePath();
+        ctx.fill();
+
+        // 5 Penas Astrais rígidas com formato de lâmina chanfrada
+        const featherTiers = [
+          { rx: 1.04, ry: -0.08, w: 0.82, h: -0.22 },
+          { rx: 0.92, ry: 0.08, w: 0.72, h: -0.12 },
+          { rx: 0.82, ry: 0.22, w: 0.60, h: -0.04 },
+          { rx: 0.68, ry: 0.30, w: 0.48, h: 0.04 },
+          { rx: 0.52, ry: 0.35, w: 0.32, h: 0.12 }
+        ];
+
+        for (let ft of featherTiers) {
+          const fx = wLen * ft.rx;
+          const fy = wLen * ft.ry;
+          const rootX = wLen * ft.w;
+          const rootY = wLen * ft.h;
+
+          ctx.strokeStyle = ectoGlow;
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(rootX, rootY);
+          ctx.lineTo(fx, fy);
+          ctx.lineTo(rootX - 6, rootY + 10);
+          ctx.stroke();
+
+          // Espigão diamantado na ponta da pena
+          ctx.fillStyle = isP3 ? '#ffffff' : (isEnraged ? '#ff6b81' : '#ffffff');
+          ctx.fillRect(fx - 1.5, fy - 1.5, 3, 3);
+        }
+
+        // Espinha Óssea Principal Arqueada
+        ctx.strokeStyle = boneShade;
+        ctx.lineWidth = 4.6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(wLen * 0.42, -wLen * 0.38, wLen * 0.94, -wLen * 0.22);
+        ctx.stroke();
+
+        ctx.strokeStyle = boneCol;
+        ctx.lineWidth = 2.4;
+        ctx.stroke();
+
+        // Garra afiada na articulação da asa
+        ctx.fillStyle = boneCol;
+        ctx.beginPath();
+        ctx.moveTo(wLen * 0.42, -wLen * 0.38);
+        ctx.lineTo(wLen * 0.50, -wLen * 0.52);
+        ctx.lineTo(wLen * 0.36, -wLen * 0.32);
+        ctx.closePath();
+        ctx.fill();
+
+      } else if (pair.type === 'BONE_RUNES') {
+        // PAR 2: Falanges Esqueléticas Articuladas & Glifos Rúnicos
+        ctx.fillStyle = ectoFill;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(wLen * 0.45, -wLen * 0.22, wLen * 0.88, -wLen * 0.12);
+        ctx.lineTo(wLen * 0.98, 0.05);
+        ctx.lineTo(wLen * 0.72, wLen * 0.25);
+        ctx.lineTo(wLen * 0.35, wLen * 0.28);
+        ctx.closePath();
+        ctx.fill();
+
+        // Falange óssea central
+        ctx.strokeStyle = boneShade;
+        ctx.lineWidth = 3.6;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(wLen * 0.45, -wLen * 0.14);
+        ctx.lineTo(wLen * 0.90, -wLen * 0.08);
+        ctx.stroke();
+
+        ctx.strokeStyle = boneCol;
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        // 3 Nós articulares com glifos gravados
+        const nodes = [0.25, 0.55, 0.85];
+        for (let n of nodes) {
+          const nx = wLen * n;
+          const ny = -wLen * (n * 0.12);
+          ctx.fillStyle = boneShade;
+          ctx.beginPath();
+          ctx.arc(nx, ny, 3.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = boneCol;
+          ctx.beginPath();
+          ctx.arc(nx, ny, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Falanges secundárias
+        ctx.strokeStyle = ectoGlow;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(wLen * 0.45, -wLen * 0.14);
+        ctx.lineTo(wLen * 0.72, wLen * 0.25);
+        ctx.moveTo(wLen * 0.65, -wLen * 0.10);
+        ctx.lineTo(wLen * 0.98, 0.05);
+        ctx.stroke();
+
+      } else {
+        // PAR 3: Caudas de Fumaça Cósmica e Vácuo
+        const smokeTime = (e.clothWavePhase || 0) * 2;
+        const wave1 = Math.sin(smokeTime + pair.originY) * 6;
+        const wave2 = Math.cos(smokeTime * 1.4) * 5;
+
+        ctx.fillStyle = ectoFill;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(wLen * 0.35 + wave1, wLen * 0.15, wLen * 0.70 + wave2, wLen * 0.38);
+        ctx.quadraticCurveTo(wLen * 0.45, wLen * 0.50, 0, wLen * 0.30);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = ectoGlow;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        // Feixes de fumaça etérea
+        ctx.strokeStyle = boneCol;
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(wLen * 0.30, wLen * 0.20, wLen * 0.65 + wave2, wLen * 0.36);
         ctx.stroke();
       }
-
-      // Espigão afiado na articulação da asa
-      ctx.fillStyle = boneCol;
-      ctx.beginPath();
-      ctx.moveTo(wLen * 0.42, -wLen * 0.36);
-      ctx.lineTo(wLen * 0.48, -wLen * 0.48);
-      ctx.lineTo(wLen * 0.38, -wLen * 0.32);
-      ctx.closePath();
-      ctx.fill();
 
       ctx.restore();
     }
@@ -717,7 +865,8 @@ export function drawSpectralWings(ctx, e, bob, isVuln, isEnraged, flap = 0, cust
 }
 
 /**
- * Desenha o manto de seda do vazio com 4 camadas volumétricas e física senoidal.
+ * Desenha o manto de seda do vazio com 5 camadas volumétricas, mangas góticas largas,
+ * estolas do julgamento com runas douradas e almas assombradas ondulando na seda.
  */
 export function drawReaperRobe(ctx, e, bob, frameCount, isVuln, isEnraged, tilt = 0, collapseProg = 0) {
   const t = frameCount * 0.07;
@@ -725,16 +874,18 @@ export function drawReaperRobe(ctx, e, bob, frameCount, isVuln, isEnraged, tilt 
   const drape2 = (Math.cos(t * 1.2) * 8 + Math.sin(t * 2.3) * 3) + (tilt * 18);
   const drapeMid = Math.sin(t * 1.5 + 1.2) * 6;
 
-  const voidBlack = isVuln ? '#13191d' : (isEnraged ? '#180306' : '#020509');
-  const robeDeep   = isVuln ? '#1e272e' : (isEnraged ? '#2c080d' : '#061019');
-  const robeInner  = isVuln ? '#2c3e50' : (isEnraged ? '#4a0e16' : '#0a1e2a');
-  const soulCyan   = isVuln ? '#636e72' : (isEnraged ? '#ff4757' : '#00cec9');
-  const soulLight  = isVuln ? '#b2bec3' : (isEnraged ? '#ff6b81' : '#81ecec');
+  const isP3 = e.isPhase3 || false;
+  const voidBlack  = isVuln ? '#13191d' : (isP3 ? '#020005' : (isEnraged ? '#180306' : '#020509'));
+  const robeDeep   = isVuln ? '#1e272e' : (isP3 ? '#1a040b' : (isEnraged ? '#2c080d' : '#061019'));
+  const robeInner  = isVuln ? '#2c3e50' : (isP3 ? '#330814' : (isEnraged ? '#4a0e16' : '#0a1e2a'));
+  const soulCyan   = isVuln ? '#636e72' : (isP3 ? '#ff7675' : (isEnraged ? '#ff4757' : '#00cec9'));
+  const soulLight  = isVuln ? '#b2bec3' : (isP3 ? '#ffffff' : (isEnraged ? '#ff6b81' : '#81ecec'));
+  const goldTrim   = isEnraged ? '#ff7675' : '#f39c12';
 
   const spread = collapseProg * 16;
   const yOffset = collapseProg * 12;
 
-  // Camada 1: Forro Interior de Almas (Undercloak Ethereal Glow)
+  // Camada 1: Forro Interior de Almas (Undercloak Ethereal Glow com Almas Aprisionadas)
   ctx.fillStyle = robeInner;
   ctx.beginPath();
   ctx.moveTo(0, -58 + bob);
@@ -743,6 +894,23 @@ export function drawReaperRobe(ctx, e, bob, frameCount, isVuln, isEnraged, tilt 
   ctx.quadraticCurveTo(54 + spread, -10 + bob, 0, -58 + bob);
   ctx.closePath();
   ctx.fill();
+
+  // Efeito de Almas Aprisionadas no Tecido (Soul Imprints suaves)
+  if (!isVuln) {
+    const wavePhase = e.clothWavePhase || 0;
+    ctx.save();
+    ctx.strokeStyle = isEnraged ? 'rgba(255, 107, 129, 0.22)' : 'rgba(129, 236, 236, 0.20)';
+    ctx.lineWidth = 1.4;
+    for (let w = 0; w < 3; w++) {
+      const wProg = ((wavePhase + w * 0.33) % 1);
+      const wy = -20 + wProg * 65 + bob + yOffset * 0.5;
+      const wx = Math.sin(wProg * Math.PI * 2) * (20 + spread * 0.5);
+      ctx.beginPath();
+      ctx.arc(wx, wy, 4.5 * (1 - wProg * 0.3), 0, Math.PI);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   // Camada 2: Manto Principal de Seda do Vazio (Outer Void Shroud)
   ctx.fillStyle = voidBlack;
@@ -758,7 +926,27 @@ export function drawReaperRobe(ctx, e, bob, frameCount, isVuln, isEnraged, tilt 
   ctx.closePath();
   ctx.fill();
 
-  // Camada 3: Estola Central Sacerdotal com Runas
+  // Camada 3: Mangas Góticas Flutuantes dos Ombros
+  // Manga Esquerda
+  ctx.fillStyle = robeDeep;
+  ctx.beginPath();
+  ctx.moveTo(-18, -26 + bob);
+  ctx.quadraticCurveTo(-34, -10 + bob, -38 + drape1 * 0.4, 20 + bob + yOffset * 0.6);
+  ctx.lineTo(-26 + drape1 * 0.3, 24 + bob + yOffset * 0.6);
+  ctx.quadraticCurveTo(-22, -6 + bob, -14, -20 + bob);
+  ctx.closePath();
+  ctx.fill();
+
+  // Manga Direita
+  ctx.beginPath();
+  ctx.moveTo(18, -26 + bob);
+  ctx.quadraticCurveTo(34, -10 + bob, 38 + drape2 * 0.4, 20 + bob + yOffset * 0.6);
+  ctx.lineTo(26 + drape2 * 0.3, 24 + bob + yOffset * 0.6);
+  ctx.quadraticCurveTo(22, -6 + bob, 14, -20 + bob);
+  ctx.closePath();
+  ctx.fill();
+
+  // Camada 4: Estola Central Sacerdotal com Faixas do Julgamento (Stoles of Judgement)
   ctx.fillStyle = robeDeep;
   ctx.beginPath();
   ctx.moveTo(0, -42 + bob);
@@ -768,15 +956,25 @@ export function drawReaperRobe(ctx, e, bob, frameCount, isVuln, isEnraged, tilt 
   ctx.closePath();
   ctx.fill();
 
-  // Costura dourada sutil na estola
-  ctx.strokeStyle = 'rgba(241, 196, 15, 0.35)';
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.moveTo(0, -38 + bob);
-  ctx.lineTo(0, 42 + bob + yOffset);
-  ctx.stroke();
+  // Faixas de Pergaminho do Juízo (Stoles de Ouro com Runas)
+  for (let s of [-1, 1]) {
+    const sx = s * 8 + drapeMid * 0.5;
+    ctx.strokeStyle = goldTrim;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(s * 7, -36 + bob);
+    ctx.lineTo(sx, 42 + bob + yOffset);
+    ctx.stroke();
 
-  // Camada 4: Borda Rúnica Luminosa na Barra do Manto
+    // Glifos e runas douradas cravadas ao longo de cada faixa
+    for (let r = 0; r < 4; r++) {
+      const ry = -24 + r * 16 + bob + yOffset * 0.6;
+      ctx.fillStyle = goldTrim;
+      ctx.fillRect(sx - 1.5, ry - 1.5, 3, 3);
+    }
+  }
+
+  // Camada 5: Borda Rúnica Luminosa na Barra do Manto
   ctx.strokeStyle = soulCyan;
   ctx.lineWidth = 2.4;
   ctx.beginPath();
@@ -797,16 +995,43 @@ export function drawReaperRobe(ctx, e, bob, frameCount, isVuln, isEnraged, tilt 
 }
 
 /**
- * Desenha a caixa torácica esquelética 3D e o Coração das Almas (Soul Nexus Core).
+ * Desenha a coluna vertebral dorsal e as costelas traseiras (Passagem 1 - atrás do núcleo).
  */
-export function drawRibcageAndCore(ctx, bob, frameCount, isVuln, isEnraged, collapseProg = 0) {
+export function drawDorsalSpineAndBackRibs(ctx, bob, frameCount, isVuln, isEnraged, collapseProg = 0) {
+  const boneShade = isVuln ? '#2d3436' : (isEnraged ? '#3a070e' : '#0c1921');
+
+  ctx.save();
+  ctx.strokeStyle = boneShade;
+  ctx.lineWidth = 3.4;
+  ctx.lineCap = 'round';
+
+  // Coluna dorsal posterior
+  ctx.beginPath();
+  ctx.moveTo(0, -22 + bob + collapseProg * 8);
+  ctx.lineTo(0, 8 + bob + collapseProg * 8);
+  ctx.stroke();
+
+  // 4 Pares de Costelas Traseiras na Penumbra
+  for (let r = 0; r < 4; r++) {
+    const ry = -20 + r * 6.5 + bob + collapseProg * 8;
+    const rw = 16 - r * 2.2;
+    ctx.beginPath();
+    ctx.arc(0, ry + 2, rw, Math.PI * 0.15, Math.PI * 0.85);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/**
+ * Desenha o Coração das Almas (Soul Nexus Core) com micro-almas espirais e plasma.
+ */
+export function drawSoulNexusCore(ctx, bob, frameCount, isVuln, isEnraged, collapseProg = 0, isPhase3 = false) {
   const coreY = -12 + bob + collapseProg * 8;
-  const pulse = Math.sin(frameCount * (isEnraged ? 0.24 : 0.14)) * 3.5;
+  const pulse = Math.sin(frameCount * (isPhase3 ? 0.32 : (isEnraged ? 0.24 : 0.14))) * 3.5;
   const coreR = Math.max(6, 16 + pulse);
 
-  const soulCyan  = isVuln ? '#636e72' : (isEnraged ? '#ff4757' : '#00cec9');
-  const soulGlow  = isVuln ? '#7f8c8d' : (isEnraged ? '#ff6b81' : '#81ecec');
-  const boneCol   = isVuln ? '#576574' : (isEnraged ? '#f8d7da' : '#dff9fb');
+  const soulCyan  = isVuln ? '#636e72' : (isPhase3 ? '#ff7675' : (isEnraged ? '#ff4757' : '#00cec9'));
+  const soulGlow  = isVuln ? '#7f8c8d' : (isPhase3 ? '#ffffff' : (isEnraged ? '#ff6b81' : '#81ecec'));
 
   // 1. Núcleo das Almas (Soul Nexus)
   const coreGrad = ctx.createRadialGradient(0, coreY, 2, 0, coreY, coreR);
@@ -814,6 +1039,11 @@ export function drawRibcageAndCore(ctx, bob, frameCount, isVuln, isEnraged, coll
     coreGrad.addColorStop(0, '#95a5a6');
     coreGrad.addColorStop(0.6, '#34495e');
     coreGrad.addColorStop(1, 'rgba(44, 62, 80, 0)');
+  } else if (isPhase3) {
+    coreGrad.addColorStop(0, '#ffffff');
+    coreGrad.addColorStop(0.35, '#ff7675');
+    coreGrad.addColorStop(0.75, '#ff4757');
+    coreGrad.addColorStop(1, 'rgba(142, 68, 173, 0)');
   } else if (isEnraged) {
     coreGrad.addColorStop(0, '#ffffff');
     coreGrad.addColorStop(0.35, '#ff6b81');
@@ -831,62 +1061,266 @@ export function drawRibcageAndCore(ctx, bob, frameCount, isVuln, isEnraged, coll
   ctx.arc(0, coreY, coreR, 0, Math.PI * 2);
   ctx.fill();
 
-  // Partículas Orbitais no Interior do Núcleo
+  // Micro-Vórtices de Almas Orbitais no Interior do Núcleo
   if (!isVuln) {
     for (let p = 0; p < 3; p++) {
       const pAng = frameCount * 0.08 + p * (Math.PI * 2 / 3);
-      const pDist = coreR * 0.75;
+      const pDist = coreR * 0.72;
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(Math.cos(pAng) * pDist - 1.5, coreY + Math.sin(pAng) * (pDist * 0.5) - 1.5, 3, 3);
     }
   }
+}
 
-  // 2. Caixa Torácica Esquelética 3D
-  ctx.strokeStyle = boneCol;
-  ctx.lineWidth = 2.6;
+/**
+ * Desenha as costelas frontais 3D em marfim que abraçam o núcleo pela frente (Passagem 2).
+ */
+export function drawFrontRibcageArmor(ctx, bob, frameCount, isVuln, isEnraged, collapseProg = 0) {
+  const boneCol   = isVuln ? '#576574' : (isEnraged ? '#f8d7da' : '#e6f2f2');
+  const boneBevel = isVuln ? '#7f8c8d' : '#ffffff';
+
+  ctx.save();
   ctx.lineCap = 'round';
 
-  // Espinha central dorsal
-  ctx.beginPath();
-  ctx.moveTo(0, -22 + bob + collapseProg * 8);
-  ctx.lineTo(0, 6 + bob + collapseProg * 8);
-  ctx.stroke();
-
-  // 4 Pares de Costelas Arqueadas
+  // 4 Pares de Costelas Frontais Arqueadas abraçando o núcleo
   for (let r = 0; r < 4; r++) {
     const ry = -20 + r * 6.5 + bob + collapseProg * 8;
     const rw = 18 - r * 2.5;
+
+    // Chanfro especular superior da costela
+    ctx.strokeStyle = boneBevel;
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    ctx.arc(0, ry - 0.6, rw, Math.PI * 0.12, Math.PI * 0.88);
+    ctx.stroke();
+
+    // Corpo de marfim da costela
+    ctx.strokeStyle = boneCol;
+    ctx.lineWidth = 2.6;
     ctx.beginPath();
     ctx.arc(0, ry, rw, Math.PI * 0.12, Math.PI * 0.88);
     ctx.stroke();
   }
+
+  // Esterno e ponte central
+  ctx.strokeStyle = boneCol;
+  ctx.lineWidth = 2.0;
+  ctx.beginPath();
+  ctx.moveTo(0, -22 + bob + collapseProg * 8);
+  ctx.lineTo(0, 0 + bob + collapseProg * 8);
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 /**
- * Desenha o capuz abissal, a máscara de marfim em 3D e os Chifres Espirais de Carneiro.
+ * Função compatível retroativa que invoca as 3 etapas da caixa torácica e núcleo.
+ */
+export function drawRibcageAndCore(ctx, bob, frameCount, isVuln, isEnraged, collapseProg = 0) {
+  drawDorsalSpineAndBackRibs(ctx, bob, frameCount, isVuln, isEnraged, collapseProg);
+  drawSoulNexusCore(ctx, bob, frameCount, isVuln, isEnraged, collapseProg, false);
+  drawFrontRibcageArmor(ctx, bob, frameCount, isVuln, isEnraged, collapseProg);
+}
+
+/**
+ * Desenha a Coroa do Eclipse Astral (Auréola com Astrolábio Dourado e Eclipse Solar).
+ */
+export function drawEclipseHalo(ctx, e, bob, frameCount, isVuln, isEnraged, isPhase3, collapseProg = 0) {
+  const haloY = -64 + bob + collapseProg * 10;
+  const haloR = 26;
+  const hAngle = e.haloAngle || (frameCount * 0.02);
+
+  ctx.save();
+  ctx.translate(0, haloY);
+  ctx.scale(1, 0.44); // Perspectiva elíptica inclinada
+
+  if (isPhase3) {
+    // FASE 3: Auréola Estilhaçada em 4 Fragmentos Orbitais de Plasma
+    const shards = 4;
+    for (let s = 0; s < shards; s++) {
+      const sa = hAngle * 2.2 + (s * Math.PI * 2 / shards);
+      ctx.save();
+      ctx.rotate(sa);
+      ctx.strokeStyle = '#ff7675';
+      ctx.lineWidth = 3.2;
+      ctx.beginPath();
+      ctx.arc(0, 0, haloR * 1.15, -0.3, 0.3);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+
+      const sx = Math.cos(0.3) * (haloR * 1.15);
+      const sy = Math.sin(0.3) * (haloR * 1.15);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(sx - 2, sy - 2, 4, 4);
+      ctx.restore();
+    }
+  } else {
+    // FASES 1 E 2: Anel Astral de Astrolábio Dourado e Eclipse
+    // 1. Corona do Eclipse (Halo de Luz Externa)
+    const coronaGrad = ctx.createRadialGradient(0, 0, haloR * 0.7, 0, 0, haloR * 1.5);
+    coronaGrad.addColorStop(0, isEnraged ? 'rgba(255, 71, 87, 0.65)' : 'rgba(0, 206, 201, 0.55)');
+    coronaGrad.addColorStop(0.5, isEnraged ? 'rgba(255, 107, 129, 0.30)' : 'rgba(129, 236, 236, 0.25)');
+    coronaGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = coronaGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, haloR * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Anel de Ouro Astral com Entalhes
+    ctx.strokeStyle = isEnraged ? '#ff4757' : '#f39c12';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.arc(0, 0, haloR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = isEnraged ? '#ff6b81' : '#ffeaa7';
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    ctx.arc(0, 0, haloR - 3.5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 3. Glifos Cuneiformes Orbitando no Aro
+    const glyphCount = 8;
+    for (let g = 0; g < glyphCount; g++) {
+      const ga = hAngle + (g * Math.PI * 2 / glyphCount);
+      const gx = Math.cos(ga) * haloR;
+      const gy = Math.sin(ga) * haloR;
+      ctx.fillStyle = isEnraged ? '#ffffff' : '#00cec9';
+      ctx.fillRect(gx - 1.5, gy - 1.5, 3, 3);
+    }
+
+    // 4. Disco Central de Obsidiana (Eclipse Solar da Morte)
+    ctx.fillStyle = '#020509';
+    ctx.beginPath();
+    ctx.arc(0, 0, haloR * 0.65, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Raios Cardinais em Cruz
+    ctx.strokeStyle = isEnraged ? 'rgba(255, 107, 129, 0.85)' : 'rgba(241, 196, 15, 0.85)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(0, -haloR * 1.35);
+    ctx.lineTo(0, haloR * 1.35);
+    ctx.moveTo(-haloR * 1.35, 0);
+    ctx.lineTo(haloR * 1.35, 0);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Desenha os braços esqueléticos e manoplas de placas góticas que sustentam a Foice Monumental.
+ */
+export function drawReaperArmsAndGauntlets(ctx, e, bob, frameCount, isVuln, isEnraged, scytheAngle, collapseProg = 0) {
+  const metalPlates = '#222d36';
+  const trimColor = isEnraged ? '#ff4757' : '#00cec9';
+  const boneWhite = isEnraged ? '#f1dcd6' : '#e6f2f2';
+
+  ctx.save();
+
+  // Braço Direito: Do ombro direito até a junção superior da foice
+  const rShoulderX = 16;
+  const rShoulderY = -24 + bob + collapseProg * 10;
+  const rHandX = 36;
+  const rHandY = -18 + bob + collapseProg * 14;
+
+  // Manga de seda sobre o braço direito
+  ctx.strokeStyle = '#061019';
+  ctx.lineWidth = 7.0;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(rShoulderX, rShoulderY);
+  ctx.lineTo(rShoulderX + 12, rShoulderY + 8);
+  ctx.lineTo(rHandX - 4, rHandY);
+  ctx.stroke();
+
+  // Manopla de Placas Góticas de Ferro Negro no punho direito
+  ctx.fillStyle = metalPlates;
+  ctx.fillRect(rHandX - 7, rHandY - 5, 8, 10);
+  ctx.strokeStyle = trimColor;
+  ctx.lineWidth = 1.2;
+  ctx.strokeRect(rHandX - 7, rHandY - 5, 8, 10);
+
+  // Garras ósseas segurando a haste da foice
+  ctx.fillStyle = boneWhite;
+  for (let f = 0; f < 3; f++) {
+    ctx.beginPath();
+    ctx.arc(rHandX - 2, rHandY - 3 + f * 3, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Braço Esquerdo: Do ombro esquerdo descendo para a postura de comando
+  const lShoulderX = -16;
+  const lShoulderY = -22 + bob + collapseProg * 10;
+  const lHandX = 8;
+  const lHandY = 12 + bob + collapseProg * 12;
+
+  // Manga esquerda
+  ctx.strokeStyle = '#061019';
+  ctx.lineWidth = 6.5;
+  ctx.beginPath();
+  ctx.moveTo(lShoulderX, lShoulderY);
+  ctx.quadraticCurveTo(lShoulderX + 4, lShoulderY + 22, lHandX, lHandY);
+  ctx.stroke();
+
+  // Manopla esquerda com dedos em garra
+  ctx.fillStyle = metalPlates;
+  ctx.beginPath();
+  ctx.arc(lHandX, lHandY, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = trimColor;
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+
+  ctx.fillStyle = boneWhite;
+  for (let f = 0; f < 3; f++) {
+    const fa = -0.4 + f * 0.4;
+    ctx.beginPath();
+    ctx.moveTo(lHandX, lHandY);
+    ctx.lineTo(lHandX + Math.cos(fa) * 7, lHandY + Math.sin(fa) * 7);
+    ctx.strokeStyle = boneWhite;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Desenha o capuz abissal, a máscara 3D facetada com mandíbula articulada e chifres rúnicos.
  */
 export function drawMaskAndEyes(ctx, e, bob, frameCount, isVuln, isEnraged, collapseProg = 0) {
   const headY = -36 + bob + collapseProg * 10;
+  const jawDrop = e.jawDrop || 0;
+  const isP3 = e.isPhase3 || false;
 
-  const soulCyan  = isVuln ? '#636e72' : (isEnraged ? '#ff4757' : '#00cec9');
-  const soulGlow  = isVuln ? '#7f8c8d' : (isEnraged ? '#ff6b81' : '#81ecec');
-  const boneWhite = isVuln ? '#636e72' : (isEnraged ? '#f1dcd6' : '#e6f2f2');
-  const boneShade = isVuln ? '#2d3436' : (isEnraged ? '#4a151b' : '#1e3842');
+  const soulCyan  = isVuln ? '#636e72' : (isP3 ? '#ff7675' : (isEnraged ? '#ff4757' : '#00cec9'));
+  const soulGlow  = isVuln ? '#7f8c8d' : (isP3 ? '#ffffff' : (isEnraged ? '#ff6b81' : '#81ecec'));
+  const boneWhite = isVuln ? '#636e72' : (isP3 ? '#f5e6e8' : (isEnraged ? '#f1dcd6' : '#e6f2f2'));
+  const boneShade = isVuln ? '#2d3436' : (isP3 ? '#4a0e16' : (isEnraged ? '#4a151b' : '#1e3842'));
 
-  // 1. Capuz Abissal
+  // 1. Capuz Abissal Gótico Volumétrico
   ctx.fillStyle = '#020509';
   ctx.beginPath();
-  ctx.moveTo(0, headY - 26);
-  ctx.lineTo(17, headY - 14);
-  ctx.lineTo(19, headY + 14);
-  ctx.lineTo(0, headY + 22);
-  ctx.lineTo(-19, headY + 14);
-  ctx.lineTo(-17, headY - 14);
+  ctx.moveTo(0, headY - 28);
+  ctx.lineTo(19, headY - 16);
+  ctx.lineTo(21, headY + 14);
+  ctx.lineTo(0, headY + 24);
+  ctx.lineTo(-21, headY + 14);
+  ctx.lineTo(-19, headY - 16);
   ctx.closePath();
   ctx.fill();
 
-  // 2. Chifres Espirais de Carneiro / Demônio do Submundo
-  ctx.lineWidth = 3.2;
+  // Borda chanfrada de reforço do capuz
+  ctx.strokeStyle = isEnraged ? '#5a0d14' : '#0a232f';
+  ctx.lineWidth = 2.0;
+  ctx.stroke();
+
+  // 2. Chifres Espirais de Carneiro com Runas Gravadas
+  ctx.lineWidth = 3.6;
   ctx.lineCap = 'round';
   for (let side of [-1, 1]) {
     ctx.save();
@@ -896,87 +1330,163 @@ export function drawMaskAndEyes(ctx, e, bob, frameCount, isVuln, isEnraged, coll
     ctx.strokeStyle = boneShade;
     ctx.beginPath();
     ctx.moveTo(10, headY - 15);
-    ctx.bezierCurveTo(24, headY - 32, 36, headY - 24, 30, headY - 8);
+    ctx.bezierCurveTo(26, headY - 34, 38, headY - 26, 32, headY - 8);
     ctx.stroke();
 
-    ctx.strokeStyle = isEnraged ? '#ff6b81' : '#81ecec';
-    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = isP3 ? '#ff7675' : (isEnraged ? '#ff6b81' : '#81ecec');
+    ctx.lineWidth = 1.8;
     ctx.stroke();
 
     // Ranhuras/anéis de crescimento no chifre
     ctx.strokeStyle = boneShade;
-    ctx.lineWidth = 2.0;
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
-    ctx.moveTo(18, headY - 22);
-    ctx.lineTo(24, headY - 18);
-    ctx.moveTo(26, headY - 24);
-    ctx.lineTo(31, headY - 18);
+    ctx.moveTo(18, headY - 24);
+    ctx.lineTo(24, headY - 20);
+    ctx.moveTo(27, headY - 26);
+    ctx.lineTo(32, headY - 20);
     ctx.stroke();
+
+    // Glifos rúnicos brilhantes nos chifres
+    const runePulse = (Math.sin(frameCount * 0.15) + 1) * 0.5;
+    ctx.fillStyle = isP3 ? '#ffffff' : soulCyan;
+    ctx.globalAlpha = 0.5 + runePulse * 0.5;
+    ctx.fillRect(21, headY - 22, 2.5, 2.5);
+    ctx.fillRect(29, headY - 24, 2.5, 2.5);
+    ctx.globalAlpha = 1.0;
 
     ctx.restore();
   }
 
-  // 3. Máscara de Caveira Entalhada em Marfim Ancestral
+  // 3. Máscara de Caveira em 3 Planos Facetados (Frontal e Têmporas)
   ctx.fillStyle = boneWhite;
   ctx.beginPath();
-  ctx.moveTo(0, headY - 15);
-  ctx.lineTo(13, headY - 5);
-  ctx.lineTo(10, headY + 5);
-  ctx.lineTo(6, headY + 13);
-  ctx.lineTo(0, headY + 17);
-  ctx.lineTo(-6, headY + 13);
-  ctx.lineTo(-10, headY + 5);
-  ctx.lineTo(-13, headY - 5);
+  ctx.moveTo(0, headY - 16);
+  ctx.lineTo(13, headY - 6);
+  ctx.lineTo(11, headY + 5);
+  ctx.lineTo(6, headY + 11);
+  ctx.lineTo(0, headY + 13);
+  ctx.lineTo(-6, headY + 11);
+  ctx.lineTo(-11, headY + 5);
+  ctx.lineTo(-13, headY - 6);
   ctx.closePath();
   ctx.fill();
 
-  // Sombreamento craniano e mandíbula
+  // Sombreamento Zigomático nas Têmporas (Iluminação Direcional 3D)
   ctx.fillStyle = boneShade;
   ctx.beginPath();
-  ctx.moveTo(-4, headY + 11);
-  ctx.lineTo(4, headY + 11);
-  ctx.lineTo(2, headY + 16);
-  ctx.lineTo(-2, headY + 16);
+  ctx.moveTo(7, headY - 6);
+  ctx.lineTo(13, headY - 6);
+  ctx.lineTo(11, headY + 5);
+  ctx.lineTo(7, headY + 3);
   ctx.closePath();
   ctx.fill();
 
   // Cavidade Nasal Triangular
   ctx.fillStyle = '#020509';
   ctx.beginPath();
-  ctx.moveTo(0, headY + 3);
+  ctx.moveTo(0, headY + 2);
   ctx.lineTo(-2.5, headY + 7);
   ctx.lineTo(2.5, headY + 7);
   ctx.closePath();
   ctx.fill();
 
-  // Cavidades Oculares Profundas e Fogos Fátuos
-  const eyePulse = e.eyePulse || 0.5;
-  const eyeR = 3.4 + eyePulse * 1.8;
+  // Dentes Superiores de Marfim
+  ctx.fillStyle = boneWhite;
+  for (let t = -3; t <= 3; t += 2) {
+    ctx.fillRect(t - 0.7, headY + 11, 1.4, 2.5);
+  }
 
+  // 4. Mandíbula Articulada com Efeito jawDrop
+  const jawY = headY + 13 + jawDrop * 7;
+  ctx.save();
+  ctx.translate(0, jawY);
+  ctx.rotate(jawDrop * 0.12);
+
+  // Se a mandíbula estiver aberta: Abismo oral com chamas espectrais internas
+  if (jawDrop > 0.08) {
+    const mouthGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, 8);
+    mouthGrad.addColorStop(0, '#ffffff');
+    mouthGrad.addColorStop(0.5, soulGlow);
+    mouthGrad.addColorStop(1, soulCyan);
+    ctx.fillStyle = mouthGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, -2, 5, jawDrop * 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Fumaça espectral saindo da boca aberta
+    if (Math.floor(frameCount) % 2 === 0) {
+      ctx.fillStyle = soulGlow;
+      ctx.globalAlpha = 0.6;
+      ctx.fillRect((Math.random() - 0.5) * 4, -4 - Math.random() * 8, 2, 2);
+      ctx.globalAlpha = 1.0;
+    }
+  }
+
+  // Queixo e dentes inferiores
+  ctx.fillStyle = boneWhite;
+  ctx.beginPath();
+  ctx.moveTo(-4, 0);
+  ctx.lineTo(4, 0);
+  ctx.lineTo(2.5, 6);
+  ctx.lineTo(-2.5, 6);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = boneShade;
+  ctx.fillRect(-2, 1, 4, 4);
+
+  // Dentes inferiores
+  ctx.fillStyle = boneWhite;
+  for (let t = -2; t <= 2; t += 2) {
+    ctx.fillRect(t - 0.6, -1.8, 1.2, 2.0);
+  }
+
+  ctx.restore();
+
+  // 5. Cavidades Oculares Profundas e Olhos
   ctx.fillStyle = '#020406';
   ctx.beginPath();
   ctx.ellipse(-5.5, headY - 1, 4.5, 3.2, -0.15, 0, Math.PI * 2);
   ctx.ellipse(5.5, headY - 1, 4.5, 3.2, 0.15, 0, Math.PI * 2);
   ctx.fill();
 
-  // Fogo Fátuo Incandescente
-  const eyeGrad = ctx.createRadialGradient(-5.5, headY - 1, 1, -5.5, headY - 1, eyeR);
-  eyeGrad.addColorStop(0, '#ffffff');
-  eyeGrad.addColorStop(0.5, soulGlow);
-  eyeGrad.addColorStop(1, 'rgba(0, 206, 201, 0)');
-  ctx.fillStyle = eyeGrad;
-  ctx.beginPath();
-  ctx.arc(-5.5, headY - 1, eyeR, 0, Math.PI * 2);
-  ctx.fill();
+  const eyePulse = e.eyePulse || 0.5;
+  const eyeR = 3.6 + eyePulse * 1.8;
 
-  const eyeGradR = ctx.createRadialGradient(5.5, headY - 1, 1, 5.5, headY - 1, eyeR);
-  eyeGradR.addColorStop(0, '#ffffff');
-  eyeGradR.addColorStop(0.5, soulGlow);
-  eyeGradR.addColorStop(1, 'rgba(0, 206, 201, 0)');
-  ctx.fillStyle = eyeGradR;
-  ctx.beginPath();
-  ctx.arc(5.5, headY - 1, eyeR, 0, Math.PI * 2);
-  ctx.fill();
+  if (isP3) {
+    // FASE 3: Mini Buraco Negro / Singularidade com Anel de Acreção
+    for (let side of [-5.5, 5.5]) {
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(side, headY - 1, eyeR * 1.1, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ff7675';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.arc(side, headY - 1, eyeR * 1.3, frameCount * 0.1, frameCount * 0.1 + Math.PI * 1.3);
+      ctx.stroke();
+
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.arc(side, headY - 1, eyeR * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else {
+    // FOGO FÁTUO INCANDESCENTE PADRÃO
+    for (let side of [-5.5, 5.5]) {
+      const eyeGrad = ctx.createRadialGradient(side, headY - 1, 1, side, headY - 1, eyeR);
+      eyeGrad.addColorStop(0, '#ffffff');
+      eyeGrad.addColorStop(0.5, soulGlow);
+      eyeGrad.addColorStop(1, 'rgba(0, 206, 201, 0)');
+      ctx.fillStyle = eyeGrad;
+      ctx.beginPath();
+      ctx.arc(side, headY - 1, eyeR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
 }
 
 /**
@@ -987,11 +1497,12 @@ export function drawMaskAndEyes(ctx, e, bob, frameCount, isVuln, isEnraged, coll
  * haste reta com amarrações em "X", 3 braçadeiras com rebites ciano,
  * manivela serrilhada com dentes de serra e pomo em orbe ciano.
  */
-export function drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 0) {
+export function drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 0, frameCount = 0) {
   ctx.save();
   ctx.translate(36, -10 + bob + collapseProg * 14);
   ctx.rotate(e.scytheAngle);
 
+  const fc = frameCount || (e && e.clothWavePhase ? Math.floor(e.clothWavePhase * 30) : 0) || Math.floor(performance.now() * 0.06);
   const isGlow = (e.scytheGlow && e.scytheGlow > 0) || false;
 
   // Paleta da Foice de Thanatos (Fiel à Imagem Conceitual)
@@ -1145,8 +1656,56 @@ export function drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 
     ctx.fillRect(-1.5, cy - 1.5, 3, 3);
   }
 
+  // Balança do Julgamento Suspensa (Scales of the Damned)
+  ctx.save();
+  ctx.translate(0, -72); // Na braçadeira superior
+  const chainLen = 14;
+  ctx.strokeStyle = 'rgba(241, 196, 15, 0.65)';
+  ctx.lineWidth = 1.0;
+  ctx.setLineDash([2, 2]);
+  ctx.beginPath();
+  ctx.moveTo(0, 4);
+  ctx.lineTo(0, 4 + chainLen);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.translate(0, 4 + chainLen);
+  const sTilt = e.scalesTilt || 0;
+  ctx.rotate(sTilt);
+
+  // Barra transversal da balança
+  ctx.strokeStyle = '#f39c12';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(-11, 0);
+  ctx.lineTo(11, 0);
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-1, -1, 2, 2);
+
+  // Prato Esquerdo (Vida / Esmeralda)
+  ctx.beginPath();
+  ctx.moveTo(-11, 0);
+  ctx.lineTo(-11, 5);
+  ctx.stroke();
+  ctx.fillStyle = '#00cec9';
+  ctx.beginPath();
+  ctx.arc(-11, 6, 2.5, 0, Math.PI);
+  ctx.fill();
+
+  // Prato Direito (Morte / Carmesim)
+  ctx.beginPath();
+  ctx.moveTo(11, 0);
+  ctx.lineTo(11, 5);
+  ctx.stroke();
+  ctx.fillStyle = '#ff4757';
+  ctx.beginPath();
+  ctx.arc(11, 6, 2.5, 0, Math.PI);
+  ctx.fill();
+  ctx.restore();
+
   // =========================================================================
-  // 3. CABEÇOTE / BLOCO SUPERIOR DE JUNÇÃO (TRAPÉZIO REFORÇADO COM REBITE)
+  // 3. CABEÇOTE / BLOCO SUPERIOR DE JUNÇÃO COM ASTROLÁBIO RÚNICO GIRATÓRIO
   // =========================================================================
   ctx.fillStyle = metalPlates;
   ctx.beginPath();
@@ -1159,6 +1718,28 @@ export function drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 
   ctx.strokeStyle = tealMain;
   ctx.lineWidth = 1.6;
   ctx.stroke();
+
+  // Astrolábio Rúnico Giratório no Cabeçote
+  const astroR = 10;
+  const astroAngle = e.astrolabeAngle || 0;
+  ctx.save();
+  ctx.translate(0, -93);
+  ctx.rotate(astroAngle);
+  ctx.strokeStyle = tealMain;
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.arc(0, 0, astroR, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 4 Dentes radiais do astrolábio
+  for (let a = 0; a < 4; a++) {
+    const aa = a * Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(aa) * (astroR - 2), Math.sin(aa) * (astroR - 2));
+    ctx.lineTo(Math.cos(aa) * (astroR + 3), Math.sin(aa) * (astroR + 3));
+    ctx.stroke();
+  }
+  ctx.restore();
 
   // Rebite central ciano
   ctx.fillStyle = tealGlow;
@@ -1221,6 +1802,44 @@ export function drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 
   // Brilho diamante na ponta da contra-lâmina
   ctx.fillStyle = steelEdge;
   ctx.fillRect(60, -36, 4, 4);
+
+  // FASE DE FÚRIA / FASE 3: IGNIÇÃO DA SEGUNDA LÂMINA DE PLASMA (FOICE DUPLA DO ECLIPSE)
+  const isP3 = e.isPhase3 || false;
+  if (isEnraged || isP3) {
+    ctx.save();
+    const pAlpha = 0.55 + Math.sin(fc * 0.3) * 0.25;
+
+    // Lâmina de plasma arqueada brotando do bico (62, -34) até (125, 42)
+    const plasmaGrad = ctx.createLinearGradient(62, -34, 125, 42);
+    plasmaGrad.addColorStop(0, isP3 ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 118, 117, 0.9)');
+    plasmaGrad.addColorStop(0.5, isP3 ? 'rgba(255, 71, 87, 0.85)' : 'rgba(192, 57, 43, 0.7)');
+    plasmaGrad.addColorStop(1, 'rgba(142, 68, 173, 0)');
+
+    ctx.fillStyle = plasmaGrad;
+    ctx.beginPath();
+    ctx.moveTo(62, -34);
+    ctx.quadraticCurveTo(95, -10, 125, 42);
+    ctx.quadraticCurveTo(80, 15, 48, -54);
+    ctx.closePath();
+    ctx.fill();
+
+    // Fio de corte da segunda lâmina
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = isP3 ? 3.4 : 2.2;
+    ctx.beginPath();
+    ctx.moveTo(62, -34);
+    ctx.quadraticCurveTo(95, -10, 125, 42);
+    ctx.stroke();
+
+    // Espículas de plasma e arcos elétricos na ponta traseira
+    ctx.strokeStyle = isP3 ? '#ff7675' : '#ff4757';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(125, 42);
+    ctx.lineTo(135 + Math.sin(fc * 0.4) * 6, 52);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   // =========================================================================
   // 5. GRANDE LÂMINA PRINCIPAL DA FOICE (FORMA FIEL AO CONCEITO ARTÍSTICO)
@@ -1346,6 +1965,19 @@ export function drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 
   for (let g of glints) {
     ctx.fillRect(g[0] - 2, g[1] - 2, 4, 4);
   }
+
+  // Fluxo Dinâmico de Luz Líquida / Energia Espectral no Canal da Lâmina
+  ctx.strokeStyle = isEnraged ? 'rgba(255, 118, 117, 0.75)' : 'rgba(129, 236, 236, 0.75)';
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-48, -102);
+  ctx.bezierCurveTo(-90, -90, -140, -50, -182, 20);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.0;
+  ctx.stroke();
 
   // E. GUME CHANFRADO EM AÇO PRATEADO POLIDO (SILVER-CYAN METALLIC RAZOR BLADE)
   const edgeGrad = ctx.createLinearGradient(-60, -74, -186, 58);
@@ -1866,7 +2498,7 @@ export function drawBoomerangScythe(ctx, e, frameCount) {
     ctx.translate(-36 * 0.7, 10 * 0.7);
     ctx.scale(0.7, 0.7);
     const ghostBoss = { scytheAngle: 0, scytheGlow: 0.5, crankAngle: 0 };
-    drawOrnateScythe(ctx, ghostBoss, 0, false, false, 0);
+    drawOrnateScythe(ctx, ghostBoss, 0, false, false, 0, frameCount);
     ctx.restore();
   }
 
@@ -1938,7 +2570,7 @@ export function drawBoomerangScythe(ctx, e, frameCount) {
     scytheGlow: S.state === 'GRINDING' ? 1.0 : 0.8,
     crankAngle: Math.sin(frameCount * 0.3) * 0.5
   };
-  drawOrnateScythe(ctx, spinningBoss, 0, false, false, 0);
+  drawOrnateScythe(ctx, spinningBoss, 0, false, false, 0, frameCount);
   ctx.restore();
 
   ctx.restore();
@@ -2252,7 +2884,7 @@ export function drawTriadClones(ctx, e, frameCount) {
     ctx.translate(28, -12 + cBob);
     ctx.rotate(0.35);
     const cloneBoss = { scytheAngle: 0.2, scytheGlow: 1.0, crankAngle: 0 };
-    drawOrnateScythe(ctx, cloneBoss, 0, false, false, 0);
+    drawOrnateScythe(ctx, cloneBoss, 0, false, false, 0, frameCount);
     ctx.restore();
 
     // 2. Telegrafia do Corte Convergente (Cone de Corte Iminente)
@@ -2367,15 +2999,24 @@ export function drawSupremeReaper(ctx, e, frameCount) {
 
   drawReaperShadow(ctx, e, bob, isVuln, collapseProg);
   drawSpectralWings(ctx, e, bob, isVuln, isEnraged, e.wingFlap || 0);
+  drawEclipseHalo(ctx, e, bob, frameCount, isVuln, isEnraged, e.isPhase3, collapseProg);
+  drawDorsalSpineAndBackRibs(ctx, bob, frameCount, isVuln, isEnraged, collapseProg);
   drawReaperRobe(ctx, e, bob, frameCount, isVuln, isEnraged, e.tilt || 0, collapseProg);
-  drawRibcageAndCore(ctx, bob, frameCount, isVuln, isEnraged, collapseProg);
+  drawSoulNexusCore(ctx, bob, frameCount, isVuln, isEnraged, collapseProg, e.isPhase3);
+  drawFrontRibcageArmor(ctx, bob, frameCount, isVuln, isEnraged, collapseProg);
+
+  // Braços esqueléticos e manoplas conectando a foice
+  if (!e.isUnarmed) {
+    drawReaperArmsAndGauntlets(ctx, e, bob, frameCount, isVuln, isEnraged, e.scytheAngle, collapseProg);
+  }
+
   drawMaskAndEyes(ctx, e, bob, frameCount, isVuln, isEnraged, collapseProg);
 
   // Quando desarmado (Foice arremessada), renderiza chamas espirituais nas mãos
   if (e.isUnarmed) {
     drawUnarmedSoulFlames(ctx, e, bob, frameCount);
   } else {
-    drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg);
+    drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg, frameCount);
   }
 
   ctx.restore();

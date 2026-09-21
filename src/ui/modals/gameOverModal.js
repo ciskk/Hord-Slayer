@@ -11,6 +11,8 @@ import {
   bossTelegraphs, 
   bossProjectiles 
 } from '../../main.js';
+import { deathSequence } from '../../state/gameState.js';
+import { startDeathSequence } from '../../render/deathAnimation.js';
 import { resetInput } from '../../core/input.js';
 import { triggerHaptic, applyDeathAudioFilter, resetDeathAudioFilter, playSfx } from '../../core/audio.js';
 import { recordRunStats, checkAndRecordBestRun, recordHeroRunStats } from '../../config/achievements.js';
@@ -204,11 +206,15 @@ function resolveDeathTacticsAndIcon(killerName, category, enemyType) {
   return { tacticText, threatLabel, categoryLabel, iconSvg };
 }
 
+let pendingDeathPayload = null;
+let deathCountUpTimeout = null;
+
 /**
- * Gatilho da Morte Intrínseca com Congelamento e Desfoque da Arena
+ * Gatilho da Morte Intrínseca com Sequência Dramática e Zoom
  */
 export function triggerDeath() {
-  gameState.isDead = true;
+  if ((deathSequence && deathSequence.active) || gameState.isDead) return;
+
   const pauseModal = document.getElementById('pause-modal');
   if (pauseModal) {
     pauseModal.classList.remove('active', 'closing');
@@ -217,13 +223,28 @@ export function triggerDeath() {
   const canvasElem = document.getElementById('game-canvas');
   if (canvasElem) canvasElem.classList.remove('canvas-stasis-frozen');
   resetInput();
-  triggerHaptic('heavy');
   applyDeathAudioFilter();
-  playSfx('death_heartbeat');
 
-  setTimeout(() => {
-    playSfx('tombstone_slam');
-  }, 300);
+  // Snapshot do algoz e do ataque letal no momento exato do impacto fatal
+  pendingDeathPayload = {
+    killerName: (deathContext && deathContext.name) ? deathContext.name : (lastAttackerName || 'A Horda do Abismo'),
+    killerCategory: (deathContext && deathContext.category) ? deathContext.category : 'HORDE',
+    killerAttack: (deathContext && deathContext.attackName) ? deathContext.attackName : 'Golpe Melee Fatal',
+    lethalDmg: (deathContext && deathContext.damage > 0) ? `-${deathContext.damage} Dano` : 'Golpe Fatal',
+    enemyType: deathContext ? deathContext.enemyType : null
+  };
+
+  // Dispara a sequência cinematográfica dramática (zoom, queda, evaporação e Nova)
+  startDeathSequence(() => {
+    openDeathModalReal();
+  });
+}
+
+/**
+ * Abertura e apresentação final do modal de Game Over
+ */
+export function openDeathModalReal() {
+  gameState.isDead = true;
 
   // 1. Congelamento e Desfoque Cinemático da Arena
   const gameCanvas = document.getElementById('game-canvas');
@@ -245,11 +266,11 @@ export function triggerDeath() {
   }
 
   // 4. Resolução da Causa Mortis (O Algoz e Golpe Fatal)
-  const killerName = (deathContext && deathContext.name) ? deathContext.name : (lastAttackerName || 'A Horda do Abismo');
-  const killerCategory = (deathContext && deathContext.category) ? deathContext.category : 'HORDE';
-  const killerAttack = (deathContext && deathContext.attackName) ? deathContext.attackName : 'Golpe Melee Fatal';
-  const lethalDmg = (deathContext && deathContext.damage > 0) ? `-${deathContext.damage} Dano` : 'Golpe Fatal';
-  const enemyType = deathContext ? deathContext.enemyType : null;
+  const killerName = pendingDeathPayload ? pendingDeathPayload.killerName : ((deathContext && deathContext.name) ? deathContext.name : (lastAttackerName || 'A Horda do Abismo'));
+  const killerCategory = pendingDeathPayload ? pendingDeathPayload.killerCategory : ((deathContext && deathContext.category) ? deathContext.category : 'HORDE');
+  const killerAttack = pendingDeathPayload ? pendingDeathPayload.killerAttack : ((deathContext && deathContext.attackName) ? deathContext.attackName : 'Golpe Melee Fatal');
+  const lethalDmg = pendingDeathPayload ? pendingDeathPayload.lethalDmg : ((deathContext && deathContext.damage > 0) ? `-${deathContext.damage} Dano` : 'Golpe Fatal');
+  const enemyType = pendingDeathPayload ? pendingDeathPayload.enemyType : (deathContext ? deathContext.enemyType : null);
 
   const { tacticText, threatLabel, categoryLabel, iconSvg } = resolveDeathTacticsAndIcon(killerName, killerCategory, enemyType);
 
@@ -470,11 +491,16 @@ function animateCountUp(element, targetValue, durationMs = 650) {
     modal.style.display = 'flex';
   }
 
-  // 9. Disparo de Contagem Numérica Animada
-  requestAnimationFrame(() => {
-    animateCountUp(document.getElementById('death-kills-val'), gameState.kills, 600);
-    animateCountUp(document.getElementById('death-souls-val'), getPersistentGold(), 700);
-  });
+  // 9. Disparo de Contagem Numérica Animada sincronizada com o assentamento das métricas
+  if (deathCountUpTimeout) {
+    clearTimeout(deathCountUpTimeout);
+  }
+  deathCountUpTimeout = setTimeout(() => {
+    deathCountUpTimeout = null;
+    if (!gameState.isDead) return;
+    animateCountUp(document.getElementById('death-kills-val'), gameState.kills, 850);
+    animateCountUp(document.getElementById('death-souls-val'), getPersistentGold(), 1000);
+  }, 1650);
 }
 
 /**
@@ -566,6 +592,11 @@ export function finalizeVictoryAndReturnToMenu() {
 }
 
 export function closeDeathModal() {
+  pendingDeathPayload = null;
+  if (deathCountUpTimeout) {
+    clearTimeout(deathCountUpTimeout);
+    deathCountUpTimeout = null;
+  }
   if (deathKeydownHandler) {
     window.removeEventListener('keydown', deathKeydownHandler);
     deathKeydownHandler = null;

@@ -8,9 +8,32 @@
  * - Projéteis arcanos complexos de chefes (foice de Thanatos, esferas de vácuo, etc.)
  */
 
+let _heatGlowCanvas = null;
+const _magmaGradCache = new Array(85);
+
+function getHeatGlowCanvas() {
+  if (_heatGlowCanvas) return _heatGlowCanvas;
+  const size = 128;
+  const half = size / 2;
+  _heatGlowCanvas = document.createElement('canvas');
+  _heatGlowCanvas.width = size;
+  _heatGlowCanvas.height = size;
+  const hctx = _heatGlowCanvas.getContext('2d');
+  const grad = hctx.createRadialGradient(half, half, half * (0.15 / 1.7), half, half, half);
+  grad.addColorStop(0, 'rgba(255, 170, 0, 0.35)');
+  grad.addColorStop(0.45, 'rgba(230, 80, 20, 0.20)');
+  grad.addColorStop(1, 'rgba(180, 40, 10, 0)');
+  hctx.fillStyle = grad;
+  hctx.beginPath();
+  hctx.arc(half, half, half, 0, Math.PI * 2);
+  hctx.fill();
+  return _heatGlowCanvas;
+}
+
 export function renderAcidPuddles(ctx, acidPuddles, bounds, frameCount) {
   const { viewLeft, viewRight, viewTop, viewBottom } = bounds;
-  for (let i = 0; i < acidPuddles.length; i++) {
+  const puddleCount = acidPuddles.length;
+  for (let i = 0; i < puddleCount; i++) {
     const p = acidPuddles[i];
     const maxR = p.isFire ? 65 : 35;
     if (p.x < viewLeft - maxR || p.x > viewRight + maxR || p.y < viewTop - maxR || p.y > viewBottom + maxR) continue;
@@ -34,18 +57,13 @@ export function renderAcidPuddles(ctx, acidPuddles, bounds, frameCount) {
       const seed = (p.x * 12.9898 + p.y * 78.233) % 1000;
 
       ctx.save();
+      ctx.translate(p.x, p.y);
       ctx.globalAlpha = fireAlpha;
 
-      // A. Resplendor térmico difuso no solo (Ambient Heat Glow)
+      // A. Resplendor térmico difuso no solo pré-renderizado (Zero-alloc Ambient Heat Glow)
       const glowR = baseR * 1.7;
-      const heatGrad = ctx.createRadialGradient(p.x, p.y, baseR * 0.15, p.x, p.y, glowR);
-      heatGrad.addColorStop(0, 'rgba(255, 170, 0, 0.35)');
-      heatGrad.addColorStop(0.45, 'rgba(230, 80, 20, 0.20)');
-      heatGrad.addColorStop(1, 'rgba(180, 40, 10, 0)');
-      ctx.fillStyle = heatGrad;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
-      ctx.fill();
+      const glowDiam = glowR * 2;
+      ctx.drawImage(getHeatGlowCanvas(), -glowR, -glowR, glowDiam, glowDiam);
 
       // B. Rocha vulcânica chamuscada e leito de magma orgânico
       ctx.beginPath();
@@ -53,20 +71,25 @@ export function renderAcidPuddles(ctx, acidPuddles, bounds, frameCount) {
       for (let pt = 0; pt < numPoints; pt++) {
         const angle = (pt / numPoints) * Math.PI * 2;
         const radiusVar = baseR * (0.82 + 0.22 * Math.sin(angle * 3 + seed + frameCount * 0.04));
-        const px = p.x + Math.cos(angle) * radiusVar;
-        const py = p.y + Math.sin(angle) * radiusVar * 0.72; // perspectiva 2.5D
+        const px = Math.cos(angle) * radiusVar;
+        const py = Math.sin(angle) * radiusVar * 0.72; // perspectiva 2.5D
         if (pt === 0) ctx.moveTo(px, py);
         else ctx.lineTo(px, py);
       }
       ctx.closePath();
 
-      // Gradiente do leito de magma (de núcleo incandescente para fuligem)
-      const magmaGrad = ctx.createRadialGradient(p.x, p.y, baseR * 0.1, p.x, p.y, baseR);
-      magmaGrad.addColorStop(0, '#ffffff');
-      magmaGrad.addColorStop(0.2, '#fff176');
-      magmaGrad.addColorStop(0.5, '#f39c12');
-      magmaGrad.addColorStop(0.78, '#d35400');
-      magmaGrad.addColorStop(1, 'rgba(44, 20, 15, 0.85)');
+      // Gradiente do leito de magma reutilizado via cache quantizado
+      const qR = Math.min(84, Math.max(6, Math.round(baseR)));
+      let magmaGrad = _magmaGradCache[qR];
+      if (!magmaGrad) {
+        magmaGrad = ctx.createRadialGradient(0, 0, qR * 0.1, 0, 0, qR);
+        magmaGrad.addColorStop(0, '#ffffff');
+        magmaGrad.addColorStop(0.2, '#fff176');
+        magmaGrad.addColorStop(0.5, '#f39c12');
+        magmaGrad.addColorStop(0.78, '#d35400');
+        magmaGrad.addColorStop(1, 'rgba(44, 20, 15, 0.85)');
+        _magmaGradCache[qR] = magmaGrad;
+      }
       ctx.fillStyle = magmaGrad;
       ctx.fill();
 
@@ -79,18 +102,18 @@ export function renderAcidPuddles(ctx, acidPuddles, bounds, frameCount) {
       ctx.strokeStyle = `rgba(255, 240, 160, ${0.75 * fissurePulse})`;
       ctx.lineWidth = 1.4;
       ctx.beginPath();
-      ctx.moveTo(p.x - baseR * 0.5, p.y + baseR * 0.1);
-      ctx.lineTo(p.x, p.y - baseR * 0.15);
-      ctx.lineTo(p.x + baseR * 0.45, p.y + baseR * 0.12);
+      ctx.moveTo(-baseR * 0.5, baseR * 0.1);
+      ctx.lineTo(0, -baseR * 0.15);
+      ctx.lineTo(baseR * 0.45, baseR * 0.12);
       ctx.stroke();
 
-      // D. Línguas de Fogo Vivas (Procedural Animated Flame Tongues)
-      const flameCount = 4;
+      // D. Línguas de Fogo Vivas (LOD: reduz flameCount se houver mais de 6 poças)
+      const flameCount = puddleCount > 6 ? 2 : 4;
       for (let f = 0; f < flameCount; f++) {
         const fSeed = seed + f * 47;
         const fRelX = ((f - (flameCount - 1) / 2) / (flameCount / 2)) * (baseR * 0.65);
-        const fBaseX = p.x + fRelX;
-        const fBaseY = p.y + Math.sin(fSeed) * (baseR * 0.25);
+        const fBaseX = fRelX;
+        const fBaseY = Math.sin(fSeed) * (baseR * 0.25);
 
         // Altura e oscilação da labareda
         const fWave = Math.sin(frameCount * 0.32 + fSeed * 0.5);
@@ -129,16 +152,16 @@ export function renderAcidPuddles(ctx, acidPuddles, bounds, frameCount) {
         ctx.fill();
       }
 
-      // E. Brasas e Fagulhas Ascendentes (Rising Embers)
-      const emberCount = 5;
+      // E. Brasas e Fagulhas Ascendentes (LOD: reduz emberCount se houver mais de 6 poças)
+      const emberCount = puddleCount > 6 ? 2 : 5;
       for (let emb = 0; emb < emberCount; emb++) {
         const embSeed = seed + emb * 83;
         const cycle = ((frameCount * 0.6 + embSeed * 7) % 36) / 36; // 0..1
         const embAlpha = (1 - cycle) * (cycle > 0.1 ? 1 : cycle * 10);
         const embDist = cycle * (baseR * 1.55);
         const embSway = Math.sin(frameCount * 0.14 + embSeed + cycle * 4) * (baseR * 0.35);
-        const embX = p.x + ((embSeed % 17) - 8) * (baseR * 0.08) + embSway;
-        const embY = p.y - embDist;
+        const embX = ((embSeed % 17) - 8) * (baseR * 0.08) + embSway;
+        const embY = -embDist;
         const embSize = Math.max(0.8, (2.4 - cycle * 1.5) * shrinkFactor);
 
         ctx.fillStyle = emb % 2 === 0 ? `rgba(255, 235, 120, ${embAlpha})` : `rgba(243, 156, 18, ${embAlpha})`;

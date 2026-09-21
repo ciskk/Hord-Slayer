@@ -15,8 +15,8 @@ export const BLOOD_ALTAR_PACTS = [
   {
     id: 'horde_frenzy',
     name: "Pacto da Horda Rubra",
-    desc: "A velocidade da horda é dobrada durante 20 segundos dentro do círculo ritual.",
-    duration: 20.0,
+    desc: "A velocidade da horda é dobrada durante 10 segundos dentro do círculo ritual.",
+    duration: 10.0,
     radius: 190,
     outOfBoundsGrace: 1.5,
     enemySpeedMult: 2.0,
@@ -283,18 +283,28 @@ export function updateBloodAltarHUD(data) {
   const banner = document.getElementById('blood-altar-hud');
   const fill = document.getElementById('blood-altar-fill');
   const status = document.getElementById('blood-altar-status');
+  const timerEl = document.getElementById('blood-altar-timer');
   const mobileBtn = document.getElementById('blood-altar-touch-btn');
   const mobileCircle = document.getElementById('blood-altar-touch-circle');
+  const hud = document.getElementById('hud');
 
   if (!data) {
-    if (banner) banner.style.display = 'none';
+    if (hud) hud.classList.remove('altar-active');
+    if (banner) {
+      banner.style.display = 'none';
+      banner.classList.remove('is-warning', 'is-climax', 'is-completed', 'is-failed');
+    }
     if (mobileBtn) mobileBtn.style.display = 'none';
     return;
   }
 
   // Interação Inicial (SPAWNED)
   if (data.state === 'SPAWNED') {
-    if (banner) banner.style.display = 'none';
+    if (hud) hud.classList.remove('altar-active');
+    if (banner) {
+      banner.style.display = 'none';
+      banner.classList.remove('is-warning', 'is-climax', 'is-completed', 'is-failed');
+    }
 
     if (mobileBtn) {
       if (data.inRange) {
@@ -326,21 +336,47 @@ export function updateBloodAltarHUD(data) {
       mobileBtn.classList.remove('is-channeling');
     }
 
+    if (hud) hud.classList.add('altar-active');
+
     if (banner) {
-      banner.style.display = 'flex';
-      const pct = Math.max(0, Math.min(100, (data.timer / data.maxTimer) * 100));
+      banner.style.display = 'inline-flex';
+      banner.classList.remove('is-completed', 'is-failed');
+      const timeLeft = Math.max(0, data.timer);
+      const pct = Math.max(0, Math.min(100, (timeLeft / data.maxTimer) * 100));
+      
+      if (timerEl) {
+        timerEl.textContent = `${timeLeft.toFixed(1)}s`;
+      }
+
+      if (timeLeft <= 3.0) {
+        banner.classList.add('is-climax');
+      } else {
+        banner.classList.remove('is-climax');
+      }
+
       if (fill) {
         fill.style.width = `${pct}%`;
         fill.style.background = data.isWarning 
-          ? 'linear-gradient(90deg, #ff3838 0%, #ff7675 100%)' 
-          : 'linear-gradient(90deg, #d63031 0%, #ff7675 100%)';
+          ? 'linear-gradient(90deg, #ff1744 0%, #ff5252 100%)' 
+          : (timeLeft <= 3.0 
+              ? 'linear-gradient(90deg, #f39c12 0%, #f1c40f 100%)' 
+              : 'linear-gradient(90deg, #c0392b 0%, #ff3838 100%)');
       }
 
-      if (status) {
-        if (data.isWarning) {
-          status.innerHTML = `<span style="color:#ff3838; font-weight:800; animation: pulseFast 0.3s infinite alternate;">⚠️ FORA DO CÍRCULO! RETORNE EM ${data.graceLeft.toFixed(1)}s!</span>`;
-        } else {
-          status.innerHTML = `PERMANEÇA NO CÍRCULO RITUAL &bull; <b>${data.timer.toFixed(1)}s</b> RESTANTES`;
+      if (data.isWarning) {
+        banner.classList.add('is-warning');
+        if (status) {
+          status.innerHTML = `
+            <span class="altar-warning-alert">
+              <svg viewBox="0 0 24 24" class="altar-status-icon warning-icon"><path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+              FORA DO CÍRCULO! <b>${data.graceLeft.toFixed(1)}s</b>
+            </span>
+          `;
+        }
+      } else {
+        banner.classList.remove('is-warning');
+        if (status) {
+          status.innerHTML = '';
         }
       }
     }
@@ -349,16 +385,41 @@ export function updateBloodAltarHUD(data) {
   // Concluído ou Falhado
   else if (data.state === 'COMPLETED') {
     if (mobileBtn) mobileBtn.style.display = 'none';
+    if (hud) hud.classList.add('altar-active');
     if (banner) {
-      banner.style.display = 'flex';
-      if (status) status.innerHTML = `<b style="color:#ffd166;">PACTO DE SANGUE CUMPRIDO! RECOMPENSA LIBERADA!</b>`;
-      if (fill) fill.style.width = '100%';
+      banner.style.display = 'inline-flex';
+      banner.classList.add('is-completed');
+      banner.classList.remove('is-warning', 'is-climax', 'is-failed');
+      if (timerEl) timerEl.textContent = '0.0s';
+      if (status) {
+        status.innerHTML = `
+          <span style="color:#ffd166; font-weight:800; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:4px;">
+            <svg viewBox="0 0 24 24" class="altar-status-icon" style="color:#ffd166;"><path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            PACTO CUMPRIDO!
+          </span>
+        `;
+      }
+      if (fill) {
+        fill.style.width = '100%';
+        fill.style.background = 'linear-gradient(90deg, #f39c12 0%, #ffd166 100%)';
+      }
     }
   } else if (data.state === 'FAILED') {
     if (mobileBtn) mobileBtn.style.display = 'none';
+    if (hud) hud.classList.add('altar-active');
     if (banner) {
-      banner.style.display = 'flex';
-      if (status) status.innerHTML = `<b style="color:#8e44ad;">PACTO QUEBRADO! A HORDA REIVINDICOU O ALTAR.</b>`;
+      banner.style.display = 'inline-flex';
+      banner.classList.add('is-failed');
+      banner.classList.remove('is-warning', 'is-climax', 'is-completed');
+      if (timerEl) timerEl.textContent = '0.0s';
+      if (status) {
+        status.innerHTML = `
+          <span style="color:#e056fd; font-weight:800; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:4px;">
+            <svg viewBox="0 0 24 24" class="altar-status-icon" style="color:#e056fd;"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            PACTO QUEBRADO!
+          </span>
+        `;
+      }
       if (fill) fill.style.width = '0%';
     }
   }

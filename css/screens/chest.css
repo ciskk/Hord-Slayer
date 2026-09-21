@@ -343,6 +343,9 @@
   position: relative;
   box-sizing: border-box;
   overflow: hidden;
+  background: linear-gradient(180deg, #592512 0%, #2e0f06 100%);
+  border: 2px solid #ffd166;
+  box-shadow: 0 0 18px rgba(255, 209, 102, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 /* Base do Baú */
@@ -364,6 +367,61 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  background: linear-gradient(180deg, #381206 0%, #170402 100%);
+  border: 2px solid #e74c3c;
+  border-top: none;
+  box-shadow: inset 0 0 20px rgba(255, 209, 102, 0.35);
+}
+
+.relic-lock-mechanism {
+  position: absolute;
+  top: 4px;
+  width: 20px;
+  height: 22px;
+  background: #140402;
+  border: 1.8px solid #ffd166;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(241, 196, 15, 0.6);
+}
+
+.relic-lock-core {
+  width: 8px;
+  height: 8px;
+  background: #ff4757;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ff4757, 0 0 18px #ffd166;
+}
+
+/* Brilho interior do baú revelado */
+.chest-monument-box.opened .relic-base-graphic::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 84%;
+  height: 16px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 215, 0, 0.7) 45%, transparent 85%);
+  filter: blur(2px);
+  pointer-events: none;
+  z-index: 4;
+  animation: chestGleamBurst 1.8s ease-in-out infinite alternate;
+}
+
+.tier-altar .chest-monument-box.opened .relic-base-graphic::before {
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 56, 56, 0.8) 45%, transparent 85%);
+}
+
+.tier-miniboss .chest-monument-box.opened .relic-base-graphic::before {
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.95) 0%, rgba(0, 245, 212, 0.8) 45%, transparent 85%);
+}
+
+@keyframes chestGleamBurst {
+  0% { opacity: 0.7; transform: translateX(-50%) scaleX(0.92); }
+  100% { opacity: 1; transform: translateX(-50%) scaleX(1.08); }
 }
 
 /* ======================================================== */
@@ -446,6 +504,46 @@
 }
 
 /* ======================================================== */
+/* 5.3 ESTILIZAÇÃO ESPECÍFICA: BAÚ DO ALTAR DE SANGUE (ALTAR) */
+/* ======================================================== */
+
+.tier-altar .relic-lid-graphic {
+  background: linear-gradient(180deg, #4d101a 0%, #20050b 100%);
+  border: 2px solid #ff3838;
+  box-shadow: 0 0 18px rgba(255, 56, 56, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.tier-altar .relic-base-graphic {
+  background: linear-gradient(180deg, #2c0810 0%, #130306 100%);
+  border: 2px solid #ff3838;
+  border-top: none;
+  box-shadow: inset 0 0 20px rgba(255, 56, 56, 0.45);
+}
+
+.tier-altar .relic-lock-mechanism {
+  position: absolute;
+  top: 4px;
+  width: 20px;
+  height: 22px;
+  background: #150306;
+  border: 1.8px solid #ff3838;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(255, 56, 56, 0.7);
+}
+
+.tier-altar .relic-lock-core {
+  width: 8px;
+  height: 8px;
+  background: #ff1744;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ff1744, 0 0 18px #ff5252;
+  animation: eyeGleamPulse 1.8s ease-in-out infinite alternate;
+}
+
+/* ======================================================== */
 /* 6. CAMADA DE TEXTO & TÍTULO MONUMENTAL                   */
 /* ======================================================== */
 
@@ -480,6 +578,10 @@
   background: linear-gradient(90deg, transparent, rgba(255, 209, 102, 0.55), transparent);
 }
 
+.tier-altar .chest-eyebrow-line {
+  background: linear-gradient(90deg, transparent, rgba(255, 56, 56, 0.65), transparent);
+}
+
 .tier-miniboss #chest-eyebrow-node {
   background: #00f5d4;
   box-shadow: 0 0 8px #00f5d4;
@@ -488,6 +590,11 @@
 .tier-boss #chest-eyebrow-node {
   background: #ffd166;
   box-shadow: 0 0 8px #ffd166;
+}
+
+.tier-altar #chest-eyebrow-node {
+  background: #ff3838;
+  box-shadow: 0 0 10px #ff3838;
 }
 
 .chest-eyebrow-text {

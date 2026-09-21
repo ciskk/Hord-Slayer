@@ -87,4 +87,15 @@ export function initSupremeReaper(boss) {
   boss.eyeTrails = [];
   boss.afterImages = [];
   boss.ghostTrail = [];
+
+  // Parâmetros Visuais de Thanatos 2.0 (Juiz do Véu & Serafim Cósmico)
+  boss.jawDrop = 0;
+  boss.jawTarget = 0;
+  boss.haloAngle = 0;
+  boss.astrolabeAngle = 0;
+  boss.astrolabeSpeed = 0.035;
+  boss.scalesTilt = 0;
+  boss.scalesTiltVelocity = 0;
+  boss.clothWavePhase = 0;
+  boss.phase3Glow = 0;
 }

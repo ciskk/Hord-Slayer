@@ -12,6 +12,8 @@ export * from './modals/chestModal.js';
 export * from './modals/gameOverModal.js';
 export * from './modals/characterSelectModal.js';
 export * from './modals/talentsModal.js';
+export * from './modals/achievementsModal.js';
+export * from './modals/bestiaryModal.js';
 export * from './modals/codexModal.js';
 
 // 2. Dependências para a inicialização e fiação dos eventos (initUI)
@@ -24,7 +26,9 @@ import {
   setCurrentAchievementsCategory,
   renderAchievementsRoster,
   renderAchievementDossier,
-  selectedAchievementId,
+  selectedAchievementId 
+} from './modals/achievementsModal.js';
+import { 
   openBestiaryModal, 
   closeBestiaryModal, 
   currentBestiaryCategory, 
@@ -32,7 +36,7 @@ import {
   renderBestiaryRoster, 
   renderBestiaryDossier, 
   selectedCreatureId 
-} from './modals/codexModal.js';
+} from './modals/bestiaryModal.js';
 import { 
   openTalentsModal, 
   activeRenderAstrolabe, 

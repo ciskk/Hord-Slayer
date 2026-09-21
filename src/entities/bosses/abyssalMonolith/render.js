@@ -18,16 +18,15 @@ export function drawCinematicScreenTitle(ctx, e, frameCount) {
   const maxT = e.titleMaxTimer || 180;
   const titleProgress = 1 - Math.max(0, e.titleTimer / maxT);
 
-  let bannerAlpha = 1.0;
-  if (titleProgress < 0.10) {
-    bannerAlpha = titleProgress / 0.10;
-  } else if (titleProgress > 0.80) {
-    bannerAlpha = Math.max(0, (1 - titleProgress) / 0.20);
-  }
+  // Easing suave de Fade In e Fade Out (Curva Smoothstep)
+  const inRatio = Math.min(1.0, Math.max(0, titleProgress / 0.18));
+  const inEase = inRatio * inRatio * (3 - 2 * inRatio);
 
-  ctx.save();
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.globalAlpha = bannerAlpha;
+  const outRatio = Math.min(1.0, Math.max(0, (1 - titleProgress) / 0.22));
+  const outEase = outRatio * outRatio * (3 - 2 * outRatio);
+
+  const bannerAlpha = inEase * outEase;
+  if (bannerAlpha <= 0.001) return;
 
   const screenW = viewW || (typeof window !== 'undefined' ? window.innerWidth : 1280);
   const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
@@ -35,67 +34,119 @@ export function drawCinematicScreenTitle(ctx, e, frameCount) {
   const isCompactH = screenH < 520;
   const hudBottom = getHudBottom();
 
-  const bannerW = isVertical 
-    ? Math.min(380, screenW * 0.94) 
-    : (isCompactH ? Math.min(640, screenW * 0.88) : Math.min(860, screenW * 0.90));
-  const bannerH = isVertical ? 60 : (isCompactH ? 56 : 98);
-  const bx = (screenW - bannerW) / 2;
+  const centerX = screenW / 2;
+  const contentW = isVertical 
+    ? Math.min(screenW - 24, 380) 
+    : (isCompactH ? Math.min(screenW - 48, 680) : Math.min(screenW - 64, 880));
+  const bannerH = isVertical ? 62 : (isCompactH ? 58 : 98);
+
+  // Fade estendido nas laterais: asas amplas que se estendem e dissolvem suavemente
+  const fadeWing = isVertical ? 50 : Math.max(160, screenW * 0.22);
+  const totalW = contentW + fadeWing * 2;
+  const startX = centerX - totalW / 2;
+  const endX = centerX + totalW / 2;
+
   const calculatedY = Math.round((screenH / 2) - bannerH - (isVertical ? 45 : (isCompactH ? 20 : 75)));
   const by = Math.max(hudBottom + 8, calculatedY);
+  const centerY = by + bannerH / 2;
 
-  // 1. Fundo Gradiente de Basalto e Obsidiana Vulcânica
-  const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  // Animação de transição cinematográfica
+  const entrySlideY = (1 - inEase) * -12;
+  const exitSlideY = (1 - outEase) * -8;
+  const ambientFloat = Math.sin(frameCount * 0.04) * 1.5;
+  const animOffsetY = entrySlideY + exitSlideY + ambientFloat;
+  const animScaleX = (0.93 + 0.07 * inEase) * (1.0 + (1 - outEase) * 0.025);
+
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.globalAlpha = bannerAlpha;
+
+  // Aplica movimento com pivô central
+  ctx.translate(centerX, centerY + animOffsetY);
+  ctx.scale(animScaleX, 1.0);
+  ctx.translate(-centerX, -centerY);
+
+  // 1. Fundo Gradiente de Basalto e Obsidiana Vulcânica com Fade Estendido nas Laterais
+  const bgGrad = ctx.createLinearGradient(startX, by, endX, by);
   bgGrad.addColorStop(0, 'rgba(12, 6, 4, 0)');
-  bgGrad.addColorStop(0.18, 'rgba(25, 12, 6, 0.95)');
-  bgGrad.addColorStop(0.5, 'rgba(54, 18, 6, 0.98)');
-  bgGrad.addColorStop(0.82, 'rgba(25, 12, 6, 0.95)');
+  bgGrad.addColorStop(0.12, 'rgba(25, 12, 6, 0.22)');
+  bgGrad.addColorStop(0.28, 'rgba(40, 16, 6, 0.90)');
+  bgGrad.addColorStop(0.50, 'rgba(54, 18, 6, 0.98)');
+  bgGrad.addColorStop(0.72, 'rgba(40, 16, 6, 0.90)');
+  bgGrad.addColorStop(0.88, 'rgba(25, 12, 6, 0.22)');
   bgGrad.addColorStop(1, 'rgba(12, 6, 4, 0)');
   ctx.fillStyle = bgGrad;
-  ctx.fillRect(bx, by, bannerW, bannerH);
+  ctx.fillRect(startX, by, totalW, bannerH);
 
-  // 2. Frisos de Magma Incandescente e Ouro Primordial
-  const borderGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  // 2. Frisos de Magma Incandescente e Ouro com Taper Suave nas Pontas
+  const lineStart = startX + fadeWing * 0.25;
+  const lineEnd = endX - fadeWing * 0.25;
+  const borderGrad = ctx.createLinearGradient(lineStart, by, lineEnd, by);
   borderGrad.addColorStop(0, 'rgba(230, 126, 34, 0)');
-  borderGrad.addColorStop(0.2, 'rgba(230, 126, 34, 0.95)');
-  borderGrad.addColorStop(0.5, 'rgba(243, 156, 18, 1)');
-  borderGrad.addColorStop(0.8, 'rgba(230, 126, 34, 0.95)');
+  borderGrad.addColorStop(0.18, 'rgba(230, 126, 34, 0.65)');
+  borderGrad.addColorStop(0.35, 'rgba(230, 126, 34, 0.95)');
+  borderGrad.addColorStop(0.50, 'rgba(243, 156, 18, 1.0)');
+  borderGrad.addColorStop(0.65, 'rgba(230, 126, 34, 0.95)');
+  borderGrad.addColorStop(0.82, 'rgba(230, 126, 34, 0.65)');
   borderGrad.addColorStop(1, 'rgba(230, 126, 34, 0)');
 
   ctx.strokeStyle = borderGrad;
-  ctx.lineWidth = isVertical ? 2.0 : 3.0;
+  ctx.lineWidth = isVertical ? 2.0 : 2.8;
+  ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(bx, by);
-  ctx.lineTo(bx + bannerW, by);
-  ctx.moveTo(bx, by + bannerH);
-  ctx.lineTo(bx + bannerW, by + bannerH);
+  ctx.moveTo(lineStart, by);
+  ctx.lineTo(lineEnd, by);
+  ctx.moveTo(lineStart, by + bannerH);
+  ctx.lineTo(lineEnd, by + bannerH);
   ctx.stroke();
 
-  // Frisos internos dourados finos
-  ctx.strokeStyle = 'rgba(241, 196, 15, 0.45)';
+  // Frisos internos com acabamento dourado e fade nas pontas
+  const innerStart = centerX - contentW * 0.44;
+  const innerEnd = centerX + contentW * 0.44;
+  const innerGrad = ctx.createLinearGradient(innerStart, by, innerEnd, by);
+  innerGrad.addColorStop(0, 'rgba(241, 196, 15, 0)');
+  innerGrad.addColorStop(0.20, 'rgba(241, 196, 15, 0.45)');
+  innerGrad.addColorStop(0.50, 'rgba(255, 234, 167, 0.75)');
+  innerGrad.addColorStop(0.80, 'rgba(241, 196, 15, 0.45)');
+  innerGrad.addColorStop(1, 'rgba(241, 196, 15, 0)');
+
+  ctx.strokeStyle = innerGrad;
   ctx.lineWidth = 1.2;
-  const padX = isVertical ? 24 : 45;
+  const innerPadY = isVertical ? 3.5 : 5;
   ctx.beginPath();
-  ctx.moveTo(bx + padX, by + 4);
-  ctx.lineTo(bx + bannerW - padX, by + 4);
-  ctx.moveTo(bx + padX, by + bannerH - 4);
-  ctx.lineTo(bx + bannerW - padX, by + bannerH - 4);
+  ctx.moveTo(innerStart, by + innerPadY);
+  ctx.lineTo(innerEnd, by + innerPadY);
+  ctx.moveTo(innerStart, by + bannerH - innerPadY);
+  ctx.lineTo(innerEnd, by + bannerH - innerPadY);
   ctx.stroke();
 
-  // Cantoneiras Geométricas de Basalto e Ouro
-  const cornerSize = isVertical ? 12 : 18;
-  ctx.fillStyle = '#e67e22';
-  ctx.fillRect(bx + padX * 0.7, by - 2, cornerSize, 4);
-  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by - 2, cornerSize, 4);
-  ctx.fillRect(bx + padX * 0.7, by + bannerH - 2, cornerSize, 4);
-  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by + bannerH - 2, cornerSize, 4);
+  // Cantoneiras em losango geométrico de basalto e magma
+  [-contentW * 0.42, contentW * 0.42].forEach(ox => {
+    ctx.fillStyle = '#e67e22';
+    ctx.beginPath();
+    ctx.moveTo(centerX + ox, by);
+    ctx.lineTo(centerX + ox + 3, by - 3);
+    ctx.lineTo(centerX + ox + 6, by);
+    ctx.lineTo(centerX + ox + 3, by + 3);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(centerX + ox, by + bannerH);
+    ctx.lineTo(centerX + ox + 3, by + bannerH - 3);
+    ctx.lineTo(centerX + ox + 6, by + bannerH);
+    ctx.lineTo(centerX + ox + 3, by + bannerH + 3);
+    ctx.closePath();
+    ctx.fill();
+  });
 
   // Ornamento Central Superior: Diamante Monolítico de Basalto & Olho de Fogo
   ctx.fillStyle = '#1e272e';
   ctx.beginPath();
-  ctx.moveTo(screenW / 2, by - 10);
-  ctx.lineTo(screenW / 2 + 12, by);
-  ctx.lineTo(screenW / 2, by + 10);
-  ctx.lineTo(screenW / 2 - 12, by);
+  ctx.moveTo(centerX, by - 10);
+  ctx.lineTo(centerX + 12, by);
+  ctx.lineTo(centerX, by + 10);
+  ctx.lineTo(centerX - 12, by);
   ctx.closePath();
   ctx.fill();
   ctx.strokeStyle = '#f39c12';
@@ -104,24 +155,24 @@ export function drawCinematicScreenTitle(ctx, e, frameCount) {
 
   ctx.fillStyle = '#ff793f';
   ctx.beginPath();
-  ctx.arc(screenW / 2, by, 3.5, 0, Math.PI * 2);
+  ctx.arc(centerX, by, 3.5, 0, Math.PI * 2);
   ctx.fill();
 
   // 3. Tipografia Majestosa
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const titleY = by + (isVertical ? 22 : 36);
+  const titleY = by + (isVertical ? 23 : 37);
   ctx.font = isVertical ? '900 21px "Cinzel", "Times New Roman", serif' : '900 34px "Cinzel", "Times New Roman", serif';
   ctx.fillStyle = 'rgba(230, 126, 34, 0.5)';
-  ctx.fillText('MONÓLITO ABISSAL', screenW / 2 + 1, titleY + 1.5);
+  ctx.fillText('MONÓLITO ABISSAL', centerX + 1, titleY + 1.5);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('MONÓLITO ABISSAL', screenW / 2, titleY);
+  ctx.fillText('MONÓLITO ABISSAL', centerX, titleY);
 
   ctx.font = isVertical ? '600 10px "Cinzel", sans-serif' : '700 13px "Cinzel", sans-serif';
   ctx.letterSpacing = isVertical ? '3px' : '6px';
   ctx.fillStyle = '#f1c40f';
-  ctx.fillText('IGNIS LITHOS, O TITÃ DE BASALTO', screenW / 2, by + (isVertical ? 45 : 71));
+  ctx.fillText('IGNIS LITHOS, O TITÃ DE BASALTO', centerX, by + (isVertical ? 45 : 71));
   ctx.letterSpacing = '0px';
 
   ctx.restore();
@@ -444,15 +495,16 @@ export function drawMonolithSpawnIntro(ctx, e, frameCount) {
  */
 export function drawFloatingGauntlets(ctx, e, bob, frameCount, isVuln, isEnraged, isP3, isWindup) {
   const gauntlets = e.gauntlets || {
-    left: { x: -62, y: -8, rot: -0.15 },
-    right: { x: 62, y: -8, rot: 0.15 }
+    left: { x: -62, y: -8, lift: 0, rot: -0.15, grip: 0.15 },
+    right: { x: 62, y: -8, lift: 0, rot: 0.15, grip: 0.15 }
   };
 
-  const basaltDark  = isVuln ? '#151b1e' : (isP3 ? '#3a080d' : (isEnraged ? '#2d0f12' : '#1e272e'));
-  const basaltMid   = isVuln ? '#242b30' : (isP3 ? '#5c1018' : (isEnraged ? '#45161b' : '#2f3640'));
-  const basaltLight = isVuln ? '#38424a' : (isP3 ? '#821824' : (isEnraged ? '#612028' : '#45505b'));
-  const trimCol     = isVuln ? '#57606f' : (isP3 ? '#ff1744' : (isEnraged ? '#ff4757' : '#e67e22'));
+  const basaltDark  = isVuln ? '#121619' : (isP3 ? '#30050a' : (isEnraged ? '#240a0e' : '#161d22'));
+  const basaltMid   = isVuln ? '#1e252a' : (isP3 ? '#4d0b13' : (isEnraged ? '#391117' : '#26303a'));
+  const basaltLight = isVuln ? '#303a42' : (isP3 ? '#781520' : (isEnraged ? '#541c23' : '#3d4c5c'));
+  const trimCol     = isVuln ? '#4b5760' : (isP3 ? '#ff1744' : (isEnraged ? '#ff4757' : '#e67e22'));
   const glowCol     = isVuln ? 'transparent' : (isP3 ? '#ff7675' : (isEnraged ? '#ff9f43' : '#f1c40f'));
+  const coreGlow    = isVuln ? 'transparent' : (isP3 ? '#ffffff' : (isEnraged ? '#ffeaa7' : '#fff9d2'));
 
   for (let side of ['left', 'right']) {
     const g = gauntlets[side];
@@ -460,109 +512,216 @@ export function drawFloatingGauntlets(ctx, e, bob, frameCount, isVuln, isEnraged
     const isLeft = side === 'left';
     const sign = isLeft ? -1 : 1;
 
+    // Posição com amortecimento e elevação cinemática (lift)
+    const liftY = g.lift || 0;
+    const grip = Math.max(0, Math.min(1, g.grip !== undefined ? g.grip : (isWindup ? 0.9 : 0.15)));
+
     ctx.save();
-    ctx.translate(g.x, g.y + bob);
+    ctx.translate(g.x, g.y + bob - liftY);
     ctx.rotate(g.rot);
 
-    // 1. Fragmentos de basalto orbitando o pulso da manopla
+    // 1. Anel Tridimensional de Seixos e Detritos Orbitando o Pulso
     if (!isVuln) {
-      const orbWobble = frameCount * 0.08 + (isLeft ? 0 : Math.PI);
-      const fx = Math.cos(orbWobble) * 18;
-      const fy = -22 + Math.sin(orbWobble) * 8;
-      ctx.fillStyle = basaltMid;
-      ctx.beginPath();
-      ctx.arc(fx, fy, 3.2, 0, Math.PI * 2);
-      ctx.fill();
+      const pebbleCount = 5;
+      for (let p = 0; p < pebbleCount; p++) {
+        const pAng = frameCount * 0.05 + (p * (Math.PI * 2 / pebbleCount)) + (isLeft ? 0 : Math.PI);
+        const px = Math.cos(pAng) * 20 * sign;
+        const py = -24 + Math.sin(pAng) * 9;
+        const pZ = Math.sin(pAng); // Profundidade
+        const pR = Math.max(1.5, 2.2 + pZ * 1.0);
+
+        ctx.fillStyle = pZ > 0 ? basaltLight : basaltDark;
+        ctx.strokeStyle = pZ > 0 ? trimCol : 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        ctx.arc(px, py, pR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Se for frontal e estiver energizado, fagulha de plasma
+        if (pZ > 0.4 && (isEnraged || isP3 || isWindup)) {
+          ctx.fillStyle = glowCol;
+          ctx.beginPath();
+          ctx.arc(px, py, pR * 0.45, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
     }
 
-    // 2. Placa do Antebraço / Punho de Rocha Facetada
-    // Faceta Sombreada (Face exterior)
+    // 2. Antebraço Titânico Esculpido em Camadas de Basalto
+    // Placa Posterior / Externa (Sombra profunda)
     ctx.fillStyle = basaltDark;
     ctx.beginPath();
-    ctx.moveTo(0, -28);
-    ctx.lineTo(sign * -16, -18);
-    ctx.lineTo(sign * -14, 10);
-    ctx.lineTo(0, 16);
+    ctx.moveTo(0, -32);
+    ctx.lineTo(sign * -20, -22);
+    ctx.lineTo(sign * -18, 8);
+    ctx.lineTo(0, 14);
     ctx.closePath();
     ctx.fill();
 
-    // Faceta Central Iluminada
+    // Placa Anterior / Interna (Iluminada pela luz do núcleo)
     ctx.fillStyle = basaltLight;
     ctx.beginPath();
-    ctx.moveTo(0, -28);
-    ctx.lineTo(sign * 16, -18);
-    ctx.lineTo(sign * 14, 10);
-    ctx.lineTo(0, 16);
+    ctx.moveTo(0, -32);
+    ctx.lineTo(sign * 20, -22);
+    ctx.lineTo(sign * 18, 8);
+    ctx.lineTo(0, 14);
     ctx.closePath();
     ctx.fill();
 
-    // Crista Central da Manopla
+    // Espigão / Cotoveleira Protetora de Rocha
     ctx.fillStyle = basaltMid;
     ctx.beginPath();
-    ctx.moveTo(0, -28);
-    ctx.lineTo(sign * -8, -12);
+    ctx.moveTo(sign * -6, -34);
+    ctx.lineTo(sign * -24, -26);
+    ctx.lineTo(sign * -12, -20);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = trimCol;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Quilha Central do Antebraço com Chanfro Angular
+    ctx.fillStyle = basaltMid;
+    ctx.beginPath();
+    ctx.moveTo(0, -32);
+    ctx.lineTo(sign * -9, -12);
     ctx.lineTo(0, 14);
-    ctx.lineTo(sign * 8, -12);
+    ctx.lineTo(sign * 9, -12);
     ctx.closePath();
     ctx.fill();
 
-    // Contorno cinzelado
+    // Contorno cinzelado exterior da manopla
     ctx.strokeStyle = trimCol;
-    ctx.lineWidth = 1.8;
+    ctx.lineWidth = 2.0;
     ctx.beginPath();
-    ctx.moveTo(0, -28);
-    ctx.lineTo(sign * -16, -18);
-    ctx.lineTo(sign * -14, 10);
-    ctx.lineTo(0, 16);
-    ctx.lineTo(sign * 14, 10);
-    ctx.lineTo(sign * 16, -18);
+    ctx.moveTo(0, -32);
+    ctx.lineTo(sign * -20, -22);
+    ctx.lineTo(sign * -18, 8);
+    ctx.lineTo(0, 14);
+    ctx.lineTo(sign * 18, 8);
+    ctx.lineTo(sign * 20, -22);
     ctx.closePath();
     ctx.stroke();
 
-    // Linha divisória longitudinal
+    // Ranhura longitudinal divisória
     ctx.beginPath();
-    ctx.moveTo(0, -28);
-    ctx.lineTo(0, 16);
+    ctx.moveTo(0, -32);
+    ctx.lineTo(0, 14);
     ctx.stroke();
 
-    // 3. Garras / Dedos de Basalto Articulados
-    const fingerCount = 3;
-    for (let f = 0; f < fingerCount; f++) {
-      const fx = (f - 1) * 7 * sign;
-      const fy = 16;
-      const fLen = 12 + (f === 1 ? 4 : 0);
+    // Veia Térmica do Antebraço
+    if (!isVuln) {
+      const armPulse = Math.sin(frameCount * 0.15 + (isLeft ? 0 : 2)) * 0.6;
+      ctx.strokeStyle = glowCol;
+      ctx.lineWidth = 1.8 + armPulse * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(0, -24);
+      ctx.lineTo(sign * 6, -14);
+      ctx.lineTo(sign * 2, 4);
+      ctx.stroke();
 
-      ctx.fillStyle = basaltMid;
-      ctx.strokeStyle = trimCol;
+      ctx.strokeStyle = coreGlow;
+      ctx.lineWidth = 1.0;
+      ctx.stroke();
+    }
+
+    // 3. Palma Rúnica Hexagonal & Nós dos Dedos
+    ctx.fillStyle = basaltDark;
+    ctx.beginPath();
+    ctx.ellipse(0, 12, 13, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = trimCol;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Runa Telúrica na Palma da Mão
+    if (!isVuln) {
+      ctx.strokeStyle = glowCol;
       ctx.lineWidth = 1.4;
       ctx.beginPath();
-      ctx.moveTo(fx - 3, fy);
-      ctx.lineTo(fx + 3, fy);
-      ctx.lineTo(fx + (sign * 1.5), fy + fLen);
+      ctx.moveTo(-4 * sign, 9);
+      ctx.lineTo(0, 15);
+      ctx.lineTo(4 * sign, 9);
+      ctx.moveTo(0, 9);
+      ctx.lineTo(0, 15);
+      ctx.stroke();
+    }
+
+    // Fratura nos Nós dos Dedos (Knuckle Fracture)
+    if (!isVuln) {
+      const knuckleGlow = grip > 0.6 ? 3.0 : 1.8;
+      ctx.strokeStyle = grip > 0.6 ? coreGlow : glowCol;
+      ctx.lineWidth = knuckleGlow;
+      ctx.beginPath();
+      ctx.moveTo(sign * -13, 11);
+      ctx.lineTo(sign * -5, 14);
+      ctx.lineTo(sign * 4, 13);
+      ctx.lineTo(sign * 13, 11);
+      ctx.stroke();
+    }
+
+    // 4. Quatro Dedos Articulados em Falanges (Polegar, Indicador, Médio, Anelar)
+    const fingerDefs = [
+      { id: 'thumb',  baseX: sign * 14, baseY: 11, baseAng: sign * 0.65, p1Len: 8,  p2Len: 7,  thick: 3.8 },
+      { id: 'index',  baseX: sign * 6,  baseY: 15, baseAng: sign * 0.18, p1Len: 10, p2Len: 9,  thick: 3.5 },
+      { id: 'middle', baseX: sign * -2, baseY: 15, baseAng: sign * -0.05,p1Len: 11, p2Len: 10, thick: 3.7 },
+      { id: 'ring',   baseX: sign * -10,baseY: 13, baseAng: sign * -0.32,p1Len: 9,  p2Len: 8,  thick: 3.3 }
+    ];
+
+    for (let f of fingerDefs) {
+      const splay = (1 - grip) * (f.baseAng * 0.8);
+      const curlP1 = grip * 0.55;
+      const curlP2 = grip * 1.35;
+
+      const angP1 = f.baseAng + splay + curlP1;
+      const jx = f.baseX + Math.sin(angP1) * f.p1Len;
+      const jy = f.baseY + Math.cos(angP1) * f.p1Len;
+
+      const angP2 = angP1 + (sign * 0.15) + curlP2;
+      const tipX = jx + Math.sin(angP2) * (f.p2Len * (1 - grip * 0.35));
+      const tipY = jy + Math.cos(angP2) * (f.p2Len * (1 - grip * 0.35));
+
+      // Falange Proximal (segmento de rocha facetada da base à junta média)
+      ctx.fillStyle = basaltMid;
+      ctx.strokeStyle = trimCol;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(f.baseX - f.thick * 0.5, f.baseY);
+      ctx.lineTo(f.baseX + f.thick * 0.5, f.baseY);
+      ctx.lineTo(jx + f.thick * 0.4, jy);
+      ctx.lineTo(jx - f.thick * 0.4, jy);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
-      // Ponta em brasa se não estiver vulnerável
+      // Junta Inter-falangeal em brasa se ativa
       if (!isVuln && (isEnraged || isP3 || isWindup)) {
         ctx.fillStyle = glowCol;
         ctx.beginPath();
-        ctx.arc(fx + (sign * 1.5), fy + fLen - 1, 1.8, 0, Math.PI * 2);
+        ctx.arc(jx, jy, 1.4, 0, Math.PI * 2);
         ctx.fill();
       }
-    }
 
-    // 4. Fratura de Magma Incandescente nos Nós dos Dedos
-    if (!isVuln) {
-      const pulse = Math.sin(frameCount * 0.15 + (isLeft ? 0 : 2)) * 0.5;
-      ctx.strokeStyle = glowCol;
-      ctx.lineWidth = 2.0 + pulse;
+      // Falange Distal / Garra de Obsidiana (da junta até a ponta)
+      ctx.fillStyle = basaltDark;
+      ctx.strokeStyle = trimCol;
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(sign * -10, 8);
-      ctx.lineTo(sign * -3, 6);
-      ctx.lineTo(sign * 4, 9);
-      ctx.lineTo(sign * 10, 7);
+      ctx.moveTo(jx - f.thick * 0.35, jy);
+      ctx.lineTo(jx + f.thick * 0.35, jy);
+      ctx.lineTo(tipX, tipY);
+      ctx.closePath();
+      ctx.fill();
       ctx.stroke();
+
+      // Ponta incandescente em garra
+      if (!isVuln && (isEnraged || isP3 || isWindup || grip > 0.6)) {
+        ctx.fillStyle = (isP3 || grip > 0.8) ? coreGlow : glowCol;
+        ctx.beginPath();
+        ctx.arc(tipX, tipY, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     ctx.restore();
@@ -570,7 +729,7 @@ export function drawFloatingGauntlets(ctx, e, bob, frameCount, isVuln, isEnraged
 }
 
 /**
- * Desenha a sombra projetada no chão sob o corpo megalítico.
+ * Desenha a sombra projetada com oclusão de contato profunda e penumbra realista.
  * @param {CanvasRenderingContext2D} ctx
  * @param {Object} e
  * @param {number} bob
@@ -578,17 +737,41 @@ export function drawFloatingGauntlets(ctx, e, bob, frameCount, isVuln, isEnraged
  */
 export function drawShadow(ctx, e, bob, isVuln) {
   const shadowY = 56 + (isVuln ? 12 : 0);
-  const shadowRadius = (e.radius * 0.90) - (isVuln ? 0 : bob * 0.35);
+  const shadowRadius = (e.radius * 0.94) - (isVuln ? 0 : bob * 0.35);
 
-  const grad = ctx.createRadialGradient(0, shadowY, 6, 0, shadowY, shadowRadius);
-  grad.addColorStop(0, 'rgba(15, 8, 6, 0.70)');
-  grad.addColorStop(0.65, 'rgba(25, 12, 8, 0.35)');
-  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  // 1. Penumbra Externa Suave
+  const penumbraGrad = ctx.createRadialGradient(0, shadowY, 6, 0, shadowY, shadowRadius);
+  penumbraGrad.addColorStop(0, 'rgba(12, 6, 4, 0.75)');
+  penumbraGrad.addColorStop(0.55, 'rgba(20, 10, 6, 0.38)');
+  penumbraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-  ctx.fillStyle = grad;
+  ctx.fillStyle = penumbraGrad;
   ctx.beginPath();
-  ctx.ellipse(0, shadowY, shadowRadius, shadowRadius * 0.40, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, shadowY, shadowRadius, shadowRadius * 0.42, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  // 2. Oclusão de Contato Central Profunda (Ambient Occlusion do solo)
+  const contactR = shadowRadius * 0.42;
+  const contactGrad = ctx.createRadialGradient(0, shadowY, 2, 0, shadowY, contactR);
+  contactGrad.addColorStop(0, 'rgba(0, 0, 0, 0.90)');
+  contactGrad.addColorStop(0.8, 'rgba(10, 4, 2, 0.45)');
+  contactGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+  ctx.fillStyle = contactGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, shadowY, contactR, contactR * 0.45, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 3. Resplendor Térmico no Solo (quando enfurecido ou em fase 3)
+  if (e.isEnraged || e.isPhase3) {
+    const heatGrad = ctx.createRadialGradient(0, shadowY, 4, 0, shadowY, shadowRadius * 0.7);
+    heatGrad.addColorStop(0, e.isPhase3 ? 'rgba(255, 23, 68, 0.35)' : 'rgba(230, 126, 34, 0.25)');
+    heatGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = heatGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, shadowY, shadowRadius * 0.7, (shadowRadius * 0.7) * 0.42, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 /**
@@ -653,13 +836,13 @@ export function drawThermalVents(ctx, boss, frameCount) {
  * @param {number} frameCount
  */
 export function drawTelegraphsAndZones(ctx, e, frameCount) {
-  // 1. Telegrafia do Esmagamento Frontal (Cone com Rachaduras)
+  // 1. Telegrafia do Esmagamento Frontal (Cone com Rachaduras e Lock-in Cristalino)
   if (e.actionState === MONOLITH_STATES.WINDUP_SLAM) {
-    const maxTimer = e.isPhase3 ? 34 : (e.isEnraged ? 40 : 48);
+    const maxTimer = e.isPhase3 ? 48 : (e.isEnraged ? 48 : 60);
     const progress = Math.min(1, Math.max(0, 1 - (e.actionTimer / maxTimer)));
     const aim = e.aimAngle || 0;
-    const arcHalf = e.slamArc;
-    const r = e.slamRadius;
+    const arcHalf = e.slamArc || (Math.PI * 0.31);
+    const r = e.slamRadius || 185;
 
     ctx.save();
     // Fundo do cone em brasa
@@ -670,9 +853,15 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
     ctx.closePath();
     ctx.fill();
 
-    // Contorno
-    ctx.strokeStyle = progress > 0.80 ? '#ffffff' : (e.aimLocked ? '#ff1744' : '#f39c12');
-    ctx.lineWidth = progress > 0.80 ? 3.5 : 2.5;
+    // Contorno do cone: pisca intensamente em branco/carmesim quando a mira trava
+    if (e.aimLocked) {
+      const lockPulse = (Math.sin(frameCount * 0.4) + 1) * 0.5;
+      ctx.strokeStyle = lockPulse > 0.5 ? '#ffffff' : '#ff1744';
+      ctx.lineWidth = 3.6;
+    } else {
+      ctx.strokeStyle = progress > 0.80 ? '#ffffff' : '#f39c12';
+      ctx.lineWidth = 2.4;
+    }
     ctx.beginPath();
     ctx.arc(0, 20, r, aim - arcHalf, aim + arcHalf);
     ctx.stroke();
@@ -689,12 +878,35 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
       ctx.stroke();
     }
 
-    // Indicador visual de Mira Travada (Lock-in)
+    // Eixo Central de Disparo quando a mira trava (Lock-in)
     if (e.aimLocked) {
-      ctx.fillStyle = '#ff1744';
+      // Raio guia central de magma
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.0;
       ctx.beginPath();
-      ctx.arc(Math.cos(aim) * (r * 0.75), 20 + Math.sin(aim) * (r * 0.75), 7, 0, Math.PI * 2);
+      ctx.moveTo(0, 20);
+      ctx.lineTo(Math.cos(aim) * r, 20 + Math.sin(aim) * r);
+      ctx.stroke();
+
+      // Mira reticular no ponto de impacto primário
+      const targetX = Math.cos(aim) * (r * 0.65);
+      const targetY = 20 + Math.sin(aim) * (r * 0.65);
+      ctx.strokeStyle = '#ff1744';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.arc(targetX, targetY, 14, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(targetX, targetY, 3.5, 0, Math.PI * 2);
       ctx.fill();
+
+      // Linhas da mira
+      ctx.beginPath();
+      ctx.moveTo(targetX - 18, targetY); ctx.lineTo(targetX + 18, targetY);
+      ctx.moveTo(targetX, targetY - 18); ctx.lineTo(targetX, targetY + 18);
+      ctx.stroke();
     }
     ctx.restore();
   }
@@ -746,12 +958,21 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
     const progress = Math.min(1, Math.max(0, 1 - (e.actionTimer / maxTimer)));
 
     ctx.save();
-    // Centro Seguro (Safe Zone de 0 a 115px) sinalizado com contorno verde/dourado suave
-    ctx.strokeStyle = 'rgba(46, 204, 113, 0.75)';
-    ctx.lineWidth = 2.2;
+    // Centro Seguro (Safe Zone de 0 a 120px) destacado com resplendor verde esmeralda / ouro suave
+    const safeGrad = ctx.createRadialGradient(0, 20, 10, 0, 20, 118);
+    safeGrad.addColorStop(0, 'rgba(46, 204, 113, 0.22)');
+    safeGrad.addColorStop(0.75, 'rgba(46, 204, 113, 0.10)');
+    safeGrad.addColorStop(1, 'rgba(46, 204, 113, 0)');
+    ctx.fillStyle = safeGrad;
+    ctx.beginPath();
+    ctx.arc(0, 20, 118, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(46, 204, 113, 0.85)';
+    ctx.lineWidth = 2.4;
     ctx.setLineDash([8, 6]);
     ctx.beginPath();
-    ctx.arc(0, 20, 115, 0, Math.PI * 2);
+    ctx.arc(0, 20, 118, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
 
@@ -793,11 +1014,12 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
 
   // 4. Telegrafia da Varredura de Placas (Plate Whirl)
   if (e.actionState === MONOLITH_STATES.WINDUP_WHIRL) {
-    const maxTimer = e.isPhase3 ? 28 : (e.isEnraged ? 32 : 38);
+    const maxTimer = e.isPhase3 ? 48 : (e.isEnraged ? 48 : 60);
     const progress = Math.min(1, Math.max(0, 1 - (e.actionTimer / maxTimer)));
-    const whirlR = 105;
+    const whirlR = 110;
 
     ctx.save();
+    // Círculo perimetral tracejado
     ctx.strokeStyle = progress > 0.80 ? '#ffffff' : '#ff1744';
     ctx.lineWidth = progress > 0.80 ? 3.5 : 2.2;
     ctx.setLineDash([10, 6]);
@@ -806,10 +1028,28 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
     ctx.stroke();
     ctx.setLineDash([]);
 
+    // Preenchimento de perigo em expansão
     ctx.fillStyle = `rgba(255, 23, 68, ${0.12 + progress * 0.28})`;
     ctx.beginPath();
     ctx.arc(0, 20, whirlR * progress, 0, Math.PI * 2);
     ctx.fill();
+
+    // Lâminas de basalto giratórias cortando o ar na borda
+    const bladeRot = frameCount * 0.22;
+    const bladeCount = 4;
+    ctx.strokeStyle = 'rgba(255, 118, 117, 0.7)';
+    ctx.lineWidth = 2.4;
+    for (let b = 0; b < bladeCount; b++) {
+      const bAng = bladeRot + (b * Math.PI * 2 / bladeCount);
+      const bx1 = Math.cos(bAng) * (whirlR * 0.75);
+      const by1 = 20 + Math.sin(bAng) * (whirlR * 0.75);
+      const bx2 = Math.cos(bAng + 0.35) * whirlR;
+      const by2 = 20 + Math.sin(bAng + 0.35) * whirlR;
+      ctx.beginPath();
+      ctx.moveTo(bx1, by1);
+      ctx.quadraticCurveTo(bx1 * 1.1, by1 * 1.1, bx2, by2);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 }
@@ -827,9 +1067,11 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
 export function drawFloatingPlates(ctx, e, bob, frameCount, isVuln, isEnraged, isWindup) {
   const isP3 = e.isPhase3;
 
-  let plateColDark = isVuln ? '#151b1e' : (isP3 ? '#3a080d' : (isEnraged ? '#2d0f12' : '#1e272e'));
-  let plateColLight = isVuln ? '#242b30' : (isP3 ? '#5c1018' : (isEnraged ? '#45161b' : '#2f3640'));
-  let trimCol = isVuln ? '#57606f' : (isP3 ? '#ff1744' : (isEnraged ? '#ff4757' : '#e67e22'));
+  const plateColDark  = isVuln ? '#121619' : (isP3 ? '#30050a' : (isEnraged ? '#240a0e' : '#161d22'));
+  const plateColMid   = isVuln ? '#1e252a' : (isP3 ? '#4d0b13' : (isEnraged ? '#391117' : '#26303a'));
+  const plateColLight = isVuln ? '#303a42' : (isP3 ? '#781520' : (isEnraged ? '#541c23' : '#3d4c5c'));
+  const trimCol       = isVuln ? '#4b5760' : (isP3 ? '#ff1744' : (isEnraged ? '#ff4757' : '#e67e22'));
+  const glowCol       = isVuln ? 'transparent' : (isP3 ? '#ff7675' : (isEnraged ? '#ff9f43' : '#f1c40f'));
 
   for (let i = 0; i < e.floatingPlates.length; i++) {
     const p = e.floatingPlates[i];
@@ -840,26 +1082,26 @@ export function drawFloatingPlates(ctx, e, bob, frameCount, isVuln, isEnraged, i
     if (e.actionState === MONOLITH_STATES.WINDUP_SLAM) {
       // Martelos erguidos no alto
       const lift = Math.sin(frameCount * 0.3) * 4;
-      const spread = (i - 1.5) * 22;
+      const spread = (i - 1.5) * 24;
       px = spread;
-      py = -82 + bob + lift + Math.abs(spread) * 0.25;
-      rot = spread / 45;
+      py = -84 + bob + lift + Math.abs(spread) * 0.25;
+      rot = spread / 42;
     } else if (e.actionState === MONOLITH_STATES.WINDUP_EPICENTER) {
       // Placas fincadas na base
       const pAng = p.angleOffset + frameCount * 0.02;
-      px = Math.cos(pAng) * 72;
-      py = 32 + bob + Math.sin(pAng) * 20;
+      px = Math.cos(pAng) * 74;
+      py = 34 + bob + Math.sin(pAng) * 20;
       rot = pAng;
     } else if (e.actionState === MONOLITH_STATES.WINDUP_WHIRL) {
-      // Placas girando em lâminas afiadas
+      // Placas girando como lâminas afiadas
       const spinAng = p.angleOffset + frameCount * 0.25;
-      px = Math.cos(spinAng) * 95;
-      py = Math.sin(spinAng) * 55 + bob;
+      px = Math.cos(spinAng) * 98;
+      py = Math.sin(spinAng) * 58 + bob;
       rot = spinAng + Math.PI / 2;
     } else if (e.actionState === MONOLITH_STATES.CHANNELING_SIPHON) {
       const fastAng = p.angleOffset - frameCount * 0.14;
-      px = Math.cos(fastAng) * 65;
-      py = Math.sin(fastAng) * 36 + bob;
+      px = Math.cos(fastAng) * 68;
+      py = Math.sin(fastAng) * 38 + bob;
       rot = fastAng + Math.PI / 2;
     } else if (isVuln) {
       const fallOffset = (i - 1.5) * 36;
@@ -875,36 +1117,79 @@ export function drawFloatingPlates(ctx, e, bob, frameCount, isVuln, isEnraged, i
       rot = pAng + Math.PI / 2;
     }
 
+    // Filamento de Plasma Elétrico conectando o broquel ao corpo
+    if (!isVuln && (isEnraged || isP3 || isWindup)) {
+      ctx.save();
+      ctx.strokeStyle = isP3 ? 'rgba(255, 23, 68, 0.45)' : 'rgba(243, 156, 18, 0.35)';
+      ctx.lineWidth = 1.3;
+      const midJitter = Math.sin(frameCount * 0.35 + i * 2) * 8;
+      ctx.beginPath();
+      ctx.moveTo(0, bob);
+      ctx.quadraticCurveTo(px * 0.45 + midJitter, py * 0.45 - 6, px, py);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     ctx.save();
     ctx.translate(px, py);
     ctx.rotate(rot);
 
     const sz = p.size;
+
+    // Escudo / Broquel Monolítico com Geometria Chanfrada
+    // Faceta Esquerda (Sombra)
     ctx.fillStyle = plateColDark;
     ctx.beginPath();
-    ctx.moveTo(-sz * 0.6, -sz * 0.5);
-    ctx.lineTo(sz * 0.6, -sz * 0.5);
-    ctx.lineTo(sz * 0.4, sz * 0.5);
-    ctx.lineTo(-sz * 0.4, sz * 0.5);
+    ctx.moveTo(0, -sz * 0.65);
+    ctx.lineTo(-sz * 0.55, -sz * 0.2);
+    ctx.lineTo(-sz * 0.45, sz * 0.45);
+    ctx.lineTo(0, sz * 0.65);
     ctx.closePath();
     ctx.fill();
 
+    // Faceta Direita (Iluminada)
     ctx.fillStyle = plateColLight;
     ctx.beginPath();
-    ctx.moveTo(-sz * 0.6, -sz * 0.5);
-    ctx.lineTo(0, -sz * 0.3);
-    ctx.lineTo(sz * 0.6, -sz * 0.5);
+    ctx.moveTo(0, -sz * 0.65);
+    ctx.lineTo(sz * 0.55, -sz * 0.2);
+    ctx.lineTo(sz * 0.45, sz * 0.45);
+    ctx.lineTo(0, sz * 0.65);
     ctx.closePath();
     ctx.fill();
 
+    // Faceta Central com Crista
+    ctx.fillStyle = plateColMid;
+    ctx.beginPath();
+    ctx.moveTo(0, -sz * 0.65);
+    ctx.lineTo(-sz * 0.25, -sz * 0.15);
+    ctx.lineTo(0, sz * 0.45);
+    ctx.lineTo(sz * 0.25, -sz * 0.15);
+    ctx.closePath();
+    ctx.fill();
+
+    // Contorno cinzelado
+    ctx.strokeStyle = trimCol;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(0, -sz * 0.65);
+    ctx.lineTo(-sz * 0.55, -sz * 0.2);
+    ctx.lineTo(-sz * 0.45, sz * 0.45);
+    ctx.lineTo(0, sz * 0.65);
+    ctx.lineTo(sz * 0.45, sz * 0.45);
+    ctx.lineTo(sz * 0.55, -sz * 0.2);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Runa Gravada no Escudo
     if (!isVuln) {
-      ctx.strokeStyle = trimCol;
-      ctx.lineWidth = 1.8;
+      ctx.strokeStyle = glowCol;
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(-sz * 0.25, 0);
-      ctx.lineTo(sz * 0.25, 0);
-      ctx.moveTo(0, -sz * 0.25);
-      ctx.lineTo(0, sz * 0.25);
+      ctx.moveTo(-sz * 0.2, -sz * 0.1);
+      ctx.lineTo(0, -sz * 0.3);
+      ctx.lineTo(sz * 0.2, -sz * 0.1);
+      ctx.moveTo(0, -sz * 0.3);
+      ctx.lineTo(0, sz * 0.3);
       ctx.stroke();
     }
 
@@ -913,7 +1198,7 @@ export function drawFloatingPlates(ctx, e, bob, frameCount, isVuln, isEnraged, i
 }
 
 /**
- * Desenha as veias de magma pulsantes na face do monólito.
+ * Desenha a rede dendrítica de fissuras térmicas com duplo gradiente de calor.
  * @param {CanvasRenderingContext2D} ctx
  * @param {number} bob
  * @param {number} frameCount
@@ -926,12 +1211,12 @@ export function drawMagmaVeins(ctx, bob, frameCount, isVuln, isEnraged, isP3) {
     ctx.strokeStyle = '#273c75';
     ctx.lineWidth = 1.4;
     ctx.beginPath();
-    ctx.moveTo(-12, -32 + bob);
-    ctx.lineTo(-24, -10 + bob);
-    ctx.lineTo(-10, 16 + bob);
-    ctx.moveTo(12, -32 + bob);
-    ctx.lineTo(24, -10 + bob);
-    ctx.lineTo(10, 16 + bob);
+    ctx.moveTo(-10, -36 + bob);
+    ctx.lineTo(-24, -12 + bob);
+    ctx.lineTo(-12, 18 + bob);
+    ctx.moveTo(10, -36 + bob);
+    ctx.lineTo(24, -12 + bob);
+    ctx.lineTo(12, 18 + bob);
     ctx.stroke();
     return;
   }
@@ -939,32 +1224,74 @@ export function drawMagmaVeins(ctx, bob, frameCount, isVuln, isEnraged, isP3) {
   const pulse = Math.sin(frameCount * (isP3 ? 0.24 : (isEnraged ? 0.18 : 0.09)));
   const veinColPrimary = isP3 ? '#ff1744' : (isEnraged ? '#e74c3c' : '#d35400');
   const veinColGlow    = isP3 ? '#ff9f43' : (isEnraged ? '#f1c40f' : '#f39c12');
+  const veinColCore    = isP3 ? '#ffffff' : (isEnraged ? '#ffeaa7' : '#fffbc7');
 
+  const drawVeinPaths = () => {
+    ctx.beginPath();
+    // 1. Ramo Superior Esquerdo (Ombreira e Clavícula)
+    ctx.moveTo(-8, -48 + bob);
+    ctx.lineTo(-22, -34 + bob);
+    ctx.lineTo(-34, -16 + bob);
+    ctx.lineTo(-22, 4 + bob);
+    ctx.lineTo(-14, 26 + bob);
+
+    // Sub-fissura costal esquerda
+    ctx.moveTo(-22, -34 + bob);
+    ctx.lineTo(-12, -20 + bob);
+
+    // 2. Ramo Superior Direito (Ombreira e Clavícula)
+    ctx.moveTo(8, -48 + bob);
+    ctx.lineTo(22, -34 + bob);
+    ctx.lineTo(34, -16 + bob);
+    ctx.lineTo(22, 4 + bob);
+    ctx.lineTo(14, 26 + bob);
+
+    // Sub-fissura costal direita
+    ctx.moveTo(22, -34 + bob);
+    ctx.lineTo(12, -20 + bob);
+
+    // 3. Fissuras Abdominais Descendentes
+    ctx.moveTo(-10, 30 + bob);
+    ctx.lineTo(0, 42 + bob);
+    ctx.lineTo(10, 30 + bob);
+
+    ctx.moveTo(0, 14 + bob);
+    ctx.lineTo(0, 34 + bob);
+
+    // 4. Micro-ramificações adicionais quando Enfurecido ou Fase 3
+    if (isEnraged || isP3) {
+      ctx.moveTo(-34, -16 + bob);
+      ctx.lineTo(-44, -10 + bob);
+      ctx.moveTo(34, -16 + bob);
+      ctx.lineTo(44, -10 + bob);
+      ctx.moveTo(-6, -56 + bob);
+      ctx.lineTo(0, -48 + bob);
+      ctx.lineTo(6, -56 + bob);
+    }
+  };
+
+  // Passada 1: Halo de Difusão Térmica Amplo
   ctx.strokeStyle = veinColPrimary;
-  ctx.lineWidth = 2.4 + pulse * 0.7;
-  ctx.beginPath();
-
-  ctx.moveTo(-6, -44 + bob);
-  ctx.lineTo(-26, -14 + bob);
-  ctx.lineTo(-14, 22 + bob);
-
-  ctx.moveTo(6, -44 + bob);
-  ctx.lineTo(26, -14 + bob);
-  ctx.lineTo(14, 22 + bob);
-
-  ctx.moveTo(-10, 32 + bob);
-  ctx.lineTo(0, 44 + bob);
-  ctx.lineTo(10, 32 + bob);
+  ctx.lineWidth = 3.6 + pulse * 1.2;
+  drawVeinPaths();
   ctx.stroke();
 
+  // Passada 2: Brilho Intermediário Incandescente
   ctx.strokeStyle = veinColGlow;
-  ctx.lineWidth = 1.2;
+  ctx.lineWidth = 2.0 + pulse * 0.6;
+  drawVeinPaths();
+  ctx.stroke();
+
+  // Passada 3: Núcleo Fino Superaquecido Branco-Dourado
+  ctx.strokeStyle = veinColCore;
+  ctx.lineWidth = 1.1;
+  drawVeinPaths();
   ctx.stroke();
 }
 
 /**
- * Desenha o corpo do megalito de basalto com facetas poliédricas 2.5D,
- * coroa vulcânica escarpada com fumaça e runas petroglíficas de magma.
+ * Desenha o corpo do colosso de basalto tri-segmentado com caldeira ativa,
+ * chifres de obsidiana, carapaça escalonada e estalactites de lava.
  * @param {CanvasRenderingContext2D} ctx
  * @param {Object} e
  * @param {number} bob
@@ -974,116 +1301,210 @@ export function drawMagmaVeins(ctx, bob, frameCount, isVuln, isEnraged, isP3) {
  * @param {boolean} isP3
  */
 export function drawMegalithBody(ctx, e, bob, frameCount, isVuln, isEnraged, isP3) {
-  const basaltShadow = isVuln ? '#0e1214' : (isP3 ? '#1c0306' : (isEnraged ? '#1e0508' : '#141c22'));
-  const basaltMid    = isVuln ? '#1a2126' : (isP3 ? '#2e070c' : (isEnraged ? '#2c080d' : '#222c35'));
-  const basaltLight  = isVuln ? '#28333b' : (isP3 ? '#4a0d14' : (isEnraged ? '#420f15' : '#33414d'));
+  const basaltShadow = isVuln ? '#0d1215' : (isP3 ? '#1a0306' : (isEnraged ? '#1b0508' : '#12171c'));
+  const basaltMid    = isVuln ? '#1a2126' : (isP3 ? '#2e070c' : (isEnraged ? '#2c080d' : '#202932'));
+  const basaltLight  = isVuln ? '#28333b' : (isP3 ? '#4a0d14' : (isEnraged ? '#420f15' : '#303d4a'));
   const edgeTrim     = isVuln ? '#4b5760' : (isP3 ? '#ff3838' : (isEnraged ? '#ff4757' : '#718093'));
+  const lavaGlow     = isVuln ? '#273c75' : (isP3 ? '#ff1744' : (isEnraged ? '#e74c3c' : '#d35400'));
+  const emberCol     = isVuln ? '#57606f' : (isP3 ? '#ff7675' : '#f39c12');
 
-  const topY = -68 + bob;
+  const topY   = -68 + bob;
   const waistY = -6 + bob;
-  const botY = 50 + bob;
+  const botY   = 50 + bob;
 
-  // 1. Tier 1: Plinto / Base Hexagonal Inferior
+  // =========================================================================
+  // TIER 1: RAÍZES TECTÔNICAS, ESTALACTITES DE LAVA E DETRITOS ANTI-GRAVITACIONAIS
+  // =========================================================================
+  
+  // 1. Fragmentos de Rocha Levitando sob a Base
+  const subRocks = [
+    { x: -28, y: botY + 34, r: 4.5, wob: 0 },
+    { x: 0,   y: botY + 42, r: 6.0, wob: 1.5 },
+    { x: 28,  y: botY + 32, r: 4.0, wob: 3.0 }
+  ];
+  for (let sr of subRocks) {
+    const sBob = Math.sin(frameCount * 0.08 + sr.wob) * 3;
+    ctx.fillStyle = basaltShadow;
+    ctx.strokeStyle = edgeTrim;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(sr.x, sr.y + sBob, sr.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    if (!isVuln) {
+      ctx.fillStyle = lavaGlow;
+      ctx.beginPath();
+      ctx.arc(sr.x, sr.y + sBob, sr.r * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 2. Estalactites Pontiagudas de Rocha e Gotas de Lava Incandescente
+  const stalactites = [
+    { x: -36, len: 16, w: 5 },
+    { x: -22, len: 24, w: 6 },
+    { x: -8,  len: 32, w: 7 },
+    { x: 8,   len: 30, w: 7 },
+    { x: 22,  len: 22, w: 6 },
+    { x: 36,  len: 15, w: 5 }
+  ];
+  for (let st of stalactites) {
+    const stTipY = botY + 12 + st.len;
+    ctx.fillStyle = basaltShadow;
+    ctx.beginPath();
+    ctx.moveTo(st.x - st.w, botY + 10);
+    ctx.lineTo(st.x + st.w, botY + 10);
+    ctx.lineTo(st.x, stTipY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = edgeTrim;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Gota de lava incandescente na ponta da estalactite
+    if (!isVuln) {
+      const dropPulse = (Math.sin(frameCount * 0.12 + st.x) + 1) * 0.5;
+      ctx.fillStyle = dropPulse > 0.65 ? '#ffffff' : lavaGlow;
+      ctx.beginPath();
+      ctx.arc(st.x, stTipY + 1, 1.8 + dropPulse * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 3. Plinto / Base Hexagonal Inferior Escalonada
   ctx.fillStyle = basaltShadow;
   ctx.beginPath();
-  ctx.moveTo(-32, botY);
-  ctx.lineTo(-44, botY + 12);
-  ctx.lineTo(0, botY + 20);
-  ctx.lineTo(0, botY + 6);
+  ctx.moveTo(-34, botY);
+  ctx.lineTo(-46, botY + 12);
+  ctx.lineTo(0, botY + 22);
+  ctx.lineTo(0, botY + 8);
   ctx.closePath();
   ctx.fill();
 
   ctx.fillStyle = basaltMid;
   ctx.beginPath();
-  ctx.moveTo(32, botY);
-  ctx.lineTo(44, botY + 12);
-  ctx.lineTo(0, botY + 20);
-  ctx.lineTo(0, botY + 6);
+  ctx.moveTo(34, botY);
+  ctx.lineTo(46, botY + 12);
+  ctx.lineTo(0, botY + 22);
+  ctx.lineTo(0, botY + 8);
   ctx.closePath();
   ctx.fill();
 
   ctx.strokeStyle = edgeTrim;
   ctx.lineWidth = 2.0;
   ctx.beginPath();
-  ctx.moveTo(-44, botY + 12);
-  ctx.lineTo(0, botY + 20);
-  ctx.lineTo(44, botY + 12);
+  ctx.moveTo(-46, botY + 12);
+  ctx.lineTo(0, botY + 22);
+  ctx.lineTo(46, botY + 12);
   ctx.stroke();
 
-  // 2. Tier 2: Corpo do Obelisco Central 2.5D Multifacetado
-  // Faceta Esquerda (Sombra densa de basalto)
+  // =========================================================================
+  // TIER 2: CORPO DO COLOSSO EM CARAPAÇA SEGMENTADA 2.5D
+  // =========================================================================
+  
+  // Costura de Magma Subterrâneo exposta sob a couraça
+  if (!isVuln) {
+    ctx.fillStyle = lavaGlow;
+    ctx.beginPath();
+    ctx.ellipse(0, waistY, 46, 22, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Placa Inferior (Abdômen do Titã)
   ctx.fillStyle = basaltShadow;
   ctx.beginPath();
-  ctx.moveTo(0, topY);
-  ctx.lineTo(-48, waistY);
-  ctx.lineTo(-28, botY);
+  ctx.moveTo(0, waistY);
+  ctx.lineTo(-38, waistY + 16);
+  ctx.lineTo(-24, botY);
   ctx.lineTo(0, botY + 6);
-  ctx.lineTo(0, waistY);
   ctx.closePath();
   ctx.fill();
 
-  // Faceta Direita (Iluminada)
   ctx.fillStyle = basaltLight;
   ctx.beginPath();
-  ctx.moveTo(0, topY);
-  ctx.lineTo(48, waistY);
-  ctx.lineTo(28, botY);
+  ctx.moveTo(0, waistY);
+  ctx.lineTo(38, waistY + 16);
+  ctx.lineTo(24, botY);
+  ctx.lineTo(0, botY + 6);
+  ctx.closePath();
+  ctx.fill();
+
+  // Carapaça Superior / Peitoral com Facetas Angulares Esculpidas
+  // Faceta Esquerda (Sombra densa de basalto com gradiente de oclusão)
+  ctx.fillStyle = basaltShadow;
+  ctx.beginPath();
+  ctx.moveTo(0, topY + 4);
+  ctx.lineTo(-50, waistY - 4);
+  ctx.lineTo(-26, botY);
   ctx.lineTo(0, botY + 6);
   ctx.lineTo(0, waistY);
   ctx.closePath();
   ctx.fill();
 
-  // Faceta Central (Relevo / Quilha frontal do monólito)
-  ctx.fillStyle = basaltMid;
+  // Faceta Direita (Iluminada com luz direcional do mundo)
+  ctx.fillStyle = basaltLight;
   ctx.beginPath();
-  ctx.moveTo(0, topY);
-  ctx.lineTo(-20, waistY + 6);
+  ctx.moveTo(0, topY + 4);
+  ctx.lineTo(50, waistY - 4);
+  ctx.lineTo(26, botY);
   ctx.lineTo(0, botY + 6);
-  ctx.lineTo(20, waistY + 6);
+  ctx.lineTo(0, waistY);
   ctx.closePath();
   ctx.fill();
 
-  // Biséis e chanfros angulares externos
+  // Faceta Central (Quilha Frontal Proeminente)
+  ctx.fillStyle = basaltMid;
+  ctx.beginPath();
+  ctx.moveTo(0, topY + 4);
+  ctx.lineTo(-22, waistY + 4);
+  ctx.lineTo(0, botY + 6);
+  ctx.lineTo(22, waistY + 4);
+  ctx.closePath();
+  ctx.fill();
+
+  // Biséis e Chanfros Metálicos/Pétreos nas Arestas Externas
   ctx.strokeStyle = edgeTrim;
   ctx.lineWidth = 2.4;
   ctx.beginPath();
-  ctx.moveTo(0, topY);
-  ctx.lineTo(-48, waistY);
-  ctx.lineTo(-28, botY);
+  ctx.moveTo(0, topY + 4);
+  ctx.lineTo(-50, waistY - 4);
+  ctx.lineTo(-26, botY);
   ctx.lineTo(0, botY + 6);
-  ctx.lineTo(28, botY);
-  ctx.lineTo(48, waistY);
+  ctx.lineTo(26, botY);
+  ctx.lineTo(50, waistY - 4);
   ctx.closePath();
   ctx.stroke();
 
-  // Quilha vertical e linhas estruturais de relevo
+  // Quilha Vertical e Nervuras Estruturais
   ctx.beginPath();
-  ctx.moveTo(0, topY);
+  ctx.moveTo(0, topY + 4);
   ctx.lineTo(0, botY + 6);
-  ctx.moveTo(0, topY);
-  ctx.lineTo(-20, waistY + 6);
+  ctx.moveTo(0, topY + 4);
+  ctx.lineTo(-22, waistY + 4);
   ctx.lineTo(0, botY + 6);
-  ctx.moveTo(0, topY);
-  ctx.lineTo(20, waistY + 6);
+  ctx.moveTo(0, topY + 4);
+  ctx.lineTo(22, waistY + 4);
   ctx.lineTo(0, botY + 6);
   ctx.stroke();
 
-  // 3. Tier 3: Coroa Vulcânica Escarpada (Chifres e Espigões de Obsidiana)
-  const crownSpires = [
-    { x: 0, yOffset: -26, w: 9 },      // Espigão Central Maior
-    { x: -14, yOffset: -18, w: 7 },   // Espigão Médio Esquerdo
-    { x: 14, yOffset: -18, w: 7 },    // Espigão Médio Direito
-    { x: -26, yOffset: -10, w: 6 },   // Chifre Lateral Esquerdo
-    { x: 26, yOffset: -10, w: 6 }     // Chifre Lateral Direito
-  ];
+  // =========================================================================
+  // TIER 3: CALDEIRA VULCÂNICA CORONÁRIA & CHIFRES DE OBSIDIANA
+  // =========================================================================
 
-  for (let sp of crownSpires) {
-    const tipY = topY + sp.yOffset;
-    ctx.fillStyle = basaltShadow;
+  // 1. Chifres Colossais de Obsidiana Curvados (Flanqueando o topo)
+  const horns = [
+    { sign: -1, baseW: 10, tipX: -36, tipY: topY - 30 },
+    { sign: 1,  baseW: 10, tipX: 36,  tipY: topY - 30 }
+  ];
+  for (let hn of horns) {
+    ctx.fillStyle = hn.sign === -1 ? basaltShadow : basaltLight;
     ctx.beginPath();
-    ctx.moveTo(sp.x - sp.w, topY);
-    ctx.lineTo(sp.x, tipY);
-    ctx.lineTo(sp.x + sp.w, topY);
+    ctx.moveTo(hn.sign * 12, topY);
+    ctx.lineTo(hn.sign * (12 + hn.baseW), topY);
+    ctx.quadraticCurveTo(hn.sign * 32, topY - 14, hn.tipX, hn.tipY);
+    ctx.quadraticCurveTo(hn.sign * 22, topY - 8, hn.sign * 12, topY);
     ctx.closePath();
     ctx.fill();
 
@@ -1091,36 +1512,80 @@ export function drawMegalithBody(ctx, e, bob, frameCount, isVuln, isEnraged, isP
     ctx.lineWidth = 1.8;
     ctx.stroke();
 
-    // Pontas incandescentes na coroa
+    // Cristal de fogo na ponta do chifre
     if (!isVuln) {
-      ctx.fillStyle = isP3 ? '#ff1744' : (isEnraged ? '#ff4757' : '#e67e22');
+      ctx.fillStyle = (isP3 || isEnraged) ? '#ffffff' : lavaGlow;
       ctx.beginPath();
-      ctx.arc(sp.x, tipY + 2, 2.0, 0, Math.PI * 2);
+      ctx.arc(hn.tipX, hn.tipY, 2.4, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
-  // Fagulhas e cinzas térmicas emanando da coroa
+  // 2. Borda Externa da Caldeira Vulcânica
+  ctx.fillStyle = basaltShadow;
+  ctx.beginPath();
+  ctx.ellipse(0, topY - 2, 26, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = edgeTrim;
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+
+  // 3. Lago de Magma Fervente no Interior da Cratera
   if (!isVuln) {
+    const caldGrad = ctx.createRadialGradient(0, topY - 2, 2, 0, topY - 2, 22);
+    caldGrad.addColorStop(0, '#ffffff');
+    caldGrad.addColorStop(0.35, emberCol);
+    caldGrad.addColorStop(0.85, lavaGlow);
+    caldGrad.addColorStop(1, '#1b0508');
+    ctx.fillStyle = caldGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, topY - 2, 22, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bolha de Magma estourando na cratera
+    const bProg = (frameCount * 0.08) % 1;
+    const bX = Math.sin(frameCount * 0.15) * 8;
+    const bY = topY - 2 + Math.cos(frameCount * 0.15) * 3;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(bX, bY, Math.max(1, 3.5 * (1 - bProg)), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 4. Pluma Volcânica: Fumaça Densa e Brasas Subindo ao Céu
+  if (!isVuln) {
+    // Fumaça volumétrica
+    for (let s = 0; s < 5; s++) {
+      const sProg = ((frameCount * 0.035 + s * 0.2) % 1);
+      const sX = Math.sin(frameCount * 0.08 + s * 2) * (14 + s * 4);
+      const sY = topY - 6 - sProg * 48;
+      const sR = 5 + sProg * 14;
+      ctx.fillStyle = `rgba(24, 14, 10, ${Math.max(0, (1 - sProg) * 0.45)})`;
+      ctx.beginPath();
+      ctx.arc(sX, sY, sR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Brasas incandescentes ejetadas
     ctx.fillStyle = isP3 ? '#ff7675' : '#f39c12';
-    for (let c = 0; c < 4; c++) {
-      const cProg = ((frameCount * 0.05 + c * 0.25) % 1);
-      const cx = Math.sin(frameCount * 0.1 + c) * 22;
-      const cy = topY - 10 - cProg * 35;
-      const cR = Math.max(0.5, 2.2 * (1 - cProg));
+    for (let c = 0; c < 6; c++) {
+      const cProg = ((frameCount * 0.06 + c * 0.16) % 1);
+      const cx = Math.sin(frameCount * 0.12 + c * 1.5) * 18;
+      const cy = topY - 12 - cProg * 50;
+      const cR = Math.max(0.6, 2.4 * (1 - cProg));
       ctx.beginPath();
       ctx.arc(cx, cy, cR, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
-  // 4. Runas Petroglíficas e Veias de Magma
+  // 5. Rede de Veias de Magma Fractais
   drawMagmaVeins(ctx, bob, frameCount, isVuln, isEnraged, isP3);
 }
 
 /**
- * Desenha o Olho Primordial de Basalto (Núcleo Abissal) no peito de Ignis Lithos,
- * completo com íris de obsidiana viva, correntes de convecção de magma e dilatação responsiva.
+ * Desenha o Olho Tectônico Primordial com anel de runas giratório,
+ * arcos de plasma coronal em curvas de Bézier e pupila de obsidiana reativa.
  * @param {CanvasRenderingContext2D} ctx
  * @param {Object} e
  * @param {number} bob
@@ -1133,38 +1598,81 @@ export function drawMegalithBody(ctx, e, bob, frameCount, isVuln, isEnraged, isP
  */
 export function drawAbyssalCore(ctx, e, bob, frameCount, isVuln, isEnraged, isP3, isChanneling, isWindup) {
   const coreY = -6 + bob;
-  let coreBaseRadius = isVuln ? 10 : (isChanneling ? 28 : 18);
+  let coreBaseRadius = isVuln ? 11 : (isChanneling ? 28 : 19);
   if (isWindup) coreBaseRadius += 5;
 
   const pulse = isVuln ? 0 : Math.sin(frameCount * (isP3 ? 0.28 : (isEnraged ? 0.20 : 0.12))) * 2.8;
-  const currentR = Math.max(7, coreBaseRadius + pulse);
+  const currentR = Math.max(8, coreBaseRadius + pulse);
 
-  // 1. Soquete de Rocha Esculpida com Dentes Cônicos
-  ctx.fillStyle = '#121619';
+  // 1. Soquete de Rocha Esculpida com Dentes Cônicos Interlocking
+  ctx.fillStyle = '#0f1417';
   ctx.beginPath();
-  ctx.arc(0, coreY, currentR + 6, 0, Math.PI * 2);
+  ctx.arc(0, coreY, currentR + 9, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = isVuln ? '#2f3640' : (isChanneling ? '#e67e22' : (isP3 ? '#ff1744' : (isEnraged ? '#ff4757' : '#f39c12')));
-  ctx.lineWidth = 2.6;
+  ctx.strokeStyle = isVuln ? '#242b30' : (isChanneling ? '#e67e22' : (isP3 ? '#ff1744' : (isEnraged ? '#ff4757' : '#f39c12')));
+  ctx.lineWidth = 2.8;
   ctx.stroke();
 
-  // 2. Halo de Convecção Térmica / Erupção Solar
+  // Dentes rochosos que seguram o olho
+  const toothCount = 8;
+  ctx.fillStyle = '#202932';
+  for (let t = 0; t < toothCount; t++) {
+    const ta = (t * Math.PI * 2) / toothCount;
+    const tox = Math.cos(ta) * (currentR + 9);
+    const toy = coreY + Math.sin(ta) * (currentR + 9);
+    const tix = Math.cos(ta) * (currentR + 2);
+    const tiy = coreY + Math.sin(ta) * (currentR + 2);
+
+    ctx.beginPath();
+    ctx.arc(tox, toy, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = isVuln ? '#4b5760' : '#e67e22';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tix, tiy);
+    ctx.stroke();
+  }
+
+  // 2. Anel Concêntrico de Runas Geológicas Rotativas
   if (!isVuln) {
-    const flareCount = 8;
-    const flareR = currentR + 7 + Math.sin(frameCount * 0.2) * 3;
-    ctx.strokeStyle = isP3 ? 'rgba(255, 23, 68, 0.4)' : 'rgba(243, 156, 18, 0.35)';
-    ctx.lineWidth = 1.4;
+    const runeRadius = currentR + 5;
+    const rotSpeed = frameCount * 0.02;
+    const runeCount = 6;
+    ctx.fillStyle = isP3 ? '#ff7675' : '#f1c40f';
+    for (let rn = 0; rn < runeCount; rn++) {
+      const rAng = -rotSpeed + (rn * Math.PI * 2) / runeCount;
+      const rx = Math.cos(rAng) * runeRadius;
+      const ry = coreY + Math.sin(rAng) * runeRadius;
+      ctx.fillRect(rx - 1.2, ry - 1.2, 2.4, 2.4);
+    }
+  }
+
+  // 3. Erupções Solares e Arcos de Plasma Coronal em Curvas de Bézier
+  if (!isVuln) {
+    const flareCount = 6;
+    ctx.strokeStyle = isP3 ? 'rgba(255, 23, 68, 0.65)' : 'rgba(243, 156, 18, 0.55)';
+    ctx.lineWidth = 1.8;
     for (let f = 0; f < flareCount; f++) {
-      const fa = (f * Math.PI * 2) / flareCount + frameCount * 0.03;
+      const baseAng = (f * Math.PI * 2) / flareCount + frameCount * 0.025;
+      const flareLen = currentR + 10 + Math.sin(frameCount * 0.18 + f * 2) * 5;
+      const x1 = Math.cos(baseAng - 0.25) * currentR;
+      const y1 = coreY + Math.sin(baseAng - 0.25) * currentR;
+      const x2 = Math.cos(baseAng + 0.25) * currentR;
+      const y2 = coreY + Math.sin(baseAng + 0.25) * currentR;
+      const cx = Math.cos(baseAng) * flareLen;
+      const cy = coreY + Math.sin(baseAng) * flareLen;
+
       ctx.beginPath();
-      ctx.moveTo(Math.cos(fa) * currentR, coreY + Math.sin(fa) * currentR);
-      ctx.lineTo(Math.cos(fa) * flareR, coreY + Math.sin(fa) * flareR);
+      ctx.moveTo(x1, y1);
+      ctx.quadraticCurveTo(cx, cy, x2, y2);
       ctx.stroke();
     }
   }
 
-  // 3. Disco de Magma Incandescente com Gradiente Radial Profundo
+  // 4. Disco de Magma Incandescente com Gradiente Profundo de Radiação
   const grad = ctx.createRadialGradient(0, coreY, 2, 0, coreY, currentR);
   if (isVuln) {
     grad.addColorStop(0, '#57606f');
@@ -1172,18 +1680,18 @@ export function drawAbyssalCore(ctx, e, bob, frameCount, isVuln, isEnraged, isP3
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
   } else if (isP3) {
     grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.3, '#ff4757');
-    grad.addColorStop(0.8, '#8b0000');
+    grad.addColorStop(0.25, '#ff4757');
+    grad.addColorStop(0.75, '#8b0000');
     grad.addColorStop(1, 'rgba(139, 0, 0, 0)');
   } else if (isEnraged || isChanneling) {
     grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.35, '#ff9f43');
-    grad.addColorStop(0.85, '#c0392b');
+    grad.addColorStop(0.3, '#ff9f43');
+    grad.addColorStop(0.8, '#c0392b');
     grad.addColorStop(1, 'rgba(192, 57, 43, 0)');
   } else {
     grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.4, '#f1c40f');
-    grad.addColorStop(0.85, '#d35400');
+    grad.addColorStop(0.35, '#f1c40f');
+    grad.addColorStop(0.80, '#d35400');
     grad.addColorStop(1, 'rgba(211, 84, 0, 0)');
   }
 
@@ -1192,25 +1700,25 @@ export function drawAbyssalCore(ctx, e, bob, frameCount, isVuln, isEnraged, isP3
   ctx.arc(0, coreY, currentR, 0, Math.PI * 2);
   ctx.fill();
 
-  // 4. Íris Viva / Fenda Vertical de Obsidiana
+  // 5. Pupila de Obsidiana Viva com Dilatação e Reflexo Especular de Cristal
   if (!isVuln) {
-    const slitW = isWindup ? 1.5 : (isChanneling ? 4.0 : 2.5);
-    const slitH = currentR * 0.75;
-    ctx.fillStyle = '#1e0508';
+    const slitW = isWindup ? 1.5 : (isChanneling ? 4.5 : 2.6);
+    const slitH = currentR * 0.76;
+    ctx.fillStyle = '#140205';
     ctx.beginPath();
     ctx.ellipse(0, coreY, slitW, slitH, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Ponto de luz especular divino no olho de basalto
+    // Ponto de Luz Especular Vítreo
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(slitW + 1, coreY - slitH * 0.3, 1.8, 0, Math.PI * 2);
+    ctx.arc(slitW + 1.2, coreY - slitH * 0.32, 2.0, 0, Math.PI * 2);
     ctx.fill();
   }
 }
 
 /**
- * Desenha as orbes orbitais (Litocistos) e conexões etéreas ao redor do chefe.
+ * Desenha as orbes orbitais (Litocistos) como meteoros vulcânicos vivos com caudas de brasa.
  * @param {CanvasRenderingContext2D} ctx
  * @param {Object} e
  * @param {number} bob
@@ -1227,6 +1735,7 @@ export function drawLitocistos(ctx, e, bob, frameCount, isEnraged, isP3) {
     const ox = Math.cos(o.angle) * o.dist;
     const oy = Math.sin(o.angle) * o.dist + bob;
 
+    // 1. Elo de Plasma Elétrico ao Núcleo
     ctx.save();
     ctx.strokeStyle = isP3 ? 'rgba(255, 23, 68, 0.45)' : (isEnraged ? 'rgba(255, 71, 87, 0.40)' : 'rgba(230, 126, 34, 0.35)');
     ctx.lineWidth = 1.6;
@@ -1237,6 +1746,21 @@ export function drawLitocistos(ctx, e, bob, frameCount, isEnraged, isP3) {
     ctx.stroke();
     ctx.restore();
 
+    // 2. Rastro de Cauda de Cometa / Partículas de Brasa
+    ctx.save();
+    for (let t = 1; t <= 3; t++) {
+      const tailAng = o.angle - (t * 0.12);
+      const tx = Math.cos(tailAng) * o.dist;
+      const ty = Math.sin(tailAng) * o.dist + bob;
+      const tAlpha = (1 - t / 3.5) * 0.55;
+      ctx.fillStyle = isP3 ? `rgba(255, 23, 68, ${tAlpha})` : `rgba(243, 156, 18, ${tAlpha})`;
+      ctx.beginPath();
+      ctx.arc(tx, ty, Math.max(1, o.radius * (1 - t * 0.25)), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // 3. O Geodo / Meteoro Vulcânico
     ctx.save();
     ctx.translate(ox, oy);
 
@@ -1246,7 +1770,8 @@ export function drawLitocistos(ctx, e, bob, frameCount, isEnraged, isP3) {
       ctx.arc(0, 0, o.radius + 2, 0, Math.PI * 2);
       ctx.fill();
     } else {
-      ctx.fillStyle = isP3 ? '#3d080c' : (isEnraged ? '#2d0f12' : '#2f3640');
+      // Crosta Externa de Basalto
+      ctx.fillStyle = isP3 ? '#30050a' : (isEnraged ? '#240a0e' : '#1e272e');
       ctx.beginPath();
       ctx.arc(0, 0, o.radius, 0, Math.PI * 2);
       ctx.fill();
@@ -1255,15 +1780,28 @@ export function drawLitocistos(ctx, e, bob, frameCount, isEnraged, isP3) {
       ctx.lineWidth = 2.0;
       ctx.stroke();
 
-      const orbGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, o.radius * 0.65);
+      // Interior de Magma Incandescente
+      const orbGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, o.radius * 0.68);
       orbGrad.addColorStop(0, '#ffffff');
-      orbGrad.addColorStop(0.5, isP3 ? '#ff4d4d' : (isEnraged ? '#ff6b81' : '#f1c40f'));
+      orbGrad.addColorStop(0.45, isP3 ? '#ff4d4d' : (isEnraged ? '#ff6b81' : '#f1c40f'));
       orbGrad.addColorStop(1, isP3 ? '#8b0000' : (isEnraged ? '#c0392b' : '#d35400'));
       ctx.fillStyle = orbGrad;
       ctx.beginPath();
-      ctx.arc(0, 0, o.radius * 0.65, 0, Math.PI * 2);
+      ctx.arc(0, 0, o.radius * 0.68, 0, Math.PI * 2);
       ctx.fill();
 
+      // Fissuras na Casca do Geodo
+      ctx.strokeStyle = isP3 ? '#ffffff' : '#f1c40f';
+      ctx.lineWidth = 1.0;
+      ctx.beginPath();
+      ctx.moveTo(-o.radius * 0.4, -o.radius * 0.3);
+      ctx.lineTo(0, 0);
+      ctx.lineTo(o.radius * 0.3, o.radius * 0.4);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(o.radius * 0.4, -o.radius * 0.2);
+      ctx.stroke();
+
+      // Arco de Vida Circular (Verde esmeralda com contorno fino)
       const hpPct = Math.max(0, o.hp / o.maxHp);
       ctx.strokeStyle = '#2ecc71';
       ctx.lineWidth = 2.4;
@@ -1317,7 +1855,7 @@ export function drawAbyssalMonolith(ctx, e, frameCount) {
   // Telegrafias exclusivas do chefe (Epicentro, Onda de Fendas, Slam e Giro)
   drawTelegraphsAndZones(ctx, e, frameCount);
 
-  // Orbes Orbitais (Litocistos)
+  // Orbes Orbitais (Litocistos como Meteoros)
   drawLitocistos(ctx, e, bob, frameCount, isEnraged, isP3);
 
   ctx.restore();

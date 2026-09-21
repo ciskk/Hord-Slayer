@@ -5,7 +5,7 @@
 
 import { playSfx, triggerHaptic } from '../../../core/audio.js';
 import { enemies } from '../../../main.js';
-import { MONOLITH_STATES, MONOLITH_CONFIG } from './constants.js';
+import { MONOLITH_STATES, MONOLITH_SKILLS, MONOLITH_CONFIG } from './constants.js';
 import { 
   updateThermalVents, 
   updateLitocistos, 
@@ -55,35 +55,52 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
 
   // Cinemática Procedural dos Punhos / Manoplas Megalíticas Flutuantes
   if (!e.gauntlets) {
-    e.gauntlets = { left: { x: -64, y: 10, lift: 0, rot: 0.15 }, right: { x: 64, y: 10, lift: 0, rot: -0.15 } };
+    e.gauntlets = { 
+      left: { x: -64, y: 10, lift: 0, rot: 0.15, grip: 0.15 }, 
+      right: { x: 64, y: 10, lift: 0, rot: -0.15, grip: 0.15 } 
+    };
   }
+
+  // Alvo de fechamento do punho (grip): 1 = punho fechado esmagador, 0 = garras abertas
+  let targetGrip = 0.15;
+
   if (e.actionState === MONOLITH_STATES.WINDUP_SLAM) {
-    e.gauntlets.left.lift = Math.min(55, e.gauntlets.left.lift + 3.2 * dt);
-    e.gauntlets.right.lift = Math.min(55, e.gauntlets.right.lift + 3.2 * dt);
+    e.gauntlets.left.lift = Math.min(55, (e.gauntlets.left.lift || 0) + 3.2 * dt);
+    e.gauntlets.right.lift = Math.min(55, (e.gauntlets.right.lift || 0) + 3.2 * dt);
     e.gauntlets.left.rot = 0.45;
     e.gauntlets.right.rot = -0.45;
+    targetGrip = 0.95; // Punho cerrado pronto para esmagar
   } else if (e.actionState === MONOLITH_STATES.WINDUP_WHIRL) {
     e.gauntlets.left.lift = Math.sin(frameCount * 0.25) * 12;
     e.gauntlets.right.lift = -Math.sin(frameCount * 0.25) * 12;
     e.gauntlets.left.rot += 0.25;
     e.gauntlets.right.rot += 0.25;
+    targetGrip = 0.0; // Garras totalmente abertas para corte circular
   } else if (e.actionState === MONOLITH_STATES.CHANNELING_SIPHON) {
     e.gauntlets.left.lift = -8;
     e.gauntlets.right.lift = -8;
     e.gauntlets.left.rot = -0.3;
     e.gauntlets.right.rot = 0.3;
+    targetGrip = 0.25;
   } else if (e.actionState === MONOLITH_STATES.RECOVERY) {
     e.gauntlets.left.lift = -35;
     e.gauntlets.right.lift = -35;
     e.gauntlets.left.rot = -0.6;
     e.gauntlets.right.rot = 0.6;
+    targetGrip = 0.60;
   } else {
     const naturalSway = Math.sin(frameCount * 0.08) * 4;
     e.gauntlets.left.lift = naturalSway;
     e.gauntlets.right.lift = -naturalSway;
     e.gauntlets.left.rot = 0.12;
     e.gauntlets.right.rot = -0.12;
+    targetGrip = 0.15;
   }
+
+  // Interpolação suave do grip para transição natural entre poses
+  const gripSpeed = Math.min(1.0, 0.18 * dt);
+  e.gauntlets.left.grip = (e.gauntlets.left.grip ?? 0.15) + (targetGrip - (e.gauntlets.left.grip ?? 0.15)) * gripSpeed;
+  e.gauntlets.right.grip = (e.gauntlets.right.grip ?? 0.15) + (targetGrip - (e.gauntlets.right.grip ?? 0.15)) * gripSpeed;
 
   // Orientação horizontal dinâmica quando livre
   if (e.actionState !== MONOLITH_STATES.POST_ATTACK_RECOVERY && e.actionState !== MONOLITH_STATES.RECOVERY && e.actionState !== MONOLITH_STATES.SPAWN_INTRO && !e.aimLocked) {
@@ -323,7 +340,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
       return;
     }
 
-    // Recuperação Pós-Ataque (Calibrada para 32-38 frames: punição justa sem deixar o boss inerte)
+    // Recuperação Pós-Ataque (Janela de punição e respiro tático calibrada)
     case MONOLITH_STATES.POST_ATTACK_RECOVERY: {
       e.actionTimer -= dt;
       if (Math.floor(frameCount) % 7 === 0) {
@@ -336,7 +353,11 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
       }
       if (e.actionTimer <= 0) {
         e.actionState = MONOLITH_STATES.CHASE;
-        e.skillCooldown = e.comboNext ? 14 : (e.isPhase3 ? 26 : (e.isEnraged ? 34 : 42));
+        // Se acabou de dar o Slam, garante janela extra de respiro antes de sortear nova habilidade
+        const isPostSlam = e.lastUsedSkill === MONOLITH_SKILLS.TECTONIC_SLAM;
+        e.skillCooldown = isPostSlam 
+          ? (e.isPhase3 ? 42 : (e.isEnraged ? 48 : 56)) 
+          : (e.comboNext ? 16 : (e.isPhase3 ? 26 : (e.isEnraged ? 34 : 42)));
         e.aimLocked = false;
       }
       return;
@@ -348,12 +369,22 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
     case MONOLITH_STATES.WINDUP_SLAM: {
       e.actionTimer -= dt;
 
-      // Trava a mira nos últimos 16 frames dando tempo de correr para as costas
-      const lockThreshold = e.isEnraged ? 14 : 18;
+      // Lock-in Antecipado (~550ms a 600ms antes do impacto) dando tempo generoso para esquiva
+      const lockThreshold = e.isPhase3 ? 30 : (e.isEnraged ? 32 : 36);
+
       if (e.actionTimer > lockThreshold) {
-        e.aimAngle = Math.atan2(player.y - e.y, player.x - e.x);
+        // Inércia de giro suave (velocidade angular finita de colosso de pedra)
+        const targetAngle = Math.atan2(player.y - e.y, player.x - e.x);
+        if (e.aimAngle === undefined) e.aimAngle = targetAngle;
+        let diff = targetAngle - e.aimAngle;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+
+        const maxTurnRate = (e.isPhase3 ? 0.08 : (e.isEnraged ? 0.065 : 0.052)) * dt;
+        e.aimAngle += Math.max(-maxTurnRate, Math.min(maxTurnRate, diff));
         e.aimLocked = false;
       } else {
+        // Mira totalmente travada e congelada: o cone não segue mais o jogador
         e.aimLocked = true;
       }
 
@@ -362,7 +393,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
         createHitParticles(
           e.x + Math.cos(e.aimAngle) * sparkDist,
           e.y + Math.sin(e.aimAngle) * sparkDist,
-          '#ff4757',
+          e.aimLocked ? '#ffffff' : '#ff4757',
           1
         );
       }

@@ -14,9 +14,13 @@ import { getTimeUntilNextWave, getEffectiveHordeSeconds } from '../systems/waves
 let _cachedSkillContainer = null;
 let _cachedSkillMask = null;
 let _cachedSkillText = null;
+let _cachedSkillRing = null;
 let _lastSkillReady = null;
 let _lastSkillDeg = -1;
+let _lastSkillOffset = -1;
 let _lastSkillTextStr = null;
+
+const SKILL_RING_CIRCUMFERENCE = 166.5;
 
 export function initSkillUI(onSkillTrigger = triggerHeroSkill) {
   const skillContainer = document.getElementById('skill-btn-container');
@@ -39,6 +43,7 @@ export function updateSkillUI() {
     _cachedSkillContainer = document.getElementById('skill-btn-container');
     _cachedSkillMask = document.getElementById('skill-cooldown-mask');
     _cachedSkillText = document.getElementById('skill-timer-text');
+    _cachedSkillRing = document.getElementById('skill-progress-ring');
   }
 
   if (!_cachedSkillContainer || !_cachedSkillMask || !_cachedSkillText) return;
@@ -48,21 +53,32 @@ export function updateSkillUI() {
     if (_lastSkillReady !== true) {
       _lastSkillReady = true;
       _lastSkillDeg = 0;
+      _lastSkillOffset = 0;
       _lastSkillTextStr = '';
-      _cachedSkillMask.style.background = 'transparent';
+      _cachedSkillMask.style.display = 'none';
       _cachedSkillText.innerText = '';
+      if (_cachedSkillRing) _cachedSkillRing.style.strokeDashoffset = '0';
       _cachedSkillContainer.classList.add('ready');
     }
   } else {
     if (_lastSkillReady !== false) {
       _lastSkillReady = false;
+      _cachedSkillMask.style.display = 'block';
       _cachedSkillContainer.classList.remove('ready');
     }
-    const ratio = player.skillCd / player.skillMaxCd;
+    const ratio = Math.max(0, Math.min(1, player.skillCd / player.skillMaxCd));
+
+    // Anel SVG Circular de Energia (carrega no sentido horário até fechar o círculo)
+    const offset = (ratio * SKILL_RING_CIRCUMFERENCE).toFixed(1);
+    if (offset !== _lastSkillOffset) {
+      _lastSkillOffset = offset;
+      if (_cachedSkillRing) _cachedSkillRing.style.strokeDashoffset = offset;
+    }
+
     const deg = Math.floor(ratio * 360);
     if (deg !== _lastSkillDeg) {
       _lastSkillDeg = deg;
-      _cachedSkillMask.style.background = `conic-gradient(rgba(10, 12, 18, 0.82) ${deg}deg, transparent ${deg}deg)`;
+      _cachedSkillMask.style.setProperty('--skill-deg', deg + 'deg');
     }
     const textStr = (player.skillCd / 60).toFixed(1) + 's';
     if (textStr !== _lastSkillTextStr) {
@@ -208,20 +224,25 @@ export function applyHeroVisuals(heroKey) {
   const heroProfile = heroProfiles[activeKey] || heroProfiles.KNIGHT || { themeColor: '#f1c40f' };
   const heroChar = characters[activeKey] || characters.KNIGHT || { title: 'O SOBREVIVENTE' };
 
-  if (hudDom.hudHeroEmblem) {
-    hudDom.hudHeroEmblem.innerHTML = heroEmblemSvg;
+  const crestEl = hudDom.hudHeroEmblem || document.getElementById('hud-hero-emblem');
+  if (crestEl) {
+    crestEl.innerHTML = heroEmblemSvg;
   }
-  if (hudDom.hudHeroTitle) {
-    hudDom.hudHeroTitle.innerText = (heroChar.title || 'O SOBREVIVENTE').toUpperCase();
+  const titleEl = hudDom.hudHeroTitle || document.getElementById('hud-hero-title');
+  if (titleEl) {
+    titleEl.innerText = (heroChar.title || 'O SOBREVIVENTE').toUpperCase();
   }
-  if (hudDom.skillEmblemWrap) {
-    hudDom.skillEmblemWrap.innerHTML = heroEmblemSvg;
+  const emblemWrap = hudDom.skillEmblemWrap || document.getElementById('skill-emblem-wrap');
+  if (emblemWrap) {
+    emblemWrap.innerHTML = heroEmblemSvg;
   }
-  if (hudDom.skillBtnContainer) {
-    hudDom.skillBtnContainer.style.setProperty('--skill-theme-color', heroProfile.themeColor);
+  const skillBtn = hudDom.skillBtnContainer || document.getElementById('skill-btn-container');
+  if (skillBtn) {
+    skillBtn.style.setProperty('--skill-theme-color', heroProfile.themeColor);
   }
-  if (hudDom.hudRoot) {
-    hudDom.hudRoot.style.setProperty('--hero-theme-color', heroProfile.themeColor);
+  const hudRoot = hudDom.hudRoot || document.getElementById('hud');
+  if (hudRoot) {
+    hudRoot.style.setProperty('--hero-theme-color', heroProfile.themeColor);
   }
 }
 
@@ -249,6 +270,7 @@ export function resetHUD(initialHp = 120) {
   _lastBossHpPct = -1;
   _lastBossEnraged = null;
   _lastTimerStr = '';
+  _lastHeroKey = null;
 
   if (hudDom && hudDom.waveCard) {
     hudDom.waveCard.classList.remove('banner-suppressed');

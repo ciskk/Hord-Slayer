@@ -183,6 +183,44 @@ export function updateSupremeReaper(e, dt, context) {
     e.crankVelocity *= 0.5;
   }
 
+  // 6.2 Animação Expressiva de Thanatos 2.0 (Mandíbula, Coroa, Astrolábio e Balança)
+  const isCastingHeavy = (
+    e.actionState === REAPER_STATES.VORTEX_HARVEST ||
+    e.actionState === REAPER_STATES.ENRAGE_TRANSITION ||
+    e.actionState === REAPER_STATES.WINDUP_EXECUTION ||
+    e.actionState === REAPER_STATES.WINDUP_BOOMERANG ||
+    (e.actionState === REAPER_STATES.WINDUP && e.currentSkill === 'SOUL_SCYTHES')
+  );
+
+  if (isCastingHeavy) {
+    e.jawTarget = 1.0;
+  } else if (e.isVulnerable) {
+    e.jawTarget = 0.5;
+  } else {
+    e.jawTarget = 0.0;
+  }
+  e.jawDrop = (e.jawDrop || 0) + ((e.jawTarget || 0) - (e.jawDrop || 0)) * 0.16 * dtSafe;
+
+  // Coroa do Eclipse Flutuante
+  e.haloAngle = (e.haloAngle || 0) + (e.isPhase3 ? 0.045 : (e.isEnraged ? 0.032 : 0.018)) * dtSafe;
+
+  // Astrolábio Rúnico da Foice
+  const targetAstrolabeSpeed = isCastingHeavy ? 0.14 : (e.isEnraged ? 0.065 : 0.035);
+  e.astrolabeSpeed = (e.astrolabeSpeed || 0.035) + (targetAstrolabeSpeed - (e.astrolabeSpeed || 0.035)) * 0.12 * dtSafe;
+  e.astrolabeAngle = (e.astrolabeAngle || 0) + (e.astrolabeSpeed || 0.035) * dtSafe;
+
+  // Balança do Julgamento Reativa à Vida do Jogador
+  const playerHpRatio = player ? Math.max(0, Math.min(1, player.hp / (player.maxHp || 100))) : 1;
+  const scalesTarget = (1 - playerHpRatio) * 0.75 - 0.30; // -0.30 (vida pesada) a +0.45 (morte pesada)
+  const dScales = scalesTarget - (e.scalesTilt || 0);
+  e.scalesTiltVelocity = ((e.scalesTiltVelocity || 0) + dScales * 0.09) * Math.pow(0.88, dtSafe);
+  e.scalesTilt = (e.scalesTilt || 0) + e.scalesTiltVelocity * dtSafe;
+
+  // Ciclo das Almas no Tecido e Ignição da Fase 3
+  e.clothWavePhase = (e.clothWavePhase || 0) + 0.035 * dtSafe;
+  const targetP3 = e.isPhase3 ? 1.0 : (e.isEnraged ? 0.35 : 0.0);
+  e.phase3Glow = (e.phase3Glow || 0) + (targetP3 - (e.phase3Glow || 0)) * 0.08 * dtSafe;
+
   // 7. Rastro Fantasma de Movimentação
   if (Math.floor(frameCount) % 3 === 0 && e.actionState !== REAPER_STATES.SPAWN_INTRO) {
     e.ghostTrail.unshift({

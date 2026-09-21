@@ -13,7 +13,7 @@ import {
   frameCount, 
   setIsWavePaused 
 } from '../../main.js';
-import { resetInput } from '../../core/input.js';
+import { resetInput, resetInputSoft, restoreKeyboardMovement } from '../../core/input.js';
 import { getRandomUpgrades, getRandomChestUpgrades, checkSynergies } from '../../config/upgrades.js';
 import { player, addPersistentGold } from '../../entities/player.js';
 import { renderIcon } from '../icons.js';
@@ -28,7 +28,7 @@ let chestKeydownHandler = null;
 export function openChestModal(tier = 'BOSS') {
   playSfx('chest_fanfare');
   gameState.isPaused = true;
-  resetInput();
+  resetInputSoft();
 
   const modal = document.getElementById('chest-modal');
   const list = document.getElementById('chest-rewards-list');
@@ -244,11 +244,122 @@ export function openChestModal(tier = 'BOSS') {
     cardElements.push({ el: card, reward: r });
   });
 
-  // 5. Travar botão de resgate durante a revelação
+  // 5. Estado de Revelação e Resgate Imediato
+  let isFullyRevealed = false;
+  let isClaiming = false;
+  let unboxingTimeout = null;
+  let revealTimeout = null;
+  let currentIdx = 0;
+
+  const doClaim = () => {
+    if (isClaiming) return;
+    isClaiming = true;
+
+    if (chestKeydownHandler) {
+      window.removeEventListener('keydown', chestKeydownHandler);
+      chestKeydownHandler = null;
+    }
+
+    modal.classList.remove('active');
+    modal.classList.add('closing');
+
+    setTimeout(() => {
+      modal.classList.remove('closing');
+      modal.style.display = 'none';
+
+      if (gameCanvas) {
+        gameCanvas.classList.remove('canvas-chest-frozen');
+      }
+
+      gameState.isPaused = false;
+      setLastTime(performance.now());
+      restoreKeyboardMovement();
+
+      if (!activeBoss) {
+        const waveSeconds = Math.floor(frameCount / 60);
+        const hordeSeconds = getEffectiveHordeSeconds(waveSeconds);
+        const currentWave = getCurrentWave(hordeSeconds);
+        transitionToArenaTheme(getWaveArenaTheme(currentWave.index), 90);
+        setIsWavePaused(false);
+        resetSpawnTimer();
+        triggerShake(8);
+        playSfx('level');
+      }
+    }, 200);
+  };
+
+  const fastForwardReveal = () => {
+    if (isFullyRevealed) return;
+    if (unboxingTimeout) {
+      clearTimeout(unboxingTimeout);
+      unboxingTimeout = null;
+    }
+    if (revealTimeout) {
+      clearTimeout(revealTimeout);
+      revealTimeout = null;
+    }
+
+    if (chestBox) {
+      chestBox.classList.remove('rumbling');
+      chestBox.classList.add('opened');
+    }
+
+    for (let i = currentIdx; i < cardElements.length; i++) {
+      const { el, reward } = cardElements[i];
+      reward.apply();
+      el.classList.add('revealed');
+      if (reward.isLegendary) {
+        recordRunStats({ evolution: true });
+      }
+    }
+    currentIdx = cardElements.length;
+    isFullyRevealed = true;
+
+    recordRunStats({ chestOpened: true });
+    playSfx('card_hover');
+    triggerShake(isMini ? 4 : 8);
+
+    if (claimBtn) {
+      claimBtn.disabled = false;
+      if (claimText) claimText.innerText = "Equipar Poderes e Continuar";
+      claimBtn.onclick = doClaim;
+    }
+  };
+
+  // Suporte Imediato ao Teclado (0 delay): Escuta desde o primeiro milissegundo de abertura
+  if (chestKeydownHandler) {
+    window.removeEventListener('keydown', chestKeydownHandler);
+    chestKeydownHandler = null;
+  }
+
+  chestKeydownHandler = (e) => {
+    if (e.repeat) return;
+    const m = document.getElementById('chest-modal');
+    if (!m || m.style.display === 'none' || m.classList.contains('closing')) return;
+
+    if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE') {
+      e.preventDefault();
+      if (!isFullyRevealed) {
+        fastForwardReveal();
+      } else {
+        doClaim();
+      }
+    } else if (e.code === 'Escape' || e.code === 'KeyP') {
+      e.preventDefault();
+    }
+  };
+  window.addEventListener('keydown', chestKeydownHandler);
+
   if (claimBtn) {
     claimBtn.disabled = true;
     if (claimText) claimText.innerText = "Desvendando Relíquias...";
-    claimBtn.onclick = null;
+    claimBtn.onclick = () => {
+      if (!isFullyRevealed) {
+        fastForwardReveal();
+      } else {
+        doClaim();
+      }
+    };
   }
 
   // 6. Configurar animação de abertura do baú
@@ -260,7 +371,7 @@ export function openChestModal(tier = 'BOSS') {
   modal.style.display = 'flex';
 
   // 7. Sequência cadenciada de Unboxing
-  setTimeout(() => {
+  unboxingTimeout = setTimeout(() => {
     if (chestBox) {
       chestBox.classList.remove('rumbling');
       chestBox.classList.add('opened');
@@ -268,60 +379,15 @@ export function openChestModal(tier = 'BOSS') {
     recordRunStats({ chestOpened: true });
     triggerShake(isMini ? 6 : 10);
 
-    let currentIdx = 0;
     function revealNext() {
+      if (isFullyRevealed) return;
+
       if (currentIdx >= cardElements.length) {
-        // Conclusão: Habilitar resgate
+        isFullyRevealed = true;
         if (claimBtn) {
           claimBtn.disabled = false;
           if (claimText) claimText.innerText = "Equipar Poderes e Continuar";
-
-          const doClaim = () => {
-            if (chestKeydownHandler) {
-              window.removeEventListener('keydown', chestKeydownHandler);
-              chestKeydownHandler = null;
-            }
-
-            modal.classList.remove('active');
-            modal.classList.add('closing');
-
-            setTimeout(() => {
-              modal.classList.remove('closing');
-              modal.style.display = 'none';
-
-              if (gameCanvas) {
-                gameCanvas.classList.remove('canvas-chest-frozen');
-              }
-
-              gameState.isPaused = false;
-              setLastTime(performance.now());
-
-              if (!activeBoss) {
-                const waveSeconds = Math.floor(frameCount / 60);
-                const hordeSeconds = getEffectiveHordeSeconds(waveSeconds);
-                const currentWave = getCurrentWave(hordeSeconds);
-                transitionToArenaTheme(getWaveArenaTheme(currentWave.index), 90);
-                setIsWavePaused(false);
-                resetSpawnTimer();
-                triggerShake(8);
-                playSfx('level');
-              }
-            }, 200);
-          };
-
           claimBtn.onclick = doClaim;
-
-          // Suporte a teclado: Espaço ou Enter
-          if (chestKeydownHandler) {
-            window.removeEventListener('keydown', chestKeydownHandler);
-          }
-          chestKeydownHandler = (e) => {
-            if (e.code === 'Space' || e.code === 'Enter') {
-              e.preventDefault();
-              doClaim();
-            }
-          };
-          window.addEventListener('keydown', chestKeydownHandler);
         }
         return;
       }
@@ -340,7 +406,7 @@ export function openChestModal(tier = 'BOSS') {
       }
 
       currentIdx++;
-      setTimeout(revealNext, reward.isLegendary ? 500 : 340);
+      revealTimeout = setTimeout(revealNext, reward.isLegendary ? 500 : 340);
     }
 
     revealNext();
