@@ -147,7 +147,8 @@ export function resetDeathAudioFilter() {
   if (!audioCtx || !masterFilterNode) return;
   const t = audioCtx.currentTime;
   masterFilterNode.frequency.cancelScheduledValues(t);
-  masterFilterNode.frequency.setTargetAtTime(22000, t, 0.04);
+  masterFilterNode.frequency.setValueAtTime(22000, t);
+  masterFilterNode.frequency.setTargetAtTime(22000, t, 0.02);
 }
 
 /**
@@ -170,11 +171,19 @@ export function resetStasisAudioFilter() {
   if (!audioCtx || !masterFilterNode) return;
   const t = audioCtx.currentTime;
   masterFilterNode.frequency.cancelScheduledValues(t);
-  masterFilterNode.frequency.setTargetAtTime(22000, t, 0.06);
+  masterFilterNode.frequency.setValueAtTime(22000, t);
+  masterFilterNode.frequency.setTargetAtTime(22000, t, 0.02);
 }
 
 export function playSfx(type, volumeMult = 1.0) {
-  if (!audioCtx || currentVolume <= 0) return;
+  if (currentVolume <= 0) return;
+  if (!audioCtx) {
+    try { initAudio(); } catch (e) {}
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    try { audioCtx.resume(); } catch (e) {}
+  }
+  if (!audioCtx) return;
   const now = performance.now();
   const t = audioCtx.currentTime;
 
@@ -971,4 +980,19 @@ export function playSfx(type, volumeMult = 1.0) {
       if (type !== 'bell_toll') triggerHaptic('medium');
     }
   } catch (e) {}
+}
+
+if (typeof window !== 'undefined') {
+  const ensureAudioActive = () => {
+    try {
+      if (!audioCtx) {
+        initAudio();
+      } else if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    } catch (e) {}
+  };
+  ['pointerdown', 'mousedown', 'keydown', 'touchstart', 'click'].forEach(evt => {
+    window.addEventListener(evt, ensureAudioActive, { passive: true });
+  });
 }

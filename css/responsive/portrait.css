@@ -2,10 +2,14 @@
 /* OTIMIZAÇÃO COMPLETA PARA SMARTPHONES VERTICAIS (PORTRAIT)*/
 /* ======================================================== */
 
-@media (max-width: 850px), (orientation: portrait) {
+@media (orientation: portrait), ((max-width: 850px) and (hover: none) and (pointer: coarse)) {
   /* ======================================================== */
   /* 0. HUD DE COMBATE MOBILE DARK FANTASY (REF. ESPECÍFICA)   */
   /* ======================================================== */
+  /* Desempacota o container horizontal do PC para manter a disposição vertical no mobile */
+  .hud-top-row {
+    display: contents !important;
+  }
   #hud {
     top: max(env(safe-area-inset-top, 6px), 6px);
     left: max(env(safe-area-inset-left, 6px), 8px);
@@ -176,7 +180,13 @@
     justify-content: center !important;
     transform: scale(0.65) !important;
     transform-origin: center top !important;
-    transition: opacity 0.3s ease, max-height 0.35s cubic-bezier(0.2, 0.8, 0.25, 1), transform 0.3s ease, margin 0.35s ease, padding 0.35s ease !important;
+    transition: opacity 0.55s cubic-bezier(0.2, 0.8, 0.25, 1), transform 0.55s cubic-bezier(0.2, 0.8, 0.25, 1), max-height 0.35s cubic-bezier(0.2, 0.8, 0.25, 1), margin 0.35s ease, padding 0.35s ease !important;
+  }
+
+  #hud-wave-card.banner-suppressed {
+    opacity: 0 !important;
+    transform: translateY(-6px) scale(0.6) !important;
+    pointer-events: none !important;
   }
 
   #hud.boss-active #hud-wave-card {
@@ -288,26 +298,26 @@
     clip-path: polygon(0 50%, 8px 0, 100% 0, 100% 100%, 8px 100%) !important;
   }
 
-  /* Botão de ULT no Mobile (Tamanho dobrado para 112px e posicionado a 30%) */
+  /* Botão de ULT no Mobile (Reduzido em 35% e posicionado em 15%) */
   #skill-btn-container {
-    bottom: 30% !important;
+    bottom: 15% !important;
     right: max(env(safe-area-inset-right, 14px), 16px) !important;
-    width: 112px !important;
-    height: 112px !important;
+    width: 73px !important;
+    height: 73px !important;
   }
 
   .skill-emblem-wrap {
-    width: 56px !important;
-    height: 56px !important;
+    width: 36px !important;
+    height: 36px !important;
   }
 
   #skill-cooldown-mask {
-    width: 72px !important;
-    height: 72px !important;
+    width: 47px !important;
+    height: 47px !important;
   }
 
   #skill-timer-text {
-    font-size: 22px !important;
+    font-size: 14px !important;
   }
 
   .skill-key-badge {
@@ -1822,7 +1832,7 @@
 /* ==========================================================================
    RESPONSIVIDADE VERTICAL / MOBILE (BESTIÁRIO & GRIMÓRIO)
    ========================================================================== */
-@media (max-width: 850px), (orientation: portrait) {
+@media (orientation: portrait), ((max-width: 850px) and (hover: none) and (pointer: coarse)) {
   /* 1. Modal do Bestiário (Neo-Arcane Intrinsic Stage em Tela Vertical) */
   .bestiary-screen-overlay {
     padding: max(env(safe-area-inset-top, 6px), 6px) 

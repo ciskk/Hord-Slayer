@@ -3,9 +3,12 @@
  * Subsistema de combate, efeitos visuais de impacto e máquina de estados melee (Fase 3).
  */
 import { playSfx, triggerHaptic } from '../core/audio.js';
-import { triggerShake, bossShockwaves, setLastAttackerInfo } from '../main.js';
 import { triggerDeath } from './ui.js';
+import { triggerShake } from '../state/gameState.js';
+import { bossShockwaves } from '../state/collections.js';
+import { setLastAttackerInfo } from '../state/events.js';
 import { selectedHeroKey } from '../entities/player.js';
+
 
 export const damageTexts = [];
 export const particles = [];

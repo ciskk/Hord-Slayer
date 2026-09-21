@@ -3,22 +3,17 @@
  * Subsistema Balístico, Poças Ambientais e Paridade de Dano Melee (Fase 3 e 5).
  */
 import { player, selectedHeroKey } from '../entities/player.js';
-import { enemies, triggerShake, setLastAttackerInfo } from '../main.js';
+import { enemies, bullets, enemyBullets, acidPuddles, MAX_CONCURRENT_ENEMY_BULLETS, canSpawnEnemyBullet } from '../state/collections.js';
+import { triggerShake } from '../state/gameState.js';
+import { setLastAttackerInfo } from '../state/events.js';
 import { addDamageText, createHitParticles } from './combat.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { getNeighborIndices } from '../core/spatialGrid.js';
 import { addGroundCrater, updateGroundCraters } from '../render/groundCracks.js';
 import { triggerDeath } from './ui.js';
 
-export const bullets = [];
-export const enemyBullets = [];
-export const acidPuddles = [];
+export { bullets, enemyBullets, acidPuddles, MAX_CONCURRENT_ENEMY_BULLETS, canSpawnEnemyBullet };
 
-export const MAX_CONCURRENT_ENEMY_BULLETS = 14;
-
-export function canSpawnEnemyBullet(isBoss = false) {
-  return isBoss || enemyBullets.length < MAX_CONCURRENT_ENEMY_BULLETS;
-}
 
 /**
  * Atualiza projéteis do jogador e dos inimigos, aplicando regras de adrenalina melee (+25% se <= 130px).

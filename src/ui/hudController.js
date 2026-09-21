@@ -7,7 +7,71 @@
 import { HERO_EMBLEMS_SVG, CHARACTER_PROFILES } from '../config/heroProfiles.js';
 import { CHARACTERS } from '../config/characters.js';
 import { ARENA_PALETTES } from '../render/environment.js';
-import { player, updateSkillUI, getPersistentGold, selectedHeroKey } from '../entities/player.js';
+import { player, getPersistentGold, selectedHeroKey, triggerHeroSkill } from '../entities/player.js';
+import { waveAnnouncement, frameCount } from '../state/gameState.js';
+import { getTimeUntilNextWave, getEffectiveHordeSeconds } from '../systems/waves.js';
+
+let _cachedSkillContainer = null;
+let _cachedSkillMask = null;
+let _cachedSkillText = null;
+let _lastSkillReady = null;
+let _lastSkillDeg = -1;
+let _lastSkillTextStr = null;
+
+export function initSkillUI(onSkillTrigger = triggerHeroSkill) {
+  const skillContainer = document.getElementById('skill-btn-container');
+  if (!skillContainer) return;
+
+  skillContainer.addEventListener('touchstart', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (typeof onSkillTrigger === 'function') onSkillTrigger();
+  }, { passive: false });
+
+  skillContainer.addEventListener('click', e => {
+    e.stopPropagation();
+    if (typeof onSkillTrigger === 'function') onSkillTrigger();
+  });
+}
+
+export function updateSkillUI() {
+  if (!_cachedSkillContainer) {
+    _cachedSkillContainer = document.getElementById('skill-btn-container');
+    _cachedSkillMask = document.getElementById('skill-cooldown-mask');
+    _cachedSkillText = document.getElementById('skill-timer-text');
+  }
+
+  if (!_cachedSkillContainer || !_cachedSkillMask || !_cachedSkillText) return;
+
+  const isReady = player.skillCd <= 0;
+  if (isReady) {
+    if (_lastSkillReady !== true) {
+      _lastSkillReady = true;
+      _lastSkillDeg = 0;
+      _lastSkillTextStr = '';
+      _cachedSkillMask.style.background = 'transparent';
+      _cachedSkillText.innerText = '';
+      _cachedSkillContainer.classList.add('ready');
+    }
+  } else {
+    if (_lastSkillReady !== false) {
+      _lastSkillReady = false;
+      _cachedSkillContainer.classList.remove('ready');
+    }
+    const ratio = player.skillCd / player.skillMaxCd;
+    const deg = Math.floor(ratio * 360);
+    if (deg !== _lastSkillDeg) {
+      _lastSkillDeg = deg;
+      _cachedSkillMask.style.background = `conic-gradient(rgba(10, 12, 18, 0.82) ${deg}deg, transparent ${deg}deg)`;
+    }
+    const textStr = (player.skillCd / 60).toFixed(1) + 's';
+    if (textStr !== _lastSkillTextStr) {
+      _lastSkillTextStr = textStr;
+      _cachedSkillText.innerText = textStr;
+    }
+  }
+}
+
 
 // Cache de nós estáticos do DOM para eliminar chamadas a document.getElementById e evitar Layout Thrashing
 var hudDom = {
@@ -69,6 +133,7 @@ export function ensureHudElementsCached() {
     hudDom.hudHeroTitle = document.getElementById('hud-hero-title');
     hudDom.skillEmblemWrap = document.getElementById('skill-emblem-wrap');
     hudDom.skillBtnContainer = document.getElementById('skill-btn-container');
+    hudDom.waveCard = document.getElementById('hud-wave-card');
     hudDom.hudRoot = document.getElementById('hud');
   }
 }
@@ -86,6 +151,7 @@ let _lastNextXp = -1;
 let _lastXpPct = -1;
 let _lastGold = -1;
 let _lastWaveBannerText = '';
+let _lastWaveCardSuppressed = null;
 let _lastBossHpPct = -1;
 let _lastBossEnraged = null;
 let _lastTimerStr = '';
@@ -179,9 +245,14 @@ export function resetHUD(initialHp = 120) {
   _lastXpPct = -1;
   _lastGold = -1;
   _lastWaveBannerText = '';
+  _lastWaveCardSuppressed = null;
   _lastBossHpPct = -1;
   _lastBossEnraged = null;
   _lastTimerStr = '';
+
+  if (hudDom && hudDom.waveCard) {
+    hudDom.waveCard.classList.remove('banner-suppressed');
+  }
 
   applyHeroVisuals();
 }
@@ -300,6 +371,28 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
   if (targetWaveBannerText !== _lastWaveBannerText) {
     _lastWaveBannerText = targetWaveBannerText;
     if (hudDom.waveBanner) hudDom.waveBanner.innerText = targetWaveBannerText;
+  }
+
+  // Sincronização coordenada do retângulo do HUD com o banner de entrada da horda:
+  // 1. 1 segundo antes de o banner começar: inicia fade out suave
+  // 2. Durante toda a exibição do banner (fade in, permanência e fade out): permanece oculto
+  // 3. Assim que o banner terminar o fade out: inicia fade in suave de retorno
+  let isWaveCardSuppressed = false;
+  if (waveAnnouncement && waveAnnouncement.timer > 0) {
+    isWaveCardSuppressed = true;
+  } else if (!activeBoss && gameState && gameState.isInMatch) {
+    const exactHordeSeconds = getEffectiveHordeSeconds(frameCount / 60);
+    const timeUntilNext = getTimeUntilNextWave(exactHordeSeconds);
+    if (timeUntilNext <= 1.0 && timeUntilNext > 0) {
+      isWaveCardSuppressed = true;
+    }
+  }
+
+  if (isWaveCardSuppressed !== _lastWaveCardSuppressed) {
+    _lastWaveCardSuppressed = isWaveCardSuppressed;
+    if (hudDom.waveCard) {
+      hudDom.waveCard.classList.toggle('banner-suppressed', isWaveCardSuppressed);
+    }
   }
 
   updateSkillUI();

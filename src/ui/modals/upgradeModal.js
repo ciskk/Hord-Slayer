@@ -374,8 +374,9 @@ export function presentDeferredLevelUpModal() {
   renderUpgradeCards();
 
   if (upgradeModal) {
-    upgradeModal.classList.remove('closing');
+    upgradeModal.classList.remove('closing', 'modal-hidden');
     upgradeModal.classList.add('active');
+    upgradeModal.style.removeProperty('display');
     upgradeModal.style.display = 'flex';
   }
 }

@@ -820,6 +820,10 @@ export function openBestiaryModal() {
   modal.style.removeProperty('display');
   modal.style.display = 'flex';
 
+  document.querySelectorAll('.bestiary-tab-btn').forEach(btn => {
+    btn.classList.toggle('active', (btn.getAttribute('data-cat') || 'ALL') === currentBestiaryCategory);
+  });
+
   renderBestiaryRoster(currentBestiaryCategory);
   renderBestiaryDossier(selectedCreatureId);
 
@@ -877,6 +881,11 @@ export function renderBestiaryRoster(filterCategory = 'ALL') {
   let entries = BESTIARY_ENTRIES;
   if (filterCategory && filterCategory !== 'ALL') {
     entries = entries.filter(c => c.category === filterCategory);
+  }
+
+  if (entries.length > 0 && !entries.some(c => c.id === selectedCreatureId)) {
+    selectedCreatureId = entries[0].id;
+    renderBestiaryDossier(selectedCreatureId);
   }
 
   // Atualizar contador de descobertos no cabeçalho

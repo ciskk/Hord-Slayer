@@ -10,6 +10,10 @@
 @media (orientation: landscape) and (max-height: 520px),
        html.compact-height {
   /* 0. HUD de combate dark fantasy em paisagem móvel */
+  /* Desempacota o container horizontal do PC para o layout de paisagem móvel */
+  .hud-top-row {
+    display: contents !important;
+  }
   #hud {
     top: max(env(safe-area-inset-top, 4px), 4px);
     left: max(env(safe-area-inset-left, 12px), 16px);
@@ -175,7 +179,13 @@
     justify-content: center !important;
     transform: scale(0.65) !important;
     transform-origin: center top !important;
-    transition: opacity 0.3s ease, max-height 0.35s cubic-bezier(0.2, 0.8, 0.25, 1), transform 0.3s ease, margin 0.35s ease, padding 0.35s ease !important;
+    transition: opacity 0.55s cubic-bezier(0.2, 0.8, 0.25, 1), transform 0.55s cubic-bezier(0.2, 0.8, 0.25, 1), max-height 0.35s cubic-bezier(0.2, 0.8, 0.25, 1), margin 0.35s ease, padding 0.35s ease !important;
+  }
+
+  #hud-wave-card.banner-suppressed {
+    opacity: 0 !important;
+    transform: translateY(-5px) scale(0.6) !important;
+    pointer-events: none !important;
   }
 
   #hud.boss-active #hud-wave-card {
@@ -281,24 +291,24 @@
   }
 
   #skill-btn-container {
-    bottom: 30% !important;
+    bottom: 15% !important;
     right: max(env(safe-area-inset-right, 16px), 18px) !important;
-    width: 96px !important;
-    height: 96px !important;
+    width: 62px !important;
+    height: 62px !important;
   }
 
   .skill-emblem-wrap {
-    width: 48px !important;
-    height: 48px !important;
+    width: 31px !important;
+    height: 31px !important;
   }
 
   #skill-cooldown-mask {
-    width: 60px !important;
-    height: 60px !important;
+    width: 39px !important;
+    height: 39px !important;
   }
 
   #skill-timer-text {
-    font-size: 20px !important;
+    font-size: 13px !important;
   }
 
   .skill-key-badge {

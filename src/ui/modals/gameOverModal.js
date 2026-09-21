@@ -290,10 +290,11 @@ export function triggerDeath() {
 
   // 5. Estatísticas da Partida (Biometria em Badges Transparentes)
   const timerElem = document.getElementById('timer-val');
-  const survivalTime = timerElem ? timerElem.innerText : '00:00';
+  const survivalTime = (timerElem && typeof timerElem.innerText === 'string' && timerElem.innerText.trim()) ? timerElem.innerText.trim() : '00:00';
 
   const waveElem = document.getElementById('wave-banner');
-  const waveText = waveElem ? waveElem.innerText.split(':')[0] : 'Horda';
+  const rawWaveStr = (waveElem && typeof waveElem.innerText === 'string') ? waveElem.innerText : '';
+  const waveText = rawWaveStr.includes(':') ? rawWaveStr.split(':')[0].trim() : (rawWaveStr.trim() || 'Horda');
 
 /**
  * Animação fluida de contagem numérica ascendente para métricas da partida
@@ -463,7 +464,9 @@ function animateCountUp(element, targetValue, durationMs = 650) {
   const modal = document.getElementById('death-modal');
   if (modal) {
     modal.classList.toggle('is-mobile-device', isMobileScreen());
+    modal.classList.remove('modal-hidden', 'closing');
     modal.classList.add('active');
+    modal.style.removeProperty('display');
     modal.style.display = 'flex';
   }
 

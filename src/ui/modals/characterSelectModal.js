@@ -4,11 +4,14 @@
  */
 import { CHARACTERS } from '../../config/characters.js';
 import { 
-  HERO_UNLOCK_MAP, 
+  HERO_UNLOCK_MAP 
+} from '../../config/achievements.js';
+import {
   isHeroUnlocked, 
   getAchievementStatus,
-  getHeroRecord
-} from '../../config/achievements.js';
+  getHeroRecord,
+  getPersistentGold
+} from '../../systems/progression.js';
 import { 
   startPreview, 
   stopPreview, 
@@ -25,11 +28,12 @@ import {
 } from '../../core/audio.js';
 import { 
   selectedHeroKey,
-  setSelectedHeroKey, 
-  getPersistentGold 
+  setSelectedHeroKey
 } from '../../entities/player.js';
 import { layoutMetrics } from '../../core/responsive.js';
-import { gameState, resetGame, terminateMatch } from '../../main.js';
+import { gameState } from '../../state/gameState.js';
+import { resetGame, terminateMatch } from '../../main.js';
+
 import { renderIcon, WEAPON_ICONS } from '../icons.js';
 import { closeDeathModal } from './gameOverModal.js';
 
@@ -222,8 +226,17 @@ export function openCharacterSelect() {
     const profile = CHARACTER_PROFILES[heroKey] || CHARACTER_PROFILES.KNIGHT;
     const unlocked = isHeroUnlocked(heroKey);
     const achId = HERO_UNLOCK_MAP[heroKey];
-    const status = achId ? getAchievementStatus(achId) : null;
-    const heroRecord = getHeroRecord(heroKey);
+    const heroRecord = getHeroRecord(heroKey) || {
+      heroKey,
+      unlocked,
+      runsPlayed: 0,
+      victories: 0,
+      kills: 0,
+      bestSeconds: 0,
+      timeStr: '00:00',
+      statusLabel: unlocked ? 'DESPERTO' : 'BLOQUEADO',
+      statusClass: unlocked ? 'status-awake' : 'status-locked'
+    };
 
     setPreviewHero(heroKey);
 

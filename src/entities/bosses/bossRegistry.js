@@ -2,22 +2,23 @@ import {
   initVampireLord, 
   updateVampireLord, 
   drawVampireLord 
-} from './vampireLord.js';
+} from './vampireLord/vampireLord.js';
 import { 
   initAbyssalMonolith, 
   updateAbyssalMonolith, 
   drawAbyssalMonolith 
-} from './abyssalMonolith.js';
+} from './abyssalMonolith/abyssalMonolith.js';
 import { 
   initSupremeReaper, 
   updateSupremeReaper, 
   drawSupremeReaper 
-} from './supremeReaper.js';
+} from './supremeReaper/supremeReaper.js';
 import { 
   initAbyssSovereign, 
   updateAbyssSovereign, 
   drawAbyssSovereign 
-} from './abyssSovereign.js';
+} from './abyssSovereign/abyssSovereign.js';
+
 
 // Dicionário modular de todos os chefes do jogo
 const BOSS_MODULES = {

@@ -3,14 +3,16 @@
  * Astrolábio Cósmico e Forja do Destino: Árvore de Meta-Progressão Rúnica, Constelações e Resumo de Bênçãos.
  */
 import { closeCharSelectModal, isMobileScreen } from './characterSelectModal.js';
+import { META_TALENTS } from '../../config/talents.js';
 import { 
-  META_TALENTS, 
   getMetaUpgradeCost, 
   buyMetaUpgrade, 
   getMetaLevels, 
   getPersistentGold, 
-  getMetaBonuses 
-} from '../../entities/player.js';
+  getMetaBonuses,
+  resetMetaTree
+} from '../../systems/progression.js';
+
 import { renderIcon } from '../icons.js';
 import { playSfx, triggerHaptic } from '../../core/audio.js';
 
@@ -810,6 +812,19 @@ export function openTalentsModal() {
   }
 
   activeRenderAstrolabe = renderAstrolabe;
+
+  const resetBtn = document.getElementById('reset-talents-btn') || document.getElementById('talents-reset-btn');
+  if (resetBtn) {
+    resetBtn.onclick = (e) => {
+      e.stopPropagation();
+      const refunded = resetMetaTree();
+      if (refunded > 0) {
+        try { playSfx('chest'); } catch (err) {}
+      }
+      renderAstrolabe();
+    };
+  }
+
   renderAstrolabe();
   modal.classList.remove('modal-hidden');
   modal.classList.add('active');

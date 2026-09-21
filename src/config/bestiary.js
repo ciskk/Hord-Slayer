@@ -2,9 +2,6 @@
  * src/config/bestiary.js
  * Códice do Bestiário das Trevas, Estatísticas de Abates e Micro-Lore Gótica.
  */
-import { playSfx, triggerHaptic } from '../core/audio.js';
-
-const BESTIARY_STORAGE_KEY = 'hord_bestiary_v1';
 
 /**
  * Registro Canônico de todas as 45 Criaturas do Hord.io
@@ -722,95 +719,14 @@ export const BESTIARY_ENTRIES = [
   }
 ];
 
-/**
- * Retorna as estatísticas de abates por criatura salvas na conta
- * @returns {Object} Mapa { [creatureId]: count }
- */
-export function getBestiaryStats() {
-  try {
-    const raw = localStorage.getItem(BESTIARY_STORAGE_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw) || {};
-  } catch (e) {
-    return {};
-  }
-}
-
-/**
- * Salva as estatísticas de abates do bestiário
- */
-export function saveBestiaryStats(stats) {
-  try {
-    localStorage.setItem(BESTIARY_STORAGE_KEY, JSON.stringify(stats));
-  } catch (e) {
-    console.error('Erro ao salvar bestiário:', e);
-  }
-}
-
-/**
- * Registra um abate no bestiário e notifica caso uma nova criatura seja descoberta
- * @param {string} creatureId Identificador da criatura (ex: 'ZOMBIE', 'BLOOD_GARGOYLE', 'BOSS_1')
- */
-export function recordCreatureKill(creatureId) {
-  if (!creatureId) return;
-  const stats = getBestiaryStats();
-  const prevCount = stats[creatureId] || 0;
-  stats[creatureId] = prevCount + 1;
-  saveBestiaryStats(stats);
-  return stats[creatureId];
-}
-
-/**
- * Retorna a contagem de abates de uma criatura específica
- */
-export function getCreatureKills(creatureId) {
-  const stats = getBestiaryStats();
-  return stats[creatureId] || 0;
-}
-
-/**
- * Retorna se a criatura foi descoberta (pelo menos 1 abate)
- */
-export function isCreatureDiscovered(creatureId) {
-  return getCreatureKills(creatureId) > 0;
-}
-
-/**
- * Retorna se a lore completa da criatura foi desbloqueada
- * Hordas: 10 abates | Mini-Chefes: 1 abate | Chefes: 1 abate
- */
-export function isLoreUnlocked(creature) {
-  const kills = getCreatureKills(creature.id);
-  if (creature.category === 'BOSS') return kills >= 1;
-  if (creature.category === 'MINIBOSS') return kills >= 1;
-  return kills >= 10;
-}
-
-/**
- * CHEAT DEVTOOLS (W + 5): Desbloqueia todas as 30 criaturas do Bestiário com 100 abates
- */
-export function unlockAllBestiary() {
-  const stats = {};
-  BESTIARY_ENTRIES.forEach(entry => {
-    stats[entry.id] = 100;
-  });
-  saveBestiaryStats(stats);
-  try {
-    playSfx('chest_rare');
-    triggerHaptic('heavy');
-  } catch (e) {}
-  return true;
-}
-
-/**
- * CHEAT DEVTOOLS (W + 5): Reseta o Bestiário de volta ao estado inicial
- */
-export function resetBestiary() {
-  saveBestiaryStats({});
-  try {
-    localStorage.removeItem(BESTIARY_STORAGE_KEY);
-    playSfx('hit');
-    triggerHaptic('light');
-  } catch (e) {}
-  return true;
-}
+// Reexportações de Retrocompatibilidade delegadas ao subsistema central de progressão
+export {
+  getBestiaryStats,
+  saveBestiaryStats,
+  recordCreatureKill,
+  getCreatureKills,
+  isCreatureDiscovered,
+  isLoreUnlocked,
+  unlockAllBestiary,
+  resetBestiary
+} from '../systems/progression.js';

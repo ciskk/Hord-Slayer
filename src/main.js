@@ -35,16 +35,12 @@ import {
   updateCombatVisuals 
 } from './systems/combat.js';
 import { 
-  bullets, 
-  enemyBullets, 
-  acidPuddles, 
   updateProjectiles, 
-  updateAcidPuddles, 
-  canSpawnEnemyBullet 
+  updateAcidPuddles 
 } from './systems/projectiles.js';
 import { groundCraters } from './render/groundCracks.js';
 import { spawnSquad, spawnMobCluster, spawnProp, spawnInitialHorde } from './entities/enemies.js';
-import { recordRunStats } from './config/achievements.js';
+import { recordRunStats } from './systems/progression.js';
 import { 
   getCurrentWave, 
   getEffectiveHordeSeconds,
@@ -95,187 +91,71 @@ import {
   initWorldEventsUI 
 } from './systems/worldEvents.js';
 
-// Reexportações diretas das variáveis de combate e projéteis
-export { 
-  damageTexts, 
-  particles, 
-  bloodSplats, 
-  dyingEnemies, 
-  addDamageText, 
-  createHitParticles, 
-  addBloodSplat, 
-  processEnemyMeleeAttacks 
-};
+// --- Estado Centralizado, Coleções e Eventos (src/state/*) ---
+import {
+  canvas,
+  ctx,
+  bannerCanvas,
+  bannerCtx,
+  setMainCanvas,
+  setMainCtx,
+  setBannerCanvas,
+  dpr,
+  viewW,
+  viewH,
+  calculateCameraZoom,
+  CAMERA_ZOOM,
+  cameraViewW,
+  cameraViewH,
+  gameState,
+  camera,
+  cinematicCamera,
+  frameCount,
+  spawnTimer,
+  screenShake,
+  freezeTimer,
+  currentArenaTheme,
+  lastTime,
+  waveAnnouncement,
+  lastAnnouncedWaveIndex,
+  deferredLevelUpGraceTimer,
+  setLastTime,
+  resetSpawnTimer,
+  setSpawnTimer,
+  setCurrentArenaTheme,
+  setIsWavePaused,
+  triggerShake,
+  decayScreenShake,
+  setFrameCount,
+  advanceFrameCount,
+  setFreezeTimer,
+  setDeferredLevelUpGraceTimer,
+  setLastAnnouncedWaveIndex,
+  updateDimensions
+} from './state/gameState.js';
 
-export { 
-  bullets, 
-  enemyBullets, 
-  acidPuddles, 
-  canSpawnEnemyBullet 
-};
-
-export let canvas = null;
-export let ctx = null;
-
-export function setMainCtx(newCtx) {
-  ctx = newCtx;
-}
-
-export let dpr = 1;
-export let viewW = window.innerWidth;
-export let viewH = window.innerHeight;
-
-export function calculateCameraZoom(w, h) {
-  const minDim = Math.min(w, h);
-  if (minDim >= 650) {
-    return 1.25;
-  }
-  return Math.min(1.25, Math.max(0.65, minDim / 520));
-}
-
-export let CAMERA_ZOOM = typeof window !== 'undefined' ? calculateCameraZoom(window.innerWidth, window.innerHeight) : 1.25;
-export let cameraViewW = viewW / CAMERA_ZOOM;
-export let cameraViewH = viewH / CAMERA_ZOOM;
-
-export const gameState = {
-  isInMatch: false,
-  isPaused: false,
-  isDead: false,
-  isWon: false,
-  kills: 0,
-  isWavePaused: false
-};
-
-export function resize() {
-  if (!canvas) {
-    canvas = document.getElementById('game-canvas');
-  }
-  if (canvas && !ctx) {
-    ctx = canvas.getContext('2d', { alpha: false });
-  }
-  if (!canvas) return;
-
-  dpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 2.0);
-  viewW = layoutMetrics.viewW || window.innerWidth;
-  viewH = layoutMetrics.viewH || window.innerHeight;
-  if (gameState.isInMatch) {
-    CAMERA_ZOOM = calculateCameraZoom(viewW, viewH);
-    cameraViewW = viewW / CAMERA_ZOOM;
-    cameraViewH = viewH / CAMERA_ZOOM;
-  }
-  canvas.width = Math.floor(viewW * dpr);
-  canvas.height = Math.floor(viewH * dpr);
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
-}
-
-initResponsive(() => {
-  resize();
-});
-
-export let frameCount = 0;
-export let spawnTimer = 999;
-export let screenShake = 0;
-export let freezeTimer = 0;
-export let currentArenaTheme = 'IVORY_OSSUARY';
-export let lastTime = performance.now();
-
-// Controle Diegético: Rastreamento Completo da Causa Mortis
-export let lastAttackerName = '';
-export let deathContext = {
-  name: 'A Horda do Abismo',
-  category: 'HORDE', // 'BOSS' | 'MINIBOSS' | 'ELITE' | 'HORDE' | 'HAZARD' | 'PROJECTILE' | 'ENVIRONMENT'
-  attackName: 'Golpe Devorador',
-  damage: 0,
-  enemyType: null,
-  color: '#e74c3c',
-  tacticTip: ''
-};
-
-export function setLastAttackerInfo(info = {}) {
-  if (typeof info === 'string') {
-    info = { name: info };
-  }
-  const name = info.name || lastAttackerName || 'A Horda do Abismo';
-  lastAttackerName = name;
-
-  let category = info.category;
-  if (!category) {
-    if (info.isBoss || (typeof activeBoss !== 'undefined' && activeBoss && (name.includes(activeBoss.name) || name.includes('Chefe') || name.includes('Vampírico') || name.includes('Monólito') || name.includes('Soberano') || name.includes('Thanatos') || name.includes('Meteoro') || name.includes('Foice') || name.includes('Erupção') || name.includes('Tectônica')))) {
-      category = 'BOSS';
-    } else if (info.isMiniBoss) {
-      category = 'MINIBOSS';
-    } else if (info.isElite) {
-      category = 'ELITE';
-    } else if (name.includes('Vórtice') || name.includes('Ácido') || name.includes('Miasma') || name.includes('Poça') || name.includes('Explosão') || name.includes('Estilhaço') || name.includes('Chamas')) {
-      category = 'HAZARD';
-    } else if (name.includes('Projétil') || name.includes('Orbe') || name.includes('Tiro') || name.includes('Corrente')) {
-      category = 'PROJECTILE';
-    } else {
-      category = 'HORDE';
-    }
-  }
-
-  deathContext = {
-    name,
-    category,
-    attackName: info.attackName || (category === 'BOSS' ? 'Mecânica de Chefe' : (category === 'HAZARD' ? 'Perigo Ambiental' : (category === 'PROJECTILE' ? 'Projétil Mortal' : 'Golpe Melee'))),
-    damage: Math.round(info.damage || 0),
-    enemyType: info.enemyType || null,
-    color: info.color || (category === 'BOSS' ? '#8e44ad' : (category === 'MINIBOSS' ? '#e67e22' : (category === 'HAZARD' ? '#e74c3c' : (category === 'PROJECTILE' ? '#9b59b6' : '#c0392b')))),
-    tacticTip: info.tacticTip || ''
-  };
-}
-
-export function setLastAttackerName(name, options = {}) {
-  const merged = (typeof name === 'object' && name !== null) ? { ...name, ...options } : { name, ...options };
-  setLastAttackerInfo(merged);
-}
-
-// Banner Cinematográfico de Transição de Ondas
-export const waveAnnouncement = {
-  name: '',
-  index: 0,
-  timer: 0,
-  maxTimer: 180
-};
-export let lastAnnouncedWaveIndex = 0;
-export let deferredLevelUpGraceTimer = 0;
-
-let cachedFreezeOverlay = null;
-let isFreezeOverlayVisible = false;
-
-export function setLastTime(t) { lastTime = t; }
-export function resetSpawnTimer() { spawnTimer = 999; }
-export function setCurrentArenaTheme(theme) { currentArenaTheme = theme; }
-export function setIsWavePaused(val) { gameState.isWavePaused = val; }
-export function triggerShake(intensity) { screenShake = Math.max(screenShake, intensity); }
-
-export const camera = { x: 0, y: 0 };
-export const cinematicCamera = {
-  isCinematic: false,
-  returningToPlayer: false,
-  letterboxProgress: 0
-};
-export let enemies = [];
-export let gems = [];
-export let props = [];
-export let drops = [];
-export let chests = [];
+import {
+  enemies,
+  props,
+  drops,
+  chests,
+  gems,
+  bullets,
+  enemyBullets,
+  acidPuddles,
+  bossTelegraphs,
+  bossProjectiles,
+  bossShockwaves,
+  voidVortices,
+  activeBoss,
+  setActiveBoss,
+  canSpawnEnemyBullet,
+  resetCollections
+} from './state/collections.js';
 
 export function spawnChest(x, y, tier = 'BOSS') {
   spawnChestPickup(chests, x, y, tier);
 }
-
-export let bossTelegraphs = [];
-export let bossProjectiles = [];
-export let bossShockwaves = [];
-export let voidVortices = [];
-export let activeBoss = null;
-
-export function setActiveBoss(boss) { activeBoss = boss; }
-
-export { getGemConfig };
 
 export function purgeAllNormalEnemies() {
   return purgeAllNormalEnemiesPickup(enemies, gems);
@@ -284,6 +164,121 @@ export function purgeAllNormalEnemies() {
 export function triggerSuperMagnet() {
   return triggerSuperMagnetPickup(gems);
 }
+
+
+import {
+  lastAttackerName,
+  deathContext,
+  setLastAttackerInfo,
+  setLastAttackerName
+} from './state/events.js';
+
+// Reexportações para compatibilidade retroativa absoluta
+export {
+  canvas,
+  ctx,
+  bannerCanvas,
+  bannerCtx,
+  setMainCtx,
+  setBannerCanvas,
+  dpr,
+  viewW,
+  viewH,
+  calculateCameraZoom,
+  CAMERA_ZOOM,
+  cameraViewW,
+  cameraViewH,
+  gameState,
+  camera,
+  cinematicCamera,
+  frameCount,
+  spawnTimer,
+  screenShake,
+  freezeTimer,
+  currentArenaTheme,
+  lastTime,
+  waveAnnouncement,
+  lastAnnouncedWaveIndex,
+  deferredLevelUpGraceTimer,
+  setLastTime,
+  resetSpawnTimer,
+  setCurrentArenaTheme,
+  setIsWavePaused,
+  triggerShake,
+  enemies,
+  props,
+  drops,
+  chests,
+  gems,
+  bullets,
+  enemyBullets,
+  acidPuddles,
+  bossTelegraphs,
+  bossProjectiles,
+  bossShockwaves,
+  voidVortices,
+  activeBoss,
+  setActiveBoss,
+  canSpawnEnemyBullet,
+  lastAttackerName,
+  deathContext,
+  setLastAttackerInfo,
+  setLastAttackerName,
+  getGemConfig
+};
+
+
+export {
+  damageTexts,
+  particles,
+  bloodSplats,
+  dyingEnemies,
+  addDamageText,
+  createHitParticles,
+  addBloodSplat,
+  processEnemyMeleeAttacks
+} from './systems/combat.js';
+
+export function resize() {
+  const currentCanvas = canvas || document.getElementById('game-canvas');
+  if (currentCanvas && !canvas) {
+    setMainCanvas(currentCanvas);
+  }
+  if (currentCanvas && !ctx) {
+    setMainCtx(currentCanvas.getContext('2d', { alpha: false }));
+  }
+
+  const currentBannerCanvas = bannerCanvas || document.getElementById('banner-canvas');
+  if (currentBannerCanvas && !bannerCanvas) {
+    setBannerCanvas(currentBannerCanvas);
+  }
+
+  if (!currentCanvas) return;
+
+  const currentDpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 2.0);
+  const curW = layoutMetrics.viewW || window.innerWidth;
+  const curH = layoutMetrics.viewH || window.innerHeight;
+  updateDimensions(curW, curH, currentDpr);
+
+  currentCanvas.width = Math.floor(viewW * dpr);
+  currentCanvas.height = Math.floor(viewH * dpr);
+  currentCanvas.style.width = '100%';
+  currentCanvas.style.height = '100%';
+
+  if (currentBannerCanvas) {
+    currentBannerCanvas.width = Math.floor(viewW * dpr);
+    currentBannerCanvas.height = Math.floor(viewH * dpr);
+    currentBannerCanvas.style.width = '100%';
+    currentBannerCanvas.style.height = '100%';
+  }
+}
+
+initResponsive(() => {
+  resize();
+});
+
+let cachedFreezeOverlay = null;
+let isFreezeOverlayVisible = false;
 
 export function warpToWaveTime(targetWaveIndex) {
   const waveTimes = {
@@ -299,8 +294,8 @@ export function warpToWaveTime(targetWaveIndex) {
     10: 330
   };
   const targetSec = waveTimes[targetWaveIndex] !== undefined ? waveTimes[targetWaveIndex] : 0;
-  frameCount = targetSec * 60;
-  lastAnnouncedWaveIndex = 0;
+  setFrameCount(targetSec * 60);
+  setLastAnnouncedWaveIndex(0);
   playSfx('level');
 }
 
@@ -312,16 +307,21 @@ export function terminateMatch() {
   gameState.isWavePaused = false;
   gameState.kills = 0;
 
-  frameCount = 0;
-  spawnTimer = 0;
-  screenShake = 0;
-  freezeTimer = 0;
+  setFrameCount(0);
+  setSpawnTimer(0);
+  triggerShake(0);
+  setFreezeTimer(0);
 
-  // Limpa o canvas do jogo para não exibir a arena atrás do menu
+  // Limpa os canvas do jogo para não exibir a arena ou banners atrás do menu
   const gameCanvas = document.getElementById('game-canvas');
   if (gameCanvas) {
     const gc = gameCanvas.getContext('2d');
     if (gc) gc.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+  }
+  const bCanvas = bannerCanvas || document.getElementById('banner-canvas');
+  if (bCanvas) {
+    const bc = bCanvas.getContext('2d');
+    if (bc) bc.clearRect(0, 0, bCanvas.width, bCanvas.height);
   }
 
   // 1. Limpeza total de entidades vivas e ativas da partida
@@ -342,7 +342,7 @@ export function terminateMatch() {
   bossProjectiles.length = 0;
   bossShockwaves.length = 0;
   voidVortices.length = 0;
-  activeBoss = null;
+  setActiveBoss(null);
 
   // 2. Limpeza da Spatial Grid (Zero memory leak)
   clearSpatialGrid();
@@ -352,7 +352,7 @@ export function terminateMatch() {
   resetBossSchedule();
   resetMiniBossSchedule();
   resetUpgradeQueue();
-  currentArenaTheme = 'IVORY_OSSUARY';
+  setCurrentArenaTheme('IVORY_OSSUARY');
   cinematicCamera.isCinematic = false;
   cinematicCamera.returningToPlayer = false;
   cinematicCamera.letterboxProgress = 0;
@@ -369,8 +369,7 @@ export function terminateMatch() {
   // 5. Reset de inputs
   resetInput();
 
-  lastAttackerName = '';
-  deathContext = {
+  setLastAttackerInfo({
     name: 'A Horda do Abismo',
     category: 'HORDE',
     attackName: 'Golpe Devorador',
@@ -378,16 +377,18 @@ export function terminateMatch() {
     enemyType: null,
     color: '#e74c3c',
     tacticTip: ''
-  };
+  });
 
   waveAnnouncement.timer = 0;
   waveAnnouncement.index = 0;
   waveAnnouncement.name = '';
-  lastAnnouncedWaveIndex = 0;
-  deferredLevelUpGraceTimer = 0;
+  setLastAnnouncedWaveIndex(0);
+  setDeferredLevelUpGraceTimer(0);
 
   // 6. Reset do HUD e overlays visuais
   resetHUD(player.maxHp);
+  const waveCard = document.getElementById('hud-wave-card');
+  if (waveCard) waveCard.classList.remove('banner-suppressed');
   resetDeathAudioFilter();
 
   const canvasElem = document.getElementById('game-canvas');
@@ -462,7 +463,7 @@ export function resetGame() {
 
   gameState.isInMatch = true;
   gameState.isPaused = false;
-  lastTime = performance.now();
+  setLastTime(performance.now());
   document.body.classList.add('in-game');
 
   const hud = document.getElementById('hud');
@@ -470,6 +471,11 @@ export function resetGame() {
     hud.classList.remove('hud-hidden');
     hud.style.removeProperty('display');
     hud.style.display = 'flex';
+  }
+
+  const waveCard = document.getElementById('hud-wave-card');
+  if (waveCard) {
+    waveCard.classList.add('banner-suppressed');
   }
 
   resize();
@@ -488,6 +494,8 @@ export function resetGame() {
 
   hideEl('char-modal');
   hideEl('talents-modal');
+  hideEl('achievements-modal');
+  hideEl('bestiary-modal');
   hideEl('boss-select-modal');
 }
 
@@ -502,14 +510,14 @@ function update(dt) {
     }
   }
 
-  frameCount += dt;
+  advanceFrameCount(dt);
   const seconds = Math.floor(frameCount / 60);
   const hordeSeconds = getEffectiveHordeSeconds(seconds);
   const currentWave = getCurrentWave(hordeSeconds);
 
   // Gatilho de Anúncio Cinematográfico de Transição de Onda
   if (!activeBoss && currentWave && currentWave.index !== lastAnnouncedWaveIndex) {
-    lastAnnouncedWaveIndex = currentWave.index;
+    setLastAnnouncedWaveIndex(currentWave.index);
     waveAnnouncement.name = currentWave.name;
     waveAnnouncement.index = currentWave.index;
     waveAnnouncement.timer = 180;
@@ -529,10 +537,10 @@ function update(dt) {
     }
   }
 
-  if (screenShake > 0) screenShake = Math.max(0, screenShake - 0.7 * dt);
+  decayScreenShake(dt);
 
   if (freezeTimer > 0) {
-    freezeTimer -= dt;
+    setFreezeTimer(freezeTimer - dt);
     if (!isFreezeOverlayVisible) {
       if (!cachedFreezeOverlay) cachedFreezeOverlay = document.getElementById('freeze-overlay');
       if (cachedFreezeOverlay) cachedFreezeOverlay.style.display = 'block';
@@ -674,7 +682,8 @@ function update(dt) {
     if (v.life <= 0) voidVortices.splice(i, 1);
   }
 
-  let currentSpeed = isSlowed ? player.baseSpeed * 0.65 : (insideVortex ? player.baseSpeed * 0.72 : player.baseSpeed);
+  const baseSpd = (typeof player.baseSpeed === 'number' && !isNaN(player.baseSpeed)) ? player.baseSpeed : (player.speed || 3.2);
+  let currentSpeed = isSlowed ? baseSpd * 0.65 : (insideVortex ? baseSpd * 0.72 : baseSpd);
   if (player.invisTimer > 0) {
     currentSpeed *= 2;
   }
@@ -685,7 +694,7 @@ function update(dt) {
 
   if (player.dashDuration > 0) {
     player.dashDuration -= dt;
-    deferredLevelUpGraceTimer = 10;
+    setDeferredLevelUpGraceTimer(10);
 
     const inputLen = Math.hypot(inputX, inputY);
     if (inputLen > 0.05) {
@@ -762,7 +771,7 @@ function update(dt) {
     }
   } else if (player.ignisDashDuration > 0) {
     player.ignisDashDuration -= dt;
-    deferredLevelUpGraceTimer = 10;
+    setDeferredLevelUpGraceTimer(10);
 
     const inputLen = Math.hypot(inputX, inputY);
     if (inputLen > 0.05) {
@@ -951,7 +960,7 @@ function update(dt) {
   // Verificação e Liberação de Level-Up Diferido (Pós-ULT)
   if (!isHeroInUninterruptibleState() && pendingLevelUps > 0 && !gameState.isPaused && !gameState.isDead && !gameState.isWon) {
     if (deferredLevelUpGraceTimer > 0) {
-      deferredLevelUpGraceTimer -= dt;
+      setDeferredLevelUpGraceTimer(deferredLevelUpGraceTimer - dt);
     } else {
       presentDeferredLevelUpModal();
     }
@@ -1003,7 +1012,7 @@ function update(dt) {
 
   // 1. Spawner de Hordas, Esquadrões e Props
   if (!gameState.isWavePaused) {
-    spawnTimer += dt * getWorldEventSpawnRateMult();
+    setSpawnTimer(spawnTimer + dt * getWorldEventSpawnRateMult());
     if (spawnTimer >= currentWave.rate) {
       const hasSquads = currentWave.allowedSquads && currentWave.allowedSquads.length > 0;
       const hasTypes = currentWave.types && currentWave.types.length > 0;
@@ -1020,7 +1029,7 @@ function update(dt) {
         spawnMobCluster(chosenType, count, currentWave.eliteChance);
       }
       if (Math.random() < 0.26) spawnProp();
-      spawnTimer = 0;
+      setSpawnTimer(0);
     }
   }
 
@@ -1065,7 +1074,7 @@ function update(dt) {
     enemies,
     frameCount,
     freezeTimer,
-    setFreezeTimer: t => { freezeTimer = t; },
+    setFreezeTimer: t => { setFreezeTimer(t); },
     enemyBullets,
     bossTelegraphs,
     bossProjectiles,
@@ -1076,7 +1085,7 @@ function update(dt) {
     chests,
     gameState,
     activeBoss,
-    setActiveBoss: b => { activeBoss = b; },
+    setActiveBoss,
     triggerShake,
     triggerHaptic,
     setLastAttackerName,
@@ -1098,7 +1107,7 @@ function update(dt) {
     cameraViewW,
     cameraViewH,
     triggerShake,
-    setFreezeTimer: t => { freezeTimer = t; },
+    setFreezeTimer: t => { setFreezeTimer(t); },
     setIsWavePaused,
     resetSpawnTimer,
     setLastAttackerName
@@ -1132,7 +1141,7 @@ function update(dt) {
 function loop(now) {
   if (!now) now = performance.now();
   const rawDt = (now - lastTime) / (1000 / 60);
-  lastTime = now;
+  setLastTime(now);
   const speed = (typeof devCheats !== 'undefined' && devCheats.gameSpeed) ? devCheats.gameSpeed : 1.0;
   const dt = Math.min(Math.max(rawDt, 0.1), 2.5) * speed;
 

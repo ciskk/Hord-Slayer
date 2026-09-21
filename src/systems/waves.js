@@ -3,8 +3,10 @@
  * Gerenciamento de Ondas de Horda, Esquadrões Táticos e Agendamento de Chefes (Fase 4).
  */
 import { triggerBossEncounter, spawnMiniBoss } from '../entities/enemies.js';
-import { activeBoss, gameState } from '../main.js';
-import { recordRunStats } from '../config/achievements.js';
+import { activeBoss } from '../state/collections.js';
+import { gameState } from '../state/gameState.js';
+import { recordRunStats } from './progression.js';
+
 import { triggerBossBark } from './barks.js';
 import { isBossBlockedByWorldEvent } from './worldEvents.js';
 
@@ -244,4 +246,21 @@ export function getCurrentWave(seconds) {
       eliteChance: 0.40
     };
   }
+}
+
+export const WAVE_THRESHOLDS = [25, 55, 90, 130, 170, 210, 250, 290, 330];
+
+/**
+ * Retorna o tempo em segundos até a próxima onda,
+ * ou Infinity se não houver mais ondas agendadas.
+ * @param {number} effectiveHordeSeconds Segundos líquidos de combate na horda.
+ * @returns {number} Segundos restantes até a próxima onda.
+ */
+export function getTimeUntilNextWave(effectiveHordeSeconds) {
+  for (let i = 0; i < WAVE_THRESHOLDS.length; i++) {
+    if (effectiveHordeSeconds < WAVE_THRESHOLDS[i]) {
+      return WAVE_THRESHOLDS[i] - effectiveHordeSeconds;
+    }
+  }
+  return Infinity;
 }

@@ -5,7 +5,8 @@
 import { 
   dpr, 
   viewW, 
-  viewH 
+  viewH,
+  bannerCtx 
 } from '../../../main.js';
 import { getHudBottom } from '../../../core/responsive.js';
 import { SOVEREIGN_STATES } from './constants.js';
@@ -3054,7 +3055,7 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
 
   // 18. Grande Banner Cinematográfico de Tela (Tema Vermelho, Duração Reduzida em 50% e Responsivo para Telas Verticais)
   if (e.titleTimer > 0) {
-    drawCinematicScreenTitle(ctx, e, frameCount);
+    drawCinematicScreenTitle(bannerCtx || ctx, e, frameCount);
   }
 
 }

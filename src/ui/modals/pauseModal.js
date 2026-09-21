@@ -22,12 +22,13 @@ let pauseKeydownHandler = null;
 export function renderPauseInventory() {
   // 1. Metadados do Topo (Tempo, Onda e Almas)
   const timerElem = document.getElementById('timer-val');
-  const survivalTime = timerElem ? timerElem.innerText : '00:00';
+  const survivalTime = (timerElem && typeof timerElem.innerText === 'string' && timerElem.innerText.trim()) ? timerElem.innerText.trim() : '00:00';
   const pauseTimer = document.getElementById('pause-timer-val');
   if (pauseTimer) pauseTimer.innerText = survivalTime;
 
   const waveElem = document.getElementById('wave-banner');
-  const rawWaveText = waveElem ? waveElem.innerText.split(':')[0].trim() : 'Onda 1';
+  const rawWaveStr = (waveElem && typeof waveElem.innerText === 'string') ? waveElem.innerText : '';
+  const rawWaveText = rawWaveStr.includes(':') ? rawWaveStr.split(':')[0].trim() : (rawWaveStr.trim() || 'Onda 1');
   const isNumericWave = /^onda\s*\d+/i.test(rawWaveText);
 
   let waveBadgeText = '1';
@@ -327,8 +328,9 @@ export function openPause() {
   const pauseModal = document.getElementById('pause-modal');
   if (pauseModal) {
     pauseModal.classList.toggle('is-mobile-device', isMobileScreen());
-    pauseModal.classList.remove('closing');
+    pauseModal.classList.remove('closing', 'modal-hidden');
     pauseModal.classList.add('active');
+    pauseModal.style.removeProperty('display');
     pauseModal.style.display = 'flex';
   }
 

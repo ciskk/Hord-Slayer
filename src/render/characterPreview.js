@@ -1304,11 +1304,11 @@ function drawSpiritDagger(c, x, y, angle, scale, alpha = 1.0) {
   c.globalAlpha = alpha;
   c.scale(scale, scale);
 
-  // Pomo em anel/losango vazado de prata com ametista
+  // Pomo em anel/losango vazado de prata lunar com ametista
   c.save();
   c.translate(0, -9.5);
   c.rotate(Math.PI / 4);
-  c.fillStyle = '#484f63';
+  c.fillStyle = '#64748b';
   c.fillRect(-2.2, -2.2, 4.4, 4.4);
   c.fillStyle = '#a855f7';
   c.fillRect(-1.2, -1.2, 2.4, 2.4);
@@ -1317,9 +1317,9 @@ function drawSpiritDagger(c, x, y, angle, scale, alpha = 1.0) {
   c.restore();
 
   // Empunhadura escura com enrolamento de seda e prata
-  c.fillStyle = '#0d0b14';
+  c.fillStyle = '#0c0f17';
   c.fillRect(-1.2, -7.5, 2.4, 6.0);
-  c.strokeStyle = '#9aa3b8';
+  c.strokeStyle = '#cbd5e1';
   c.lineWidth = 0.7;
   c.beginPath();
   c.moveTo(-1.2, -6.5); c.lineTo(1.2, -5.5);
@@ -1327,22 +1327,30 @@ function drawSpiritDagger(c, x, y, angle, scale, alpha = 1.0) {
   c.stroke();
 
   // Guarda transversal em asas de corvo de prata lunar
-  c.fillStyle = '#484f63';
+  c.fillStyle = '#64748b';
   c.fillRect(-3.4, -1.6, 6.8, 2.0);
-  c.fillStyle = '#9aa3b8';
+  c.fillStyle = '#cbd5e1';
   c.fillRect(-2.0, -1.2, 4.0, 1.2);
 
-  // Halo espectral sutil ao redor da lâmina
+  // Halo espectral dual-tone (ciano + violeta) ao redor da lâmina
+  c.fillStyle = 'rgba(56, 189, 248, 0.25)';
+  c.beginPath();
+  c.moveTo(-4.5, 0);
+  c.lineTo(4.5, 0);
+  c.lineTo(0, 24.0);
+  c.closePath();
+  c.fill();
+
   c.fillStyle = 'rgba(168, 85, 247, 0.35)';
   c.beginPath();
-  c.moveTo(-4.0, 0);
-  c.lineTo(4.0, 0);
-  c.lineTo(0, 23.0);
+  c.moveTo(-3.5, 0);
+  c.lineTo(3.5, 0);
+  c.lineTo(0, 22.5);
   c.closePath();
   c.fill();
 
   // Lâmina em losango de aço estelar pontiagudo com fio afiado
-  c.fillStyle = '#3a384d';
+  c.fillStyle = '#475569';
   c.beginPath();
   c.moveTo(-2.8, 0);
   c.lineTo(2.8, 0);
@@ -1351,7 +1359,7 @@ function drawSpiritDagger(c, x, y, angle, scale, alpha = 1.0) {
   c.fill();
 
   // Chanfro claro de aço estelar
-  c.fillStyle = '#736e94';
+  c.fillStyle = '#94a3b8';
   c.beginPath();
   c.moveTo(0, 0);
   c.lineTo(2.8, 0);

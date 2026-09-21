@@ -5,7 +5,7 @@
  * Manto do Vazio de 4 Camadas, Caveira 3D com Chifres de Carneiro e Foice Monumental Rúnica.
  */
 
-import { dpr, viewW, viewH } from '../../../main.js';
+import { dpr, viewW, viewH, bannerCtx } from '../../../main.js';
 import { getHudBottom } from '../../../core/responsive.js';
 import { player } from '../../player.js';
 import { REAPER_STATES, REAPER_CONFIG, REAPER_SKILLS } from './constants.js';
@@ -2293,14 +2293,14 @@ export function drawSupremeReaper(ctx, e, frameCount) {
   if (e.actionState === REAPER_STATES.SPAWN_INTRO) {
     drawReaperSpawnIntro(ctx, e, frameCount);
     if (e.titleTimer > 0) {
-      drawCinematicScreenTitle(ctx, e, frameCount);
+      drawCinematicScreenTitle(bannerCtx || ctx, e, frameCount);
     }
     return;
   }
 
   // 2. Banner de apresentação (ativo durante e após a intro)
   if (e.titleTimer > 0) {
-    drawCinematicScreenTitle(ctx, e, frameCount);
+    drawCinematicScreenTitle(bannerCtx || ctx, e, frameCount);
   }
 
   const isVuln = e.isVulnerable;

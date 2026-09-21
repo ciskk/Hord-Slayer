@@ -4,7 +4,7 @@
  */
 
 import { MONOLITH_STATES, MONOLITH_CONFIG } from './constants.js';
-import { dpr, viewW, viewH } from '../../../main.js';
+import { dpr, viewW, viewH, bannerCtx } from '../../../main.js';
 import { getHudBottom } from '../../../core/responsive.js';
 
 /**
@@ -1287,14 +1287,14 @@ export function drawAbyssalMonolith(ctx, e, frameCount) {
   if (e.actionState === MONOLITH_STATES.SPAWN_INTRO) {
     drawMonolithSpawnIntro(ctx, e, frameCount);
     if (e.titleTimer > 0) {
-      drawCinematicScreenTitle(ctx, e, frameCount);
+      drawCinematicScreenTitle(bannerCtx || ctx, e, frameCount);
     }
     return;
   }
 
   // 2. Banner Cinematográfico de Título (continua visível na transição para combate)
   if (e.titleTimer > 0) {
-    drawCinematicScreenTitle(ctx, e, frameCount);
+    drawCinematicScreenTitle(bannerCtx || ctx, e, frameCount);
   }
 
   const isVuln = e.isVulnerable;

@@ -2,7 +2,7 @@
  * src/entities/bosses/vampireLord/render.js
  * Renderização procedural vetorial completa e cinemática do Lorde Vampírico (Boss 1).
  */
-import { dpr, viewW, viewH } from '../../../main.js';
+import { dpr, viewW, viewH, bannerCtx } from '../../../main.js';
 import { getHudBottom } from '../../../core/responsive.js';
 
 // ============================================================================
@@ -1051,14 +1051,14 @@ export function drawVampireLord(ctx, e, frameCount) {
   if (e.actionState === 'SPAWN_INTRO') {
     drawVampireSpawnIntro(ctx, e, frameCount);
     if (e.titleTimer > 0) {
-      drawCinematicScreenTitle(ctx, e, frameCount);
+      drawCinematicScreenTitle(bannerCtx || ctx, e, frameCount);
     }
     return;
   }
 
   // 2. Banner de apresentação (continua ativo durante a transição pós-intro)
   if (e.titleTimer > 0) {
-    drawCinematicScreenTitle(ctx, e, frameCount);
+    drawCinematicScreenTitle(bannerCtx || ctx, e, frameCount);
   }
 
   // 3. Teleporte em andamento
