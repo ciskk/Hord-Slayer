@@ -402,20 +402,20 @@ export const destinyCardsPool = [
     rarity: "card-cursed",
     badge: "Pacto Proibido",
     desc: "Forja um corpo maciço e impenetrável que se arrasta pesadamente pela arena.",
-    bonusText: "+150 HP Máximo",
-    penaltyText: "-33% Velocidade de Movimento",
-    stat: "+150 HP Máx | -33% Velocidade",
+    bonusText: "+195 HP Máximo",
+    penaltyText: "-30% Velocidade de Movimento",
+    stat: "+195 HP Máx | -30% Velocidade",
     apply: () => {
-      player.maxHp += 150;
-      player.hp += 150;
-      player.baseSpeed = Math.max(1.2, player.baseSpeed * 0.67);
+      player.maxHp += 195;
+      player.hp += 195;
+      player.baseSpeed = Math.max(1.2, player.baseSpeed * 0.70);
       player.speed = player.invisTimer > 0 ? player.baseSpeed * 2 : player.baseSpeed;
       player.destinyPacts = player.destinyPacts || [];
       player.destinyPacts.push({
         id: 'destiny_titan',
         title: "Coração de Titã",
-        bonus: "+150 HP Máximo",
-        penalty: "-33% Velocidade"
+        bonus: "+195 HP Máximo",
+        penalty: "-30% Velocidade"
       });
     },
     isAvailable: () => !player.destinyPacts || !player.destinyPacts.some(p => p.id === 'destiny_titan')
@@ -426,10 +426,10 @@ export const destinyCardsPool = [
     title: "Tormenta Arcana",
     rarity: "card-cursed",
     badge: "Pacto Proibido",
-    desc: "Disparo contínuo e frenético, mas a vulnerabilidade a cada golpe é extrema.",
+    desc: "Armas atacam com velocidade frenética, mas o tempo de invulnerabilidade após sofrer dano cai pela metade e os inimigos causam mais dano.",
     bonusText: "-30% Recarga de Armas",
-    penaltyText: "iFrames -50% & Inimigos causam +25% Dano",
-    stat: "-30% Recarga | iFrames -50% & Inimigos +25% Dano",
+    penaltyText: "Tempo de Invulnerabilidade pós-dano -50% & Inimigos causam +25% Dano",
+    stat: "-30% Recarga | Invulnerabilidade pós-dano -50% & Inimigos +25% Dano",
     apply: () => {
       player.cooldownReduction = Math.min(0.65, (player.cooldownReduction || 0) + 0.15);
       player.attackCooldown = Math.max(8, Math.floor(player.attackCooldown * 0.70));
@@ -441,7 +441,7 @@ export const destinyCardsPool = [
         id: 'destiny_arcane_frenzy',
         title: "Tormenta Arcana",
         bonus: "-30% Recarga de Armas",
-        penalty: "iFrames -50% & Inimigos +25% Dano"
+        penalty: "Tempo de Invulnerabilidade pós-dano -50% & Inimigos +25% Dano"
       });
     },
     isAvailable: () => !player.destinyPacts || !player.destinyPacts.some(p => p.id === 'destiny_arcane_frenzy')
@@ -526,15 +526,19 @@ export const BLESSING_UPGRADE = {
   rarity: "card-legendary",
   badge: "Recompensa",
   desc: "Todos os poderes conhecidos atingiram o apogeu! Recupera vitalidade e concede ouro da arena.",
-  stat: "Cura 35% HP & +40 Ouro",
+  stat: "Cura 35% HP & +15 Ouro",
   apply: () => {
     player.hp = Math.min(player.maxHp, player.hp + player.maxHp * 0.35);
-    addPersistentGold(40);
+    addPersistentGold(15);
   },
   isAvailable: () => true
 };
 
-export function getRandomUpgrades(count) {
+export function getRandomUpgrades(count, options = true) {
+  const allowDestiny = typeof options === 'boolean'
+    ? options
+    : (options?.allowDestiny !== undefined ? Boolean(options.allowDestiny) : true);
+
   const availableRegular = upgradesPool.filter(opt => opt.isAvailable());
 
   for (let i = availableRegular.length - 1; i > 0; i--) {
@@ -545,12 +549,15 @@ export function getRandomUpgrades(count) {
   const selected = [];
 
   // Sorteio de Cartas do Destino (a partir do nível 4, ~22% de chance de 1 slot ser um Pacto Amaldiçoado)
-  const availableDestiny = destinyCardsPool.filter(opt => opt.isAvailable());
-  const shouldRollDestiny = (player.level >= 4) && (availableDestiny.length > 0) && (Math.random() < 0.22);
+  // Exclusivo de telas de upgrade; nunca são sorteadas se allowDestiny for falso (ex: baús de tesouro)
+  if (allowDestiny) {
+    const availableDestiny = destinyCardsPool.filter(opt => opt.isAvailable());
+    const shouldRollDestiny = (player.level >= 4) && (availableDestiny.length > 0) && (Math.random() < 0.22);
 
-  if (shouldRollDestiny) {
-    const destinyIdx = Math.floor(Math.random() * availableDestiny.length);
-    selected.push(availableDestiny[destinyIdx]);
+    if (shouldRollDestiny) {
+      const destinyIdx = Math.floor(Math.random() * availableDestiny.length);
+      selected.push(availableDestiny[destinyIdx]);
+    }
   }
 
   // Preenche as vagas restantes com as opções normais
@@ -570,6 +577,15 @@ export function getRandomUpgrades(count) {
   }
 
   return selected;
+}
+
+/**
+ * Retorna upgrades aleatórios específicos para baús (exclui estritamente Cartas de Pacto).
+ * @param {number} count Quantidade de upgrades a sortear.
+ * @returns {Array} Lista de upgrades elegíveis para baús.
+ */
+export function getRandomChestUpgrades(count) {
+  return getRandomUpgrades(count, { allowDestiny: false });
 }
 
 export function checkSynergies() {

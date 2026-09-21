@@ -74,6 +74,31 @@ export const stick = {
   mode: joystickMode
 };
 
+export const cursorState = {
+  active: false,
+  x: 0,
+  y: 0,
+  lastMovedTime: 0
+};
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('mousemove', e => {
+    cursorState.active = true;
+    cursorState.x = e.clientX;
+    cursorState.y = e.clientY;
+    cursorState.lastMovedTime = performance.now();
+  }, { passive: true });
+
+  window.addEventListener('pointermove', e => {
+    if (e.pointerType === 'mouse' || !e.pointerType) {
+      cursorState.active = true;
+      cursorState.x = e.clientX;
+      cursorState.y = e.clientY;
+      cursorState.lastMovedTime = performance.now();
+    }
+  }, { passive: true });
+}
+
 export let inputX = 0;
 export let inputY = 0;
 
@@ -142,6 +167,8 @@ export function resetInput() {
   vertKeyStack.length = 0;
   activeKeyCodes.clear();
   setPlayerChannelingAltar(false);
+  cursorState.active = false;
+  cursorState.lastMovedTime = 0;
 }
 
 /**
@@ -496,5 +523,9 @@ window.addEventListener('keydown', e => {
 // Habilidade ativada com Botão Direito do Mouse (sem abrir menu de contexto nativo)
 window.addEventListener('contextmenu', e => {
   e.preventDefault();
-  triggerHeroSkill();
+  cursorState.active = true;
+  cursorState.x = e.clientX;
+  cursorState.y = e.clientY;
+  cursorState.lastMovedTime = performance.now();
+  triggerHeroSkill({ cursorX: e.clientX, cursorY: e.clientY });
 });

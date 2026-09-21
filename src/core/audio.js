@@ -962,8 +962,8 @@ export function playSfx(type, volumeMult = 1.0) {
       osc.stop(t + 0.04);
     } else if (type === 'chest_rare' || type === 'bell_toll') {
       // chest_rare: Baú Raro / Super Ímã (volume padrão 0.10)
-      // bell_toll: Sino Fúnebre do Arauto (volume reduzido em 80%: 0.02)
-      const baseGain = (type === 'bell_toll' ? 0.02 : 0.10) * volumeMult;
+      // bell_toll: Sino Fúnebre do Arauto (volume reduzido em 50%: 0.01 vs 0.02 anterior)
+      const baseGain = (type === 'bell_toll' ? 0.01 : 0.10) * volumeMult;
       [587.33, 739.99, 880, 1174.66].forEach((freq, idx) => {
         const o = audioCtx.createOscillator();
         const g = audioCtx.createGain();

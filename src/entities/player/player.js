@@ -5,11 +5,12 @@
  */
 import { CHARACTERS } from '../../config/characters.js';
 import { playSfx, triggerHaptic } from '../../core/audio.js';
-import { inputX, inputY } from '../../core/input.js';
+import { inputX, inputY, cursorState } from '../../core/input.js';
 import { createHitParticles } from '../../systems/combat.js';
-import { bullets } from '../../state/collections.js';
-import { gameState, triggerShake } from '../../state/gameState.js';
+import { bullets, enemies } from '../../state/collections.js';
+import { gameState, triggerShake, camera, CAMERA_ZOOM } from '../../state/gameState.js';
 import { getMetaBonuses } from '../../systems/progression.js';
+import { distToSegment } from '../../core/math.js';
 
 import { setInventoryPlayer, registerWeaponInInventory, registerPassiveInInventory } from './inventory.js';
 
@@ -116,17 +117,163 @@ export function isHeroInUninterruptibleState() {
   return false;
 }
 
-export function triggerHeroSkill() {
+/**
+ * Localiza a direção em radianos com a maior concentração de inimigos ao redor do jogador.
+ * Avalia candidatos a cada 11.25° (32 direções) e ângulos diretos para monstros próximos.
+ * @param {object} player O herói jogador.
+ * @param {Array} enemies Lista global de inimigos.
+ * @returns {number|null} Ângulo ótimo em radianos ou null se nenhum inimigo for encontrado.
+ */
+export function findDensestEnemyDirection(player, enemies) {
+  if (!enemies || enemies.length === 0 || !player) return null;
+
+  const px = player.x;
+  const py = player.y;
+  const maxRange = 550;
+  const maxRangeSq = maxRange * maxRange;
+
+  const nearby = [];
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
+    if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
+    if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
+
+    const dx = e.x - px;
+    const dy = e.y - py;
+    const dSq = dx * dx + dy * dy;
+    if (dSq <= maxRangeSq && dSq > 1) {
+      const dist = Math.sqrt(dSq);
+      nearby.push({
+        x: e.x,
+        y: e.y,
+        dx,
+        dy,
+        dist,
+        weight: e.isBoss ? 5.0 : (e.isMiniBoss ? 3.0 : 1.0)
+      });
+    }
+  }
+
+  if (nearby.length === 0) return null;
+  if (nearby.length === 1) return Math.atan2(nearby[0].dy, nearby[0].dx);
+
+  // 32 direções radiais uniformes
+  const candidateAngles = [];
+  const ANGLE_STEPS = 32;
+  for (let s = 0; s < ANGLE_STEPS; s++) {
+    candidateAngles.push((s * Math.PI * 2) / ANGLE_STEPS - Math.PI);
+  }
+
+  // Adiciona ângulos diretos para os alvos mais próximos para máxima pontaria em pequenos grupos
+  const directSampleCount = Math.min(nearby.length, 16);
+  for (let i = 0; i < directSampleCount; i++) {
+    candidateAngles.push(Math.atan2(nearby[i].dy, nearby[i].dx));
+  }
+
+  const dashLen = 360;
+  let bestAngle = null;
+  let maxScore = -1;
+
+  for (let a = 0; a < candidateAngles.length; a++) {
+    const ang = candidateAngles[a];
+    const cosA = Math.cos(ang);
+    const sinA = Math.sin(ang);
+    const targetX = px + cosA * dashLen;
+    const targetY = py + sinA * dashLen;
+
+    let score = 0;
+    for (let i = 0; i < nearby.length; i++) {
+      const n = nearby[i];
+      const segRes = distToSegment(n.x, n.y, px, py, targetX, targetY);
+      const d = segRes.dist;
+
+      if (d <= 65) {
+        // Colisão direta ao longo da linha de investida
+        score += n.weight * (1.0 - d / 80);
+      } else if (d <= 130) {
+        // Região adjacente de concentração
+        score += n.weight * 0.4 * (1.0 - d / 140);
+      }
+
+      // Bônus direcional no cone frontal (ângulo < ~55° do dash)
+      const dot = (n.dx * cosA + n.dy * sinA) / n.dist;
+      if (dot > 0.55 && n.dist <= dashLen * 1.25) {
+        score += n.weight * 0.25 * dot;
+      }
+    }
+
+    if (score > maxScore) {
+      maxScore = score;
+      bestAngle = ang;
+    }
+  }
+
+  return maxScore > 0 ? bestAngle : null;
+}
+
+/**
+ * Determina o ângulo da investida (ULT) de Sir Roland e Ignis:
+ * 1. Coordenadas de cursor explícitas (ex: clique direito com o mouse)
+ * 2. Direção ativa de movimento via joystick touch ou teclado WASD (inputX, inputY)
+ * 3. Cursor do mouse no desktop se movimentado ativamente nos últimos 2.5s
+ * 4. Sem direção definida por cursor/toque -> Região com maior concentração de inimigos
+ * 5. Fallback horizontal do sprite
+ */
+export function getHeroSkillDirection(options = {}) {
+  // 1. Coordenadas explícitas de cursor (ex: clique direito com mouse)
+  if (options && typeof options.cursorX === 'number' && typeof options.cursorY === 'number') {
+    const camX = (camera && typeof camera.x === 'number') ? camera.x : 0;
+    const camY = (camera && typeof camera.y === 'number') ? camera.y : 0;
+    const zoom = (typeof CAMERA_ZOOM === 'number' && CAMERA_ZOOM > 0) ? CAMERA_ZOOM : 1.25;
+    const pScreenX = (player.x - camX) * zoom;
+    const pScreenY = (player.y - camY) * zoom;
+    const dx = options.cursorX - pScreenX;
+    const dy = options.cursorY - pScreenY;
+    if (Math.hypot(dx, dy) > 25) {
+      return Math.atan2(dy, dx);
+    }
+  }
+
+  // 2. Direção ativa de movimento via joystick (touch) ou WASD
+  const inputLen = Math.hypot(inputX, inputY);
+  if (inputLen > 0.05) {
+    return Math.atan2(inputY, inputX);
+  }
+
+  // 3. Cursor do mouse no desktop se movimentado recentemente (últimos 2.5s) e fora do centro do herói
+  if (cursorState && cursorState.active && (performance.now() - cursorState.lastMovedTime < 2500) && (!options || !options.ignoreCursor)) {
+    const camX = (camera && typeof camera.x === 'number') ? camera.x : 0;
+    const camY = (camera && typeof camera.y === 'number') ? camera.y : 0;
+    const zoom = (typeof CAMERA_ZOOM === 'number' && CAMERA_ZOOM > 0) ? CAMERA_ZOOM : 1.25;
+    const pScreenX = (player.x - camX) * zoom;
+    const pScreenY = (player.y - camY) * zoom;
+    const dx = cursorState.x - pScreenX;
+    const dy = cursorState.y - pScreenY;
+    if (Math.hypot(dx, dy) > 35) {
+      return Math.atan2(dy, dx);
+    }
+  }
+
+  // 4. Sem direção definida pelo cursor ou toque:
+  // Direciona automaticamente para a região com maior concentração de inimigos
+  const densestAngle = findDensestEnemyDirection(player, enemies);
+  if (densestAngle !== null) {
+    return densestAngle;
+  }
+
+  // 5. Fallback padrão se não houver inimigos ativos
+  return player.facing === -1 ? Math.PI : 0;
+}
+
+export function triggerHeroSkill(options = {}) {
   if (player.skillCd > 0 || !gameState.isInMatch || gameState.isPaused || gameState.isDead || gameState.isWon) return;
 
   if (selectedHeroKey === 'KNIGHT') {
     player.dashDuration = 24;
     player.iFrames = 50;
     player.bossIFrames = 50;
-    const inputLen = Math.hypot(inputX, inputY);
-    const moveAng = inputLen > 0.05 
-      ? Math.atan2(inputY, inputX) 
-      : (player.facing === -1 ? Math.PI : 0);
+    const moveAng = getHeroSkillDirection(options);
 
     player.dashVx = Math.cos(moveAng) * 16;
     player.dashVy = Math.sin(moveAng) * 16;
@@ -140,10 +287,7 @@ export function triggerHeroSkill() {
     player.ignisDashDuration = 22;
     player.iFrames = 30;
     player.bossIFrames = 30;
-    const inputLen = Math.hypot(inputX, inputY);
-    const moveAng = inputLen > 0.05 
-      ? Math.atan2(inputY, inputX) 
-      : (player.facing === -1 ? Math.PI : 0);
+    const moveAng = getHeroSkillDirection(options);
 
     player.ignisDashVx = Math.cos(moveAng) * 15.5;
     player.ignisDashVy = Math.sin(moveAng) * 15.5;

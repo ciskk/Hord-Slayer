@@ -14,7 +14,7 @@ import {
   setIsWavePaused 
 } from '../../main.js';
 import { resetInput } from '../../core/input.js';
-import { getRandomUpgrades, checkSynergies } from '../../config/upgrades.js';
+import { getRandomUpgrades, getRandomChestUpgrades, checkSynergies } from '../../config/upgrades.js';
 import { player, addPersistentGold } from '../../entities/player.js';
 import { renderIcon } from '../icons.js';
 import { UPGRADE_ICONS } from './upgradeModal.js';
@@ -101,9 +101,9 @@ export function openChestModal(tier = 'BOSS') {
       });
     }
 
-    // 2. Upgrades adicionais
-    const upgrades = getRandomUpgrades(2);
-    upgrades.forEach(u => {
+    // 2. Upgrades adicionais (Cartas de Pacto nunca aparecem em baús)
+    const upgrades = getRandomChestUpgrades(2);
+    upgrades.filter(u => !u.isDestinyCard).forEach(u => {
       pendingRewards.push({
         isLegendary: false,
         title: u.title,
@@ -120,18 +120,18 @@ export function openChestModal(tier = 'BOSS') {
       isLegendary: true,
       title: "Tributo do Sangue Ancestral",
       desc: "O altar consagra sua vitória: restaura sua vida ao máximo e concede almas persistentes.",
-      stat: "Vida Total & +100 Ouro",
+      stat: "Vida Total & +40 Ouro",
       badge: "Dádiva de Sangue",
       iconSvg: `<svg viewBox="0 0 24 24"><path fill="#ff3838" d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`,
       apply: () => {
         player.hp = player.maxHp;
-        addPersistentGold(100);
+        addPersistentGold(40);
       }
     });
   } else if (isMini) {
     const upgradeCount = Math.random() < 0.25 ? 2 : 1;
-    const upgrades = getRandomUpgrades(upgradeCount);
-    upgrades.forEach(u => {
+    const upgrades = getRandomChestUpgrades(upgradeCount);
+    upgrades.filter(u => !u.isDestinyCard).forEach(u => {
       pendingRewards.push({
         isLegendary: false,
         title: u.title,
@@ -158,8 +158,8 @@ export function openChestModal(tier = 'BOSS') {
       });
     }
 
-    const upgrades = getRandomUpgrades(2);
-    upgrades.forEach(u => {
+    const upgrades = getRandomChestUpgrades(2);
+    upgrades.filter(u => !u.isDestinyCard).forEach(u => {
       pendingRewards.push({
         isLegendary: false,
         title: u.title,
@@ -178,12 +178,12 @@ export function openChestModal(tier = 'BOSS') {
       isLegendary: false,
       title: "Bênção da Fortuna",
       desc: "Todos os poderes conhecidos atingiram o apogeu! Recupera vitalidade e concede ouro da arena.",
-      stat: "+100 HP & +50 Ouro",
+      stat: "+100 HP & +25 Ouro",
       badge: "Fortuna",
       iconSvg: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#ffd166"/></svg>`,
       apply: () => {
         player.hp = Math.min(player.maxHp, player.hp + 100);
-        addPersistentGold(50);
+        addPersistentGold(25);
       }
     });
   }
@@ -193,7 +193,7 @@ export function openChestModal(tier = 'BOSS') {
     if (subElem) {
       subElem.innerHTML += ` <span style="color:#ffd166; font-weight:800;">${renderIcon('transmute', { size: 12, color: '#ffd166' })} TRANSMUTAÇÃO CÓSMICA ATIVADA!</span>`;
     }
-    const extraUpgrades = getRandomUpgrades(1);
+    const extraUpgrades = getRandomChestUpgrades(1).filter(u => !u.isDestinyCard);
     if (extraUpgrades.length > 0) {
       const u = extraUpgrades[0];
       pendingRewards.push({
@@ -205,7 +205,7 @@ export function openChestModal(tier = 'BOSS') {
         iconSvg: `<svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#ffd166"/></svg>`,
         apply: () => {
           u.apply();
-          addPersistentGold(50);
+          addPersistentGold(25);
         }
       });
     } else {
@@ -213,11 +213,11 @@ export function openChestModal(tier = 'BOSS') {
         isLegendary: false,
         title: "Transmutação de Almas",
         desc: "A fenda cósmica duplicou o tesouro, vertendo essências imortais adicionais.",
-        stat: "+100 Almas Persistentes",
+        stat: "+40 Almas Persistentes",
         badge: "Dádiva Astral",
         iconSvg: `<svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#ffd166"/></svg>`,
         apply: () => {
-          addPersistentGold(100);
+          addPersistentGold(40);
         }
       });
     }

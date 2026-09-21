@@ -25,12 +25,12 @@ export function initSkillUI(onSkillTrigger = triggerHeroSkill) {
   skillContainer.addEventListener('touchstart', e => {
     e.stopPropagation();
     e.preventDefault();
-    if (typeof onSkillTrigger === 'function') onSkillTrigger();
+    if (typeof onSkillTrigger === 'function') onSkillTrigger({ ignoreCursor: true });
   }, { passive: false });
 
   skillContainer.addEventListener('click', e => {
     e.stopPropagation();
-    if (typeof onSkillTrigger === 'function') onSkillTrigger();
+    if (typeof onSkillTrigger === 'function') onSkillTrigger({ ignoreCursor: true });
   });
 }
 

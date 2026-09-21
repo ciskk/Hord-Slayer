@@ -875,7 +875,7 @@ export function updateEnemies(dt, {
         e.bellTimer = (e.bellTimer || 0) + dt;
         if (e.bellTimer >= 108) {
           e.bellTimer = 0;
-          playSfx('bell_toll'); // Volume reduzido em 80% (ganho 0.02 vs 0.10)
+          playSfx('bell_toll'); // Volume reduzido em 50% (ganho 0.01 vs 0.02 anterior)
           triggerShake(3);
           createHitParticles(e.x, e.y, '#f1c40f', 12);
           bossShockwaves.push({
@@ -1501,8 +1501,8 @@ export function updateEnemies(dt, {
         }
       }
 
-      if (!e.isMiniBoss && (Math.random() < 0.28 || e.isElite)) {
-        const goldVal = e.isElite ? 5 : 1;
+      if (!e.isMiniBoss && (Math.random() < 0.08 || e.isElite)) {
+        const goldVal = e.isElite ? 2 : 1;
         addPersistentGold(goldVal);
       }
 
@@ -1527,7 +1527,7 @@ export function updateEnemies(dt, {
               createHitParticles(e.x + Math.cos(bAngle) * 36, e.y + Math.sin(bAngle) * 36, '#e056fd', 8);
             }
 
-            const bossGold = 120 * (e.bossId || 1);
+            const bossGold = 50 * (e.bossId || 1);
             addPersistentGold(bossGold);
             addDamageText(e.x, e.y - 18, `+${bossGold} OURO!`, true, '#f1c40f');
 
@@ -1598,7 +1598,7 @@ export function updateEnemies(dt, {
           createHitParticles(e.x + Math.cos(bAngle) * 36, e.y + Math.sin(bAngle) * 36, '#e056fd', 8);
         }
 
-        const bossGold = 120 * (e.bossId || 1);
+        const bossGold = 50 * (e.bossId || 1);
         addPersistentGold(bossGold);
         addDamageText(e.x, e.y - 18, `+${bossGold} OURO!`, true, '#f1c40f');
 
@@ -1641,7 +1641,7 @@ export function updateEnemies(dt, {
         triggerHaptic('medium');
         playSfx('crit');
 
-        const goldEarned = e.goldReward || 25;
+        const goldEarned = e.goldReward || 12;
         addPersistentGold(goldEarned);
         addDamageText(e.x, e.y - 18, `+${goldEarned} OURO!`, true, '#f1c40f');
 
@@ -1682,13 +1682,13 @@ export function updateEnemies(dt, {
             forcedPull: true,
             pulseOffset: 0
           });
-          const bonusGold = 4 + (e.eatenGemsCount || 0) * 2;
+          const bonusGold = 2 + (e.eatenGemsCount || 0);
           addPersistentGold(bonusGold);
           addDamageText(e.x, e.y - 12, `+${bonusGold} OURO!`, false, '#f1c40f');
         } else if (e.baseType === 'CURSED_CHEST') {
-          addPersistentGold(35);
+          addPersistentGold(15);
           spawnChest(e.x, e.y, 'MINI_BOSS');
-          addDamageText(e.x, e.y - 15, "+35 OURO & BAÚ!", true, '#e056fd');
+          addDamageText(e.x, e.y - 15, "+15 OURO & BAÚ!", true, '#e056fd');
         } else if (e.baseType === 'TRAIL_CRAWLER') {
           let merged = false;
           for (let pIdx = acidPuddles.length - 1; pIdx >= 0; pIdx--) {

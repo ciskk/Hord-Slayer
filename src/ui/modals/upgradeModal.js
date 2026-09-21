@@ -247,7 +247,7 @@ export function renderUpgradeCards() {
   if (!container || !modal) return;
   container.innerHTML = '';
 
-  currentOptions = getRandomUpgrades(3);
+  currentOptions = getRandomUpgrades(3, { allowDestiny: true });
 
   currentOptions.forEach((opt, index) => {
     const card = document.createElement('div');
