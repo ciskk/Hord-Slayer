@@ -346,3 +346,9 @@ export function openChestModal(tier = 'BOSS') {
     revealNext();
   }, 420);
 }
+
+export function isChestModalOpen() {
+  const modal = document.getElementById('chest-modal');
+  return !!(modal && (modal.classList.contains('active') || modal.classList.contains('closing') || modal.style.display === 'flex' || (modal.style.display !== 'none' && !modal.classList.contains('modal-hidden'))));
+}
+

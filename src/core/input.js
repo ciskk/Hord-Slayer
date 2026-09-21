@@ -144,6 +144,40 @@ export function resetInput() {
   setPlayerChannelingAltar(false);
 }
 
+/**
+ * Reset parcial: limpa apenas o joystick touch sem apagar o estado do teclado.
+ * Usado ao abrir o modal de upgrade para preservar teclas WASD seguradas.
+ */
+export function resetInputSoft() {
+  stick.active = false;
+  stick.touchId = null;
+  stick.normMag = 0;
+  stick.isSaturated = false;
+  setPlayerChannelingAltar(false);
+}
+
+/**
+ * Reconstrói o estado de movimento do teclado a partir das teclas fisicamente
+ * pressionadas (rastreadas em activeKeyCodes). Chamado ao fechar o modal de
+ * upgrade para que o jogador retome o movimento imediatamente sem precisar
+ * soltar e re-pressionar WASD.
+ */
+export function restoreKeyboardMovement() {
+  keys.up = activeKeyCodes.has('KeyW') || activeKeyCodes.has('ArrowUp');
+  keys.down = activeKeyCodes.has('KeyS') || activeKeyCodes.has('ArrowDown');
+  keys.left = activeKeyCodes.has('KeyA') || activeKeyCodes.has('ArrowLeft');
+  keys.right = activeKeyCodes.has('KeyD') || activeKeyCodes.has('ArrowRight');
+
+  horizKeyStack.length = 0;
+  vertKeyStack.length = 0;
+  if (keys.left) horizKeyStack.push('left');
+  if (keys.right) horizKeyStack.push('right');
+  if (keys.up) vertKeyStack.push('up');
+  if (keys.down) vertKeyStack.push('down');
+
+  updateKeyboardVector();
+}
+
 window.addEventListener('blur', () => {
   activeKeyCodes.clear();
   resetInput();
@@ -349,6 +383,16 @@ window.addEventListener('keydown', e => {
     const bossModal = document.getElementById('boss-select-modal');
     if (bossModal && bossModal.style.display === 'flex') {
       closeBossSelectModal();
+      return;
+    }
+    // Trava de segurança: impede que Esc ou P despause/retome o jogo se a tela de upgrades estiver ativa
+    const upgradeModal = document.getElementById('upgrade-modal');
+    if (upgradeModal && (upgradeModal.classList.contains('active') || upgradeModal.classList.contains('closing') || upgradeModal.style.display === 'flex' || (upgradeModal.style.display !== 'none' && !upgradeModal.classList.contains('modal-hidden')))) {
+      return;
+    }
+    // Trava de segurança: impede que Esc ou P despause/retome o jogo se o baú de recompensas estiver ativo
+    const chestModal = document.getElementById('chest-modal');
+    if (chestModal && (chestModal.classList.contains('active') || chestModal.classList.contains('closing') || chestModal.style.display === 'flex' || (chestModal.style.display !== 'none' && !chestModal.classList.contains('modal-hidden')))) {
       return;
     }
     if (gameState.isInMatch) {

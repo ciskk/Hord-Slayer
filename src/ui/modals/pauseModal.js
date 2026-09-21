@@ -343,12 +343,13 @@ export function openPause() {
  * O JOGO PERMANECE CONGELADO DURANTE TODA A TRANSIÇÃO (200ms)
  */
 export function closePause() {
-  if (!gameState.isInMatch || !gameState.isPaused || isTransitioning) return;
+  const pauseModal = document.getElementById('pause-modal');
+  const isPauseActive = pauseModal && (pauseModal.classList.contains('active') || pauseModal.style.display === 'flex');
+  if (!gameState.isInMatch || !gameState.isPaused || isTransitioning || !isPauseActive) return;
 
   isTransitioning = true;
   playSfx('stasis_exit');
 
-  const pauseModal = document.getElementById('pause-modal');
   if (pauseModal) {
     pauseModal.classList.remove('active');
     pauseModal.classList.add('closing');
@@ -420,9 +421,29 @@ export function togglePause() {
   if (!gameState.isInMatch || gameState.isDead || gameState.isWon) return;
   if (isTransitioning) return;
 
-  if (gameState.isPaused) {
+  const pauseModal = document.getElementById('pause-modal');
+  const isPauseActive = pauseModal && (pauseModal.classList.contains('active') || pauseModal.style.display === 'flex');
+
+  if (isPauseActive) {
     closePause();
   } else {
-    openPause();
+    // Se a tela de upgrades ou de baú estiver ativa, não permite abrir pausa nem despausar
+    const upgradeModal = document.getElementById('upgrade-modal');
+    if (upgradeModal && (upgradeModal.classList.contains('active') || upgradeModal.classList.contains('closing') || upgradeModal.style.display === 'flex' || (upgradeModal.style.display !== 'none' && !upgradeModal.classList.contains('modal-hidden')))) {
+      return;
+    }
+    const chestModal = document.getElementById('chest-modal');
+    if (chestModal && (chestModal.classList.contains('active') || chestModal.classList.contains('closing') || chestModal.style.display === 'flex' || (chestModal.style.display !== 'none' && !chestModal.classList.contains('modal-hidden')))) {
+      return;
+    }
+    if (!gameState.isPaused) {
+      openPause();
+    }
   }
 }
+
+export function isPauseModalOpen() {
+  const modal = document.getElementById('pause-modal');
+  return !!(modal && (modal.classList.contains('active') || modal.classList.contains('closing') || modal.style.display === 'flex'));
+}
+

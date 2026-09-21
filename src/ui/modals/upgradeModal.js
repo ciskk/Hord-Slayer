@@ -7,7 +7,7 @@ import { player, isHeroInUninterruptibleState } from '../../entities/player.js';
 import { checkIsSynergyIngredient } from '../../config/items.js';
 import { getRandomUpgrades } from '../../config/upgrades.js';
 import { playSfx } from '../../core/audio.js';
-import { resetInput } from '../../core/input.js';
+import { resetInput, resetInputSoft, restoreKeyboardMovement } from '../../core/input.js';
 import { gameState, setLastTime } from '../../main.js';
 import { renderIcon } from '../icons.js';
 
@@ -206,6 +206,7 @@ function closeLevelUpModal() {
     }
     gameState.isPaused = false;
     setLastTime(performance.now());
+    restoreKeyboardMovement();
   }, 200);
 }
 
@@ -232,6 +233,8 @@ function setupLevelupKeyboard() {
       if (rerollBtn && rerollBtn.style.display !== 'none' && player.rerolls > 0) {
         rerollBtn.click();
       }
+    } else if (e.code === 'Escape' || e.code === 'KeyP') {
+      e.preventDefault();
     }
   };
 
@@ -364,7 +367,7 @@ export function presentDeferredLevelUpModal() {
 
   playSfx('level');
   gameState.isPaused = true;
-  resetInput();
+  resetInputSoft();
 
   if (gameCanvas) {
     gameCanvas.classList.add('canvas-levelup-frozen');
@@ -380,3 +383,9 @@ export function presentDeferredLevelUpModal() {
     upgradeModal.style.display = 'flex';
   }
 }
+
+export function isUpgradeModalOpen() {
+  const modal = document.getElementById('upgrade-modal');
+  return !!(modal && (modal.classList.contains('active') || modal.classList.contains('closing') || modal.style.display === 'flex' || (modal.style.display !== 'none' && !modal.classList.contains('modal-hidden'))));
+}
+
