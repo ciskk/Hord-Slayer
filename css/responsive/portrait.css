@@ -465,12 +465,12 @@
     max-height: 100dvh !important;
     display: flex !important;
     flex-direction: column !important;
-    padding: max(env(safe-area-inset-top, 8px), 8px) 
-             max(env(safe-area-inset-right, 10px), 10px) 
-             max(env(safe-area-inset-bottom, 8px), 8px) 
-             max(env(safe-area-inset-left, 10px), 10px) !important;
+    padding: max(env(safe-area-inset-top, 6px), 6px) 
+             max(env(safe-area-inset-right, 8px), 8px) 
+             0 
+             max(env(safe-area-inset-left, 8px), 8px) !important;
     box-sizing: border-box !important;
-    gap: 6px !important;
+    gap: 4px !important;
     overflow: hidden !important;
   }
 
@@ -596,7 +596,7 @@
   .char-panoramic-stage {
     display: flex !important;
     flex-direction: column !important;
-    gap: 6px !important;
+    gap: 4px !important;
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
@@ -608,9 +608,9 @@
   /* Tier 1: Palco Superior do Campeão (Proporção equilibrada e visual limpo) */
   .char-stage-wing {
     order: 1 !important;
-    flex: 0 1 33% !important;
-    min-height: 120px !important;
-    max-height: 35dvh !important;
+    flex: 0 1 clamp(90px, 22vh, 175px) !important;
+    min-height: 90px !important;
+    max-height: 28dvh !important;
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
@@ -868,12 +868,12 @@
     order: 3 !important;
     flex: 1 1 auto !important;
     min-height: 0 !important;
-    max-height: 64dvh !important;
+    max-height: none !important;
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
-    padding: 6px 12px 6px 12px !important;
+    padding: 6px 10px max(env(safe-area-inset-bottom, 6px), 6px) 10px !important;
     background: rgba(8, 14, 28, 0.94) !important;
     backdrop-filter: blur(24px) !important;
     -webkit-backdrop-filter: blur(24px) !important;
@@ -909,8 +909,8 @@
   /* Identidade do Campeão */
   .char-identity-monolith {
     flex-shrink: 0 !important;
-    margin-bottom: 3px !important;
-    padding-bottom: 3px !important;
+    margin-bottom: 2px !important;
+    padding-bottom: 2px !important;
     border-bottom: 1px solid rgba(0, 245, 212, 0.12) !important;
     display: flex !important;
     flex-direction: column !important;
@@ -923,8 +923,8 @@
   }
 
   .hero-archetype-pill {
-    font-size: 8.5px !important;
-    letter-spacing: 1.6px !important;
+    font-size: 8px !important;
+    letter-spacing: 1.4px !important;
   }
 
   .hero-diff-pips {
@@ -932,13 +932,13 @@
   }
 
   .hero-monolith-name {
-    font-size: 19px !important;
+    font-size: clamp(16px, 2.2vh, 19px) !important;
     line-height: 1.1 !important;
-    margin: 1px 0 !important;
+    margin: 0 !important;
   }
 
   .hero-monolith-role {
-    font-size: 9px !important;
+    font-size: clamp(8px, 1vh, 9px) !important;
     color: #94a3b8 !important;
   }
 
@@ -948,7 +948,7 @@
     justify-content: center !important;
     align-items: center !important;
     gap: 6px !important;
-    margin: 4px 0 6px 0 !important;
+    margin: clamp(2px, 0.4vh, 4px) 0 clamp(3px, 0.6vh, 5px) 0 !important;
     padding: 2px 4px !important;
     background: rgba(4, 8, 18, 0.8) !important;
     border: 1px solid rgba(255, 255, 255, 0.09) !important;
@@ -962,14 +962,14 @@
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 6px !important;
-    padding: 4px 11px !important;
+    gap: 5px !important;
+    padding: clamp(2px, 0.4vh, 4px) 10px !important;
     background: transparent !important;
     border: 1px solid transparent !important;
     border-radius: 14px !important;
     color: #64748b !important;
     font-family: var(--font-heading) !important;
-    font-size: 9px !important;
+    font-size: clamp(8px, 1vh, 9px) !important;
     font-weight: 800 !important;
     letter-spacing: 1px !important;
     cursor: pointer !important;
@@ -1048,7 +1048,7 @@
     scroll-snap-align: start !important;
     scroll-snap-stop: always !important;
     box-sizing: border-box !important;
-    padding: 2px 6px 4px 6px !important;
+    padding: 2px 4px 2px 4px !important;
     overflow: hidden !important;
     overflow-y: hidden !important;
     display: flex !important;
@@ -1066,22 +1066,23 @@
     flex-direction: column !important;
     justify-content: space-between !important;
     height: 100% !important;
-    gap: clamp(4px, 1vh, 8px) !important;
+    gap: clamp(3px, 0.7vh, 6px) !important;
     margin: 0 !important;
     width: 100% !important;
     box-sizing: border-box !important;
     flex: 1 1 auto !important;
+    min-height: 0 !important;
   }
 
   .loadout-entry {
     flex: 1 1 auto !important;
-    min-height: max-content !important;
+    min-height: 0 !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
-    padding: clamp(5px, 0.9vh, 8px) clamp(8px, 1.2vw, 12px) !important;
-    border-radius: 8px !important;
-    gap: 3px !important;
+    padding: clamp(4px, 0.7vh, 7px) clamp(8px, 1.2vw, 11px) !important;
+    border-radius: 7px !important;
+    gap: 2px !important;
     background: rgba(14, 22, 42, 0.72) !important;
     border: 1px solid rgba(0, 245, 212, 0.2) !important;
     box-sizing: border-box !important;
@@ -1091,48 +1092,48 @@
   .loadout-entry-main {
     display: flex !important;
     align-items: center !important;
-    gap: 8px !important;
+    gap: 7px !important;
     flex-shrink: 0 !important;
   }
 
   .loadout-icon-box {
-    width: clamp(22px, 2.6vh, 26px) !important;
-    height: clamp(22px, 2.6vh, 26px) !important;
-    border-radius: 6px !important;
+    width: clamp(20px, 2.4vh, 25px) !important;
+    height: clamp(20px, 2.4vh, 25px) !important;
+    border-radius: 5px !important;
     flex-shrink: 0 !important;
   }
 
   .loadout-icon-box svg {
-    width: clamp(12px, 1.4vh, 14px) !important;
-    height: clamp(12px, 1.4vh, 14px) !important;
+    width: clamp(11px, 1.3vh, 13px) !important;
+    height: clamp(11px, 1.3vh, 13px) !important;
   }
 
   .loadout-entry-header {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    gap: 6px !important;
+    gap: 5px !important;
     flex-wrap: nowrap !important;
   }
 
   .loadout-entry-badge {
-    font-size: clamp(7px, 0.85vh, 8px) !important;
-    letter-spacing: 0.8px !important;
+    font-size: clamp(6.5px, 0.8vh, 7.5px) !important;
+    letter-spacing: 0.7px !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
   }
 
   .loadout-entry-chip {
-    font-size: clamp(7px, 0.85vh, 8px) !important;
-    padding: 1px 5px !important;
+    font-size: clamp(6.5px, 0.8vh, 7.5px) !important;
+    padding: 1px 4px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    max-width: 60% !important;
+    max-width: 55% !important;
   }
 
   .loadout-entry-title {
-    font-size: clamp(10px, 1.25vh, 11.5px) !important;
+    font-size: clamp(9.5px, 1.15vh, 11px) !important;
     font-weight: 800 !important;
     line-height: 1.15 !important;
     white-space: nowrap !important;
@@ -1141,8 +1142,8 @@
   }
 
   .loadout-entry-desc {
-    font-size: clamp(8px, 1.05vh, 9px) !important;
-    line-height: 1.35 !important;
+    font-size: clamp(7.5px, 0.95vh, 8.5px) !important;
+    line-height: 1.3 !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
     -webkit-box-orient: vertical !important;
@@ -1294,17 +1295,19 @@
   .btn-ignition-catalyst {
     position: relative !important;
     bottom: auto !important;
-    height: 42px !important;
-    min-height: 42px !important;
+    height: clamp(38px, 4.8vh, 42px) !important;
+    min-height: 38px !important;
     padding: 6px 16px !important;
-    font-size: 12px !important;
+    font-size: clamp(11px, 1.3vh, 12.5px) !important;
     letter-spacing: 1.4px !important;
-    margin-top: 4px !important;
-    margin-bottom: max(env(safe-area-inset-bottom, 4px), 4px) !important;
+    margin-top: auto !important;
+    margin-bottom: 0 !important;
     border-radius: 8px !important;
     flex-shrink: 0 !important;
     justify-content: center !important;
     z-index: 20 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .btn-hotkey-hint {
@@ -3308,5 +3311,54 @@
 
   .boss-bark-text {
     font-size: 11px !important;
+  }
+
+  /* 4. Calibração para Telas com Altura Ultracompacta (ex: Safari/Chrome com barras de UI abertas) */
+  @media (max-height: 660px) {
+    .char-stage-wing {
+      flex: 0 1 85px !important;
+      min-height: 75px !important;
+      max-height: 20dvh !important;
+    }
+
+    .char-stage-main-title {
+      display: none !important;
+    }
+
+    .char-pedestal-console {
+      bottom: 2px !important;
+      padding: 1px 4px !important;
+      gap: 2px !important;
+    }
+
+    .char-pedestal-console .console-action-btn,
+    .char-pedestal-console .stage-pose-btn {
+      padding: 2px 4px !important;
+      font-size: 7.5px !important;
+    }
+
+    .char-sigil-item {
+      min-height: 30px !important;
+      height: 30px !important;
+      padding: 1px 5px !important;
+    }
+
+    .sigil-crest-disc {
+      width: 18px !important;
+      height: 18px !important;
+    }
+
+    .sigil-crest-disc svg {
+      width: 10px !important;
+      height: 10px !important;
+    }
+
+    .sigil-hero-name {
+      font-size: 9px !important;
+    }
+
+    .sigil-meta-row {
+      display: none !important;
+    }
   }
 }
