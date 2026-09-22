@@ -4,38 +4,66 @@
  * Gerenciador de Cache de Sprites e Pre-rendering (Sprite Baking) para Monstros Comuns.
  * Substitui milhares de chamadas vetoriais procedurais por quadro por GPU blitting
  * direto via ctx.drawImage(), mantendo fidelidade visual idêntica e elevando drasticamente o FPS.
+ * 
+ * Adaptado dinamicamente ao devicePixelRatio (DPR) e Modos de Qualidade Gráfica:
+ * - Em telas Retina / Smartphones de alta densidade (DPR >= 2.0), assa os sprites
+ *   com alta densidade de pixels (até 2.5x), eliminando qualquer borrão ou pixelização.
+ * - Gerenciado por Ring Buffer de 64 slots (8x8) para consumo ultrabaixo de memória RAM (~6-10MB).
  */
 
 import { ctx, setMainCtx, frameCount, setFrameCount } from '../../state/gameState.js';
+import { layoutMetrics } from '../../core/responsive.js';
 
-const CELL_SIZE = 80;
-const HALF_CELL = 40;
-const ATLAS_COLS = 16;
-const ATLAS_ROWS = 16;
-const ATLAS_WIDTH = CELL_SIZE * ATLAS_COLS;  // 1280px
-const ATLAS_HEIGHT = CELL_SIZE * ATLAS_ROWS; // 1280px
-const MAX_SLOTS = ATLAS_COLS * ATLAS_ROWS;   // 256 slots
+const BASE_CELL_SIZE = 80;
+const BASE_HALF_CELL = 40;
+const ATLAS_COLS = 8;
+const ATLAS_ROWS = 8;
+const MAX_SLOTS = ATLAS_COLS * ATLAS_ROWS; // 64 slots por textura (Ring Buffer)
 
 let atlasCanvas = null;
 let atlasCtx = null;
+let currentCacheDpr = 1;
+let cellPixelSize = BASE_CELL_SIZE;
+let halfPixelSize = BASE_HALF_CELL;
 let nextSlotIndex = 0;
 const spriteSlots = new Map();
+const slotKeys = new Array(MAX_SLOTS);
 
 function ensureAtlas() {
-  if (atlasCanvas && atlasCtx) return;
+  const targetDpr = Math.min(2.5, Math.max(1, (layoutMetrics && layoutMetrics.dpr) ? layoutMetrics.dpr : 1));
+
+  if (atlasCanvas && atlasCtx && currentCacheDpr === targetDpr) return;
   if (typeof document === 'undefined') return;
 
-  atlasCanvas = document.createElement('canvas');
-  atlasCanvas.width = ATLAS_WIDTH;
-  atlasCanvas.height = ATLAS_HEIGHT;
+  currentCacheDpr = targetDpr;
+  cellPixelSize = Math.round(BASE_CELL_SIZE * currentCacheDpr);
+  halfPixelSize = cellPixelSize / 2;
+
+  if (!atlasCanvas) {
+    atlasCanvas = document.createElement('canvas');
+  }
+  atlasCanvas.width = cellPixelSize * ATLAS_COLS;
+  atlasCanvas.height = cellPixelSize * ATLAS_ROWS;
+
   atlasCtx = atlasCanvas.getContext('2d', { alpha: true });
+  if (atlasCtx) {
+    atlasCtx.imageSmoothingEnabled = true;
+    atlasCtx.imageSmoothingQuality = 'high';
+  }
+
+  // Reinicia slots ao reconfigurar resolução do atlas
+  spriteSlots.clear();
+  slotKeys.fill(null);
+  nextSlotIndex = 0;
 }
 
 /**
  * Limpa todo o cache e reinicia as alocações da textura atlas.
+ * Chamado automaticamente ao redimensionar a tela ou alternar a qualidade gráfica.
  */
 export function clearSpriteCache() {
   spriteSlots.clear();
+  slotKeys.fill(null);
   nextSlotIndex = 0;
   if (atlasCtx && atlasCanvas) {
     atlasCtx.clearRect(0, 0, atlasCanvas.width, atlasCanvas.height);
@@ -91,27 +119,31 @@ export function drawCachedEnemy(targetCtx, e, renderer) {
   let slot = spriteSlots.get(key);
 
   if (!slot) {
-    // Se o atlas atingiu a capacidade máxima de 256 variações, recicla
-    if (nextSlotIndex >= MAX_SLOTS) {
-      clearSpriteCache();
+    // Alocação contínua via Ring Buffer (substitui o slot mais antigo sem travar o GC)
+    const slotIdx = nextSlotIndex % MAX_SLOTS;
+    const oldKey = slotKeys[slotIdx];
+    if (oldKey) {
+      spriteSlots.delete(oldKey);
     }
+    slotKeys[slotIdx] = key;
+    nextSlotIndex++;
 
-    const col = nextSlotIndex % ATLAS_COLS;
-    const row = Math.floor(nextSlotIndex / ATLAS_COLS);
-    const slotX = col * CELL_SIZE;
-    const slotY = row * CELL_SIZE;
+    const col = slotIdx % ATLAS_COLS;
+    const row = Math.floor(slotIdx / ATLAS_COLS);
+    const slotX = col * cellPixelSize;
+    const slotY = row * cellPixelSize;
 
     slot = {
       sx: slotX,
       sy: slotY,
-      size: CELL_SIZE,
-      half: HALF_CELL
+      pixelSize: cellPixelSize,
+      baseSize: BASE_CELL_SIZE,
+      halfBase: BASE_HALF_CELL
     };
     spriteSlots.set(key, slot);
-    nextSlotIndex++;
 
-    // Pre-renderização (Baking) do frame na célula do atlas
-    atlasCtx.clearRect(slotX, slotY, CELL_SIZE, CELL_SIZE);
+    // Pre-renderização (Baking) em alta resolução na célula do atlas
+    atlasCtx.clearRect(slotX, slotY, cellPixelSize, cellPixelSize);
 
     const savedCtx = ctx;
     const savedFc = frameCount;
@@ -132,12 +164,15 @@ export function drawCachedEnemy(targetCtx, e, renderer) {
       };
 
       atlasCtx.save();
-      atlasCtx.translate(slotX + HALF_CELL, slotY + HALF_CELL);
+      // Posiciona no centro da célula em pixels físicos do atlas e aplica a escala nativa
+      atlasCtx.translate(slotX + halfPixelSize, slotY + halfPixelSize);
+      atlasCtx.scale(currentCacheDpr, currentCacheDpr);
       renderer.draw(mockEntity);
       atlasCtx.restore();
     } catch (_) {
       // Em caso de qualquer anomalia de pre-render, desfaz slot e faz fallback
       spriteSlots.delete(key);
+      slotKeys[slotIdx] = null;
       return false;
     } finally {
       setMainCtx(savedCtx);
@@ -145,17 +180,17 @@ export function drawCachedEnemy(targetCtx, e, renderer) {
     }
   }
 
-  // Desenho ultrarrápido acelerado por GPU (1 única chamada drawImage por monstro)
+  // Desenho acelerado por GPU com 1 única chamada drawImage em resolução nativa nítida
   targetCtx.drawImage(
     atlasCanvas,
     slot.sx,
     slot.sy,
-    slot.size,
-    slot.size,
-    -slot.half,
-    -slot.half,
-    slot.size,
-    slot.size
+    slot.pixelSize,
+    slot.pixelSize,
+    -BASE_HALF_CELL,
+    -BASE_HALF_CELL,
+    BASE_CELL_SIZE,
+    BASE_CELL_SIZE
   );
 
   return true;

@@ -3,14 +3,17 @@
  * 
  * Motor Responsivo Adaptativo Smart Auto-Fit para a UI do Hord.io.
  * 
- * Detecta quando listas e componentes ultrapassam o espaço vertical disponível.
- * Se o excesso for pequeno (até ~25-28%), reduz proporcionalmente a escala dos
- * elementos para que todo o conteúdo caiba perfeitamente na tela sem scroll.
+ * Detecta quando listas e componentes ultrapassam o espaço vertical disponível,
+ * tanto em telas mobile (smartphones) quanto em telas horizontais/desktop (PC).
+ * Se o excesso for moderado (escala até ~0.65), reduz proporcionalmente a escala
+ * dos elementos usando CSS transform: scale() com compensação de geometria,
+ * garantindo compatibilidade universal sem gerar barras de rolagem indesejadas
+ * horizontais ou verticais.
  * Se o excesso for significativo, preserva a rolagem nativa para manter a legibilidade.
  */
 
 export const AUTO_FIT_DEFAULTS = {
-  minScale: 0.78,       // Escala mínima permitida (tolera até ~28% de overflow)
+  minScale: 0.65,       // Escala mínima padrão (acomoda até ~35% de overflow em telas compactas)
   maxScale: 1.0,        // Escala máxima (1.0 = tamanho natural original)
   bufferPx: 2,          // Margem de segurança contra arredondamento sub-pixel
   direction: 'height'   // 'height' (padrão vertical), 'width' ou 'both'
@@ -22,7 +25,7 @@ let rafPending = false;
 const registeredEntries = new Map(); // container -> options
 
 /**
- * Detecta suporte nativo à propriedade CSS `zoom`
+ * Detecta suporte nativo à propriedade CSS `zoom` (mantido para retrocompatibilidade)
  */
 export function isZoomSupported() {
   if (typeof document === 'undefined') return false;
@@ -30,6 +33,44 @@ export function isZoomSupported() {
     if (CSS.supports('zoom', '1') || CSS.supports('zoom', '100%')) return true;
   }
   return 'zoom' in document.documentElement.style;
+}
+
+/**
+ * Mede com precisão a altura natural do conteúdo de um elemento em qualquer navegador,
+ * contornando o comportamento específico do WebKit/Safari onde scrollHeight em elementos
+ * com overflow: visible não computa os limites dos nós filhos que extravasam.
+ * @param {HTMLElement} target Elemento de conteúdo
+ * @param {number} mTop Margem superior calculada
+ * @param {number} mBottom Margem inferior calculada
+ * @returns {number} Altura total em pixels do conteúdo
+ */
+function getNaturalContentHeight(target, mTop, mBottom) {
+  let maxChildBottom = 0;
+  const children = target.children;
+
+  if (children && children.length > 0) {
+    const targetRect = target.getBoundingClientRect();
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i];
+      if (!(child instanceof HTMLElement)) continue;
+      const cStyle = window.getComputedStyle(child);
+      if (cStyle.display === 'none' || cStyle.position === 'absolute' || cStyle.position === 'fixed') continue;
+
+      const rect = child.getBoundingClientRect();
+      const bottomRect = (rect.bottom - targetRect.top) + (parseFloat(cStyle.marginBottom) || 0);
+      let bottomOffset = 0;
+      if (child.offsetParent === target) {
+        bottomOffset = child.offsetTop + child.offsetHeight + (parseFloat(cStyle.marginBottom) || 0);
+      }
+      const effectiveBottom = Math.max(bottomRect, bottomOffset);
+
+      if (effectiveBottom > maxChildBottom) {
+        maxChildBottom = effectiveBottom;
+      }
+    }
+  }
+
+  return Math.max(target.scrollHeight || 0, target.offsetHeight || 0, Math.ceil(maxChildBottom)) + mTop + mBottom;
 }
 
 /**
@@ -63,11 +104,20 @@ export function autoFitElement(container, customOptions = {}) {
     return 1.0;
   }
 
-  // 1. Limpa temporariamente transformações para medir dimensões naturais puras
+  // 1. Limpa temporariamente classes ativas e transformações para medir dimensões naturais puras
+  container.classList.remove('autofit-active');
+  target.classList.remove('autofit-scaled');
   target.style.zoom = '';
   target.style.transform = '';
   target.style.marginBottom = '';
   target.style.width = '';
+  target.style.maxWidth = '';
+  target.style.boxSizing = '';
+  target.style.removeProperty('--autofit-scale');
+
+  // Libera temporariamente eventuais travas de max-height que poderiam mascarar a altura real
+  const originalMaxHeight = target.style.maxHeight;
+  target.style.setProperty('max-height', 'none', 'important');
 
   // 2. Medição precisa do espaço interno disponível no container
   const cStyle = window.getComputedStyle(container);
@@ -75,11 +125,18 @@ export function autoFitElement(container, customOptions = {}) {
   const padBottom = parseFloat(cStyle.paddingBottom) || 0;
   const availH = container.clientHeight - padTop - padBottom;
 
-  // 3. Medição do tamanho real natural do conteúdo
+  // 3. Medição robusta cross-browser do tamanho real natural do conteúdo
   const tStyle = window.getComputedStyle(target);
   const mTop = parseFloat(tStyle.marginTop) || 0;
   const mBottom = parseFloat(tStyle.marginBottom) || 0;
-  const naturalH = Math.max(target.scrollHeight, target.offsetHeight) + mTop + mBottom;
+  const naturalH = getNaturalContentHeight(target, mTop, mBottom);
+
+  // Restaura estilo de max-height original
+  if (originalMaxHeight) {
+    target.style.maxHeight = originalMaxHeight;
+  } else {
+    target.style.removeProperty('max-height');
+  }
 
   // Se não há altura disponível válida ou conteúdo mensurável, sai sem alterar
   if (availH <= 0 || naturalH <= 0) {
@@ -98,38 +155,36 @@ export function autoFitElement(container, customOptions = {}) {
   const requiredScale = Math.min(maxScale, (availH - bufferPx) / naturalH);
 
   if (requiredScale >= minScale) {
-    // Pequeno excesso: Reduz proporcionalmente e uniformemente até caber exato
+    // Excesso moderado: Reduz proporcionalmente e uniformemente até caber perfeitamente
     const scale = Math.floor(requiredScale * 1000) / 1000;
     applyAutoFitScale(container, target, scale, naturalH);
     return scale;
   } else {
-    // Excesso significativo: Não reduz excessivamente, preserva scroll nativo
+    // Excesso significativo: Preserva legibilidade com rolagem nativa intacta
     resetAutoFit(container, target);
     return 1.0;
   }
 }
 
 /**
- * Aplica a escala proporcional uniforme ao elemento alvo.
+ * Aplica a escala proporcional uniforme ao elemento alvo usando transform: scale().
+ * Mantém a largura dentro de 100% com box-sizing para eliminar qualquer scrollbar horizontal no PC e mobile.
  */
 function applyAutoFitScale(container, target, scale, naturalH) {
-  const supportsZoom = isZoomSupported();
-
-  if (supportsZoom) {
-    // Abordagem primária: CSS zoom recalcula geometria do layout de forma limpa e nativa
-    target.style.zoom = String(scale);
-    target.style.transform = '';
-    target.style.marginBottom = '';
-    target.style.width = '';
-  } else {
-    // Abordagem de fallback (navegadores sem suporte a zoom): transform scale com compensação
-    target.style.transformOrigin = 'top center';
-    target.style.transform = `scale(${scale})`;
-    target.style.width = `${(100 / scale).toFixed(2)}%`;
-    target.style.marginBottom = `${((scale - 1) * naturalH).toFixed(1)}px`;
-  }
-
+  target.style.zoom = '';
+  target.style.transformOrigin = 'top center';
+  target.style.transform = `scale(${scale})`;
   target.style.setProperty('--autofit-scale', String(scale));
+
+  // Mantém estritamente contido na largura do pai (Zero scrollbars horizontais no PC e mobile)
+  target.style.width = '100%';
+  target.style.maxWidth = '100%';
+  target.style.boxSizing = 'border-box';
+
+  // Compensa a altura visual excedente recolhendo o espaço inferior no container
+  const heightDiff = (scale - 1) * naturalH;
+  target.style.marginBottom = `${heightDiff.toFixed(1)}px`;
+
   target.classList.add('autofit-scaled');
   container.classList.add('autofit-active');
 }
@@ -142,6 +197,8 @@ function resetAutoFit(container, target) {
   target.style.transform = '';
   target.style.marginBottom = '';
   target.style.width = '';
+  target.style.maxWidth = '';
+  target.style.boxSizing = '';
   target.style.removeProperty('--autofit-scale');
   target.classList.remove('autofit-scaled');
   container.classList.remove('autofit-active');

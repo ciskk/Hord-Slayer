@@ -27,6 +27,11 @@ async function testImports() {
     assertExport(gameState, 'calculateCameraZoom');
     assertExport(gameState, 'updateDimensions');
 
+    const spriteCache = await import('../src/render/enemies/spriteCache.js');
+    console.log('✔ src/render/enemies/spriteCache.js carregado com sucesso.');
+    assertExport(spriteCache, 'clearSpriteCache');
+    assertExport(spriteCache, 'drawCachedEnemy');
+
     // Testes de Resolução e Adaptação à Tela
     console.log('\n--- Testando Lógica de Resolução e Adaptação de Tela ---');
     const { GRAPHICS_QUALITY, resolveTargetDpr, setGraphicsQuality, getGraphicsQuality } = responsive;

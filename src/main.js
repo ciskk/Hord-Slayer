@@ -67,6 +67,7 @@ import { render } from './render/renderer.js';
 import { transitionToArenaTheme, getWaveArenaTheme, resetEnvironment } from './render/environment.js';
 import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
 import { initResponsive, layoutMetrics, GRAPHICS_QUALITY, getGraphicsQuality, setGraphicsQuality, resolveTargetDpr } from './core/responsive.js';
+import { clearSpriteCache } from './render/enemies/spriteCache.js';
 import { devCheats } from './systems/devtools.js';
 import { clearActiveBarks } from './systems/barks.js';
 import { forceClosePause } from './ui/modals/pauseModal.js';
@@ -304,6 +305,9 @@ export function resize() {
       bannerCtx.imageSmoothingQuality = 'high';
     }
   }
+
+  // Invalida e sincroniza o atlas de monstros com a nova resolução/DPR
+  clearSpriteCache();
 }
 
 initResponsive(() => {

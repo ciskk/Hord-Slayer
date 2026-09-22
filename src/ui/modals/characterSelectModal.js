@@ -30,7 +30,7 @@ import {
   selectedHeroKey,
   setSelectedHeroKey
 } from '../../entities/player.js';
-import { layoutMetrics, updateAllAutoFit } from '../../core/responsive.js';
+import { layoutMetrics, updateAllAutoFit, onLayoutChange } from '../../core/responsive.js';
 import { gameState } from '../../state/gameState.js';
 import { resetGame, terminateMatch } from '../../main.js';
 
@@ -45,6 +45,7 @@ import { HERO_EMBLEMS_SVG, CHARACTER_PROFILES } from '../../config/heroProfiles.
 export let activeShowcaseHeroKey = 'KNIGHT';
 let activeMobileSlideIndex = 0; // 0: Arsenal, 1: Atributos, 2: Biografia
 let charSelectKeydownHandler = null;
+let lastCharModalMobileState = null;
 
 export function isMobileScreen() {
   return layoutMetrics.isCompactWidth || 
@@ -53,6 +54,23 @@ export function isMobileScreen() {
          ('ontouchstart' in window && window.innerWidth <= 950) || 
          /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent) ||
          (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+}
+
+// Sincroniza estrutura do Altar em tempo real na alternância entre telas horizontais (PC) e mobile
+if (typeof window !== 'undefined') {
+  onLayoutChange(() => {
+    const charModal = document.getElementById('char-modal');
+    if (!charModal || charModal.classList.contains('modal-hidden') || charModal.style.display === 'none') {
+      return;
+    }
+    const currentMobile = isMobileScreen();
+    if (lastCharModalMobileState !== null && lastCharModalMobileState !== currentMobile) {
+      lastCharModalMobileState = currentMobile;
+      openCharacterSelect();
+    } else {
+      updateAllAutoFit();
+    }
+  });
 }
 
 export function closeCharSelectModal() {
@@ -147,6 +165,7 @@ export function openCharacterSelect() {
 
   // Detecção e aplicação de classe mobile para layout responsivo exclusivo
   const isMobile = isMobileScreen();
+  lastCharModalMobileState = isMobile;
   charModal.classList.toggle('is-mobile-device', isMobile);
 
   // Parallax Dinâmico 2.5D no Desktop com o movimento do mouse
@@ -281,227 +300,252 @@ export function openCharacterSelect() {
       diffDots += `<span class="diff-dot ${d <= diff ? 'filled' : 'empty'}">◆</span>`;
     }
     const diffLabel = diff === 1 ? 'Iniciante' : (diff === 2 ? 'Equilibrado' : 'Avançado');
+    const isMobile = isMobileScreen();
+
+    if (!isMobile) {
+      // Telas Horizontais / Desktop: Auto-fit no dossiê completo para eliminar qualquer scrollbar
+      showcaseContainer.setAttribute('data-autofit', 'true');
+      showcaseContainer.setAttribute('data-autofit-target', '.char-dossier-content');
+      showcaseContainer.setAttribute('data-autofit-min-scale', '0.65');
+    } else {
+      // Telas Verticais / Mobile: Auto-fit granular em cada slide ativo do carrossel
+      showcaseContainer.removeAttribute('data-autofit');
+      showcaseContainer.removeAttribute('data-autofit-target');
+      showcaseContainer.removeAttribute('data-autofit-min-scale');
+    }
 
     showcaseContainer.innerHTML = `
-      <!-- 1. Monólito de Identidade -->
-      <div class="char-identity-monolith">
-        <div class="hero-monolith-eyebrow">
-          <span class="hero-archetype-pill">${char.title}</span>
-          <div class="hero-diff-pips" title="Dificuldade: ${diffLabel}">
-            <span>${diffLabel}</span>
-            <span>${diffDots}</span>
+      <div class="char-dossier-content">
+        <!-- 1. Monólito de Identidade -->
+        <div class="char-identity-monolith">
+          <div class="hero-monolith-eyebrow">
+            <span class="hero-archetype-pill">${char.title}</span>
+            <div class="hero-diff-pips" title="Dificuldade: ${diffLabel}">
+              <span>${diffLabel}</span>
+              <span>${diffDots}</span>
+            </div>
+          </div>
+
+          <h2 class="hero-monolith-name">${char.name}</h2>
+          <div class="hero-monolith-role">Função: <b>${char.role || 'Guerreiro'}</b></div>
+        </div>
+
+        <!-- 2. Navegador de 3 Pílulas dos Slides (Mobile) -->
+        <div class="mobile-slide-pills" id="mobile-slide-pills">
+          <button class="slide-pill-btn ${activeMobileSlideIndex === 0 ? 'active' : ''}" data-slide="0" type="button" aria-label="Ver Arsenal">
+            <span class="pill-dot"></span>
+            <span class="pill-text">ARSENAL</span>
+          </button>
+          <button class="slide-pill-btn ${activeMobileSlideIndex === 1 ? 'active' : ''}" data-slide="1" type="button" aria-label="Ver Atributos">
+            <span class="pill-dot"></span>
+            <span class="pill-text">ATRIBUTOS</span>
+          </button>
+          <button class="slide-pill-btn ${activeMobileSlideIndex === 2 ? 'active' : ''}" data-slide="2" type="button" aria-label="Ver Biografia">
+            <span class="pill-dot"></span>
+            <span class="pill-text">BIOGRAFIA</span>
+          </button>
+        </div>
+
+        <!-- 3. Trilho de Slides (Mobile: Deslize horizontal / Desktop: Fluxo contínuo) -->
+        <div class="mobile-slides-track" id="mobile-slides-track">
+          <!-- Slide 0: Arsenal & Habilidades -->
+          <div class="mobile-slide-pane" data-slide-index="0">
+            <div class="hero-loadout-lineage">
+              <!-- Entrada 1: Arma Inicial -->
+              <div class="loadout-entry">
+                <div class="loadout-entry-main">
+                  <div class="loadout-icon-box" style="--icon-accent: ${profile.themeColor};">
+                    ${renderIcon(WEAPON_ICONS[char.startingWeapon] || 'sword', { size: 14, color: profile.themeColor })}
+                  </div>
+                  <div class="loadout-info-block">
+                    <div class="loadout-entry-header">
+                      <span class="loadout-entry-badge">ARMA INICIAL</span>
+                      <span class="loadout-entry-chip">${char.weapon?.type || profile.weaponName}</span>
+                    </div>
+                    <div class="loadout-entry-title" style="color: ${profile.themeColor};">${char.weapon?.name || profile.weaponName}</div>
+                  </div>
+                </div>
+                <div class="loadout-entry-desc">${char.weapon?.desc || ''}</div>
+              </div>
+
+              <!-- Entrada 2: Poder Ancestral -->
+              <div class="loadout-entry">
+                <div class="loadout-entry-main">
+                  <div class="loadout-icon-box" style="--icon-accent: ${profile.themeColor};">
+                    ${renderIcon('damage', { size: 14, color: profile.themeColor })}
+                  </div>
+                  <div class="loadout-info-block">
+                    <div class="loadout-entry-header">
+                      <span class="loadout-entry-badge">PODER ANCESTRAL</span>
+                      <span class="loadout-entry-chip chip-cooldown">
+                        ${renderIcon('timer', { size: 9 })} ${char.skill?.cooldown || '7s'}
+                      </span>
+                    </div>
+                    <div class="loadout-entry-title" style="color: ${profile.themeColor};">${char.skill?.name || 'Habilidade'}</div>
+                  </div>
+                </div>
+                <div class="loadout-entry-desc">${char.skill?.desc || ''}</div>
+              </div>
+
+              <!-- Entrada 3: Bênção Passiva -->
+              <div class="loadout-entry">
+                <div class="loadout-entry-main">
+                  <div class="loadout-icon-box" style="--icon-accent: ${profile.themeColor};">
+                    ${renderIcon('armor', { size: 14, color: profile.themeColor })}
+                  </div>
+                  <div class="loadout-info-block">
+                    <div class="loadout-entry-header">
+                      <span class="loadout-entry-badge">BÊNÇÃO PASSIVA</span>
+                    </div>
+                    <div class="loadout-entry-title" style="color: ${profile.themeColor};">${char.passive?.name || 'Aura'}</div>
+                  </div>
+                </div>
+                <div class="loadout-entry-desc">${char.passive?.desc || ''}</div>
+              </div>
+
+              <!-- Fim do Arsenal (3 Entradas Essenciais: Arma, Habilidade e Passiva) -->
+            </div>
+          </div>
+
+          <!-- Slide 1: Matriz de Atributos Unificada -->
+          <div class="mobile-slide-pane" data-slide-index="1">
+            <div class="hero-telemetry-cluster">
+              <div class="telemetry-header">
+                <span class="telemetry-title">MATRIZ DE COMBATE</span>
+                <span class="telemetry-resonance-line"></span>
+              </div>
+              <div class="telemetry-tracks">
+                <!-- DANO -->
+                <div class="telemetry-channel" data-stat="dano">
+                  <span class="channel-label">DANO</span>
+                  <div class="channel-laser-track">
+                    <div class="channel-laser-fill" style="width: ${(profile.levels.dano / 5) * 100}%;"></div>
+                    <div class="channel-pips"><span/><span/><span/><span/></div>
+                  </div>
+                  <span class="channel-val">${profile.levels.dano}/5</span>
+                </div>
+                <!-- ÁREA -->
+                <div class="telemetry-channel" data-stat="area">
+                  <span class="channel-label">ÁREA</span>
+                  <div class="channel-laser-track">
+                    <div class="channel-laser-fill" style="width: ${(profile.levels.area / 5) * 100}%;"></div>
+                    <div class="channel-pips"><span/><span/><span/><span/></div>
+                  </div>
+                  <span class="channel-val">${profile.levels.area}/5</span>
+                </div>
+                <!-- VEL -->
+                <div class="telemetry-channel" data-stat="vel">
+                  <span class="channel-label">VEL</span>
+                  <div class="channel-laser-track">
+                    <div class="channel-laser-fill" style="width: ${(profile.levels.vel / 5) * 100}%;"></div>
+                    <div class="channel-pips"><span/><span/><span/><span/></div>
+                  </div>
+                  <span class="channel-val">${profile.levels.vel}/5</span>
+                </div>
+                <!-- RES -->
+                <div class="telemetry-channel" data-stat="res">
+                  <span class="channel-label">RES</span>
+                  <div class="channel-laser-track">
+                    <div class="channel-laser-fill" style="width: ${(profile.levels.res / 5) * 100}%;"></div>
+                    <div class="channel-pips"><span/><span/><span/><span/></div>
+                  </div>
+                  <span class="channel-val">${profile.levels.res}/5</span>
+                </div>
+              </div>
+
+              <!-- Registro de Honra (Estatísticas Individuais do Campeão) -->
+              <div class="hero-battle-record-panel">
+                <div class="record-panel-header">
+                  <span class="record-panel-title">REGISTRO DE BATALHA</span>
+                  <span class="record-panel-runs">${heroRecord.runsPlayed > 0 ? `${heroRecord.runsPlayed} ${heroRecord.runsPlayed === 1 ? 'PARTIDA' : 'PARTIDAS'}` : 'SEM REGISTRO'}</span>
+                </div>
+                <div class="record-metrics-row">
+                  <div class="record-metric-item">
+                    <span class="metric-label">RECORD TEMPO</span>
+                    <span class="metric-val ${heroRecord.bestSeconds > 0 ? 'highlight-gold' : ''}">${heroRecord.timeStr}</span>
+                  </div>
+                  <div class="record-metric-item">
+                    <span class="metric-label">ABATES MÁX</span>
+                    <span class="metric-val ${heroRecord.kills > 0 ? 'highlight-crimson' : ''}">${heroRecord.kills.toLocaleString('pt-BR')}</span>
+                  </div>
+                  <div class="record-metric-item">
+                    <span class="metric-label">STATUS</span>
+                    <span class="metric-val ${heroRecord.statusClass}">${heroRecord.statusLabel}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 2: Lore & Selo Primordial -->
+          <div class="mobile-slide-pane" data-slide-index="2">
+            <div class="hero-lore-pane">
+              <div class="hero-monolith-quote">
+                “${char.lore || ''}”
+              </div>
+
+              ${!unlocked && status ? `
+                <div class="primordial-seal-banner">
+                  <div class="seal-header">
+                    <span class="seal-icon">${renderIcon('lock', { size: 14, color: '#ff7675' })}</span>
+                    <div class="seal-titles">
+                      <span class="seal-eyebrow">SELO PRIMORDIAL • REQUISITO DE DESBLOQUEIO</span>
+                      <span class="seal-name">${status.title}</span>
+                    </div>
+                  </div>
+                  <div class="seal-desc">${status.desc}</div>
+                  <div class="seal-progress-block">
+                    <div class="seal-progress-row">
+                      <span class="seal-progress-label">SINTONIA CÓSMICA</span>
+                      <span class="seal-progress-val">${status.current} / ${status.target}</span>
+                    </div>
+                    <div class="seal-track">
+                      <div class="seal-fill" style="width: ${status.pct}%;"></div>
+                    </div>
+                  </div>
+                </div>
+              ` : unlocked && profile.titleQuote ? `
+                <div class="hero-tactical-hint">
+                  <div class="tactical-hint-header">
+                    <span class="hint-glyph">✦</span>
+                    <span class="hint-title">DIRETRIZ ANCESTRAL</span>
+                  </div>
+                  <p class="hint-text">${profile.titleQuote}</p>
+                </div>
+              ` : `
+                <div class="hero-tactical-hint">
+                  <div class="tactical-hint-header">
+                    <span class="hint-glyph">✦</span>
+                    <span class="hint-title">DIRETRIZ ANCESTRAL</span>
+                  </div>
+                  <p class="hint-text">Arquétipo consagrado no vácuo. Combine a arma inicial com seu poder ativo para romper as investidas da horda.</p>
+                </div>
+              `}
+            </div>
           </div>
         </div>
 
-        <h2 class="hero-monolith-name">${char.name}</h2>
-        <div class="hero-monolith-role">Função: <b>${char.role || 'Guerreiro'}</b></div>
+        <!-- 4. Catalisador de Despertar (Start Action Button) -->
+        ${unlocked ? `
+          <button class="btn-ignition-catalyst" id="confirm-hero-btn" type="button" aria-label="Iniciar Batalha">
+            <div class="btn-shimmer-sweep"></div>
+            <span class="btn-catalyst-glow"></span>
+            <span class="btn-catalyst-content">
+              ${renderIcon('damage', { size: 15, style: 'margin-right:6px; vertical-align:middle;' })}
+              DESPERTAR NO VÁCUO
+              ${renderIcon('damage', { size: 15, style: 'margin-left:6px; vertical-align:middle;' })}
+            </span>
+            <span class="btn-hotkey-hint">ESPAÇO</span>
+          </button>
+        ` : `
+          <button class="btn-ignition-catalyst" id="confirm-hero-btn" disabled type="button" aria-label="Herói Bloqueado">
+            <span class="btn-catalyst-content">
+              ${renderIcon('lock', { size: 14, color: '#ff7675', style: 'margin-right:8px; vertical-align:middle;' })}
+              SELO PRIMORDIAL ATIVO
+            </span>
+          </button>
+        `}
       </div>
-
-      <!-- 2. Navegador de 3 Pílulas dos Slides (Mobile) -->
-      <div class="mobile-slide-pills" id="mobile-slide-pills">
-        <button class="slide-pill-btn ${activeMobileSlideIndex === 0 ? 'active' : ''}" data-slide="0" type="button" aria-label="Ver Arsenal">
-          <span class="pill-dot"></span>
-          <span class="pill-text">ARSENAL</span>
-        </button>
-        <button class="slide-pill-btn ${activeMobileSlideIndex === 1 ? 'active' : ''}" data-slide="1" type="button" aria-label="Ver Atributos">
-          <span class="pill-dot"></span>
-          <span class="pill-text">ATRIBUTOS</span>
-        </button>
-        <button class="slide-pill-btn ${activeMobileSlideIndex === 2 ? 'active' : ''}" data-slide="2" type="button" aria-label="Ver Biografia">
-          <span class="pill-dot"></span>
-          <span class="pill-text">BIOGRAFIA</span>
-        </button>
-      </div>
-
-      <!-- 3. Trilho de Slides (Mobile: Deslize horizontal / Desktop: Fluxo contínuo) -->
-      <div class="mobile-slides-track" id="mobile-slides-track">
-        <!-- Slide 0: Arsenal & Habilidades -->
-        <div class="mobile-slide-pane" data-slide-index="0" data-autofit="true" data-autofit-target=".hero-loadout-lineage">
-          <div class="hero-loadout-lineage">
-            <!-- Entrada 1: Arma Inicial -->
-            <div class="loadout-entry">
-              <div class="loadout-entry-main">
-                <div class="loadout-icon-box" style="--icon-accent: ${profile.themeColor};">
-                  ${renderIcon(WEAPON_ICONS[char.startingWeapon] || 'sword', { size: 14, color: profile.themeColor })}
-                </div>
-                <div class="loadout-info-block">
-                  <div class="loadout-entry-header">
-                    <span class="loadout-entry-badge">ARMA INICIAL</span>
-                    <span class="loadout-entry-chip">${char.weapon?.type || profile.weaponName}</span>
-                  </div>
-                  <div class="loadout-entry-title" style="color: ${profile.themeColor};">${char.weapon?.name || profile.weaponName}</div>
-                </div>
-              </div>
-              <div class="loadout-entry-desc">${char.weapon?.desc || ''}</div>
-            </div>
-
-            <!-- Entrada 2: Poder Ancestral -->
-            <div class="loadout-entry">
-              <div class="loadout-entry-main">
-                <div class="loadout-icon-box" style="--icon-accent: ${profile.themeColor};">
-                  ${renderIcon('damage', { size: 14, color: profile.themeColor })}
-                </div>
-                <div class="loadout-info-block">
-                  <div class="loadout-entry-header">
-                    <span class="loadout-entry-badge">PODER ANCESTRAL</span>
-                    <span class="loadout-entry-chip chip-cooldown">
-                      ${renderIcon('timer', { size: 9 })} ${char.skill?.cooldown || '7s'}
-                    </span>
-                  </div>
-                  <div class="loadout-entry-title" style="color: ${profile.themeColor};">${char.skill?.name || 'Habilidade'}</div>
-                </div>
-              </div>
-              <div class="loadout-entry-desc">${char.skill?.desc || ''}</div>
-            </div>
-
-            <!-- Entrada 3: Bênção Passiva -->
-            <div class="loadout-entry">
-              <div class="loadout-entry-main">
-                <div class="loadout-icon-box" style="--icon-accent: ${profile.themeColor};">
-                  ${renderIcon('armor', { size: 14, color: profile.themeColor })}
-                </div>
-                <div class="loadout-info-block">
-                  <div class="loadout-entry-header">
-                    <span class="loadout-entry-badge">BÊNÇÃO PASSIVA</span>
-                  </div>
-                  <div class="loadout-entry-title" style="color: ${profile.themeColor};">${char.passive?.name || 'Aura'}</div>
-                </div>
-              </div>
-              <div class="loadout-entry-desc">${char.passive?.desc || ''}</div>
-            </div>
-
-            <!-- Fim do Arsenal (3 Entradas Essenciais: Arma, Habilidade e Passiva) -->
-          </div>
-        </div>
-
-        <!-- Slide 1: Matriz de Atributos Unificada -->
-        <div class="mobile-slide-pane" data-slide-index="1" data-autofit="true" data-autofit-target=".hero-telemetry-cluster">
-          <div class="hero-telemetry-cluster">
-            <div class="telemetry-header">
-              <span class="telemetry-title">MATRIZ DE COMBATE</span>
-              <span class="telemetry-resonance-line"></span>
-            </div>
-            <div class="telemetry-tracks">
-              <!-- DANO -->
-              <div class="telemetry-channel" data-stat="dano">
-                <span class="channel-label">DANO</span>
-                <div class="channel-laser-track">
-                  <div class="channel-laser-fill" style="width: ${(profile.levels.dano / 5) * 100}%;"></div>
-                  <div class="channel-pips"><span/><span/><span/><span/></div>
-                </div>
-                <span class="channel-val">${profile.levels.dano}/5</span>
-              </div>
-              <!-- ÁREA -->
-              <div class="telemetry-channel" data-stat="area">
-                <span class="channel-label">ÁREA</span>
-                <div class="channel-laser-track">
-                  <div class="channel-laser-fill" style="width: ${(profile.levels.area / 5) * 100}%;"></div>
-                  <div class="channel-pips"><span/><span/><span/><span/></div>
-                </div>
-                <span class="channel-val">${profile.levels.area}/5</span>
-              </div>
-              <!-- VEL -->
-              <div class="telemetry-channel" data-stat="vel">
-                <span class="channel-label">VEL</span>
-                <div class="channel-laser-track">
-                  <div class="channel-laser-fill" style="width: ${(profile.levels.vel / 5) * 100}%;"></div>
-                  <div class="channel-pips"><span/><span/><span/><span/></div>
-                </div>
-                <span class="channel-val">${profile.levels.vel}/5</span>
-              </div>
-              <!-- RES -->
-              <div class="telemetry-channel" data-stat="res">
-                <span class="channel-label">RES</span>
-                <div class="channel-laser-track">
-                  <div class="channel-laser-fill" style="width: ${(profile.levels.res / 5) * 100}%;"></div>
-                  <div class="channel-pips"><span/><span/><span/><span/></div>
-                </div>
-                <span class="channel-val">${profile.levels.res}/5</span>
-              </div>
-            </div>
-
-            <!-- Registro de Honra (Estatísticas Individuais do Campeão) -->
-            <div class="hero-battle-record-panel">
-              <div class="record-panel-header">
-                <span class="record-panel-title">REGISTRO DE BATALHA</span>
-                <span class="record-panel-runs">${heroRecord.runsPlayed > 0 ? `${heroRecord.runsPlayed} ${heroRecord.runsPlayed === 1 ? 'PARTIDA' : 'PARTIDAS'}` : 'SEM REGISTRO'}</span>
-              </div>
-              <div class="record-metrics-row">
-                <div class="record-metric-item">
-                  <span class="metric-label">RECORD TEMPO</span>
-                  <span class="metric-val ${heroRecord.bestSeconds > 0 ? 'highlight-gold' : ''}">${heroRecord.timeStr}</span>
-                </div>
-                <div class="record-metric-item">
-                  <span class="metric-label">ABATES MÁX</span>
-                  <span class="metric-val ${heroRecord.kills > 0 ? 'highlight-crimson' : ''}">${heroRecord.kills.toLocaleString('pt-BR')}</span>
-                </div>
-                <div class="record-metric-item">
-                  <span class="metric-label">STATUS</span>
-                  <span class="metric-val ${heroRecord.statusClass}">${heroRecord.statusLabel}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Slide 2: Lore & Selo Primordial -->
-        <div class="mobile-slide-pane" data-slide-index="2" data-autofit="true" data-autofit-target=".hero-lore-pane">
-          <div class="hero-lore-pane">
-            <div class="hero-monolith-quote">
-              “${char.lore || ''}”
-            </div>
-
-            ${!unlocked && status ? `
-              <div class="primordial-seal-banner">
-                <div class="seal-header">
-                  <span class="seal-icon">${renderIcon('lock', { size: 14, color: '#ff7675' })}</span>
-                  <div class="seal-titles">
-                    <span class="seal-eyebrow">SELO PRIMORDIAL • REQUISITO DE DESBLOQUEIO</span>
-                    <span class="seal-name">${status.title}</span>
-                  </div>
-                </div>
-                <div class="seal-desc">${status.desc}</div>
-                <div class="seal-track">
-                  <div class="seal-fill" style="width: ${status.percent}%;"></div>
-                </div>
-                <div class="seal-meta">
-                  <span>Progresso: <b>${status.label}</b></span>
-                  <span>${status.percent}%</span>
-                </div>
-              </div>
-            ` : `
-              <div class="hero-tactical-hint">
-                <div class="tactical-hint-header">
-                  <span class="hint-glyph">✦</span>
-                  <span class="hint-title">DIRETRIZ ANCESTRAL</span>
-                </div>
-                <p class="hint-text">Arquétipo consagrado no vácuo. Combine a arma inicial com seu poder ativo para romper as investidas da horda.</p>
-              </div>
-            `}
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. Catalisador de Despertar (Start Action Button) -->
-      ${unlocked ? `
-        <button class="btn-ignition-catalyst" id="confirm-hero-btn" type="button" aria-label="Iniciar Batalha">
-          <div class="btn-shimmer-sweep"></div>
-          <span class="btn-catalyst-glow"></span>
-          <span class="btn-catalyst-content">
-            ${renderIcon('damage', { size: 15, style: 'margin-right:6px; vertical-align:middle;' })}
-            DESPERTAR NO VÁCUO
-            ${renderIcon('damage', { size: 15, style: 'margin-left:6px; vertical-align:middle;' })}
-          </span>
-          <span class="btn-hotkey-hint">ESPAÇO</span>
-        </button>
-      ` : `
-        <button class="btn-ignition-catalyst" id="confirm-hero-btn" disabled type="button" aria-label="Herói Bloqueado">
-          <span class="btn-catalyst-content">
-            ${renderIcon('lock', { size: 14, color: '#ff7675', style: 'margin-right:8px; vertical-align:middle;' })}
-            SELO PRIMORDIAL ATIVO
-          </span>
-        </button>
-      `}
     `;
 
     // Interatividade dos 3 Slides Mobile (Pílulas + Scroll-Snap Swipe)
@@ -624,6 +668,26 @@ export function openCharacterSelect() {
   }
 
   pedestalsContainer.innerHTML = '';
+  const isMobileLayout = isMobileScreen();
+  let sigilTargetParent = pedestalsContainer;
+
+  if (!isMobileLayout) {
+    // Telas Horizontais / Desktop: Auto-fit adaptativo para a coluna de pedestais
+    pedestalsContainer.setAttribute('data-autofit', 'true');
+    pedestalsContainer.setAttribute('data-autofit-target', '.char-sigils-flow');
+    pedestalsContainer.setAttribute('data-autofit-min-scale', '0.65');
+
+    const sigilsFlow = document.createElement('div');
+    sigilsFlow.className = 'char-sigils-flow';
+    pedestalsContainer.appendChild(sigilsFlow);
+    sigilTargetParent = sigilsFlow;
+  } else {
+    // Telas Verticais / Mobile: Trilho horizontal de toque com snap nativo
+    pedestalsContainer.removeAttribute('data-autofit');
+    pedestalsContainer.removeAttribute('data-autofit-target');
+    pedestalsContainer.removeAttribute('data-autofit-min-scale');
+  }
+
   heroKeys.forEach(key => {
     const c = CHARACTERS[key];
     const profile = CHARACTER_PROFILES[key] || CHARACTER_PROFILES.KNIGHT;
@@ -661,7 +725,7 @@ export function openCharacterSelect() {
       scrollPedestalToCenter(sigil);
     };
 
-    pedestalsContainer.appendChild(sigil);
+    sigilTargetParent.appendChild(sigil);
   });
 
   // Setas de Navegação Rápida do Palco (Ideal para touch)
