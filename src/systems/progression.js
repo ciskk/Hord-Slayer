@@ -210,7 +210,18 @@ export function isHeroUnlocked(heroKey) {
   if (heroKey === 'KNIGHT') return true;
   const achievementId = HERO_UNLOCK_MAP[heroKey];
   if (!achievementId) return true;
-  return getUnlockedAchievementIds().includes(achievementId);
+  if (getUnlockedAchievementIds().includes(achievementId)) return true;
+  // Retroactive check: evaluate current stats to see if the achievement should already be unlocked
+  const stats = getLifetimeStats();
+  const achievement = ACHIEVEMENTS.find(a => a.id === achievementId);
+  if (achievement) {
+    const progress = achievement.checkProgress(stats);
+    if (progress.isMet) {
+      evaluateAchievements(stats);
+      return true;
+    }
+  }
+  return false;
 }
 
 export function getAchievementsSummary() {
@@ -256,8 +267,10 @@ export function recordRunStats(delta = {}) {
   if (delta.kills) stats.totalKills = (stats.totalKills || 0) + delta.kills;
   if (delta.wave && delta.wave > (stats.highestWave || 1)) stats.highestWave = delta.wave;
   if (delta.level && delta.level > (stats.highestLevel || 1)) stats.highestLevel = delta.level;
-  if (delta.chests) stats.totalChestsOpened = (stats.totalChestsOpened || 0) + delta.chests;
-  if (delta.evolutions) stats.totalEvolutions = (stats.totalEvolutions || 0) + delta.evolutions;
+  const chestDelta = delta.chests || delta.chestOpened;
+  if (chestDelta) stats.totalChestsOpened = (stats.totalChestsOpened || 0) + (typeof chestDelta === 'number' ? chestDelta : 1);
+  const evoDelta = delta.evolutions || delta.evolution;
+  if (evoDelta) stats.totalEvolutions = (stats.totalEvolutions || 0) + (typeof evoDelta === 'number' ? evoDelta : 1);
   if (delta.survivalSeconds && delta.survivalSeconds > (stats.maxSurvivalSeconds || 0)) {
     stats.maxSurvivalSeconds = delta.survivalSeconds;
   }
@@ -271,14 +284,15 @@ export function recordRunStats(delta = {}) {
     stats.highestScore = delta.score;
   }
 
-  if (delta.bossDefeatedIndex) {
+  const bossIdx = delta.bossDefeatedIndex ?? delta.bossDefeated;
+  if (bossIdx) {
     if (!Array.isArray(stats.bossesDefeated)) stats.bossesDefeated = [];
-    if (!stats.bossesDefeated.includes(delta.bossDefeatedIndex)) {
-      stats.bossesDefeated.push(delta.bossDefeatedIndex);
+    if (!stats.bossesDefeated.includes(bossIdx)) {
+      stats.bossesDefeated.push(bossIdx);
     }
   }
 
-  if (delta.runCompleted) {
+  if (delta.runCompleted || delta.runFinished) {
     stats.runsPlayed = (stats.runsPlayed || 0) + 1;
   }
 

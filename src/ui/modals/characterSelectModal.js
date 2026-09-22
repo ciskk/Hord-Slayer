@@ -10,7 +10,8 @@ import {
   isHeroUnlocked, 
   getAchievementStatus,
   getHeroRecord,
-  getPersistentGold
+  getPersistentGold,
+  evaluateAchievements
 } from '../../systems/progression.js';
 import { 
   startPreview, 
@@ -99,6 +100,7 @@ export function openCharacterSelect() {
   }
   gameState.isPaused = false;
   resetDeathAudioFilter();
+  evaluateAchievements();
 
   const hud = document.getElementById('hud');
   if (hud) {

@@ -31,3 +31,12 @@
   transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1) !important;
   will-change: transform;
 }
+
+/* 3. Modais com Auto-Fit: centralizar via center center para manter margin: auto funcional */
+.levelup-screen-overlay .autofit-scaled,
+.chest-screen-overlay .autofit-scaled,
+.death-screen-overlay .autofit-scaled,
+.pause-screen-overlay .autofit-scaled,
+.modal-overlay .autofit-scaled {
+  transform-origin: center center !important;
+}

@@ -95,6 +95,15 @@ export function tickEnemyStatus(e, dt, player, triggerShake) {
     }
   }
 
+  // Decaimento do timer de vulnerabilidade
+  if (e.vulnerableTimer > 0) {
+    e.vulnerableTimer -= dt;
+    if (e.vulnerableTimer <= 0) {
+      e.vulnerableTimer = 0;
+      e.isVulnerable = false;
+    }
+  }
+
   if (e.stunTimer > 0) {
     e.stunTimer -= dt;
     return 'stunned';

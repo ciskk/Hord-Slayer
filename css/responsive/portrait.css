@@ -608,9 +608,9 @@
   /* Tier 1: Palco Superior do Campeão (Proporção equilibrada e visual limpo) */
   .char-stage-wing {
     order: 1 !important;
-    flex: 0 1 clamp(90px, 22vh, 175px) !important;
-    min-height: 90px !important;
-    max-height: 28dvh !important;
+    flex: 1 1 clamp(110px, 28vh, 200px) !important;
+    min-height: 110px !important;
+    max-height: 36dvh !important;
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
@@ -866,9 +866,9 @@
   /* Tier 3: Dossiê Holográfico com Carrossel de 3 Slides & Catalisador de Despertar */
   .char-dossier-wing {
     order: 3 !important;
-    flex: 1 1 auto !important;
+    flex: 0 1 clamp(220px, 46dvh, 320px) !important;
     min-height: 0 !important;
-    max-height: none !important;
+    max-height: 52dvh !important;
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
@@ -1300,7 +1300,7 @@
     padding: 6px 16px !important;
     font-size: clamp(11px, 1.3vh, 12.5px) !important;
     letter-spacing: 1.4px !important;
-    margin-top: auto !important;
+    margin-top: clamp(2px, 0.6vh, 6px) !important;
     margin-bottom: 0 !important;
     border-radius: 8px !important;
     flex-shrink: 0 !important;
@@ -3316,9 +3316,9 @@
   /* 4. Calibração para Telas com Altura Ultracompacta (ex: Safari/Chrome com barras de UI abertas) */
   @media (max-height: 660px) {
     .char-stage-wing {
-      flex: 0 1 85px !important;
-      min-height: 75px !important;
-      max-height: 20dvh !important;
+      flex: 1 1 auto !important;
+      min-height: 100px !important;
+      max-height: 30dvh !important;
     }
 
     .char-stage-main-title {

@@ -286,7 +286,7 @@ export function openDeathModalReal() {
 
   const threatIndicator = document.getElementById('death-threat-indicator');
   if (threatIndicator) {
-    threatIndicator.innerHTML = `⚠️ ${threatLabel}`;
+    threatIndicator.innerHTML = `${renderIcon('warning', { size: 13, color: '#f39c12', style: 'vertical-align:-2px;margin-right:4px;' })} ${threatLabel}`;
   }
 
   const killerNameElem = document.getElementById('death-killer-name');

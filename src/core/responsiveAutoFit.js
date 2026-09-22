@@ -172,7 +172,21 @@ export function autoFitElement(container, customOptions = {}) {
  */
 function applyAutoFitScale(container, target, scale, naturalH) {
   target.style.zoom = '';
-  target.style.transformOrigin = 'top center';
+
+  // Modal overlays usam center center para manter o conteúdo centralizado com margin: auto
+  const isModalOverlay = container.classList.contains('modal-overlay') ||
+    container.closest && container.closest('.modal-overlay') ||
+    container.classList.contains('levelup-screen-overlay') ||
+    container.classList.contains('chest-screen-overlay') ||
+    container.classList.contains('death-screen-overlay') ||
+    container.classList.contains('pause-screen-overlay');
+
+  if (isModalOverlay) {
+    target.style.transformOrigin = 'center center';
+  } else {
+    target.style.transformOrigin = 'top center';
+  }
+
   target.style.transform = `scale(${scale})`;
   target.style.setProperty('--autofit-scale', String(scale));
 
@@ -182,8 +196,10 @@ function applyAutoFitScale(container, target, scale, naturalH) {
   target.style.boxSizing = 'border-box';
 
   // Compensa a altura visual excedente recolhendo o espaço inferior no container
-  const heightDiff = (scale - 1) * naturalH;
-  target.style.marginBottom = `${heightDiff.toFixed(1)}px`;
+  if (!isModalOverlay) {
+    const heightDiff = (scale - 1) * naturalH;
+    target.style.marginBottom = `${heightDiff.toFixed(1)}px`;
+  }
 
   target.classList.add('autofit-scaled');
   container.classList.add('autofit-active');

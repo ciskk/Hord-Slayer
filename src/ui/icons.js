@@ -298,6 +298,17 @@ export const ICONS = {
   trophy: `
     <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3m12 6h3a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-3M6 3h12v7a6 6 0 0 1-12 0V3z"/>
     <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 16v5m-4 0h8"/>
+  `,
+
+  warning: `
+    <path fill="currentColor" d="M12 2L1 21h22L12 2z"/>
+    <rect x="11" y="10" width="2" height="5" rx="1" fill="#080e1c"/>
+    <circle cx="12" cy="18" r="1.2" fill="#080e1c"/>
+  `,
+
+  eye: `
+    <path fill="none" stroke="currentColor" stroke-width="2" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
+    <circle cx="12" cy="12" r="3" fill="currentColor"/>
   `
 };
 

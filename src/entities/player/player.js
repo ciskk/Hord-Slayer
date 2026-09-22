@@ -7,7 +7,7 @@ import { CHARACTERS } from '../../config/characters.js';
 import { playSfx, triggerHaptic } from '../../core/audio.js';
 import { inputX, inputY } from '../../core/input.js';
 import { createHitParticles } from '../../systems/combat.js';
-import { bullets, enemies } from '../../state/collections.js';
+import { bullets, enemies, enemyBullets } from '../../state/collections.js';
 import { gameState, triggerShake, camera, CAMERA_ZOOM } from '../../state/gameState.js';
 import { getMetaBonuses } from '../../systems/progression.js';
 
@@ -345,6 +345,38 @@ export function triggerHeroSkill(options = {}) {
     triggerShake(12);
     triggerHaptic('heavy');
     createHitParticles(player.x, player.y, '#e74c3c', 24);
+
+    // Rugido Ancestral: Atordoar, tornar vulnerável e repelir inimigos na área
+    const roarRadius = 220;
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      if (!e || e.hp <= 0 || e.isBoss) continue;
+      const dx = e.x - player.x;
+      const dy = e.y - player.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < roarRadius) {
+        e.stunTimer = 90;
+        e.isVulnerable = true;
+        e.vulnerableTimer = 180;
+        // Knockback radial
+        const pushForce = 6;
+        const ang = Math.atan2(dy, dx);
+        e.pushVx = Math.cos(ang) * pushForce;
+        e.pushVy = Math.sin(ang) * pushForce;
+        e.hitFlash = 8;
+      }
+    }
+
+    // Vaporizar projéteis inimigos na área do rugido
+    for (let i = enemyBullets.length - 1; i >= 0; i--) {
+      const b = enemyBullets[i];
+      const bdx = b.x - player.x;
+      const bdy = b.y - player.y;
+      if (bdx * bdx + bdy * bdy < roarRadius * roarRadius) {
+        createHitParticles(b.x, b.y, '#f39c12', 5);
+        enemyBullets.splice(i, 1);
+      }
+    }
   } else if (selectedHeroKey === 'ALCHEMIST') {
     player.alchemistSkillTimer = 300;
     player.alchemistBuffTimer = 300;

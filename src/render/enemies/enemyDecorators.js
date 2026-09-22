@@ -27,6 +27,17 @@ export function drawEnemyStatusOverlays(e) {
     }
   }
 
+  if (e.isVulnerable && e.vulnerableTimer > 0) {
+    const vulnPulse = Math.sin(frameCount * 0.3) * 2;
+    ctx.strokeStyle = 'rgba(231, 76, 60, 0.7)';
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.arc(0, 0, e.radius + 5 + vulnPulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
   if (e.slowTimer > 0) {
     const pulseSlow = Math.sin(frameCount * 0.25) * 2;
     ctx.strokeStyle = '#74b9ff';

@@ -87,7 +87,9 @@ function isEligibleForCache(e) {
     (e.leapState && e.leapState !== 'none') ||
     (e.jumpZ && e.jumpZ > 0) ||
     (e.landingSplashTimer && e.landingSplashTimer > 0) ||
-    e.isCharging
+    e.isCharging ||
+    e.baseType === 'VOID_SCAVENGER' ||
+    e.baseType === 'CURSED_CHEST'
   ) {
     return false;
   }
