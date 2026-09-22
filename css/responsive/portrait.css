@@ -461,7 +461,9 @@
   .char-scene-container {
     width: 100% !important;
     height: 100% !important;
+    min-height: 100vh !important;
     min-height: 100dvh !important;
+    max-height: 100vh !important;
     max-height: 100dvh !important;
     display: flex !important;
     flex-direction: column !important;
@@ -608,9 +610,11 @@
   /* Tier 1: Palco Superior do Campeão (Proporção equilibrada e visual limpo) */
   .char-stage-wing {
     order: 1 !important;
-    flex: 1 1 clamp(110px, 28vh, 200px) !important;
-    min-height: 110px !important;
-    max-height: 36dvh !important;
+    flex: 0 1 clamp(150px, 33vh, 275px) !important;
+    flex: 0 1 clamp(150px, 33dvh, 275px) !important;
+    min-height: 120px !important;
+    max-height: 35vh !important;
+    max-height: 35dvh !important;
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
@@ -866,14 +870,14 @@
   /* Tier 3: Dossiê Holográfico com Carrossel de 3 Slides & Catalisador de Despertar */
   .char-dossier-wing {
     order: 3 !important;
-    flex: 0 1 clamp(220px, 46dvh, 320px) !important;
+    flex: 1 1 auto !important;
     min-height: 0 !important;
-    max-height: 52dvh !important;
+    max-height: none !important;
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
-    padding: 6px 10px max(env(safe-area-inset-bottom, 6px), 6px) 10px !important;
+    padding: 6px 10px max(env(safe-area-inset-bottom, 12px), 12px) 10px !important;
     background: rgba(8, 14, 28, 0.94) !important;
     backdrop-filter: blur(24px) !important;
     -webkit-backdrop-filter: blur(24px) !important;
@@ -1080,9 +1084,9 @@
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
-    padding: clamp(4px, 0.7vh, 7px) clamp(8px, 1.2vw, 11px) !important;
+    padding: clamp(5px, 0.9vh, 8px) clamp(8px, 1.2vw, 12px) !important;
     border-radius: 7px !important;
-    gap: 2px !important;
+    gap: clamp(2px, 0.4vh, 4px) !important;
     background: rgba(14, 22, 42, 0.72) !important;
     border: 1px solid rgba(0, 245, 212, 0.2) !important;
     box-sizing: border-box !important;
@@ -1142,10 +1146,10 @@
   }
 
   .loadout-entry-desc {
-    font-size: clamp(7.5px, 0.95vh, 8.5px) !important;
-    line-height: 1.3 !important;
+    font-size: clamp(8px, 1.05vh, 9px) !important;
+    line-height: 1.35 !important;
     display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important;
+    -webkit-line-clamp: 3 !important;
     -webkit-box-orient: vertical !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -1295,12 +1299,12 @@
   .btn-ignition-catalyst {
     position: relative !important;
     bottom: auto !important;
-    height: clamp(38px, 4.8vh, 42px) !important;
+    height: clamp(38px, 4.8vh, 44px) !important;
     min-height: 38px !important;
     padding: 6px 16px !important;
     font-size: clamp(11px, 1.3vh, 12.5px) !important;
     letter-spacing: 1.4px !important;
-    margin-top: clamp(2px, 0.6vh, 6px) !important;
+    margin-top: clamp(4px, 0.8vh, 8px) !important;
     margin-bottom: 0 !important;
     border-radius: 8px !important;
     flex-shrink: 0 !important;
@@ -3316,9 +3320,11 @@
   /* 4. Calibração para Telas com Altura Ultracompacta (ex: Safari/Chrome com barras de UI abertas) */
   @media (max-height: 660px) {
     .char-stage-wing {
-      flex: 1 1 auto !important;
-      min-height: 100px !important;
-      max-height: 30dvh !important;
+      flex: 0 1 clamp(100px, 26vh, 150px) !important;
+      flex: 0 1 clamp(100px, 26dvh, 150px) !important;
+      min-height: 90px !important;
+      max-height: 28vh !important;
+      max-height: 28dvh !important;
     }
 
     .char-stage-main-title {
