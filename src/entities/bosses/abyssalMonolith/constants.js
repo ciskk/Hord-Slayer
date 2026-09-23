@@ -59,6 +59,9 @@ export const MONOLITH_CONFIG = Object.freeze({
   OUTER_SURGE_MIN_RADIUS: 140,
   OUTER_SURGE_MAX_RADIUS: 245,
   WHIRL_RADIUS: 110,
+  CROSS_NODES_PER_ARM: 5,
+  CROSS_NODE_SPACING: 52,
+  CROSS_NODE_RADIUS: 32,
 
   // Limiares de Transição de Fases
   P2_HP_RATIO: 0.60,

@@ -600,11 +600,13 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
     case MONOLITH_STATES.WINDUP_CROSS_FISSURE: {
       e.actionTimer -= dt;
       if (e.actionTimer > 12) {
-        e.aimAngle = Math.atan2(player.y - e.y, player.x - e.x);
+        e.crossTargetX = player.x;
+        e.crossTargetY = player.y;
+        e.aimAngle = Math.atan2(e.crossTargetY - e.y, e.crossTargetX - e.x);
       }
       if (Math.floor(frameCount) % 3 === 0) {
         triggerShake(1.5);
-        createHitParticles(player.x + (Math.random() - 0.5) * 60, player.y + (Math.random() - 0.5) * 60, '#e74c3c', 1);
+        createHitParticles(e.crossTargetX + (Math.random() - 0.5) * 60, e.crossTargetY + (Math.random() - 0.5) * 60, '#e74c3c', 1);
       }
       if (e.actionTimer <= 0) {
         executeCrossFissures(e, context);

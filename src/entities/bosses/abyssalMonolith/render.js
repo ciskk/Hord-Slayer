@@ -1108,12 +1108,13 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
     const maxTimer = e.maxActionTimer || (e.isPhase3 ? 45 : (e.isEnraged ? 52 : 60));
     const progress = Math.min(1, Math.max(0, 1 - (e.actionTimer / maxTimer)));
     const aim = e.aimAngle || 0;
-    const crossSpan = 450 * progress;
+    const crossSpan = MONOLITH_CONFIG.CROSS_NODES_PER_ARM * MONOLITH_CONFIG.CROSS_NODE_SPACING;
 
     ctx.save();
     // As duas diagonais cruzadas
+    ctx.translate((e.crossTargetX ?? e.x) - e.x, (e.crossTargetY ?? e.y) - e.y);
     const angles = [aim + Math.PI / 4, aim - Math.PI / 4];
-    angles.forEach((ang) => {
+    angles.forEach((ang, lineIdx) => {
       const x1 = Math.cos(ang) * -crossSpan;
       const y1 = Math.sin(ang) * -crossSpan;
       const x2 = Math.cos(ang) * crossSpan;
@@ -1121,7 +1122,7 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
 
       // Faixa de perigo da fratura
       ctx.strokeStyle = `rgba(230, 126, 34, ${0.15 + progress * 0.35})`;
-      ctx.lineWidth = 26 * progress;
+      ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
@@ -1136,6 +1137,18 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
       ctx.lineTo(x2, y2);
       ctx.stroke();
       ctx.setLineDash([]);
+
+      // Mostra os mesmos círculos usados na colisão, com alcance completo desde o início.
+      for (let step = -MONOLITH_CONFIG.CROSS_NODES_PER_ARM; step <= MONOLITH_CONFIG.CROSS_NODES_PER_ARM; step++) {
+        if (lineIdx === 1 && step === 0) continue;
+        ctx.beginPath();
+        ctx.arc(Math.cos(ang) * step * MONOLITH_CONFIG.CROSS_NODE_SPACING,
+          Math.sin(ang) * step * MONOLITH_CONFIG.CROSS_NODE_SPACING,
+          MONOLITH_CONFIG.CROSS_NODE_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(230, 126, 34, ${0.15 + progress * 0.35})`;
+        ctx.fill();
+        ctx.stroke();
+      }
     });
 
     // Núcleo de intersecção brilhante no centro do X

@@ -7,7 +7,7 @@ import { playSfx, triggerHaptic } from '../../../core/audio.js';
 import { setLastAttackerName, canSpawnEnemyBullet } from '../../../main.js';
 import { selectedHeroKey } from '../../player.js';
 import { triggerDeath } from '../../../systems/ui.js';
-import { MONOLITH_STATES, MONOLITH_SKILLS } from './constants.js';
+import { MONOLITH_STATES, MONOLITH_SKILLS, MONOLITH_CONFIG } from './constants.js';
 
 /**
  * Seleciona a próxima habilidade com base em avaliação tática situacional (Envelope Anti-Whiff, Distância Real e Combos).
@@ -196,6 +196,9 @@ export function selectNextSkill(e, dist, player = null) {
     case MONOLITH_SKILLS.TECTONIC_CROSS_SURGE:
       e.actionState = MONOLITH_STATES.WINDUP_CROSS_FISSURE;
       e.actionTimer = uniformWindup;
+      e.crossTargetX = player ? player.x : e.x;
+      e.crossTargetY = player ? player.y : e.y;
+      e.aimAngle = Math.atan2(e.crossTargetY - e.y, e.crossTargetX - e.x);
       break;
 
     case MONOLITH_SKILLS.MAGMA_SIPHON:
@@ -636,17 +639,17 @@ export function executeCrossFissures(e, context) {
   triggerShake(12);
   triggerHaptic('heavy');
 
-  // Centro da fenda em X ancorado no jogador
-  const centerX = player.x;
-  const centerY = player.y;
+  // Preserva o centro e a direção anunciados antes do travamento da mira.
+  const centerX = e.crossTargetX ?? player.x;
+  const centerY = e.crossTargetY ?? player.y;
 
   // Ângulo base da linha Monólito -> Jogador
-  const baseAngle = Math.atan2(centerY - e.y, centerX - e.x);
+  const baseAngle = e.aimAngle ?? Math.atan2(centerY - e.y, centerX - e.x);
 
   // Duas diagonais ortogonais cruzadas (+45° e -45°)
   const crossAngles = [baseAngle + Math.PI / 4, baseAngle - Math.PI / 4];
-  const nodeCountPerArm = 5; // 5 nós para cada lado do centro (total 9 nós por linha de fratura)
-  const nodeSpacing = 52;
+  const nodeCountPerArm = MONOLITH_CONFIG.CROSS_NODES_PER_ARM;
+  const nodeSpacing = MONOLITH_CONFIG.CROSS_NODE_SPACING;
   const baseCrossTimer = e.isPhase3 ? 45 : (e.isEnraged ? 52 : 60);
 
   createHitParticles(centerX, centerY, '#ff1744', 12);
@@ -654,6 +657,8 @@ export function executeCrossFissures(e, context) {
 
   crossAngles.forEach((cAng, lineIdx) => {
     for (let step = -nodeCountPerArm; step <= nodeCountPerArm; step++) {
+      // A interseção pertence às duas linhas, mas deve explodir apenas uma vez.
+      if (lineIdx === 1 && step === 0) continue;
       const nodeX = centerX + Math.cos(cAng) * (step * nodeSpacing);
       const nodeY = centerY + Math.sin(cAng) * (step * nodeSpacing);
 
@@ -670,7 +675,7 @@ export function executeCrossFissures(e, context) {
         lineIndex: lineIdx,
         nodeIndex: distFromCenter + 1,
         angle: cAng,
-        radius: 32,
+        radius: MONOLITH_CONFIG.CROSS_NODE_RADIUS,
         timer: fissureNodeTimer,
         maxTimer: fissureNodeTimer,
         damage: e.isPhase3 ? 55 : (e.isEnraged ? 50 : 45)
