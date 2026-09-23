@@ -13,6 +13,7 @@ update(e, dt, ctx, dist, angle) {
   const { player, enemyBullets, bossTelegraphs, createHitParticles } = ctx;
 
   if (e.actionState === 'CHASE') {
+    e.aimAngle = angle;
     if (dist < 170) {
       e.x -= Math.cos(angle) * e.speed * dt;
       e.y -= Math.sin(angle) * e.speed * dt;
@@ -23,7 +24,7 @@ update(e, dt, ctx, dist, angle) {
 
     e.skillCooldown -= dt;
     if (e.skillCooldown <= 0) {
-      if (dist < 120) {
+      if (dist < 130) {
         e.currentSkill = 'FLAK_BLAST';
         e.actionState = 'WINDUP';
         e.actionTimer = 18;
@@ -57,6 +58,9 @@ update(e, dt, ctx, dist, angle) {
   } else if (e.actionState === 'WINDUP') {
     e.actionTimer -= dt;
     e.castProgress = 1 - (e.actionTimer / e.actionMaxTimer);
+    if (e.currentSkill === 'FLAK_BLAST') {
+      e.aimAngle = angle;
+    }
     if (e.actionTimer <= 0) {
       e.actionState = 'STRIKE';
     }
@@ -64,15 +68,19 @@ update(e, dt, ctx, dist, angle) {
     if (e.currentSkill === 'FLAK_BLAST') {
       safePlaySfx('boss');
       ctx.triggerShake(7);
-      createHitParticles(e.x, e.y, '#b71540', 14);
+      createHitParticles(e.x + Math.cos(e.aimAngle) * 26, e.y + Math.sin(e.aimAngle) * 26, '#b71540', 16);
+      createHitParticles(e.x + Math.cos(e.aimAngle) * 28, e.y + Math.sin(e.aimAngle) * 28, '#f1c40f', 8);
+
+      e.x -= Math.cos(e.aimAngle) * 6;
+      e.y -= Math.sin(e.aimAngle) * 6;
 
       for (let s = -3; s <= 3; s++) {
         const sAng = e.aimAngle + s * 0.14;
         enemyBullets.push({
-          x: e.x,
-          y: e.y,
-          vx: Math.cos(sAng) * 4.8,
-          vy: Math.sin(sAng) * 4.8,
+          x: e.x + Math.cos(sAng) * 24,
+          y: e.y + Math.sin(sAng) * 24,
+          vx: Math.cos(sAng) * 5.2,
+          vy: Math.sin(sAng) * 5.2,
           radius: 4.5,
           damage: Math.round(e.damage * 0.35),
           life: 65,

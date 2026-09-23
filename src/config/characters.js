@@ -53,7 +53,7 @@ export const CHARACTERS = {
       hp: 175, 
       maxHp: 175, 
       speed: 3.2, 
-      damage: 45, 
+      damage: 56.25, 
       auraLvl: 1, 
       projectiles: 1, 
       orbitals: 0, 
@@ -126,7 +126,7 @@ export const CHARACTERS = {
       hp: 73.5, 
       maxHp: 73.5, 
       speed: 3.5, 
-      damage: 36, 
+      damage: 45, 
       auraLvl: 0, 
       projectiles: 1, 
       orbitals: 0, 
@@ -156,7 +156,7 @@ export const CHARACTERS = {
     },
     skill: {
       name: "Manto de Fumaça",
-      cooldown: "7.5s",
+      cooldown: "4.9s",
       desc: "Invisibilidade instantânea com velocidade dobrada, empurrão de choque e 100% de chance crítica por 2.0s."
     },
     desc: "Passiva: 2.0x de dano em oponentes com menos de 35% de vida (1.5x contra chefes).<br><b>Arma Inicial: Lâminas Espirituais</b> (Espadas astrais velozes arremessadas contra inimigos no alcance).<br><b>Poder: Bomba de Fumaça</b> (Invisibilidade com dobro de velocidade, transposição de massa com empurrão atordoante e 100% de crítico por 2.0s).",
@@ -272,7 +272,7 @@ export const CHARACTERS = {
       magnet: 150, 
       attackCooldown: 24, 
       critChance: 0.24, 
-      skillCooldownMax: 450,
+      skillCooldownMax: 292.5,
       knockbackReceived: 1.0,
       knockbackDealt: 2.0
     }
@@ -333,7 +333,7 @@ export const CHARACTERS = {
       hp: 154, 
       maxHp: 154, 
       speed: 3.1, 
-      damage: 54, 
+      damage: 67.5, 
       auraLvl: 0, 
       projectiles: 1, 
       orbitals: 0, 

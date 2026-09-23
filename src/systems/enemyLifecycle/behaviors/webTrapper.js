@@ -4,9 +4,10 @@
  */
 import { playSfx } from '../../../core/audio.js';
 import { createHitParticles, addDamageText } from '../../combat.js';
+import { canSpawnEnemyBullet } from '../../projectiles.js';
 
 export function webTrapperBehavior(e, dt, angle, curSpeed, ctx) {
-  const { player, acidPuddles } = ctx;
+  const { player, enemyBullets } = ctx;
   const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
   if (distToPlayerSq > 160 * 160) {
     e.x += Math.cos(angle) * curSpeed * dt;
@@ -15,21 +16,30 @@ export function webTrapperBehavior(e, dt, angle, curSpeed, ctx) {
     e.x -= Math.cos(angle) * curSpeed * 0.7 * dt;
     e.y -= Math.sin(angle) * curSpeed * 0.7 * dt;
   }
+  e.aimAngle = angle;
   e.webTimer = (e.webTimer || 0) + dt;
   if (e.webTimer >= 115) {
     e.webTimer = 0;
     playSfx('shoot');
-    acidPuddles.push({
-      x: player.x,
-      y: player.y,
-      radius: 36,
-      life: 240,
-      maxLife: 240,
-      isCaustic: true,
-      isWeb: true,
-      isFire: false
-    });
-    createHitParticles(player.x, player.y, '#b2bec3', 8);
-    addDamageText(e.x, e.y, "TEIA!", false, '#dfe4ea');
+    createHitParticles(e.x, e.y, '#dfe4ea', 6);
+    addDamageText(e.x, e.y, "CASULO!", false, '#dfe4ea');
+
+    if (canSpawnEnemyBullet()) {
+      const speed = 5.2;
+      const dist = Math.hypot(player.x - e.x, player.y - e.y);
+      const travelLife = Math.max(14, Math.round(dist / speed));
+      enemyBullets.push({
+        x: e.x + Math.cos(angle) * 14,
+        y: e.y + Math.sin(angle) * 14,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        radius: 7,
+        damage: 12,
+        life: travelLife,
+        bulletType: 'WEB_COCOON',
+        isWebCocoon: true,
+        color: '#dfe4ea'
+      });
+    }
   }
 }

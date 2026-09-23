@@ -28,6 +28,12 @@ let halfPixelSize = BASE_HALF_CELL;
 let nextSlotIndex = 0;
 const spriteSlots = new Map();
 const slotKeys = new Array(MAX_SLOTS);
+// Only bodies whose pose is fully described by the atlas key can be baked.
+// Aimed weapons, support casts and defensive forms must follow the live entity.
+const CACHEABLE_TYPES = new Set([
+  'ZOMBIE', 'BAT', 'GOLEM', 'STALKER',
+  'SPLITTER', 'SPLITTER_MINI', 'TRAIL_CRAWLER', 'MAIDEN_THORNS'
+]);
 
 function ensureAtlas() {
   const targetDpr = Math.min(2.5, Math.max(1, (layoutMetrics && layoutMetrics.dpr) ? layoutMetrics.dpr : 1));
@@ -78,6 +84,11 @@ export function clearSpriteCache() {
 function isEligibleForCache(e) {
   if (
     !e ||
+    !CACHEABLE_TYPES.has(e.baseType) ||
+    e.radius * 1.65 + 2 > BASE_HALF_CELL ||
+    e.spikeFlash > 0 ||
+    (e.dashState && e.dashState !== 'chase') ||
+    e.fuseState === 'FUSE' ||
     e.isBoss ||
     e.isMiniBoss ||
     e.isBossSubTarget ||
@@ -116,7 +127,7 @@ export function drawCachedEnemy(targetCtx, e, renderer) {
   const stateKey = isHit ? 'h' : (isSlow ? 's' : 'n');
   const animStep = Math.abs(Math.floor(frameCount * 0.18)) % 6;
   const variant = e.variant || 0;
-  const key = `${e.baseType}_v${variant}_f${animStep}_${stateKey}`;
+  const key = `${e.baseType}_r${e.radius}_v${variant}_f${animStep}_${stateKey}`;
 
   let slot = spriteSlots.get(key);
 
@@ -166,11 +177,17 @@ export function drawCachedEnemy(targetCtx, e, renderer) {
       };
 
       atlasCtx.save();
+      atlasCtx.beginPath();
+      atlasCtx.rect(slotX, slotY, cellPixelSize, cellPixelSize);
+      atlasCtx.clip();
       // Posiciona no centro da célula em pixels físicos do atlas e aplica a escala nativa
       atlasCtx.translate(slotX + halfPixelSize, slotY + halfPixelSize);
       atlasCtx.scale(currentCacheDpr, currentCacheDpr);
-      renderer.draw(mockEntity);
-      atlasCtx.restore();
+      try {
+        renderer.draw(mockEntity);
+      } finally {
+        atlasCtx.restore();
+      }
     } catch (_) {
       // Em caso de qualquer anomalia de pre-render, desfaz slot e faz fallback
       spriteSlots.delete(key);

@@ -5,6 +5,8 @@
  */
 import { ctx } from '../../main.js';
 import { drawThreatGlyph, drawDyingThreatGlyph } from './threatGlyph.js';
+import { getEnemyDeathProgress } from '../../config/enemyDeaths.js';
+import { drawDeathResidue } from '../enemies/deathEffects.js';
 import * as zombieAlpha from './zombieAlphaRenderer.js';
 import * as phalanxLeader from './phalanxLeaderRenderer.js';
 import * as seismicSmasher from './seismicSmasherRenderer.js';
@@ -74,19 +76,21 @@ export function drawMiniBossShape(e) {
  * @param {Object} de Entidade agonizante em dyingEnemies
  */
 export function drawDyingMiniBossShape(de) {
-  const t = Math.max(0, Math.min(1, 1 - (de.timer / de.maxTimer)));
+  const t = getEnemyDeathProgress(de);
   const R = de.radius;
   const isEnraged = !!de.enraged;
   const eliteColor = isEnraged ? '#ff4757' : (de.color || '#f39c12');
 
   ctx.save();
   ctx.translate(de.x, de.y);
+  drawDeathResidue(ctx, de, t);
+  ctx.translate(0, -(de.deathJumpZ || 0) * Math.max(0, 1 - t / 0.35));
   ctx.scale(de.facing || 1, 1);
 
   if (de.rot) ctx.rotate(de.rot);
 
   const bodyAlpha = Math.max(0, 1 - Math.max(0, (t - 0.75) / 0.25));
-  ctx.globalAlpha = bodyAlpha;
+  ctx.globalAlpha *= bodyAlpha;
 
   drawDyingThreatGlyph(R, eliteColor, t);
 

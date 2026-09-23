@@ -1,97 +1,35 @@
-/**
- * src/render/minibosses/voidPrecursorRenderer.js
- * 
- * Renderizador procedural modular do Miniboss Precursor do Vazio (VOID_PRECURSOR).
- */
-import { ctx, frameCount } from '../../main.js';
+import { ctx, frameCount } from '../../state/gameState.js';
+import { getRelativeAimAngle } from '../../core/math.js';
+import { beginCreature, endCreature, materialPolygon, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
-/**
- * Renderiza a forma viva do Miniboss.
- * @param {Object} e Entidade do Miniboss
- */
+/** An empty, pointed mantle suspended between two hands holding a black singularity. */
 export function draw(e) {
-  const R = e.radius;
-  const isHit = e.hitFlash > 0;
-  const isEnraged = !!e.enraged;
-  const eliteColor = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : (e.color || '#f39c12'));
-
-  // 1. Núcleo Devorador de Luz do Horizonte de Eventos
-  ctx.fillStyle = isHit ? '#ffffff' : '#000000';
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 0.75, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#8e44ad';
-  ctx.lineWidth = 3.2;
-  ctx.stroke();
-
-  // 2. Disco de Acreção Estelar com Partículas e Velocidade Kepleriana
-  const spinMult = (e.actionState === 'WINDUP' ? 2.2 : 1.0);
-  
-  // Anel Externo Violeta
-  ctx.strokeStyle = isHit ? '#ffffff' : 'rgba(142, 68, 173, 0.7)';
-  ctx.lineWidth = 3.5;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, R * 1.4, R * 0.6, frameCount * 0.04 * spinMult, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Anel Intermediário Magenta
-  ctx.strokeStyle = isHit ? '#ffffff' : 'rgba(232, 67, 147, 0.6)';
-  ctx.lineWidth = 2.8;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, R * 1.25, R * 0.52, -frameCount * 0.05 * spinMult, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Anel Interno Ciano Relativístico
-  ctx.strokeStyle = isHit ? '#ffffff' : 'rgba(0, 206, 201, 0.75)';
-  ctx.lineWidth = 2.2;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, R * 1.1, R * 0.44, frameCount * 0.07 * spinMult, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // 3. Poeira Estelar Cintilante em Órbita
-  ctx.fillStyle = '#a29bfe';
-  for (let f = 0; f < 5; f++) {
-    const fa = frameCount * 0.06 + f * 1.3;
-    ctx.fillRect(Math.cos(fa) * (R * 0.95) - 2, Math.sin(fa) * (R * 0.95) - 2, 4, 4);
+  const p = creaturePalette(e, '#8e44ad', '#28133f', e.enraged ? '#ff4757' : '#dd70ff');
+  const wind = e.actionState === 'WINDUP';
+  const strike = e.actionState === 'STRIKE';
+  const beam = e.currentSkill === 'EVENT_HORIZON';
+  const dead = e.deathPose !== undefined;
+  beginCreature(ctx, e);
+  const sway = dead ? 0 : Math.sin(frameCount*.075)*.055;
+  materialPolygon(ctx, [[-.45,-.76],[-.19,-1.11],[.05,-.84],[.3,-1.13],[.49,-.65],[.38,.35],[.66,.99],[.11,.75],[-.05,1.13],[-.3,.75],[-.65,1.02],[-.49,.22]], p, 'cloth');
+  polygon(ctx, [[-.25,-.56],[.23,-.62],[.31,.2],[.1,.68],[-.1,.61],[-.31,.24]], p.ink);
+  polygon(ctx, [[-.4,.05],[-.21,.19],[-.38,.77+sway],[-.55,.9]], p.shade, null);
+  polygon(ctx, [[.33,.07],[.15,.25],[.29,.65],[.52,.84-sway]], p.shade, null);
+  stroke(ctx, [[-.16,-.65],[.16,-.65]], p.accent, .075);
+  ctx.save();
+  // The beam winds up along its locked global direction, independent of facing.
+  if (beam && (wind || strike || dead)) ctx.rotate(getRelativeAimAngle(e.beamAngle ?? e.aimAngle ?? 0, e.facing || 1));
+  const separation = wind ? .13*(1-(e.castProgress || 0)) : 0;
+  for (const side of [-1,1]) {
+    polygon(ctx, [[-.13,side*.33],[.3,side*(.56+separation)],[.86,side*(.39+separation)],[.72,side*.22],[.38,side*.34]], p.shade);
+    polygon(ctx, [[.63,side*.32],[.9,side*.32],[1.02,side*.12],[.83,side*.17],[.76,side*.05],[.7,side*.16]], p.body);
   }
+  const radius = wind ? .2+.09*(e.castProgress || 0) : strike ? .32 : .23;
+  ellipse(ctx, .68, 0, radius, radius, p.ink, p.accent, .075);
+  if (beam && wind && !dead) stroke(ctx, [[1.03,0],[1.48,0]], p.accent, .045);
+  if (beam && strike && !dead) polygon(ctx, [[.95,-.15],[1.5,0],[.95,.15]], p.accent, null);
+  ctx.restore();
+  endCreature(ctx);
 }
 
-/**
- * Renderiza a animação de morte em 3 fases do Miniboss.
- * @param {Object} de Entidade agonizante em dyingEnemies
- * @param {number} t Progresso normalizado de morte (0 a 1)
- */
-export function drawDying(de, t) {
-  const R = de.radius;
-  const isEnraged = !!de.enraged;
-  const eliteColor = isEnraged ? '#ff4757' : (de.color || '#f39c12');
-  const bodyAlpha = Math.max(0, 1 - Math.max(0, (t - 0.75) / 0.25));
-
-  // Fase 1: Disco de acreção inverte rotação e expande
-  // Fase 2: Pulso gravitacional de sucção e clarão de supernova no núcleo
-  // Fase 3: Implosão total em ponto negro com anel de choque violeta
-  const pulseIn = t < 0.5 ? (1 + t * 0.6) : Math.max(0.02, 1.3 - (t - 0.5) * 2.6);
-
-  // Anel de choque gravitacional em expansão
-  ctx.strokeStyle = '#8e44ad';
-  ctx.lineWidth = 2.5 * (1 - t);
-  ctx.beginPath();
-  ctx.arc(0, 0, R * (0.8 + t * 2.5), 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Disco de acreção rodando velozmente
-  ctx.strokeStyle = '#e056fd';
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, R * 1.2 * pulseIn, R * 0.45 * pulseIn, t * 8, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Núcleo do Horizonte de Eventos (Preto Absoluto -> Flash Branco -> Implosão)
-  ctx.fillStyle = (t > 0.4 && t < 0.6) ? '#ffffff' : '#000000';
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 0.75 * pulseIn, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#a29bfe';
-  ctx.lineWidth = 1.8;
-  ctx.stroke();
-}
+export function drawDying(e, t) { drawCreatureDeath(ctx, e, t, draw, 'dissolve'); }

@@ -8,6 +8,7 @@ import { triggerShake } from '../state/gameState.js';
 import { bossShockwaves } from '../state/collections.js';
 import { setLastAttackerInfo } from '../state/events.js';
 import { selectedHeroKey } from '../entities/player.js';
+import { getEnemyDeathProfile } from '../config/enemyDeaths.js';
 
 
 export const damageTexts = [];
@@ -19,31 +20,29 @@ export function addDyingEnemy(e, hitAngle = 0) {
   if (!e || e.isBoss || e.isBossSubTarget) return;
 
   const isMini = !!e.isMiniBoss;
-  let duration = 28;
-
-  if (isMini) {
-    duration = 54;
-  } else if (e.baseType === 'GOLEM' || e.baseType === 'SHIELDED' || e.baseType === 'MAIDEN_THORNS' || e.baseType === 'BASALT_GARGOYLE' || e.baseType === 'DULLAHAN_VANGUARD') {
-    duration = 36;
-  } else if (e.baseType === 'SPLITTER_MINI') {
-    duration = 20;
-  }
+  const profile = getEnemyDeathProfile(e);
+  const duration = e.explodedNaturally ? Math.round(profile.duration * 0.8) : profile.duration;
+  // Mantém a janela original da necrofagia independente da duração visual.
+  const heavyCorpse = ['GOLEM', 'SHIELDED', 'MAIDEN_THORNS', 'BASALT_GARGOYLE', 'DULLAHAN_VANGUARD'].includes(e.baseType);
+  const corpseTimer = e.explodedNaturally ? 0 : isMini ? 54 : heavyCorpse ? 36 : e.baseType === 'SPLITTER_MINI' ? 20 : 28;
 
   // Push speed and angular velocity based on creature mass and hit direction
-  const pushSpeed = isMini ? 1.2 : (e.baseType === 'GOLEM' ? 1.4 : 2.5);
+  const pushSpeed = profile.push;
   const rotSign = Math.sin(hitAngle) >= 0 ? 1 : -1;
-  const initialVRot = (Math.random() * 0.04 + 0.02) * rotSign;
+  const initialVRot = profile.spin * rotSign;
 
   // Mobile/Performance Hard Cap: limit concurrent dying enemies to 60
   if (dyingEnemies.length >= 60) {
-    let removeIdx = 0;
+    let removeIdx = -1;
     for (let k = 0; k < dyingEnemies.length; k++) {
       if (!dyingEnemies[k].isMiniBoss) {
         removeIdx = k;
         break;
       }
     }
-    dyingEnemies.splice(removeIdx, 1);
+    // Uma morte comum nunca interrompe a finalização de um miniboss.
+    if (removeIdx === -1 && !isMini) return;
+    dyingEnemies.splice(removeIdx === -1 ? 0 : removeIdx, 1);
   }
 
   dyingEnemies.push({
@@ -62,6 +61,35 @@ export function addDyingEnemy(e, hitAngle = 0) {
     isMiniBoss: isMini,
     name: e.name || '',
     enraged: !!e.enraged,
+    // Preserve visible equipment and evolved forms for the redesigned death pose.
+    aimAngle: e.aimAngle,
+    attackAngle: e.attackAngle,
+    dashAngle: e.dashAngle,
+    dashState: e.dashState,
+    leapAngle: e.leapAngle,
+    leapState: e.leapState,
+    shadowBoltTimer: e.shadowBoltTimer,
+    pounceAngle: e.pounceAngle,
+    beamAngle: e.beamAngle,
+    currentSkill: e.currentSkill,
+    blinkCount: e.blinkCount,
+    spiralAngle: e.spiralAngle,
+    shootAngle: e.shootAngle,
+    sniperAimAngle: e.sniperAimAngle,
+    shieldAngle: e.shieldAngle,
+    hookAngle: e.hookAngle,
+    flameAngle: e.flameAngle,
+    lanceAngle: e.lanceAngle,
+    chargeAngle: e.chargeAngle,
+    eatenGemsCount: e.eatenGemsCount,
+    gorgonStacks: e.gorgonStacks,
+    isAwakeMimic: e.isAwakeMimic,
+    isStoneForm: e.isStoneForm,
+    phase: e.phase,
+    hitAngle,
+    deathJumpZ: Math.max(0, e.jumpZ || 0),
+    explodedNaturally: !!e.explodedNaturally,
+    corpseTimer,
     timer: duration,
     maxTimer: duration
   });
@@ -145,6 +173,7 @@ export function updateCombatVisuals(dt) {
     de.rot = (de.rot || 0) + (de.vRot || 0) * dt;
     de.vRot = (de.vRot || 0) * Math.pow(0.92, dt);
     de.timer -= dt;
+    de.corpseTimer = Math.max(0, de.corpseTimer - dt);
     if (de.timer > 0) {
       dyingEnemies[deWrite++] = de;
     }
@@ -162,7 +191,7 @@ const NON_MELEE_BEHAVIORS_SET = new Set([
  * Máquina de Estados de Ataque Melee dos Inimigos:
  * CHASE -> WINDUP (desaceleração e telegrafia) -> STRIKE (dano exclusivo) -> RECOVERY (vulnerabilidade).
  */
-export function processEnemyMeleeAttacks(player, enemies, dt) {
+export function processEnemyMeleeAttacks(player, enemies, dt, freezeTimer = 0) {
   if (player.hp <= 0) return;
 
   const isKaelIntangible = player.invisTimer > 0;
@@ -174,6 +203,16 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
 
     if (NON_MELEE_BEHAVIORS_SET.has(e.behavior)) continue;
 
+    if (e.baseType === 'STALKER') {
+      if (freezeTimer > 0) continue;
+      if ((e.stunTimer > 0 || isKaelIntangible) && (e.dashState === 'aim' || e.dashState === 'dashing')) {
+        e.dashState = 'cooldown';
+        e.dashTimer = 0;
+        e.combatState = 'RECOVERY';
+        e.attackTimer = 0;
+      }
+    }
+
     if (e.stunTimer > 0) {
       if (e.combatState === 'WINDUP' || e.combatState === 'STRIKE') {
         e.combatState = 'CHASE';
@@ -182,6 +221,9 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
       }
       continue;
     }
+
+    // The worm's dust preparation and stationary recovery cannot start a second bite.
+    if (e.behavior === 'dash' && (e.dashState === 'aim' || e.dashState === 'cooldown')) continue;
 
     if (!e.combatState) e.combatState = 'CHASE';
     if (e.attackTimer === undefined) e.attackTimer = 0;
@@ -214,7 +256,8 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
     const dx = player.x - e.x;
     const dy = player.y - e.y;
     const distSq = dx * dx + dy * dy;
-    const strikeLimit = player.radius + e.radius + e.attackRange;
+    const strikeRange = e.baseType === 'STALKER' && e.dashState === 'dashing' ? 6 : e.attackRange;
+    const strikeLimit = player.radius + e.radius + strikeRange;
 
     switch (e.combatState) {
       case 'CHASE': {
@@ -225,7 +268,10 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
             e.combatState = 'WINDUP';
             e.attackTimer = e.attackWindupFrames;
             e.attackAngle = Math.atan2(dy, dx);
-            e.facing = dx >= 0 ? 1 : -1;
+            const isShieldBearer = (e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER' || e.hasFrontalShield);
+            if (!isShieldBearer) {
+              e.facing = dx >= 0 ? 1 : -1;
+            }
           }
         }
         break;
@@ -287,6 +333,7 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
               else if (e.baseType === 'GOLEM') strikeName = 'Esmagamento de Concreto';
               else if (e.baseType === 'SPLITTER_MINI') strikeName = 'Bote Predatório da Larva';
               else if (e.baseType === 'SPLITTER') strikeName = 'Mordida Cáustica do Verme';
+              else if (e.baseType === 'STALKER') strikeName = 'Bote do Verme Sepulcral';
               else if (e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER') strikeName = 'Investida com Escudo';
               else if (e.baseType === 'DULLAHAN_VANGUARD') strikeName = 'Estocada de Lança Decapitadora';
               else if (e.isElite) strikeName = 'Golpe Feroz de Elite';
@@ -333,12 +380,19 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
                 if (distToEnemy <= 130) {
                   reflectDmg *= 1.25;
                 }
-                // Se o Guardião Blindado ou Centurião estiver virado de frente para o cavaleiro, bloqueia 75% da retaliação
+                // Se o Guardião Blindado ou Centurião estiver virado de frente para o cavaleiro e não estiver com guarda quebrada
                 let isRetaliationBlocked = false;
-                if ((e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER') && (player.x - e.x) * (e.facing || 1) > 0) {
-                  reflectDmg *= (e.baseType === 'PHALANX_LEADER' ? 0.15 : 0.25);
-                  e.shieldBlockFlash = 6;
-                  isRetaliationBlocked = true;
+                if ((e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER' || e.hasFrontalShield) && (!e.shieldStaggerTimer || e.shieldStaggerTimer <= 0)) {
+                  const attackAngle = Math.atan2(player.y - e.y, player.x - e.x);
+                  const facingAngle = (e.facing === -1) ? Math.PI : 0;
+                  let angleDiff = Math.abs(attackAngle - facingAngle);
+                  while (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+
+                  if (angleDiff <= Math.PI * 0.35) {
+                    reflectDmg *= (e.baseType === 'PHALANX_LEADER' ? 0.50 : 0.55);
+                    e.shieldBlockFlash = 6;
+                    isRetaliationBlocked = true;
+                  }
                 }
                 e.hp -= reflectDmg;
                 e.hitFlash = 4;
@@ -420,4 +474,19 @@ export function getBestTarget(player, enemyList, maxRange = Infinity) {
   }
 
   return bestTarget;
+}
+
+/**
+ * Aplica queimadura ígnea contínua (DoT de Fogo da Ignis) em uma entidade inimiga.
+ * @param {object} target - Entidade inimiga.
+ * @param {number} duration - Duração em frames (padrão 180 = 3.0s).
+ * @param {number} dps - Dano por segundo causado pela queimadura.
+ * @param {boolean} isCrit - Se originado de acerto crítico (+50% de DPS de queimadura).
+ */
+export function applyFireBurn(target, duration = 180, dps = 20, isCrit = false) {
+  if (!target || target.hp <= 0 || target.isTargetable === false) return;
+  const frameDmg = (dps / 60) * (isCrit ? 1.5 : 1.0);
+  target.fireBurnDmg = Math.max(target.fireBurnDmg || 0, frameDmg);
+  target.fireBurnTimer = Math.max(target.fireBurnTimer || 0, duration);
+  if (isCrit) target.fireBurnCrit = true;
 }

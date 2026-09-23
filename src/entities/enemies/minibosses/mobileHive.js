@@ -13,6 +13,7 @@ update(e, dt, ctx, dist, angle) {
   const { acidPuddles, enemyBullets, createHitParticles } = ctx;
 
   if (e.actionState === 'CHASE') {
+    e.aimAngle = angle;
     e.x += Math.cos(angle) * e.speed * dt;
     e.y += Math.sin(angle) * e.speed * dt;
 
@@ -23,6 +24,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionState = 'WINDUP';
         e.actionTimer = 22;
         e.actionMaxTimer = 22;
+        e.aimAngle = angle;
         safePlaySfx('boss');
         ctx.addDamageText(e.x, e.y, "ENXAME!", true, '#16a085');
       } else {
@@ -36,26 +38,35 @@ update(e, dt, ctx, dist, angle) {
   } else if (e.actionState === 'WINDUP') {
     e.actionTimer -= dt;
     e.castProgress = 1 - (e.actionTimer / e.actionMaxTimer);
+    e.aimAngle = angle;
     if (e.actionTimer <= 0) {
       e.actionState = 'STRIKE';
     }
   } else if (e.actionState === 'STRIKE') {
     if (e.currentSkill === 'SWARM_MISSILES') {
       safePlaySfx('shoot');
-      createHitParticles(e.x, e.y, '#16a085', 12);
-      for (let m = 0; m < 4; m++) {
-        const bAng = angle + (m - 1.5) * 0.28;
+      createHitParticles(e.x, e.y, '#16a085', 14);
+      const count = e.enraged ? 6 : 4;
+      const poreDist = (e.radius || 20) * 0.85;
+
+      for (let m = 0; m < count; m++) {
+        const spread = (m - (count - 1) * 0.5) * 0.22;
+        const bAng = e.aimAngle + spread;
+        const px = e.x + Math.cos(bAng) * poreDist;
+        const py = e.y + Math.sin(bAng) * poreDist;
         enemyBullets.push({
-          x: e.x,
-          y: e.y,
-          vx: Math.cos(bAng) * 4.0,
-          vy: Math.sin(bAng) * 4.0,
+          x: px,
+          y: py,
+          vx: Math.cos(bAng) * 4.2,
+          vy: Math.sin(bAng) * 4.2,
           radius: 5,
           damage: Math.round(e.damage * 0.35),
-          life: 80,
-          bulletType: 'BAT',
-          color: '#16a085'
+          life: 85,
+          bulletType: 'SWARM_HORNET',
+          color: '#16a085',
+          sourceName: 'Ninho Móvel'
         });
+        createHitParticles(px, py, '#2ecc71', 3);
       }
     } else if (e.currentSkill === 'SMOG_CLOUD') {
       safePlaySfx('freeze');

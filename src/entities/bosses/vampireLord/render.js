@@ -1553,7 +1553,8 @@ export function drawVampireLord(ctx, e, frameCount) {
   }
 
   const isVuln = e.isVulnerable;
-  const isEnraged = e.isEnraged;
+  const morph = e.phaseCinematic ? (e.phaseCinematic.morphProgress || 0) : (e.transformationProgress || 0);
+  const isEnraged = e.isEnraged || morph > 0.05;
   const isWindup = e.actionState === 'WINDUP';
   const isChanneling = e.actionState === 'CHANNELING_SPIRAL';
   const bob = isVuln ? 12 : (e.floatBob || 0);
@@ -1587,12 +1588,14 @@ export function drawVampireLord(ctx, e, frameCount) {
     }
   }
 
-  // 2. Dinâmica e envergadura das asas
-  const wingFlap = isVuln ? 0 : Math.sin(frameCount * (isEnraged ? 0.28 : 0.16)) * 14;
+  // 2. Dinâmica e envergadura das asas com suporte a metamorfose contínua em slow motion
+  const flapRate = isEnraged ? (e.phaseCinematic ? 0.16 + 0.12 * morph : 0.28) : 0.16;
+  const wingFlap = isVuln ? 0 : Math.sin(frameCount * flapRate) * 14;
+  const enragedSpanProgress = e.phaseCinematic ? (1.0 + 0.28 * morph) : 1.28;
   const wingSpan = isVuln 
     ? 0.55 
     : (isEnraged 
-        ? 1.28 
+        ? enragedSpanProgress 
         : (isChanneling 
             ? 1.40 
             : (e.currentSkill === 'REPULSION' ? 1.50 : (e.isWingPrepping ? 1.35 : 1.0))));
@@ -1601,9 +1604,24 @@ export function drawVampireLord(ctx, e, frameCount) {
     ctx.translate((Math.random() - 0.5) * 2.5, (Math.random() - 0.5) * 2.5);
   }
 
-  // 2. Asas Secundárias Inferiores (Exclusivas do Modo Enraged / Metamorfose Hexa-Alar)
-  if (isEnraged && !isVuln) {
-    drawSecondaryWings(ctx, wingFlap, wingSpan, frameCount);
+  // 2. Asas Secundárias Inferiores (Metamorfose Hexa-Alar brotando e expandindo em slow motion)
+  const secWingScale = e.phaseCinematic ? Math.min(1.0, morph * 1.35) : (isEnraged ? 1.0 : 0);
+  if (secWingScale > 0.01 && !isVuln) {
+    drawSecondaryWings(ctx, wingFlap, wingSpan * secWingScale, frameCount);
+  }
+
+  // Arcos de eletricidade carmesim durante a brotação das asas em câmera lenta
+  if (e.phaseCinematic && morph > 0.12 && morph < 0.92) {
+    ctx.save();
+    const arcAlpha = Math.sin(morph * Math.PI) * 0.75;
+    ctx.strokeStyle = `rgba(255, 23, 68, ${arcAlpha})`;
+    ctx.lineWidth = 2.0;
+    for (let side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(side * 18, -12 + bob, 34 * morph, -0.6 * Math.PI, 0.2 * Math.PI);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   drawSingleWing(ctx, -1, wingFlap, wingSpan, isVuln, isEnraged, frameCount);

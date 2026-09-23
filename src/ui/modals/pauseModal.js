@@ -191,6 +191,9 @@ export function renderPauseInventory() {
     if (player.hasteCardCount || (player.cooldownReduction || 0) > 0) {
       passives.push({ icon: 'cooldown', label: 'Fúria Rápida', val: `-${Math.round((player.cooldownReduction || 0) * 100)}% CDR (Nv. ${player.hasteCardCount || 1})`, color: '#e67e22' });
     }
+    if (player.ultCooldownCount) {
+      passives.push({ icon: 'ult_cooldown', label: 'Ímpeto Supremo', val: `-${player.ultCooldownCount * 5}% Recarga ULT (Nv. ${player.ultCooldownCount})`, color: '#c084fc' });
+    }
     if (player.magnetCardCount) {
       passives.push({ icon: 'magnet', label: 'Ímã Titânico', val: `+${player.magnetCardCount * 30}px (Nv. ${player.magnetCardCount})`, color: '#9b59b6' });
     }

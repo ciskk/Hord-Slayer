@@ -7,126 +7,91 @@
  * - Decorações de solo 2.5D (sombras elípticas, ondas de choque, miras de salto e fendas de emergência)
  * - Deformações cinemáticas (elevação em Z, squash elástico de antecipação e bounce de pouso)
  */
-import { ctx, frameCount } from '../../main.js';
+import { ctx, frameCount } from '../../state/gameState.js';
+import { STALKER_DASH } from '../../config/stalkerDash.js';
+import { player } from '../../entities/player.js';
+
 
 /**
  * Renderiza overlays de status sobre a criatura (Stun, Slow, Elite Auras & Crown).
  * @param {Object} e Entidade do inimigo
  */
 export function drawEnemyStatusOverlays(e) {
+  ctx.save();
+  // Status marks occupy separate regions; the creature silhouette stays clear.
   if (e.stunTimer > 0) {
-    ctx.strokeStyle = '#f1c40f';
-    ctx.lineWidth = 2;
-    for (let s = 0; s < 3; s++) {
-      const starAng = frameCount * 0.18 + s * (Math.PI * 2 / 3);
-      const starR = e.radius + 8;
-      const sx = Math.cos(starAng) * starR;
-      const sy = Math.sin(starAng) * (starR * 0.45) - (e.radius + 12);
-      ctx.fillStyle = '#f1c40f';
-      ctx.fillRect(sx - 2, sy - 2, 4, 4);
+    ctx.fillStyle = '#ead07d';
+    const y = -e.radius * 1.35 - 7;
+    for (let i = 0; i < 2; i++) {
+      ctx.beginPath();
+      ctx.arc((i ? 1 : -1) * 5, y + Math.sin(frameCount * 0.15 + i * Math.PI) * 2, 1.8, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
-
   if (e.isVulnerable && e.vulnerableTimer > 0) {
-    const vulnPulse = Math.sin(frameCount * 0.3) * 2;
-    ctx.strokeStyle = 'rgba(231, 76, 60, 0.7)';
-    ctx.lineWidth = 1.8;
-    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = '#ed8476'; ctx.lineWidth = 1.8;
+    const r = e.radius + 4;
     ctx.beginPath();
-    ctx.arc(0, 0, e.radius + 5 + vulnPulse, 0, Math.PI * 2);
+    for (const side of [-1, 1]) {
+      ctx.moveTo(side * (r - 2), -4); ctx.lineTo(side * r, -4);
+      ctx.lineTo(side * r, 4); ctx.lineTo(side * (r - 2), 4);
+    }
     ctx.stroke();
-    ctx.setLineDash([]);
   }
-
   if (e.slowTimer > 0) {
-    const pulseSlow = Math.sin(frameCount * 0.25) * 2;
-    ctx.strokeStyle = '#74b9ff';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.arc(0, 0, e.radius + 4 + pulseSlow, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(116, 185, 255, 0.65)';
-    for (let sp = 0; sp < 4; sp++) {
-      const spAng = sp * (Math.PI / 2) + frameCount * 0.05;
-      const spDist = e.radius + 5;
-      ctx.fillRect(Math.cos(spAng) * spDist - 2, Math.sin(spAng) * spDist - 2, 4, 4);
-    }
+    ctx.strokeStyle = '#95d4e8'; ctx.lineWidth = 1.7;
+    const y = e.radius * 0.95;
+    ctx.beginPath();ctx.moveTo(-6,y);ctx.lineTo(6,y);
+    ctx.moveTo(-3,y-3);ctx.lineTo(3,y+3);
+    ctx.moveTo(-3,y+3);ctx.lineTo(3,y-3);ctx.stroke();
   }
-
   if (e.isElite) {
-    const auraPulse = Math.sin(frameCount * 0.2) * 3;
-    let aColor = '#00d2d3';
-    if (e.eliteMod === 'HASTE') aColor = '#f1c40f';
-    if (e.eliteMod === 'TOXIC') aColor = '#2ecc71';
-    if (e.eliteMod === 'FROST') aColor = '#74b9ff';
-    ctx.strokeStyle = aColor;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(0, 0, e.radius + 6 + auraPulse, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Coroa Elemental Flutuante acima da cabeça
-    const crownY = -e.radius - 14 + Math.sin(frameCount * 0.15) * 2;
-    ctx.save();
-    ctx.translate(0, crownY);
-    ctx.strokeStyle = aColor;
-    ctx.lineWidth = 1.8;
-    ctx.fillStyle = aColor;
-    ctx.beginPath();
-    ctx.moveTo(-6, 2);
-    ctx.lineTo(-7, -4);
-    ctx.lineTo(-2, -1);
-    ctx.lineTo(0, -6);
-    ctx.lineTo(2, -1);
-    ctx.lineTo(7, -4);
-    ctx.lineTo(6, 2);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.fillRect(-1.5, -2, 3, 3);
-    ctx.restore();
-
-    if (e.eliteMod === 'FROST') {
-      ctx.fillStyle = 'rgba(116, 185, 255, 0.85)';
-      for (let cr = 0; cr < 3; cr++) {
-        const crA = frameCount * 0.04 + cr * (Math.PI * 2 / 3);
-        const crX = Math.cos(crA) * (e.radius + 7);
-        const crY = Math.sin(crA) * (e.radius + 7);
-        ctx.beginPath();
-        ctx.moveTo(crX, crY - 5);
-        ctx.lineTo(crX + 3.5, crY);
-        ctx.lineTo(crX, crY + 5);
-        ctx.lineTo(crX - 3.5, crY);
-        ctx.closePath();
-        ctx.fill();
-      }
-    } else if (e.eliteMod === 'TOXIC') {
-      ctx.fillStyle = 'rgba(46, 204, 113, 0.75)';
-      for (let tb = 0; tb < 4; tb++) {
-        const tbA = frameCount * 0.05 + tb * 1.6;
-        const tbDist = e.radius + 6 + Math.sin(frameCount * 0.12 + tb) * 3;
-        ctx.beginPath();
-        ctx.arc(Math.cos(tbA) * tbDist, Math.sin(tbA) * tbDist, 2.8, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    } else if (e.eliteMod === 'HASTE') {
-      ctx.strokeStyle = '#f1c40f';
-      ctx.lineWidth = 1.6;
-      for (let h = 0; h < 3; h++) {
-        const hA = frameCount * 0.1 + h * (Math.PI * 2 / 3);
-        const hR = e.radius + 5;
-        const hx = Math.cos(hA) * hR;
-        const hy = Math.sin(hA) * hR;
-        ctx.beginPath();
-        ctx.moveTo(hx, hy);
-        ctx.lineTo(hx + 3, hy - 4);
-        ctx.lineTo(hx + 1, hy - 2);
-        ctx.lineTo(hx + 4, hy - 6);
-        ctx.stroke();
-      }
-    }
+    const color = e.eliteMod === 'HASTE' ? '#ead07d' : e.eliteMod === 'TOXIC' ? '#85c980' : e.eliteMod === 'FROST' ? '#95d4e8' : '#80c8bf';
+    const y = -e.radius * 1.35 - (e.stunTimer > 0 ? 17 : 7);
+    ctx.fillStyle = color;ctx.strokeStyle = '#11151b';ctx.lineWidth = 1.3;
+    ctx.beginPath();ctx.moveTo(-6,y+3);ctx.lineTo(-7,y-3);
+    ctx.lineTo(-2,y);ctx.lineTo(0,y-5);ctx.lineTo(2,y);
+    ctx.lineTo(7,y-3);ctx.lineTo(6,y+3);ctx.closePath();ctx.fill();ctx.stroke();
   }
-}
+  // Alerta suspenso vermelho que carrega visualmente durante a preparação do golpe
+  if (e.combatState === 'WINDUP' || e.lanceState === 'aim' || e.flameState === 'aim' || e.dashState === 'aim') {
+    let prog = 0;
+    if (e.combatState === 'WINDUP') {
+      const maxF = (e.attackWindupFrames && e.attackWindupFrames > 0) ? e.attackWindupFrames : 20;
+      prog = Math.min(1, Math.max(0, 1 - ((e.attackTimer || 0) / maxF)));
+    } else if (e.lanceState === 'aim') {
+      prog = Math.min(1, Math.max(0, 1 - ((e.lanceTimer || 0) / 20)));
+    } else if (e.flameState === 'aim') {
+      prog = Math.min(1, Math.max(0, 1 - ((e.flameTimer || 0) / 23)));
+    } else if (e.dashState === 'aim') {
+      prog = Math.min(1, Math.max(0, (e.dashTimer || 0) / STALKER_DASH.windup));
+    }
+    const pulse = prog > 0.82 ? Math.sin(frameCount * 0.45) * 1.5 : 0;
+    const y = -e.radius * 1.35 - (e.stunTimer > 0 ? 21 : (e.isElite ? 19 : 9)) + pulse;
 
+    ctx.save();
+    ctx.scale(e.facing || 1, 1); // Anula o espelhamento do corpo para manter o glifo alinhado
+    // Fundo escuro do marcador
+    ctx.fillStyle = 'rgba(15, 12, 14, 0.88)';
+    ctx.strokeStyle = prog > 0.85 ? '#ffffff' : '#ff4757';
+    ctx.lineWidth = 1.2;
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(-3.5, y - 9, 7, 10, 2);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.fillRect(-3.5, y - 9, 7, 10);
+      ctx.strokeRect(-3.5, y - 9, 7, 10);
+    }
+    // Barra interna que preenche em vermelho de baixo para cima conforme o ataque carrega
+    const fillH = 7.5 * prog;
+    ctx.fillStyle = prog > 0.85 ? '#ffffff' : '#ff4757';
+    ctx.fillRect(-2, y + 0.2 - fillH, 4, fillH);
+    ctx.restore();
+  }
+  ctx.restore();
+}
 /**
  * Renderiza a interface suspensa de Miniboss (Barra de HP, Nome Dourado e Cast Bar).
  * @param {Object} e Entidade do Miniboss
@@ -134,10 +99,11 @@ export function drawEnemyStatusOverlays(e) {
 export function drawMiniBossHpOverlay(e) {
   const barW = 64;
   const barH = 6;
-  const hpPct = Math.max(0, e.hp / e.maxHp);
-  const offsetY = -e.radius - 22;
+  const hpPct = Math.max(0, Math.min(1, e.hp / (e.maxHp || e.hp || 1)));
+  const offsetY = -e.radius * 1.5 - 16;
 
   ctx.save();
+  ctx.scale(e.facing || 1, 1); // Cancel the body mirroring for readable text.
   // 1. Nome Dourado Estilizado do Miniboss
   ctx.font = "bold 9px 'Cinzel', 'Outfit', sans-serif";
   ctx.textAlign = "center";
@@ -175,12 +141,6 @@ export function drawMiniBossHpOverlay(e) {
     ctx.strokeRect(-castW / 2, castY, castW, castH);
   }
 
-  // 4. Anel de Ameaça Rúnico sob o Miniboss
-  ctx.strokeStyle = e.enraged ? 'rgba(231, 76, 60, 0.65)' : 'rgba(243, 156, 18, 0.45)';
-  ctx.lineWidth = e.enraged ? 2.8 : 2.0;
-  ctx.beginPath();
-  ctx.arc(0, 0, e.radius + 6, 0, Math.PI * 2);
-  ctx.stroke();
   ctx.restore();
 }
 
@@ -449,3 +409,178 @@ export function applyKinematicDeformations(e) {
     ctx.scale(bounceX, bounceY);
   }
 }
+
+/**
+ * Renderiza a telegrafia visual vermelha que carrega visualmente no solo durante o ataque do mob.
+ * - Cone Direcional de Perigo: preenche dinamicamente em vermelho luminoso (0% a 100%) em direção ao alvo.
+ * - Anel Radial Circular 360° na Base: indicador no chão com medidor e ponto guia iluminado.
+ * - Clarão de Impacto (Strike): efeito visual de corte carmesim no ápice do ataque.
+ * @param {Object} e Entidade do monstro atacante
+ */
+export function drawEnemyAttackTelegraph(e) {
+  if (!e || e.stunTimer > 0) return;
+
+  let isAttacking = false;
+  let progress = 0;
+  let isStrike = false;
+  let attackAngle = 0;
+  let attackRange = 0;
+
+  if (e.combatState === 'WINDUP') {
+    isAttacking = true;
+    const maxFrames = (e.attackWindupFrames && e.attackWindupFrames > 0) ? e.attackWindupFrames : 20;
+    const curTimer = Math.max(0, e.attackTimer !== undefined ? e.attackTimer : 0);
+    progress = Math.min(1, Math.max(0, 1 - (curTimer / maxFrames)));
+    attackAngle = e.attackAngle !== undefined ? e.attackAngle : (player ? Math.atan2(player.y - e.y, player.x - e.x) : (e.facing === -1 ? Math.PI : 0));
+    attackRange = (player && player.radius ? player.radius : 12) + e.radius + (e.attackRange || 24);
+  } else if (e.combatState === 'STRIKE') {
+    isAttacking = true;
+    isStrike = true;
+    progress = 1.0;
+    attackAngle = e.attackAngle !== undefined ? e.attackAngle : (player ? Math.atan2(player.y - e.y, player.x - e.x) : (e.facing === -1 ? Math.PI : 0));
+    attackRange = (player && player.radius ? player.radius : 12) + e.radius + (e.attackRange || 24);
+  } else if (e.lanceState === 'aim') {
+    isAttacking = true;
+    progress = Math.min(1, Math.max(0, 1 - ((e.lanceTimer || 0) / 20)));
+    attackAngle = e.lanceAngle !== undefined ? e.lanceAngle : (player ? Math.atan2(player.y - e.y, player.x - e.x) : 0);
+    attackRange = 135;
+  } else if (e.flameState === 'aim') {
+    isAttacking = true;
+    progress = Math.min(1, Math.max(0, 1 - ((e.flameTimer || 0) / 23)));
+    attackAngle = e.flameAngle !== undefined ? e.flameAngle : (player ? Math.atan2(player.y - e.y, player.x - e.x) : 0);
+    attackRange = 115;
+  } else if (e.dashState === 'aim') {
+    isAttacking = true;
+    progress = Math.min(1, Math.max(0, (e.dashTimer || 0) / STALKER_DASH.windup));
+    attackAngle = e.dashAngle !== undefined ? e.dashAngle : (player ? Math.atan2(player.y - e.y, player.x - e.x) : 0);
+    attackRange = 95;
+  } else if (e.actionState === 'WINDUP' && !e.isBoss) {
+    isAttacking = true;
+    progress = e.castProgress !== undefined ? e.castProgress : Math.min(1, Math.max(0, 1 - ((e.actionTimer || 0) / (e.actionMaxTimer || 20))));
+    attackAngle = e.pounceAngle !== undefined ? e.pounceAngle : (player ? Math.atan2(player.y - e.y, player.x - e.x) : (e.facing === -1 ? Math.PI : 0));
+    attackRange = e.radius * 2.4 + 25;
+  }
+
+  if (!isAttacking) return;
+
+  ctx.save();
+  // Neutraliza o scale(e.facing, 1) para rotações angulares no espaço global do mundo
+  if ((e.facing || 1) === -1) {
+    ctx.scale(-1, 1);
+  }
+
+  // 1. CONE DIRECIONAL DE PERIGO NO SOLO
+  const arcHalf = Math.PI * 0.42;
+  const startAng = attackAngle - arcHalf;
+  const endAng = attackAngle + arcHalf;
+  const maxR = Math.max(e.radius + 10, attackRange);
+
+  // A. Área total telegrafada de perigo (Background avermelhado translúcido)
+  ctx.fillStyle = 'rgba(231, 76, 60, 0.08)';
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.arc(0, 0, maxR, startAng, endAng);
+  ctx.closePath();
+  ctx.fill();
+
+  // Borda delimitadora tracejada
+  ctx.strokeStyle = 'rgba(255, 71, 87, 0.42)';
+  ctx.lineWidth = 1.4;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.arc(0, 0, maxR, startAng, endAng);
+  ctx.stroke();
+
+  // Raios delimitadores laterais
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(Math.cos(startAng) * maxR, Math.sin(startAng) * maxR);
+  ctx.moveTo(0, 0);
+  ctx.lineTo(Math.cos(endAng) * maxR, Math.sin(endAng) * maxR);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // B. PREENCHIMENTO VERMELHO QUE CARREGA VISUALMENTE
+  const currentR = Math.max(e.radius * 0.6, maxR * Math.max(0.06, progress));
+
+  if (!isStrike) {
+    // Gradiente carmesim volumétrico avançando radialmente
+    const chargeGrad = ctx.createRadialGradient(0, 0, e.radius * 0.3, 0, 0, currentR);
+    chargeGrad.addColorStop(0, 'rgba(255, 71, 87, 0.16)');
+    chargeGrad.addColorStop(0.65, `rgba(231, 76, 60, ${0.30 + progress * 0.32})`);
+    chargeGrad.addColorStop(1.0, `rgba(255, 71, 87, ${0.52 + progress * 0.44})`);
+
+    ctx.fillStyle = chargeGrad;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, currentR, startAng, endAng);
+    ctx.closePath();
+    ctx.fill();
+
+    // Frente de onda vermelha carregando
+    const isImminent = progress > 0.82;
+    ctx.strokeStyle = isImminent ? '#ffffff' : '#ff4757';
+    ctx.lineWidth = isImminent ? 3.0 : 2.2;
+    ctx.beginPath();
+    ctx.arc(0, 0, currentR, startAng, endAng);
+    ctx.stroke();
+
+    // Faixa interna de alta energia na iminência do golpe
+    if (isImminent) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.arc(0, 0, currentR * 0.94, startAng, endAng);
+      ctx.stroke();
+    }
+  } else {
+    // CLARÃO / CORTE DE IMPACTO DO GOLPE (STRIKE)
+    ctx.fillStyle = 'rgba(255, 71, 87, 0.58)';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, maxR, startAng, endAng);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, maxR, startAng, endAng);
+    ctx.stroke();
+  }
+
+  // 2. ANEL DE CARGA RADIAL 360° NA BASE DO MOB
+  const ringR = Math.max(10, e.radius + 4);
+  const startRingAng = -Math.PI * 0.5; // Topo (12 horas)
+  const sweepAng = progress * Math.PI * 2;
+
+  // Trilho de fundo do anel
+  ctx.strokeStyle = 'rgba(255, 71, 87, 0.25)';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Arco vermelho preenchendo no sentido horário
+  if (sweepAng > 0) {
+    const isRingFull = progress > 0.82;
+    ctx.strokeStyle = isRingFull ? '#ffffff' : '#ff4757';
+    ctx.lineWidth = isRingFull ? 2.6 : 2.0;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(0, 0, ringR, startRingAng, startRingAng + sweepAng);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+
+    // Ponto luminoso guia na cabeça da barra de carga
+    const tipX = Math.cos(startRingAng + sweepAng) * ringR;
+    const tipY = Math.sin(startRingAng + sweepAng) * ringR;
+    ctx.fillStyle = isRingFull ? '#ffffff' : '#ff6b81';
+    ctx.beginPath();
+    ctx.arc(tipX, tipY, isRingFull ? 2.6 : 2.0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+

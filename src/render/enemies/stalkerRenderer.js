@@ -1,176 +1,51 @@
-/**
- * src/render/enemies/stalkerRenderer.js
- * 
- * Renderizador procedural modular de Espreitador (STALKER).
- */
-import { ctx, frameCount } from '../../main.js';
+import { ctx, frameCount } from '../../state/gameState.js';
+import { getRelativeAimAngle } from '../../core/math.js';
+import { STALKER_DASH } from '../../config/stalkerDash.js';
+import { beginCreature, endCreature, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
-/**
- * Renderiza a forma viva de Espreitador.
- * O Canvas já está posicionado em (e.x, e.y) e escalado por e.facing.
- * @param {Object} e Entidade do monstro
-   */
+/** Beige annelid: tapered segmented tail, thick collar and exposed ivory fangs. */
 export function draw(e) {
-  // =========================================================================
-  // 7. ASSASSINO ESPECTRAL - Carrasco em mortalhas de seda e máscara partida
-  // =========================================================================
-  const R_m = e.radius;
-  const isAiming = e.dashState === 'aim';
-  const isDashing = e.dashState === 'dashing';
-  const isStalkerStrike = e.combatState === 'STRIKE';
-  const isHit = e.hitFlash > 0;
-
-  const shroudMain = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#23153c');
-  const shroudAccent = isHit ? '#ffffff' : '#4d2b7e';
-  const maskWhite = isHit ? '#ffffff' : '#dfe4ea';
-  const krisColor = isHit ? '#ffffff' : (isAiming ? '#ff3838' : '#7158e2');
-
-  // 1. Cinco Tiras Verticais de Seda Fúnebre Ondulantes
-  for (let s = 0; s < 5; s++) {
-    const sPhase = frameCount * 0.2 + s * 0.85;
-    const sWave = Math.sin(sPhase) * (5 + (isDashing ? 8 : 0));
-    const sX = -R_m * 0.35 - s * 3.5;
-    ctx.fillStyle = s % 2 === 0 ? shroudMain : shroudAccent;
-    ctx.beginPath();
-    ctx.moveTo(-R_m * 0.2, -R_m * 0.35);
-    ctx.quadraticCurveTo(sX + sWave, 0, sX - (isDashing ? 14 : 6), R_m * 0.9 + sWave * 0.5);
-    ctx.lineTo(sX - 3 - (isDashing ? 14 : 6), R_m * 0.85 + sWave * 0.5);
-    ctx.quadraticCurveTo(sX + sWave - 3, 0, -R_m * 0.2, R_m * 0.35);
-    ctx.closePath();
-    ctx.fill();
+  const p = creaturePalette(e, '#d9b783', '#886044', '#f0d5a2');
+  const dead = e.deathPose !== undefined;
+  const aiming = !dead && e.dashState === 'aim';
+  const dashing = !dead && e.dashState === 'dashing';
+  const progress = Math.min(1, Math.max(0, (e.dashTimer || 0) / STALKER_DASH.windup));
+  const committed = ['aim', 'dashing', 'cooldown'].includes(e.dashState);
+  beginCreature(ctx, e);
+  ctx.translate(0, .32); // Belly contacts the ground shadow instead of floating above it.
+  // Dust rises from the contact patch before launch, below the red attack marker.
+  if (aiming) {
+    for (let i = 0; i < 7; i++) {
+      const age = (progress * 1.6 + i / 7) % 1;
+      const side = i % 2 ? 1 : -1;
+      ctx.save();
+      ctx.globalAlpha *= (.18 + progress * .36) * (1 - age * .65);
+      const x = side * (.48 + age * .7) + Math.sin(i * 3.1) * .18;
+      const y = .48 - age * (.55 + progress * .65);
+      ellipse(ctx, x, y, .14 + age * .19, .09 + age * .15, p.body, null);
+      polygon(ctx, [[x, y-.13], [x+.06,y-.22], [x+.12,y-.11]], p.accent, null);
+      ctx.restore();
+    }
   }
-
-  // 2. Torso Envolto em Bandagens de Linho Trançadas
-  ctx.fillStyle = '#0f081d';
-  ctx.beginPath();
-  ctx.ellipse(0, 0, R_m * 0.5, R_m * 0.45, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Bandagens cruzadas
-  ctx.strokeStyle = '#63537d';
-  ctx.lineWidth = 1.3;
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.35, -R_m * 0.25);
-  ctx.lineTo(R_m * 0.2, R_m * 0.25);
-  ctx.moveTo(-R_m * 0.25, R_m * 0.25);
-  ctx.lineTo(R_m * 0.25, -R_m * 0.2);
-  ctx.stroke();
-
-  // 3. A Máscara de Porcelana Partida em Diagonal
-  const mX = R_m * 0.35;
-  const mY = -R_m * 0.05;
-
-  // Metade Direita Oca (Vazio absoluto)
-  ctx.fillStyle = '#000000';
-  ctx.beginPath();
-  ctx.arc(mX, mY, R_m * 0.4, -Math.PI * 0.5, Math.PI * 0.5);
-  ctx.closePath();
-  ctx.fill();
-
-  // Metade Esquerda Íntegra de Porcelana
-  ctx.fillStyle = maskWhite;
-  ctx.beginPath();
-  ctx.arc(mX, mY, R_m * 0.4, Math.PI * 0.5, Math.PI * 1.5);
-  ctx.closePath();
-  ctx.fill();
-
-  // Fissura divisória em zigue-zague
-  ctx.strokeStyle = '#111111';
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.moveTo(mX, mY - R_m * 0.4);
-  ctx.lineTo(mX - 2, mY);
-  ctx.lineTo(mX + 1, mY + R_m * 0.4);
-  ctx.stroke();
-
-  // Olho Espectral Brilhante na metade oca
-  ctx.fillStyle = isAiming ? '#ff1744' : '#e056fd';
-  ctx.fillRect(mX + 3, mY - 2, 3.5, 3.5);
-
-  // 4. Duas Adagas Onduladas (Kris) Empunhadas Invertidas
-  for (let d = -1; d <= 1; d += 2) {
-    const dy = d * (R_m * 0.45);
-    ctx.strokeStyle = krisColor;
-    ctx.lineWidth = 2.4;
-    ctx.beginPath();
-    ctx.moveTo(R_m * 0.1, dy);
-    ctx.lineTo(R_m * 0.45, dy - d * 3);
-    ctx.lineTo(R_m * 0.8, dy + d * 2);
-    ctx.lineTo(R_m * 1.15, dy - d * 2);
-    ctx.stroke();
-
-    // Tiras de pergaminho flutuando do pomo
-    ctx.strokeStyle = '#dfe4ea';
-    ctx.lineWidth = 1.1;
-    ctx.beginPath();
-    ctx.moveTo(R_m * 0.1, dy);
-    ctx.quadraticCurveTo(-R_m * 0.2, dy + d * 6, -R_m * 0.5, dy + d * 3);
-    ctx.stroke();
+  if (committed) ctx.rotate(getRelativeAimAngle(e.dashAngle ?? (e.facing === -1 ? Math.PI : 0), e.facing || 1));
+  const stretch = dashing ? 1.16 : aiming ? .8 : 1;
+  ctx.scale(stretch, aiming ? 1.1 : dashing ? .86 : 1);
+  for (let i = 0; i < 6; i++) {
+    const x = -1.12 + i * .29;
+    const y = dead ? .05 : Math.sin(frameCount * .13 - i * .65) * (aiming ? .025 : .075);
+    const h = .12 + i * .064;
+    polygon(ctx, [[x-.24,y+.08],[x-.17,y-h*.65],[x+.02,y-h],[x+.23,y-h*.57],[x+.26,y+h*.55],[x+.05,y+h],[x-.18,y+h*.67]], i === 4 ? p.shade : p.body, p.ink, .045);
+    stroke(ctx, [[x-.1,y-h*.62],[x+.04,y-h*.76],[x+.14,y-h*.48]], p.accent, .055);
+    stroke(ctx, [[x+.17,y-h*.42],[x+.21,y+.02],[x+.13,y+h*.65]], p.shade, .045);
   }
-
-  // Corte em Cruz no STRIKE
-  if (isStalkerStrike) {
-    ctx.save();
-    ctx.strokeStyle = 'rgba(224, 86, 253, 0.9)';
-    ctx.lineWidth = 2.6;
-    ctx.beginPath();
-    ctx.moveTo(R_m * 0.3, -R_m * 0.85);
-    ctx.lineTo(R_m * 1.5, R_m * 0.85);
-    ctx.moveTo(R_m * 0.3, R_m * 0.85);
-    ctx.lineTo(R_m * 1.5, -R_m * 0.85);
-    ctx.stroke();
-    ctx.restore();
+  const gape = aiming ? progress * .09 : dashing || (!dead && e.combatState === 'STRIKE') ? .12 : 0;
+  polygon(ctx, [[.36,-.38],[.69,-.48-gape],[.99,-.28-gape],[1.11,0],[.97,.32+gape],[.65,.45+gape],[.35,.3]], p.body);
+  polygon(ctx, [[.63,-.3-gape],[.89,-.24-gape],[1.02,0],[.87,.29+gape],[.6,.28+gape],[.5,0]], p.ink, p.shade, .055);
+  for (const side of [-1, 1]) {
+    polygon(ctx, [[.6,side*(.28+gape)],[.76,side*(.31+gape)],[.86,side*.015]], p.bone, p.ink, .035);
+    polygon(ctx, [[.89,side*(.22+gape)],[1.02,side*.14],[1.15,side*.015],[.93,side*.035]], p.bone, p.ink, .035);
   }
+  endCreature(ctx);
 }
 
-/**
- * Renderiza a animação de morte em 3 fases de Espreitador.
- * @param {Object} de Entidade agonizante em dyingEnemies
- * @param {number} t Progresso normalizado de morte (0 a 1)
- * @param {number} R Raio de colisão da criatura
- */
-export function drawDying(de, t, R) {
-  // Máscara parte ao meio, adagas cravam no solo e mortalha desfaz-se em fitas
-  // Metade esquerda da máscara voando para a esquerda
-  ctx.save();
-  ctx.translate(-t * 14, -t * 5);
-  ctx.rotate(-t * 1.0);
-  ctx.fillStyle = '#dfe4ea';
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 0.4, Math.PI * 0.5, Math.PI * 1.5);
-  ctx.fill();
-  ctx.restore();
-
-  // Metade direita voando para a direita
-  ctx.save();
-  ctx.translate(t * 14, -t * 5);
-  ctx.rotate(t * 1.0);
-  ctx.fillStyle = '#dfe4ea';
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 0.4, -Math.PI * 0.5, Math.PI * 0.5);
-  ctx.fill();
-  ctx.restore();
-
-  // Adagas kris caindo no solo
-  ctx.save();
-  ctx.translate(0, t * 12);
-  ctx.rotate(t * 1.4);
-  ctx.strokeStyle = '#7158e2';
-  ctx.lineWidth = 2.4;
-  ctx.beginPath();
-  ctx.moveTo(0, -8);
-  ctx.lineTo(4, 0);
-  ctx.lineTo(-4, 8);
-  ctx.stroke();
-  ctx.restore();
-
-  // Fitas de seda etérea dissipando
-  ctx.strokeStyle = 'rgba(155, 89, 182, 0.7)';
-  ctx.lineWidth = 1.5;
-  for (let s = 0; s < 3; s++) {
-    const sa = s * 2.1 + t * 3;
-    ctx.beginPath();
-    ctx.arc(0, 0, R * (0.6 + t * 0.8), sa, sa + 0.8);
-    ctx.stroke();
-  }
-}
+export function drawDying(de, t) { drawCreatureDeath(ctx, de, t, draw, 'fall'); }

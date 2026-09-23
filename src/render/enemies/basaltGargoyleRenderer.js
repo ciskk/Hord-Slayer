@@ -1,186 +1,33 @@
-/**
- * src/render/enemies/basaltGargoyleRenderer.js
- * 
- * Renderizador procedural modular de Gárgula Basáltica (BASALT_GARGOYLE).
- */
-import { ctx, frameCount } from '../../main.js';
+import { ctx, frameCount } from '../../state/gameState.js';
+import { beginCreature, endCreature, materialPolygon, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
-/**
- * Renderiza a forma viva de Gárgula Basáltica.
- * O Canvas já está posicionado em (e.x, e.y) e escalado por e.facing.
- * @param {Object} e Entidade do monstro
-   */
+// Stone bat wings close around the same crouched gargoyle when petrified.
 export function draw(e) {
-  // =========================================================================
-  // 13. GÁRGULA DE BASALTO - Carranca gótica de cantaria monolítica e chifres
-  // =========================================================================
-  const R_m = e.radius;
-  const isHit = e.hitFlash > 0;
-  const stoneMain = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : (e.isStoneForm ? '#95a5a6' : '#57606f'));
-  const stoneDark = isHit ? '#ffffff' : '#2f3542';
-  const stoneDeep = isHit ? '#ffffff' : '#1e272e';
-  const magmaVein = isHit ? '#ffffff' : '#e67e22';
-
+  const p = creaturePalette(e, e.isStoneForm ? '#abb6c4' : '#778ca5', '#303d56', '#ff942f');
+  const dead = e.deathPose || 0;
+  const flap = e.isStoneForm || dead ? 0 : Math.sin(frameCount * 0.25) * 0.16;
+  beginCreature(ctx, e);
+  for (const side of [-1, 1]) {
+    if (!e.isStoneForm) {
+      polygon(ctx, [[side * 0.27, -0.24], [side * 0.85, -0.93 + flap], [side * 1.43, -0.63 + flap], [side * 1.14, -0.25 + flap], [side * 0.95, 0.13], [side * 0.59, 0.02], [side * 0.27, 0.36]], p.shade);
+      stroke(ctx, [[side * 0.27, -0.24], [side * 0.85, -0.93 + flap], [side * 0.95, 0.13]], p.body, 0.07);
+      stroke(ctx, [[side*.87,-.76+flap],[side*1.24,-.58+flap],[side*1.03,-.45+flap]], p.body, .025);
+      stroke(ctx, [[side*.55,-.47+flap],[side*.71,-.32],[side*.63,-.1]], p.body, .03);
+    }
+    polygon(ctx, [[side * 0.08, 0.35], [side * 0.56, 0.31], [side * 0.7, 0.76], [side * 0.18, 0.76]], p.shade);
+  }
+  materialPolygon(ctx, [[-0.52, -0.32], [0.5, -0.32], [0.39, 0.51], [0, 0.7], [-0.4, 0.5]], p, 'stone');
+  polygon(ctx, [[0, -0.29], [0.4, -0.22], [0.3, 0.47], [0, 0.59]], p.shade, null);
   if (e.isStoneForm) {
-    // === MODO ESTÁTUA: Altar Monolítico Fechado com Cruz Imperial Quebrada ===
-    ctx.fillStyle = stoneMain;
-    ctx.beginPath();
-    ctx.moveTo(-R_m * 0.75, -R_m * 0.95);
-    ctx.lineTo(R_m * 0.75, -R_m * 0.95);
-    ctx.lineTo(R_m * 0.85, R_m * 0.85);
-    ctx.lineTo(-R_m * 0.85, R_m * 0.85);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = stoneDeep;
-    ctx.lineWidth = 2.8;
-    ctx.stroke();
-
-    // Asas fechadas formando a face do altar
-    ctx.fillStyle = stoneDark;
-    ctx.beginPath();
-    ctx.moveTo(-R_m * 0.65, -R_m * 0.85);
-    ctx.lineTo(0, R_m * 0.65);
-    ctx.lineTo(-R_m * 0.7, R_m * 0.75);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(R_m * 0.65, -R_m * 0.85);
-    ctx.lineTo(0, R_m * 0.65);
-    ctx.lineTo(R_m * 0.7, R_m * 0.75);
-    ctx.closePath();
-    ctx.fill();
-
-    // Cruz Imperial Quebrada Esculpida
-    ctx.strokeStyle = magmaVein;
-    ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    ctx.moveTo(0, -R_m * 0.65);
-    ctx.lineTo(0, R_m * 0.45);
-    ctx.moveTo(-R_m * 0.35, -R_m * 0.2);
-    ctx.lineTo(R_m * 0.35, -R_m * 0.2);
-    ctx.stroke();
-  } else {
-    // === MODO VOO: Carranca Gótica com Asas de Acanto e Chifres Espiralados ===
-    const wingFlap = Math.sin(frameCount * 0.32) * (R_m * 0.48);
-
-    // 1. Asas Esculpidas em Folhas de Acanto com Nervuras de Pedra
-    for (let side = -1; side <= 1; side += 2) {
-      ctx.fillStyle = stoneDark;
-      ctx.beginPath();
-      ctx.moveTo(0, -R_m * 0.2);
-      // Cotovelo da asa
-      const elbowX = side * (R_m * 1.1);
-      const elbowY = -R_m * 0.95 + wingFlap * 0.6;
-      // Pontas em folha de acanto
-      const tipX = side * (R_m * 1.75);
-      const tipY = -R_m * 0.8 + wingFlap;
-      ctx.lineTo(elbowX, elbowY);
-      ctx.lineTo(tipX, tipY);
-      ctx.quadraticCurveTo(side * (R_m * 1.4), 0 + wingFlap * 0.5, side * (R_m * 1.1), R_m * 0.4);
-      ctx.quadraticCurveTo(side * (R_m * 0.6), R_m * 0.2, 0, R_m * 0.1);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = stoneDeep;
-      ctx.lineWidth = 2.0;
-      ctx.stroke();
-
-      // Garra de cantaria no cotovelo alar
-      ctx.fillStyle = stoneMain;
-      ctx.beginPath();
-      ctx.moveTo(elbowX, elbowY);
-      ctx.lineTo(elbowX + side * 4, elbowY - 4);
-      ctx.lineTo(elbowX + side * 1, elbowY + 3);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // 2. Torso Bestial Leonino com Costelas Esculpidas
-    ctx.fillStyle = stoneMain;
-    ctx.beginPath();
-    ctx.moveTo(-R_m * 0.45, -R_m * 0.3);
-    ctx.quadraticCurveTo(0, -R_m * 0.4, R_m * 0.45, -R_m * 0.3);
-    ctx.lineTo(R_m * 0.3, R_m * 0.6);
-    ctx.lineTo(-R_m * 0.3, R_m * 0.6);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = stoneDeep;
-    ctx.lineWidth = 2.2;
-    ctx.stroke();
-
-    // Costelas entalhadas no basalto
-    ctx.strokeStyle = stoneDeep;
-    ctx.lineWidth = 1.4;
-    for (let r = 0; r < 3; r++) {
-      const ry = -R_m * 0.1 + r * (R_m * 0.18);
-      ctx.beginPath();
-      ctx.moveTo(-R_m * 0.28, ry);
-      ctx.lineTo(R_m * 0.28, ry);
-      ctx.stroke();
-    }
-
-    // 3. Cabeça de Carranca com Chifres Espiralados de Bode
-    const hY = -R_m * 0.52;
-    ctx.fillStyle = stoneMain;
-    ctx.beginPath();
-    ctx.arc(0, hY, R_m * 0.38, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = stoneDeep;
-    ctx.lineWidth = 1.8;
-    ctx.stroke();
-
-    // Chifres espiralados de cantaria
-    for (let ch = -1; ch <= 1; ch += 2) {
-      ctx.fillStyle = stoneDark;
-      ctx.beginPath();
-      ctx.moveTo(ch * (R_m * 0.2), hY - R_m * 0.2);
-      ctx.quadraticCurveTo(ch * (R_m * 0.65), hY - R_m * 0.85, ch * (R_m * 0.85), hY - R_m * 0.45);
-      ctx.lineTo(ch * (R_m * 0.55), hY - R_m * 0.35);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // Focinho e Presas de Cantaria
-    ctx.fillStyle = stoneDeep;
-    ctx.fillRect(-R_m * 0.18, hY + 2, R_m * 0.36, 4);
-
-    ctx.fillStyle = '#dfe4ea';
-    ctx.fillRect(-R_m * 0.15, hY + 3, 2.5, 3);
-    ctx.fillRect(R_m * 0.05, hY + 3, 2.5, 3);
-
-    // Olhos de Brasa Vulcânica
-    ctx.fillStyle = magmaVein;
-    ctx.fillRect(-R_m * 0.2, hY - 4, 3.2, 2.5);
-    ctx.fillRect(R_m * 0.05, hY - 4, 3.2, 2.5);
+    for (const side of [-1, 1]) materialPolygon(ctx, [[side * 0.52, -0.57], [side * 0.72, 0.52], [0, 0.7], [side * 0.05, -0.21]], p, 'stone');
   }
+  for (const side of [-1, 1]) polygon(ctx, [[side * 0.16, -0.72], [side * 0.37, -1.1], [side * 0.43, -0.55]], p.shade);
+  polygon(ctx, [[-0.37, -0.69], [0, -0.87], [0.37, -0.69], [0.29, -0.23], [0, -0.08], [-0.29, -0.23]], p.body);
+  stroke(ctx, [[-0.19, -0.49], [-0.06, -0.46]], e.isStoneForm || dead ? p.shade : p.accent, 0.1);
+  stroke(ctx, [[0.06, -0.46], [0.19, -0.49]], e.isStoneForm || dead ? p.shade : p.accent, 0.1);
+  stroke(ctx, [[-0.12, -0.26], [0.12, -0.26]], p.ink, 0.07);
+  endCreature(ctx);
 }
-
-/**
- * Renderiza a animação de morte em 3 fases de Gárgula Basáltica.
- * @param {Object} de Entidade agonizante em dyingEnemies
- * @param {number} t Progresso normalizado de morte (0 a 1)
- * @param {number} R Raio de colisão da criatura
- */
 export function drawDying(de, t, R) {
-  // Veias de magma esfriam para preto, corpo petrifica e quebra em blocos de basalto
-  ctx.translate(0, t * 12);
-  ctx.scale(1 + t * 0.2, Math.max(0.08, 1 - t * 0.85));
-
-  const stoneCol = t > 0.4 ? '#2f3542' : '#57606f';
-  ctx.fillStyle = stoneCol;
-
-  // Asas de pedra partindo
-  ctx.fillRect(-R * 1.2 - t * 10, -R * 0.4, R * 0.6, R * 0.5);
-  ctx.fillRect(R * 0.6 + t * 10, -R * 0.4, R * 0.6, R * 0.5);
-
-  // Cabeça de cantaria caindo
-  ctx.beginPath();
-  ctx.arc(0, t * 8, R * 0.38, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Faíscas de magma esfriando
-  if (t < 0.6) {
-    ctx.fillStyle = '#e67e22';
-    ctx.fillRect((Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14, 3.5, 3.5);
-  }
+  drawCreatureDeath(ctx, { ...de, radius: R }, t, draw, 'crumble');
 }

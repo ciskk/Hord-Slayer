@@ -1,3 +1,4 @@
+import { isBossPhaseReady } from '../../../systems/bossPhaseCinematic.js';
 /**
  * src/entities/bosses/abyssSovereign/fsm.js
  * Máquina de Estados FSM, transições com micro-windup e estabilidade do Soberano do Abismo.
@@ -305,12 +306,12 @@ export function updateAbyssSovereign(e, dt, context) {
 
 
   const hpRatio = Math.max(0, e.hp / e.maxHp);
-  if (!e.hasTriggeredPhase2 && hpRatio <= 0.70 && e.actionState !== SOVEREIGN_STATES.PHASE_TRANSITION) {
+  if (isBossPhaseReady(e, 2) && !e.hasTriggeredPhase2 && hpRatio <= 0.70 && e.actionState !== SOVEREIGN_STATES.PHASE_TRANSITION) {
     e.hasTriggeredPhase2 = true;
     triggerPhaseTransition(e, 2, context);
     return;
   }
-  if (!e.hasTriggeredPhase3 && hpRatio <= 0.30 && e.actionState !== SOVEREIGN_STATES.PHASE_TRANSITION) {
+  if (isBossPhaseReady(e, 3) && !e.hasTriggeredPhase3 && hpRatio <= 0.30 && e.actionState !== SOVEREIGN_STATES.PHASE_TRANSITION) {
     e.hasTriggeredPhase3 = true;
     triggerPhaseTransition(e, 3, context);
     return;

@@ -22,6 +22,10 @@ import {
 import { player, selectedHeroKey } from '../entities/player.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { CHARACTERS } from '../config/characters.js';
+import { snapPlayerHpToZero } from '../ui/hudController.js';
+import { enemies, activeBoss, bullets, enemyBullets, bossProjectiles } from '../state/collections.js';
+import { dyingEnemies } from '../systems/combat.js';
+import { clearSpatialGrid } from '../core/spatialGrid.js';
 
 // Partículas ativas da sequência de morte (poeira, almas, fagulhas)
 const deathParticles = [];
@@ -102,6 +106,12 @@ export function startDeathSequence(onComplete) {
   deathSequence.startZoom = baseCameraZoom;
   deathSequence.targetZoomMult = 2.38;
 
+  // Detecta se a morte ocorreu durante uma batalha contra Boss
+  const isBossBattle = !!activeBoss || (enemies && enemies.some(e => e && (e.isBoss || e.isBossSubTarget)));
+  deathSequence.isBossBattle = isBossBattle;
+  deathSequence.mobFadeAlpha = 1.0;
+  deathSequence.projectileFadeAlpha = 1.0;
+
   hasImpactedGround = false;
   hasNovaTriggered = false;
   deathParticles.length = 0;
@@ -150,6 +160,35 @@ export function updateDeathSequence(dt) {
 
   deathSequence.timer += dt;
   const t = deathSequence.timer;
+
+  // ==========================================
+  // 0. FADEOUT E REMOÇÃO DE PROJÉTEIS E MOBS
+  // ==========================================
+  // Fadeout suave dos projéteis durante o colapso inicial (~45 frames)
+  const projProg = Math.min(1.0, t / 45);
+  const easedProj = projProg * projProg * (3 - 2 * projProg);
+  deathSequence.projectileFadeAlpha = Math.max(0, 1.0 - easedProj);
+
+  if (t >= 45) {
+    if (bullets.length > 0) bullets.length = 0;
+    if (enemyBullets.length > 0) enemyBullets.length = 0;
+    if (bossProjectiles.length > 0) bossProjectiles.length = 0;
+  }
+
+  // Se não for batalha de chefe, fadeout suave dos monstros até perto do final da animação (~115 frames)
+  if (!deathSequence.isBossBattle) {
+    const mobProg = Math.min(1.0, t / 115);
+    const easedMob = mobProg * mobProg * (3 - 2 * mobProg);
+    deathSequence.mobFadeAlpha = Math.max(0, 1.0 - easedMob);
+
+    if (t >= 115) {
+      if (enemies.length > 0) enemies.length = 0;
+      if (dyingEnemies.length > 0) dyingEnemies.length = 0;
+      clearSpatialGrid();
+    }
+  } else {
+    deathSequence.mobFadeAlpha = 1.0;
+  }
 
   // ==========================================
   // 1. CÂMERA: Panning Centrado & Zoom Dramático
@@ -586,6 +625,19 @@ export function renderDeathSequenceOverlay(ctx, viewW, viewH) {
 export function skipDeathSequence() {
   if (!deathSequence.active || deathSequence.skipped) return;
   deathSequence.skipped = true;
+  deathSequence.projectileFadeAlpha = 0;
+  bullets.length = 0;
+  enemyBullets.length = 0;
+  bossProjectiles.length = 0;
+
+  if (!deathSequence.isBossBattle) {
+    deathSequence.mobFadeAlpha = 0;
+    enemies.length = 0;
+    dyingEnemies.length = 0;
+    clearSpatialGrid();
+  }
+
+  snapPlayerHpToZero();
   finishDeathSequence();
 }
 
@@ -597,6 +649,17 @@ function finishDeathSequence() {
   deathSequence.phase = 'TRANSITION';
   deathSequence.fallProgress = 1.0;
   deathSequence.evaporateProgress = 1.0;
+  deathSequence.projectileFadeAlpha = 0;
+  bullets.length = 0;
+  enemyBullets.length = 0;
+  bossProjectiles.length = 0;
+
+  if (!deathSequence.isBossBattle) {
+    deathSequence.mobFadeAlpha = 0;
+    enemies.length = 0;
+    dyingEnemies.length = 0;
+    clearSpatialGrid();
+  }
 
   if (typeof onDeathCompleteCallback === 'function') {
     const cb = onDeathCompleteCallback;

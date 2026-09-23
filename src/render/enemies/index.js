@@ -4,11 +4,13 @@
  * Despachante unificado de renderização dos monstros comuns de Hord.io.
  * Mapeia cada arquétipo de criatura para seu renderizador modular dedicado.
  */
-import { ctx, frameCount } from '../../main.js';
+import { ctx, frameCount } from '../../state/gameState.js';
 import { drawBoss } from '../../entities/bosses/bossRegistry.js';
 import { drawMiniBossShape, drawDyingMiniBossShape } from '../minibossesRenderer.js';
-import { drawEnemyStatusOverlays, drawMiniBossHpOverlay, drawCommonEnemyGroundDecorations, applyKinematicDeformations } from './enemyDecorators.js';
+import { drawEnemyStatusOverlays, drawMiniBossHpOverlay, drawCommonEnemyGroundDecorations, applyKinematicDeformations, drawEnemyAttackTelegraph } from './enemyDecorators.js';
 import { drawCachedEnemy, clearSpriteCache } from './spriteCache.js';
+import { getEnemyDeathProgress } from '../../config/enemyDeaths.js';
+import { drawDeathResidue } from './deathEffects.js';
 export { clearSpriteCache };
 import * as zombie from './zombieRenderer.js';
 import * as bat from './batRenderer.js';
@@ -82,25 +84,29 @@ export function drawEnemyShape(e) {
 
   if (e.isBoss) {
     drawBoss(ctx, e, frameCount);
-  } else if (e.isMiniBoss) {
-    drawMiniBossShape(e);
   } else {
-    drawCommonEnemyGroundDecorations(e);
-    applyKinematicDeformations(e);
+    drawEnemyAttackTelegraph(e);
 
-    const isHit = e.hitFlash > 0;
-    const baseCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : e.color);
-
-    const renderer = ENEMY_RENDERERS[e.baseType];
-    if (renderer && renderer.draw) {
-      if (!drawCachedEnemy(ctx, e, renderer)) {
-        renderer.draw(e);
-      }
+    if (e.isMiniBoss) {
+      drawMiniBossShape(e);
     } else {
-      ctx.fillStyle = baseCol;
-      ctx.beginPath();
-      ctx.arc(0, 0, e.radius, 0, Math.PI * 2);
-      ctx.fill();
+      drawCommonEnemyGroundDecorations(e);
+      applyKinematicDeformations(e);
+
+      const isHit = e.hitFlash > 0;
+      const baseCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : e.color);
+
+      const renderer = ENEMY_RENDERERS[e.baseType];
+      if (renderer && renderer.draw) {
+        if (!drawCachedEnemy(ctx, e, renderer)) {
+          renderer.draw(e);
+        }
+      } else {
+        ctx.fillStyle = baseCol;
+        ctx.beginPath();
+        ctx.arc(0, 0, e.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
 
@@ -122,16 +128,18 @@ export function drawDyingEnemyShape(de) {
     return;
   }
 
-  const t = Math.max(0, Math.min(1, 1 - (de.timer / de.maxTimer)));
+  const t = getEnemyDeathProgress(de);
   const R = de.radius;
 
   ctx.save();
   ctx.translate(de.x, de.y);
+  drawDeathResidue(ctx, de, t);
+  ctx.translate(0, -(de.deathJumpZ || 0) * Math.max(0, 1 - t / 0.35));
   ctx.scale(de.facing, 1);
   if (de.rot) ctx.rotate(de.rot);
 
   const bodyAlpha = Math.max(0, 1 - Math.max(0, (t - 0.75) / 0.25));
-  ctx.globalAlpha = bodyAlpha;
+  ctx.globalAlpha *= bodyAlpha;
 
   const renderer = ENEMY_RENDERERS[de.baseType];
   if (renderer && renderer.drawDying) {

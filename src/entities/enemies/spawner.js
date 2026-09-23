@@ -3,8 +3,9 @@
  * Fábrica de Inimigos, Mini-Chefes, Chefes e Objetos do Cenário (Fase 1).
  */
 import { ENEMY_TYPES, BOSS_TYPES, MINI_BOSS_TYPES } from '../../config/enemies.js';
+import { STALKER_DASH } from '../../config/stalkerDash.js';
 import { getSquadDefinition } from '../../config/squads.js';
-import { player } from '../player.js';
+import { player, selectedHeroKey } from '../player.js';
 import { 
   viewW, 
   viewH, 
@@ -31,6 +32,31 @@ import { transitionToArenaTheme } from '../../render/environment.js';
 import { triggerBossBark, triggerMiniBossBark } from '../../systems/barks.js';
 
 export const MAX_ENEMIES = 150;
+
+/**
+ * Identifica se a espécie informada pertence à família dos Vermes/Parasitas rastejantes.
+ * @param {string} typeKey
+ * @returns {boolean}
+ */
+export function isWormEnemyType(typeKey) {
+  return typeKey === 'STALKER' || typeKey === 'SPLITTER' || typeKey === 'SPLITTER_MINI' || typeKey === 'TRAIL_CRAWLER';
+}
+
+/** O verme emerge perto do jogador; a mira fica fixa durante os 200 ms de poeira. */
+function getStalkerSpawnPoint(angle = null) {
+  const a = angle ?? Math.random() * Math.PI * 2;
+  const distance = STALKER_DASH.spawnMinDistance
+    + Math.random() * (STALKER_DASH.spawnMaxDistance - STALKER_DASH.spawnMinDistance);
+  return { x: player.x + Math.cos(a) * distance, y: player.y + Math.sin(a) * distance };
+}
+
+/**
+ * Checa se Kael (ROGUE) está com o Manto de Fumaça (invisibilidade) ativo.
+ * @returns {boolean}
+ */
+export function isKaelInvisible() {
+  return Boolean(player && player.invisTimer > 0 && (selectedHeroKey === 'ROGUE' || !selectedHeroKey));
+}
 
 /**
  * Retorna uma coordenada de spawn imediatamente fora da visão do jogador,
@@ -70,6 +96,7 @@ function getOffscreenSpawnPoint(minDist = 45, maxDist = 65, forcedAngle = null) 
  * @returns {boolean} Verdadeiro se a fusão foi realizada com sucesso.
  */
 export function stackOffscreenMob(typeKey, hpToAdd, xpToAdd) {
+  if (isKaelInvisible() && isWormEnemyType(typeKey)) return false;
   const halfW = (cameraViewW || 960) / 2;
   const halfH = (cameraViewH || 640) / 2;
   const offscreenThresholdSq = (Math.hypot(halfW, halfH) + 160) ** 2;
@@ -125,56 +152,56 @@ export function createEnemy(typeKey, x, y, isElite = false) {
   }
 
   let attackRange = 24;
-  let attackWindupFrames = 15;
+  let attackWindupFrames = 20;
   let attackStrikeFrames = 4;
   let attackRecoveryFrames = 29;
   let attackCooldownMax = 23;
 
   if (typeKey === 'BAT') {
     attackRange = 20;
-    attackWindupFrames = 12;
+    attackWindupFrames = 16;
     attackStrikeFrames = 4;
     attackRecoveryFrames = 23;
     attackCooldownMax = 15;
   } else if (typeKey === 'GOLEM') {
     attackRange = 34;
-    attackWindupFrames = 22;
+    attackWindupFrames = 24;
     attackStrikeFrames = 6;
     attackRecoveryFrames = 37;
     attackCooldownMax = 28;
   } else if (typeKey === 'STALKER') {
     attackRange = 24;
-    attackWindupFrames = 14;
+    attackWindupFrames = 18;
     attackStrikeFrames = 4;
     attackRecoveryFrames = 25;
     attackCooldownMax = 19;
   } else if (typeKey === 'SHIELDED') {
     attackRange = 32;
-    attackWindupFrames = 17;
+    attackWindupFrames = 22;
     attackStrikeFrames = 5;
     attackRecoveryFrames = 28;
     attackCooldownMax = 25;
   } else if (typeKey === 'CHAIN_FLAYER') {
     attackRange = 65;
-    attackWindupFrames = 22;
+    attackWindupFrames = 24;
     attackStrikeFrames = 6;
     attackRecoveryFrames = 32;
     attackCooldownMax = 31;
   } else if (typeKey === 'DULLAHAN_VANGUARD') {
     attackRange = 38;
-    attackWindupFrames = 15;
+    attackWindupFrames = 20;
     attackStrikeFrames = 5;
     attackRecoveryFrames = 26;
     attackCooldownMax = 22;
   } else if (typeKey === 'MAIDEN_THORNS') {
     attackRange = 30;
-    attackWindupFrames = 17;
+    attackWindupFrames = 20;
     attackStrikeFrames = 5;
     attackRecoveryFrames = 28;
     attackCooldownMax = 23;
   } else if (typeKey === 'GRAVE_GORGON') {
     attackRange = 34;
-    attackWindupFrames = 18;
+    attackWindupFrames = 22;
     attackStrikeFrames = 6;
     attackRecoveryFrames = 31;
     attackCooldownMax = 25;
@@ -242,8 +269,8 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     shadowBoltTimer: Math.floor(Math.random() * 80),
     pounceCooldown: 0,
     dashTimer: 0,
-    dashState: 'chase',
-    dashAngle: 0,
+    dashState: typeKey === 'STALKER' ? 'aim' : 'chase',
+    dashAngle: typeKey === 'STALKER' ? Math.atan2(player.y - y, player.x - x) : 0,
     summonTimer: 0,
     auraTimer: 0,
     throwTimer: 0,
@@ -289,7 +316,9 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     devourTimer: 0,
     gorgonStacks: 0,
     isAwakeMimic: false,
-    mimicWakeTimer: 0
+    mimicWakeTimer: 0,
+    turnDelayTimer: 0,
+    shieldStaggerTimer: 0
   };
 }
 
@@ -300,6 +329,7 @@ export function createEnemy(typeKey, x, y, isElite = false) {
  * @param {number} eliteChance Probabilidade de spawn de elite [0, 1].
  */
 export function spawnMobCluster(typeKey, count, eliteChance = 0, forcedAngle = null) {
+  if (isKaelInvisible() && isWormEnemyType(typeKey)) return;
   const def = ENEMY_TYPES[typeKey] || ENEMY_TYPES.ZOMBIE;
   const minutes = frameCount / 3600;
   const scaleFactor = 1.0 + (minutes * 0.28);
@@ -315,8 +345,9 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0, forcedAngle = n
     const isElite = Math.random() < eliteChance;
     const spreadR = Math.random() * 28;
     const spreadA = Math.random() * Math.PI * 2;
-    const mx = pt.x + Math.cos(spreadA) * spreadR;
-    const my = pt.y + Math.sin(spreadA) * spreadR;
+    const stalkerPoint = typeKey === 'STALKER' ? getStalkerSpawnPoint(forcedAngle) : null;
+    const mx = stalkerPoint ? stalkerPoint.x : pt.x + Math.cos(spreadA) * spreadR;
+    const my = stalkerPoint ? stalkerPoint.y : pt.y + Math.sin(spreadA) * spreadR;
 
     enemies.push(createEnemy(typeKey, mx, my, isElite));
   }
@@ -351,6 +382,9 @@ export function spawnSquad(squadKey, eliteChance = 0, forcedAngle = null) {
 
   for (let i = 0; i < squadDef.members.length; i++) {
     const member = squadDef.members[i];
+    if (isKaelInvisible() && isWormEnemyType(member.type)) {
+      continue;
+    }
     const def = ENEMY_TYPES[member.type] || ENEMY_TYPES.ZOMBIE;
     const minutes = frameCount / 3600;
     const scaleFactor = 1.0 + (minutes * 0.28);
@@ -363,8 +397,9 @@ export function spawnSquad(squadKey, eliteChance = 0, forcedAngle = null) {
 
     const fwd = member.offsetForward || 0;
     const lat = member.offsetLateral || 0;
-    const mx = center.x + cosA * fwd - sinA * lat;
-    const my = center.y + sinA * fwd + cosA * lat;
+    const stalkerPoint = member.type === 'STALKER' ? getStalkerSpawnPoint(forcedAngle) : null;
+    const mx = stalkerPoint ? stalkerPoint.x : center.x + cosA * fwd - sinA * lat;
+    const my = stalkerPoint ? stalkerPoint.y : center.y + sinA * fwd + cosA * lat;
 
     const canBeElite = member.type !== 'BAT' && member.type !== 'EXPLODER';
     const isElite = canBeElite && (Math.random() < eliteChance);
@@ -465,7 +500,9 @@ export function spawnMiniBoss(miniBossType) {
     chargeAngle: null,
     slamTimer: 0,
     mortarTimer: 0,
-    ritualTimer: 0
+    ritualTimer: 0,
+    turnDelayTimer: 0,
+    shieldStaggerTimer: 0
   };
 
   playSfx('boss');

@@ -467,7 +467,7 @@ export function drawBloodAltarWorld(ctx, altar = getActiveBloodAltar()) {
         ctx.fillStyle = altar.channelProgress > 0 ? '#ff7675' : '#ffffff';
         const actionText = altar.channelProgress > 0 
           ? `CANALIZANDO... ${Math.round(altar.channelProgress * 100)}%` 
-          : "[ SEGURE ESPAÇO / E / F ] ATIVAR PACTO";
+          : "[ SEGURE F ] ATIVAR PACTO";
         ctx.fillText(actionText, 0, boxY + 37);
 
         ctx.restore();

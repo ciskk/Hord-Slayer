@@ -1,3 +1,4 @@
+import { isBossPhaseReady } from '../../../systems/bossPhaseCinematic.js';
 /**
  * src/entities/bosses/supremeReaper/fsm.js
  * Máquina de estados FSM, progressão de fases e ciclo de vida do Ceifador Supremo.
@@ -31,7 +32,7 @@ export function checkReaperPhases(e, context) {
 
   const hpRatio = e.hp / e.maxHp;
 
-  if (hpRatio < REAPER_CONFIG.ENRAGE_HP_RATIO && !e.hasEnraged) {
+  if (hpRatio < REAPER_CONFIG.ENRAGE_HP_RATIO && !e.hasEnraged && isBossPhaseReady(e, 2)) {
     e.hasEnraged = true;
     e.isEnraged = true;
     e.speed *= 1.32;
@@ -62,7 +63,7 @@ export function checkReaperPhases(e, context) {
     return;
   }
 
-  if (hpRatio < REAPER_CONFIG.PHASE3_HP_RATIO && !e.isPhase3) {
+  if (hpRatio < REAPER_CONFIG.PHASE3_HP_RATIO && !e.isPhase3 && isBossPhaseReady(e, 3)) {
     e.isPhase3 = true;
     e.speed *= 1.20;
     e.lanternAngularSpeed *= 1.4;

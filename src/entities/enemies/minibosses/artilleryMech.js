@@ -25,6 +25,7 @@ update(e, dt, ctx, dist, angle) {
   if (e.thrusterCd > 0) e.thrusterCd -= dt;
 
   if (e.actionState === 'CHASE') {
+    e.aimAngle = angle;
     // Mantém distância tática de 160px a 240px
     if (dist < 160) {
       e.x -= Math.cos(angle) * e.speed * dt;
@@ -88,18 +89,30 @@ update(e, dt, ctx, dist, angle) {
         e.shotDelay = 5;
         e.burstShotsLeft--;
         safePlaySfx('shoot');
-        createHitParticles(e.x, e.y, '#ff4757', 4);
-        e.x -= Math.cos(e.aimAngle) * 2.5;
-        e.y -= Math.sin(e.aimAngle) * 2.5;
 
-        const spread = (Math.random() - 0.5) * 0.14;
+        // Alternância entre os canos duplos superior e inferior
+        const isUpperBarrel = (e.burstShotsLeft % 2 === 0);
+        e.lastFiredBarrel = isUpperBarrel ? 'UPPER' : 'LOWER';
+        const barrelSideOffset = isUpperBarrel ? -5 : 5;
+
+        e.x -= Math.cos(e.aimAngle) * 3.2;
+        e.y -= Math.sin(e.aimAngle) * 3.2;
+
+        const spread = (Math.random() - 0.5) * 0.12;
         const bAng = e.aimAngle + spread;
+        const muzzleX = e.x + Math.cos(bAng) * 28 - Math.sin(bAng) * barrelSideOffset;
+        const muzzleY = e.y + Math.sin(bAng) * 28 + Math.cos(bAng) * barrelSideOffset;
+
+        createHitParticles(muzzleX, muzzleY, '#ff4757', 5);
+        createHitParticles(muzzleX, muzzleY, '#ffffff', 2);
+        createHitParticles(e.x - Math.sin(bAng) * 10, e.y + Math.cos(bAng) * 10, '#d4af37', 2);
+
         enemyBullets.push({
-          x: e.x + Math.cos(bAng) * 16,
-          y: e.y + Math.sin(bAng) * 16,
-          vx: Math.cos(bAng) * 4.2,
-          vy: Math.sin(bAng) * 4.2,
-          radius: 5,
+          x: muzzleX,
+          y: muzzleY,
+          vx: Math.cos(bAng) * 4.5,
+          vy: Math.sin(bAng) * 4.5,
+          radius: 5.5,
           damage: Math.round(e.damage * 0.35),
           life: 85,
           bulletType: 'TECH',

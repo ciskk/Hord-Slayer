@@ -1,110 +1,32 @@
-/**
- * src/render/enemies/mirrorBansheeRenderer.js
- * 
- * Renderizador procedural modular de Banshee do Espelho (MIRROR_BANSHEE).
- */
-import { ctx, frameCount } from '../../main.js';
+import { ctx, frameCount } from '../../state/gameState.js';
+import { beginCreature, endCreature, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
-/**
- * Renderiza a forma viva de Banshee do Espelho.
- * O Canvas já está posicionado em (e.x, e.y) e escalado por e.facing.
- * @param {Object} e Entidade do monstro
-   */
+// A continuous ghost silhouette carries a single recognizable hand mirror.
 export function draw(e) {
-  // =========================================================================
-  // 19. BANSHEE DOS ESPELHOS - Espectro nupcial com cacos de espelho cravados
-  // =========================================================================
-  const R_m = e.radius;
-  const isHit = e.hitFlash > 0;
-  const spectralAlpha = e.isDecoy ? 0.42 : 0.88;
-  const bansheeCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#a29bfe');
-  const shardWhite = isHit ? '#ffffff' : '#ffffff';
-  const wave = Math.sin(frameCount * 0.22) * 4;
-
+  const p = creaturePalette(e, '#bda1ff', '#6938ac', '#8be7ff');
+  const dead = e.deathPose || 0;
+  const wave = dead ? 0 : Math.sin(frameCount * 0.16) * 0.12;
+  beginCreature(ctx, e);
+  ctx.globalAlpha *= e.isDecoy ? 0.42 : 0.92;
+  polygon(ctx, [[-0.35, -0.72], [-0.09, -0.97], [0.29, -0.78], [0.35, -0.33], [0.54, 0.3], [0.29 + wave, 0.65], [-0.06 + wave, 1.04], [-0.13, 0.59], [-0.48, 0.8], [-0.41, 0.17], [-0.63, 0.33]], p.shade);
+  polygon(ctx, [[-0.27, -0.63], [-0.03, -0.88], [0.25, -0.66], [0.22, -0.17], [0.36, 0.38], [0.02 + wave, 0.8], [-0.01, 0.22], [-0.26, 0.45], [-0.2, -0.22]], p.body);
+  polygon(ctx, [[-0.17, -0.69], [0.01, -0.91], [0.21, -0.72], [0.2, -0.48], [0.05, -0.29], [-0.14, -0.48]], p.bone);
+  stroke(ctx, [[-0.08, -0.65], [-0.01, -0.64]], p.ink, 0.065);
+  stroke(ctx, [[0.08, -0.64], [0.15, -0.65]], p.ink, 0.065);
+  polygon(ctx, [[-0.02, -0.52], [0.12, -0.52], [0.13, -0.37], [0.06, -0.29], [-0.01, -0.38]], p.ink, null);
+  stroke(ctx, [[0.27, -0.08], [0.65, 0.2]], p.shade, 0.15);
   ctx.save();
-  ctx.globalAlpha *= spectralAlpha;
-
-  // 1. Trapos de Vestido de Noiva Imperial Rasgado em Tiras Fluidas
-  ctx.fillStyle = bansheeCol;
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.35, -R_m * 0.3);
-  ctx.lineTo(R_m * 0.35, -R_m * 0.3);
-  ctx.quadraticCurveTo(R_m * 0.75, R_m * 0.4, R_m * 0.15 + wave, R_m * 1.25);
-  ctx.quadraticCurveTo(-R_m * 0.75, R_m * 0.4, -R_m * 0.35, -R_m * 0.3);
-  ctx.closePath();
-  ctx.fill();
-
-  // Cauda esfarrapada de renda
-  ctx.strokeStyle = '#6c5ce7';
-  ctx.lineWidth = 1.4;
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.2, R_m * 0.5);
-  ctx.lineTo(wave, R_m * 1.3);
-  ctx.moveTo(R_m * 0.2, R_m * 0.5);
-  ctx.lineTo(wave + 4, R_m * 1.3);
-  ctx.stroke();
-
-  // 2. Cacos de Espelho Triangulares Cravados na Carne e no Vestido
-  ctx.fillStyle = shardWhite;
-  for (let sh = 0; sh < 5; sh++) {
-    const shX = Math.sin(sh * 1.8) * (R_m * 0.4);
-    const shY = -R_m * 0.15 + sh * (R_m * 0.22);
-    ctx.beginPath();
-    ctx.moveTo(shX, shY - 5);
-    ctx.lineTo(shX + 4.5, shY + 4);
-    ctx.lineTo(shX - 3.5, shY + 2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = '#74b9ff';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
-
-  // 3. Cabeça Cadavérica e Cabelos Flutuando contra a Gravidade
-  const hY = -R_m * 0.5;
-  ctx.fillStyle = '#dfe4ea';
-  ctx.beginPath();
-  ctx.arc(0, hY, R_m * 0.35, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Mechas de cabelos longos subindo no ar
-  ctx.strokeStyle = '#5f27cd';
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.3, hY);
-  ctx.quadraticCurveTo(-R_m * 0.8, hY - R_m * 0.6, -R_m * 0.5 + wave, hY - R_m * 1.1);
-  ctx.moveTo(R_m * 0.3, hY);
-  ctx.quadraticCurveTo(R_m * 0.8, hY - R_m * 0.6, R_m * 0.5 - wave, hY - R_m * 1.1);
-  ctx.stroke();
-
-  // Mandíbula Completamente Descolada para Baixo (Grito Silencioso)
-  ctx.fillStyle = '#0a0518';
-  ctx.beginPath();
-  ctx.ellipse(R_m * 0.12, hY + 4, 3.5, 6.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Órbitas oculares ocas
-  ctx.fillRect(R_m * 0.08, hY - 3, 3, 2.5);
+  ctx.translate(0.79, -0.08 + dead * 0.2);
+  ctx.rotate(0.15 + dead * 0.65);
+  stroke(ctx, [[0, 0.2], [0, 0.56]], p.ink, 0.17);
+  stroke(ctx, [[0, 0.2], [0, 0.56]], p.body, 0.085);
+  polygon(ctx, [[0, -0.66], [0.3, -0.37], [0.3, 0.09], [0, 0.35], [-0.3, 0.09], [-0.3, -0.37]], p.body);
+  polygon(ctx, [[0, -0.51], [0.21, -0.32], [0.21, 0.04], [0, 0.21], [-0.21, 0.04], [-0.21, -0.32]], p.accent, p.shade, 0.05);
+  stroke(ctx, [[-0.12, -0.19], [0.06, -0.36]], p.bone, 0.065);
+  if (dead > 0.2) stroke(ctx, [[0, -0.42], [-0.06, -0.1], [0.1, 0.06]], p.shade, 0.055);
   ctx.restore();
+  endCreature(ctx);
 }
-
-/**
- * Renderiza a animação de morte em 3 fases de Banshee do Espelho.
- * @param {Object} de Entidade agonizante em dyingEnemies
- * @param {number} t Progresso normalizado de morte (0 a 1)
- * @param {number} R Raio de colisão da criatura
- */
 export function drawDying(de, t, R) {
-  // Estilhaçamento de vidro espelhado completo: cacos refletivos em 360°
-  ctx.fillStyle = '#ffffff';
-  for (let s = 0; s < 8; s++) {
-    const sa = s * (Math.PI / 4) + t * 1.8;
-    const sDist = R * (0.3 + t * 2.2);
-    ctx.beginPath();
-    ctx.moveTo(Math.cos(sa) * sDist, Math.sin(sa) * sDist);
-    ctx.lineTo(Math.cos(sa + 0.3) * (sDist + 8), Math.sin(sa + 0.3) * (sDist + 8));
-    ctx.lineTo(Math.cos(sa - 0.2) * (sDist + 6), Math.sin(sa - 0.2) * (sDist + 6));
-    ctx.closePath();
-    ctx.fill();
-  }
+  drawCreatureDeath(ctx, { ...de, radius: R }, t, draw, 'dissolve');
 }

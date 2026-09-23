@@ -47,7 +47,11 @@ export function initAbyssalMonolith(boss) {
   // Fila de Ações Agendadas
   boss.delayedActions = [];
 
-  // Janelas de Vulnerabilidade e Colapso (4.5 segundos = 270 frames)
+  // Monitoramento e Punição Corpo a Corpo (Anti-Abraço Melee)
+  boss.meleeContactTimer = 0;
+  boss.repulsionCooldown = 0;
+
+  // Janelas de Vulnerabilidade e Colapso (2.5 segundos = 150 frames)
   boss.recoveryTimer = 0;
   boss.isVulnerable = false;
   boss.prevHp = boss.hp;

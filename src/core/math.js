@@ -149,3 +149,14 @@ export function distToSegment(px, py, x1, y1, x2, y2) {
 
   return _segmentResult;
 }
+
+/**
+ * Retorna o ângulo de rotação relativo de uma arma ou torreta para entidades
+ * renderizadas no Canvas 2D sob transformação de espelhamento ctx.scale(facing, 1).
+ * @param {number} aimAngle - Ângulo de mira global em radianos (Math.atan2(dy, dx))
+ * @param {number} facing - Direção horizontal da entidade (1 para direita, -1 para esquerda)
+ * @returns {number} Ângulo no sistema de coordenadas local do Canvas
+ */
+export function getRelativeAimAngle(aimAngle, facing) {
+  return facing === -1 ? Math.PI - aimAngle : aimAngle;
+}

@@ -90,6 +90,12 @@ export const ICONS = {
     <polygon points="12,12 14,14 10,14" fill="currentColor"/>
   `,
 
+  ult_cooldown: `
+    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
+    <circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2"/>
+    <polygon points="12,4 14,9 19,10 15,14 16,19 12,16 8,19 9,14 5,10 10,9" fill="currentColor"/>
+  `,
+
   crit: `
     <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
     <circle cx="12" cy="12" r="3" fill="currentColor"/>
@@ -359,6 +365,7 @@ export const PASSIVE_ICONS = {
   wings: 'wings',
   frost_passive: 'frost',
   haste: 'cooldown',
+  ult_cooldown: 'ult_cooldown',
   crit: 'crit',
   magnet: 'magnet',
   heal: 'heal'

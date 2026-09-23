@@ -1,123 +1,46 @@
-/**
- * src/render/minibosses/fireIncineratorRenderer.js
- * 
- * Renderizador procedural modular do Miniboss Incinerador Instável (FIRE_INCINERATOR).
- */
-import { ctx, frameCount } from '../../main.js';
+import { ctx, frameCount } from '../../state/gameState.js';
+import { getRelativeAimAngle } from '../../core/math.js';
+import { beginCreature, endCreature, materialPolygon, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
-/**
- * Renderiza a forma viva do Miniboss.
- * @param {Object} e Entidade do Miniboss
- */
+/** An iron furnace on legs: orange boiler, black firebox and a directional nozzle. */
 export function draw(e) {
-  const R = e.radius;
-  const isHit = e.hitFlash > 0;
-  const isEnraged = !!e.enraged;
-  const eliteColor = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : (e.color || '#f39c12'));
-
-  const boilPulse = Math.sin(frameCount * 0.25) * 2;
-  const boilerCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#d35400');
-
-  // 1. Escapamentos Traseiros com Faíscas
-  ctx.fillStyle = '#2d3436';
-  ctx.fillRect(-R * 0.95, -R * 0.75, 8, 16);
-  ctx.fillRect(-R * 0.95, R * 0.35, 8, 16);
-
-  if (Math.floor(frameCount) % 2 === 0) {
-    ctx.fillStyle = '#f1c40f';
-    ctx.fillRect(-R * 1.3 - Math.random() * 5, -R * 0.7 + (Math.random() - 0.5) * 8, 3.5, 3.5);
-    ctx.fillRect(-R * 1.3 - Math.random() * 5, R * 0.4 + (Math.random() - 0.5) * 8, 3.5, 3.5);
+  const p = creaturePalette(e, '#d35400', '#552617', e.enraged ? '#ff4757' : '#ffd32a');
+  const wind = e.actionState === 'WINDUP';
+  const fire = !!e.isFlamethrowing;
+  const purge = e.currentSkill === 'STEAM_PURGE' && (wind || e.actionState === 'STRIKE');
+  const dead = e.deathPose !== undefined;
+  beginCreature(ctx, e);
+  const braced = fire || wind;
+  polygon(ctx, [[-.49,.35],[-.1,.35],[-.16,.92],[-.67,.92],[-.65,.73]], p.shade);
+  polygon(ctx, [[.16,.35],[.48,.35],[.68,.92],[.19,.92]], p.shade);
+  materialPolygon(ctx, [[-.75,-.6],[-.55,-.83],[.37,-.79],[.66,-.43],[.56,.56],[-.54,.62],[-.78,.21]], p, 'metal');
+  polygon(ctx, [[-.72,-.57],[-.35,-.68],[-.29,.54],[-.54,.57],[-.73,.16]], p.shade, null);
+  polygon(ctx, [[-.5,-.74],[-.55,-1.24],[-.29,-1.24],[-.21,-.75]], p.shade);
+  polygon(ctx, [[-.61,-1.22],[-.27,-1.22],[-.22,-1.36],[-.64,-1.36]], p.body);
+  polygon(ctx, [[-.21,-.38],[.35,-.38],[.43,.29],[-.19,.35],[-.32,-.03]], p.ink);
+  polygon(ctx, [[-.07,.22],[-.13,-.01],[.06,-.24],[.15,-.02],[.28,-.13],[.31,.21]], p.accent, null);
+  stroke(ctx, [[-.23,-.13],[.35,-.13]], p.shade, .08);
+  polygon(ctx, [[-.02,-.84],[.39,-.77],[.5,-.54],[.09,-.47],[-.08,-.61]], p.shade);
+  stroke(ctx, [[.1,-.66],[.37,-.63]], p.accent, .075);
+  if (purge && !dead) {
+    const rise = wind ? .14 + .23*(e.castProgress || 0) : .57;
+    polygon(ctx, [[-.58,-1.39],[-.7,-1.51-rise],[-.45,-1.44-rise],[-.24,-1.58-rise],[-.28,-1.39]], p.accent, null);
   }
-
-  // 2. Chassi Esférico da Caldeira
-  ctx.fillStyle = boilerCol;
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 0.82 + boilPulse * 0.3, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#7f1d1d';
-  ctx.lineWidth = 2.8;
-  ctx.stroke();
-
-  // 3. Ventre de Vidro Translúcido com Combustível Fervente
-  ctx.fillStyle = '#1e272e';
-  ctx.fillRect(R * 0.15, -R * 0.38, R * 0.5, R * 0.76);
-
-  // Líquido Alquímico Borbulhante
-  ctx.fillStyle = '#f1c40f';
-  ctx.fillRect(R * 0.22, -R * 0.28, R * 0.36, R * 0.56);
-  ctx.fillStyle = '#e74c3c';
-  for (let b = 0; b < 3; b++) {
-    const by = -R * 0.2 + ((frameCount * 1.5 + b * 8) % (R * 0.5));
-    ctx.fillRect(R * 0.3 + b * 3, by, 2.5, 2.5);
+  ctx.save();
+  ctx.rotate(getRelativeAimAngle(e.aimAngle ?? (e.facing === -1 ? Math.PI : 0), e.facing || 1));
+  const recoil = fire ? -.035*(1+Math.sin(frameCount*.55)) : 0;
+  // Nozzle ends at the same 1.1R muzzle used by flame projectiles.
+  stroke(ctx, [[-.41,.31],[.11,.48],[.49,.18]], p.ink, .2);
+  stroke(ctx, [[-.41,.31],[.11,.48],[.49,.18]], p.shade, .1);
+  polygon(ctx, [[.3+recoil,-.18],[.86+recoil,-.18],[1.1,-.29],[1.1,.29],[.86+recoil,.18],[.3+recoil,.18]], p.shade);
+  polygon(ctx, [[.83,-.24],[1.1,-.29],[1.1,.29],[.83,.24]], p.body);
+  stroke(ctx, [[1.075,-.2],[1.075,.2]], p.accent, braced ? .1 : .055);
+  if (fire && !dead) {
+    const length = .36 + .08*Math.sin(frameCount*.42);
+    polygon(ctx, [[1.1,-.18],[1.32,-.13],[1.27,-.26],[1.1+length,0],[1.29,.22],[1.3,.1],[1.1,.18]], p.accent, null);
   }
-
-  // 4. Labareda Multicamadas do Lança-Chamas Ativo
-  if (e.isFlamethrowing) {
-    const fPulse = Math.sin(frameCount * 0.4) * 5;
-    // Camada 1: Núcleo Branco/Azul Superquente
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.moveTo(R * 0.65, 0);
-    ctx.lineTo(R * 1.6 + fPulse, -R * 0.2);
-    ctx.lineTo(R * 1.6 + fPulse, R * 0.2);
-    ctx.closePath();
-    ctx.fill();
-
-    // Camada 2: Labareda Amarelo-Dourada
-    ctx.fillStyle = '#f39c12';
-    ctx.beginPath();
-    ctx.moveTo(R * 0.6, -R * 0.25);
-    ctx.lineTo(R * 2.1 + fPulse, -R * 0.65);
-    ctx.lineTo(R * 2.4 + fPulse, 0);
-    ctx.lineTo(R * 2.1 + fPulse, R * 0.65);
-    ctx.lineTo(R * 0.6, R * 0.25);
-    ctx.closePath();
-    ctx.fill();
-  }
+  ctx.restore();
+  endCreature(ctx);
 }
 
-/**
- * Renderiza a animação de morte em 3 fases do Miniboss.
- * @param {Object} de Entidade agonizante em dyingEnemies
- * @param {number} t Progresso normalizado de morte (0 a 1)
- */
-export function drawDying(de, t) {
-  const R = de.radius;
-  const isEnraged = !!de.enraged;
-  const eliteColor = isEnraged ? '#ff4757' : (de.color || '#f39c12');
-  const bodyAlpha = Math.max(0, 1 - Math.max(0, (t - 0.75) / 0.25));
-
-  // Fase 1: Caldeira estufa e vibra; rebites saltam
-  // Fase 2: Costuras rompem com labareda vertical e vazamento de lava
-  // Fase 3: Caldeirão colapsa num bloco de escória vulcânica negra
-  const swell = 1 + Math.sin(t * Math.PI) * 0.35;
-  ctx.scale(swell, swell);
-  ctx.translate(0, t * 10);
-
-  const boilerCol = '#d35400';
-
-  // Chassi do caldeirão tombando
-  ctx.fillStyle = t > 0.6 ? '#2d3436' : boilerCol;
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 0.7, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Coluna vertical de fogo e lava ejetada
-  if (t > 0.15) {
-    ctx.fillStyle = t < 0.5 ? '#f1c40f' : '#e67e22';
-    ctx.beginPath();
-    ctx.moveTo(-R * 0.4, -R * 0.5);
-    ctx.lineTo(0, -R * 0.5 - t * 28);
-    ctx.lineTo(R * 0.4, -R * 0.5);
-    ctx.closePath();
-    ctx.fill();
-
-    // Gotas de lava incandescentes espirrando
-    ctx.fillStyle = '#ff7675';
-    for (let dr = 0; dr < 6; dr++) {
-      const dra = dr * 1.05 + t * 2.5;
-      const drd = R * (0.6 + (t - 0.15) * 2.0);
-      ctx.fillRect(Math.cos(dra) * drd - 2.5, Math.sin(dra) * (drd * 0.7) - 2.5, 5, 5);
-    }
-  }
-}
+export function drawDying(e, t) { drawCreatureDeath(ctx, e, t, draw, 'burst'); }

@@ -9,7 +9,8 @@ export function renderDyingEnemies(dyingEnemies, bounds) {
   const { viewLeft, viewRight, viewTop, viewBottom } = bounds;
   for (let i = 0; i < dyingEnemies.length; i++) {
     const de = dyingEnemies[i];
-    if (de.x >= viewLeft && de.x <= viewRight && de.y >= viewTop && de.y <= viewBottom) {
+    const margin = de.radius * 6 + (de.deathJumpZ || 0) + 32;
+    if (de.x + margin >= viewLeft && de.x - margin <= viewRight && de.y + margin >= viewTop && de.y - margin <= viewBottom) {
       drawDyingEnemyShape(de);
     }
   }

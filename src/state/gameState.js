@@ -75,7 +75,8 @@ export const matchIntro = {
   holdDuration: 25,
   zoomProgress: 0,
   startZoomMult: 2.2,
-  skipped: false
+  skipped: false,
+  hudRevealed: false
 };
 
 export function startMatchIntro() {
@@ -86,6 +87,7 @@ export function startMatchIntro() {
   matchIntro.holdDuration = 25;
   matchIntro.zoomProgress = 0;
   matchIntro.skipped = false;
+  matchIntro.hudRevealed = false;
   cinematicCamera.isCinematic = true;
   cinematicCamera.letterboxProgress = 1.0;
   setCameraZoom(baseCameraZoom * matchIntro.startZoomMult);
@@ -95,6 +97,7 @@ export function endMatchIntro() {
   matchIntro.active = false;
   matchIntro.zoomProgress = 1.0;
   matchIntro.skipped = false;
+  matchIntro.hudRevealed = false;
   resetCameraZoom();
 }
 
@@ -109,7 +112,10 @@ export const deathSequence = {
   fallProgress: 0,
   evaporateProgress: 0,
   transitionFlash: 0,
-  skipped: false
+  skipped: false,
+  isBossBattle: false,
+  mobFadeAlpha: 1.0,
+  projectileFadeAlpha: 1.0
 };
 
 export function resetDeathSequenceState() {
@@ -121,6 +127,9 @@ export function resetDeathSequenceState() {
   deathSequence.evaporateProgress = 0;
   deathSequence.transitionFlash = 0;
   deathSequence.skipped = false;
+  deathSequence.isBossBattle = false;
+  deathSequence.mobFadeAlpha = 1.0;
+  deathSequence.projectileFadeAlpha = 1.0;
 }
 
 export let frameCount = 0;

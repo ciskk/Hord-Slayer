@@ -1,142 +1,36 @@
-/**
- * src/render/minibosses/runicWardenRenderer.js
- * 
- * Renderizador procedural modular do Miniboss Guardião Rúnico (RUNIC_WARDEN).
- */
-import { ctx, frameCount } from '../../main.js';
+import { ctx } from '../../state/gameState.js';
+import { beginCreature, endCreature, materialPolygon, creaturePalette, polygon, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
-/**
- * Renderiza a forma viva do Miniboss.
- * @param {Object} e Entidade do Miniboss
- */
+/** A living bastion: broad buttresses and one cyan shield seal carry the identity. */
 export function draw(e) {
-  const R = e.radius;
-  const isHit = e.hitFlash > 0;
-  const isEnraged = !!e.enraged;
-  const eliteColor = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : (e.color || '#f39c12'));
-
-  const stoneCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#2c3e50');
-
-  // 1. Torso Central Monolítico de Basalto
-  ctx.fillStyle = stoneCol;
-  ctx.beginPath();
-  ctx.moveTo(0, -R * 0.9);
-  ctx.lineTo(R * 0.75, -R * 0.35);
-  ctx.lineTo(R * 0.6, R * 0.8);
-  ctx.lineTo(-R * 0.6, R * 0.8);
-  ctx.lineTo(-R * 0.75, -R * 0.35);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = '#0984e3';
-  ctx.lineWidth = 2.8;
-  ctx.stroke();
-
-  // 2. Ombreiras Levitantes Desconectadas
-  for (let s = -1; s <= 1; s += 2) {
-    const shX = s * (R * 0.95);
-    const shY = -R * 0.35 + Math.sin(frameCount * 0.1 + s) * 3;
-    ctx.fillStyle = stoneCol;
-    ctx.fillRect(shX - 6, shY - 10, 12, 20);
-    ctx.strokeStyle = '#74b9ff';
-    ctx.lineWidth = 1.8;
-    ctx.strokeRect(shX - 6, shY - 10, 12, 20);
-
-    // Filamento Elétrico Unindo a Ombreira ao Torso
-    ctx.strokeStyle = '#00d2d3';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.moveTo(s * (R * 0.5), -R * 0.2);
-    ctx.lineTo(shX, shY);
-    ctx.stroke();
+  const p = creaturePalette(e, '#207ec2', '#142f57', e.enraged ? '#ff4757' : '#00e5ed');
+  const wind = e.actionState === 'WINDUP';
+  const strike = e.actionState === 'STRIKE';
+  const cage = e.currentSkill === 'RUNIC_CAGE';
+  beginCreature(ctx, e);
+  const lift = wind && cage ? -.22 : e.actionState === 'RECOVERY' ? .1 : 0;
+  polygon(ctx, [[-.63,.32],[-.18,.32],[-.17,.92],[-.74,.92]], p.shade);
+  polygon(ctx, [[.18,.32],[.63,.32],[.74,.92],[.17,.92]], p.shade);
+  // Shoulders are architectural buttresses rather than floating rune ornaments.
+  for (const side of [-1,1]) {
+    materialPolygon(ctx, [[side*.4,-.66+lift],[side*.86,-.95+lift],[side*1.04,-.36+lift],[side*.89,.54+lift],[side*.55,.49+lift]], p, 'stone');
+    polygon(ctx, [[side*.8,-.63+lift],[side*.9,-.39+lift],[side*.77,.36+lift],[side*.66,.3+lift]], p.shade, null);
   }
-
-  // 3. Glifos Nórdicos Incisos no Peito com Pulso de Mana
-  const manaPulse = (Math.sin(frameCount * 0.15) + 1) * 2;
-  ctx.fillStyle = isHit ? '#ffffff' : '#00d2d3';
-  ctx.beginPath();
-  ctx.moveTo(0, -R * 0.35 - manaPulse);
-  ctx.lineTo(R * 0.3 + manaPulse, 0);
-  ctx.lineTo(0, R * 0.35 + manaPulse);
-  ctx.lineTo(-R * 0.3 - manaPulse, 0);
-  ctx.closePath();
-  ctx.fill();
-
-  // 4. Glifos Orbitais com Cúpula de Força Hexagonal
-  const rSpeed = (e.actionState === 'WINDUP' ? 0.08 : 0.035);
-  for (let r = 0; r < 3; r++) {
-    const rAng = frameCount * rSpeed + (r * Math.PI * 2 / 3);
-    const rx = Math.cos(rAng) * (R * 1.4);
-    const ry = Math.sin(rAng) * (R * 0.85);
-
-    ctx.save();
-    ctx.translate(rx, ry);
-    ctx.rotate(frameCount * 0.05);
-    ctx.fillStyle = 'rgba(9, 132, 227, 0.45)';
-    ctx.strokeStyle = '#74b9ff';
-    ctx.lineWidth = 2.0;
-    ctx.beginPath();
-    for (let h = 0; h < 6; h++) {
-      const ha = h * Math.PI / 3;
-      const hx = Math.cos(ha) * 8.5;
-      const hy = Math.sin(ha) * 8.5;
-      if (h === 0) ctx.moveTo(hx, hy);
-      else ctx.lineTo(hx, hy);
+  materialPolygon(ctx, [[-.4,-.64],[0,-.83],[.42,-.62],[.63,.22],[.29,.72],[-.3,.72],[-.62,.2]], p, 'stone');
+  polygon(ctx, [[-.34,-.51],[0,-.64],[.34,-.51],[.42,.23],[0,.55],[-.41,.23]], p.shade);
+  polygon(ctx, [[-.25,-.31],[.25,-.31],[.26,.14],[0,.4],[-.26,.14]], p.accent);
+  polygon(ctx, [[-.13,-.18],[.13,-.18],[.13,.09],[0,.23],[-.13,.09]], p.body, null);
+  polygon(ctx, [[-.28,-.94],[0,-1.16],[.28,-.94],[.22,-.64],[-.23,-.64]], p.shade);
+  stroke(ctx, [[-.15,-.82],[.15,-.82]], p.accent, .075);
+  if (wind || strike) {
+    if (cage) {
+      stroke(ctx, [[-.91,-.32+lift],[-.91,-.69+lift],[-.65,-.85+lift]], p.accent, .085);
+      stroke(ctx, [[.91,-.32+lift],[.91,-.69+lift],[.65,-.85+lift]], p.accent, .085);
+    } else {
+      polygon(ctx, [[-.41,-.47],[.41,-.47],[.48,.22],[0,.72],[-.48,.22]], null, p.accent, strike ? .11 : .055+.04*(e.castProgress || 0));
     }
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
   }
+  endCreature(ctx);
 }
 
-/**
- * Renderiza a animação de morte em 3 fases do Miniboss.
- * @param {Object} de Entidade agonizante em dyingEnemies
- * @param {number} t Progresso normalizado de morte (0 a 1)
- */
-export function drawDying(de, t) {
-  const R = de.radius;
-  const isEnraged = !!de.enraged;
-  const eliteColor = isEnraged ? '#ff4757' : (de.color || '#f39c12');
-  const bodyAlpha = Math.max(0, 1 - Math.max(0, (t - 0.75) / 0.25));
-
-  // Fase 1: Escudos de safira orbitais quebram em prismas de vidro azul
-  // Fase 2: Runas no monólito apagam progressivamente
-  // Fase 3: O corpo central de basalto racha em pilares que tombam
-  ctx.translate(0, t * 12);
-
-  const stoneCol = '#2c3e50';
-
-  // Fragmentos de cristais de barreira se dispersando
-  ctx.fillStyle = '#0984e3';
-  for (let cr = 0; cr < 6; cr++) {
-    const cra = cr * (Math.PI / 3) + t * 2.2;
-    const crd = R * (0.8 + t * 1.8);
-    ctx.beginPath();
-    ctx.moveTo(Math.cos(cra) * crd, Math.sin(cra) * crd);
-    ctx.lineTo(Math.cos(cra + 0.3) * (crd + 6), Math.sin(cra + 0.3) * (crd + 6));
-    ctx.lineTo(Math.cos(cra - 0.2) * (crd + 5), Math.sin(cra - 0.2) * (crd + 5));
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  // Torso de basalto partindo em dois menires
-  ctx.fillStyle = stoneCol;
-  ctx.fillRect(-R * 0.65 - t * 8, -R * 0.6, R * 0.6, R * 1.2);
-  ctx.fillRect(t * 8, -R * 0.6, R * 0.6, R * 1.2);
-  ctx.strokeStyle = '#1e272e';
-  ctx.lineWidth = 2.2;
-  ctx.strokeRect(-R * 0.65 - t * 8, -R * 0.6, R * 0.6, R * 1.2);
-  ctx.strokeRect(t * 8, -R * 0.6, R * 0.6, R * 1.2);
-
-  // Runas apagando do topo à base
-  if (t < 0.6) {
-    ctx.strokeStyle = '#00d2d3';
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.moveTo(-R * 0.3, -R * 0.1);
-    ctx.lineTo(0, R * 0.2);
-    ctx.lineTo(R * 0.3, -R * 0.1);
-    ctx.stroke();
-  }
-}
+export function drawDying(e, t) { drawCreatureDeath(ctx, e, t, draw, 'crumble'); }

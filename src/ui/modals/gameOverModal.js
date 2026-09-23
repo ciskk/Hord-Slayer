@@ -22,6 +22,7 @@ import { player, getPersistentGold, selectedHeroKey } from '../../entities/playe
 import { CHARACTERS } from '../../config/characters.js';
 import { ITEMS } from '../../config/items.js';
 import { openCharacterSelect, isMobileScreen } from './characterSelectModal.js';
+import { startPlayerHpDepletion, snapPlayerHpToZero } from '../hudController.js';
 
 /**
  * Vereditos Poéticos da Queda (Horror Grim Cyber-Gothic)
@@ -122,6 +123,7 @@ function harvestPlayerRunArsenal() {
   if (player.auraLvl > 0) passives.push('Aura Sagrada');
   if (player.critCardCount || player.critChance > 0.05) passives.push(`Foco Letal (${Math.round(player.critChance * 100)}%)`);
   if (player.hasteCardCount || (player.cooldownReduction || 0) > 0) passives.push('Fúria Rápida');
+  if (player.ultCooldownCount) passives.push('Ímpeto Supremo');
   if (player.magnetCardCount) passives.push('Ímã Titânico');
 
   return { weapons, passives };
@@ -215,6 +217,11 @@ let deathCountUpTimeout = null;
 export function triggerDeath() {
   if ((deathSequence && deathSequence.active) || gameState.isDead) return;
 
+  if (player) {
+    player.hp = 0;
+  }
+  startPlayerHpDepletion();
+
   const pauseModal = document.getElementById('pause-modal');
   if (pauseModal) {
     pauseModal.classList.remove('active', 'closing');
@@ -245,6 +252,7 @@ export function triggerDeath() {
  */
 export function openDeathModalReal() {
   gameState.isDead = true;
+  snapPlayerHpToZero();
 
   // 1. Congelamento e Desfoque Cinemático da Arena
   const gameCanvas = document.getElementById('game-canvas');

@@ -1,186 +1,53 @@
-/**
- * src/render/enemies/necroRenderer.js
- * 
- * Renderizador procedural modular de Necromante (NECRO).
- */
-import { ctx, frameCount } from '../../main.js';
+import { ctx, frameCount } from '../../state/gameState.js';
+import { getRelativeAimAngle } from '../../core/math.js';
+import { beginCreature, endCreature, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
-/**
- * Renderiza a forma viva de Necromante.
- * O Canvas já está posicionado em (e.x, e.y) e escalado por e.facing.
- * @param {Object} e Entidade do monstro
-   */
+// Pointed hood, a skull staff and one raised hand identify the summoner.
 export function draw(e) {
-  // =========================================================================
-  // 5. CULTISTA DAS SOMBRAS - Pontífice herege em paramentos litúrgicos decadentes
-  // =========================================================================
-  const R_m = e.radius;
-  const hover = Math.sin(frameCount * 0.08) * 3.5;
-  const waveA = Math.sin(frameCount * 0.14) * 4;
-  const waveB = Math.cos(frameCount * 0.16) * 4;
-  const isHit = e.hitFlash > 0;
-
-  const cassockColor = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#100c19');
-  const stoleColor = isHit ? '#ffffff' : '#2b103c';
-  const goldThread = isHit ? '#ffffff' : '#d4af37';
-  const copeColor = isHit ? '#ffffff' : '#1d122b';
-  const soulFlame = isHit ? '#ffffff' : '#00cec9';
-
-  // 1. Túnica Talar Longa Interna com Barra Rasgada em Farrapos
-  ctx.fillStyle = cassockColor;
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.35, -R_m * 0.4 + hover);
-  ctx.lineTo(R_m * 0.35, -R_m * 0.4 + hover);
-  ctx.lineTo(R_m * 0.65, R_m * 0.85 + hover);
-  ctx.quadraticCurveTo(R_m * 0.3 + waveB, R_m * 1.1 + hover, 0, R_m * 0.9 + hover);
-  ctx.quadraticCurveTo(-R_m * 0.3 + waveA, R_m * 1.1 + hover, -R_m * 0.65, R_m * 0.85 + hover);
-  ctx.closePath();
-  ctx.fill();
-
-  // 2. Estola Litúrgica com Cruzes Invertidas e Rosário
-  ctx.fillStyle = stoleColor;
-  ctx.fillRect(-R_m * 0.18, -R_m * 0.3 + hover, R_m * 0.36, R_m * 1.05);
-  ctx.strokeStyle = goldThread;
-  ctx.lineWidth = 1.2;
-  ctx.strokeRect(-R_m * 0.18, -R_m * 0.3 + hover, R_m * 0.36, R_m * 1.05);
-
-  // Cruzes invertidas desenhadas na estola
-  ctx.fillStyle = goldThread;
-  for (let cr = 0; cr < 2; cr++) {
-    const cry = -R_m * 0.1 + cr * (R_m * 0.45) + hover;
-    ctx.fillRect(-1.2, cry, 2.4, 7);
-    ctx.fillRect(-3.5, cry + 4.5, 7, 2.2);
+  const p = creaturePalette(e, '#8239bb', '#29143d', '#32e4c8');
+  const dead = e.deathPose !== undefined;
+  const hover = dead ? 0 : Math.sin(frameCount * .08) * .06;
+  const aimedStaffPose = (e.shadowBoltTimer || 0) > 85;
+  const casting = !dead && aimedStaffPose;
+  const summoning = !dead && (e.summonTimer || 0) > 125;
+  const aim = getRelativeAimAngle(e.aimAngle ?? (e.facing === -1 ? Math.PI : 0), e.facing || 1);
+  beginCreature(ctx, e);
+  ctx.translate(0, hover);
+  polygon(ctx, [[-.46, -.5], [.26, -.53], [.6, .97], [.18, .8], [-.05, 1.1], [-.3, .8], [-.69, .98]], p.shade);
+  polygon(ctx, [[-.4, -.55], [-.11, -.37], [-.28, .67], [-.69, .98], [-.56, .1]], p.body, null);
+  polygon(ctx, [[.11, -.46], [.4, -.6], [.45, .48], [.6, .97], [.17, .68]], p.body, null);
+  // Large collar and sharp hood replace ceremonial micro-detail.
+  polygon(ctx, [[-.71, -.67], [-.31, -.45], [.14, -.5], [.44, -.77], [.35, -.11], [-.37, -.07]], p.body);
+  polygon(ctx, [[-.4, -.64], [-.2, -1.23], [.12, -1.45], [.4, -.83], [.32, -.44], [-.31, -.36]], p.body);
+  polygon(ctx, [[-.24, -.71], [.08, -1.09], [.27, -.7], [.16, -.39], [-.14, -.42]], p.ink, null);
+  stroke(ctx, [[-.13, -.66], [-.01, -.61]], p.accent, .075);
+  stroke(ctx, [[.08, -.61], [.2, -.67]], p.accent, .075);
+  const handY = summoning ? -.65 : .2;
+  stroke(ctx, [[-.36, -.23], [-.68, .04], [-.87, handY]], p.ink, .24);
+  stroke(ctx, [[-.36, -.23], [-.68, .04], [-.87, handY]], p.body, .15);
+  polygon(ctx, [[-1.03, handY + .04], [-1.03, handY - .2], [-.89, handY -.06], [-.75, handY -.22], [-.7, handY + .1], [-.9, handY + .21]], p.bone);
+  if (summoning) polygon(ctx, [[-.96, handY -.29], [-.91, handY -.57], [-.73, handY -.36], [-.87, handY -.19]], p.accent, null);
+  ctx.save();
+  if (aimedStaffPose) {
+    // Same origin and full-angle direction as the shadow bolt's gameplay spawn.
+    ctx.translate(0, -8 / (e.radius || 15) - hover);
+    ctx.rotate(aim + (dead ? e.deathPose * .45 : 0));
+  } else {
+    ctx.translate(.72, -.88);
+    ctx.rotate(-Math.PI / 2 + .08 + (dead ? e.deathPose * .45 : 0));
   }
-
-  // Cinto de corda com rosário de vértebras
-  ctx.strokeStyle = '#8c7b75';
-  ctx.lineWidth = 2.0;
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.25, R_m * 0.1 + hover);
-  ctx.lineTo(R_m * 0.25, R_m * 0.1 + hover);
-  ctx.stroke();
-
-  // 3. Manto Pluvial Aberto com Gola Alta Rígida
-  ctx.fillStyle = copeColor;
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.55, -R_m * 0.75 + hover);
-  ctx.lineTo(-R_m * 0.35, -R_m * 0.4 + hover);
-  ctx.lineTo(-R_m * 0.55, R_m * 0.65 + hover);
-  ctx.lineTo(-R_m * 0.75, R_m * 0.65 + hover);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.moveTo(R_m * 0.55, -R_m * 0.75 + hover);
-  ctx.lineTo(R_m * 0.35, -R_m * 0.4 + hover);
-  ctx.lineTo(R_m * 0.55, R_m * 0.65 + hover);
-  ctx.lineTo(R_m * 0.75, R_m * 0.65 + hover);
-  ctx.closePath();
-  ctx.fill();
-
-  // 4. Mitra Eclesiástica Corrompida com Coroa de Espinhos
-  ctx.fillStyle = copeColor;
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.35, -R_m * 0.65 + hover);
-  ctx.lineTo(0, -R_m * 1.45 + hover); // Ápice pontiagudo da mitra
-  ctx.lineTo(R_m * 0.35, -R_m * 0.65 + hover);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = goldThread;
-  ctx.lineWidth = 1.4;
-  ctx.stroke();
-
-  // Coroa de espinhos de arame farpado
-  ctx.strokeStyle = '#2f3542';
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.arc(0, -R_m * 0.85 + hover, R_m * 0.38, -0.3, Math.PI + 0.3);
-  ctx.stroke();
-
-  // 5. Véu de Gaze Negra com Olhos de Fogo-Fátuo
-  ctx.fillStyle = 'rgba(10, 8, 14, 0.85)';
-  ctx.beginPath();
-  ctx.arc(0, -R_m * 0.55 + hover, R_m * 0.28, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = soulFlame;
-  ctx.fillRect(-R_m * 0.15, -R_m * 0.58 + hover, 3.5, 2.5);
-  ctx.fillRect(R_m * 0.05, -R_m * 0.58 + hover, 3.5, 2.5);
-
-  // 6. Báculo de Vértebras com Relicário de Catedral
-  const stX = R_m * 0.82;
-  const stTopY = -R_m * 1.25 + hover;
-  const stBotY = R_m * 0.9 + hover;
-
-  // Haste vertebral
-  ctx.strokeStyle = '#576574';
-  ctx.lineWidth = 2.8;
-  ctx.beginPath();
-  ctx.moveTo(stX, stBotY);
-  ctx.lineTo(stX, stTopY);
-  ctx.stroke();
-
-  // Relicário de catedral em miniatura
-  ctx.fillStyle = '#2f3542';
-  ctx.fillRect(stX - 5, stTopY - 14, 10, 14);
-  ctx.strokeStyle = goldThread;
-  ctx.lineWidth = 1.2;
-  ctx.strokeRect(stX - 5, stTopY - 14, 10, 14);
-
-  // Coração mumificado em chamas no topo
-  const summonRatio = Math.min(1, Math.max(0, (e.summonTimer || 0) / 230));
-  ctx.fillStyle = summonRatio > 0.6 ? '#ff4757' : soulFlame;
-  ctx.beginPath();
-  ctx.arc(stX, stTopY - 7, 3.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Círculo Cabalístico no Solo durante a Invocação
-  if (summonRatio > 0.25) {
-    ctx.save();
-    const cX = R_m * 1.15;
-    const cY = R_m * 0.9 + hover;
-    ctx.strokeStyle = 'rgba(155, 89, 182, 0.65)';
-    ctx.lineWidth = 2.0;
-    ctx.beginPath();
-    ctx.ellipse(cX, cY, R_m * 1.1, R_m * 0.45, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
+  const tip = aimedStaffPose ? 16 / (e.radius || 15) : .28;
+  stroke(ctx, [[tip - 1.66, 0], [tip, 0]], p.ink, .19);
+  stroke(ctx, [[tip - 1.66, 0], [tip, 0]], p.bone, .085);
+  polygon(ctx, [[tip -.23, -.23], [tip + .04, -.34], [tip + .28, -.2], [tip + .3, .12], [tip + .12, .23], [tip + .07, .37], [tip -.12, .37], [tip -.2, .16]], p.bone);
+  polygon(ctx, [[tip -.13, -.1], [tip + .01, -.07], [tip -.08, .05]], casting ? p.accent : p.ink, null);
+  polygon(ctx, [[tip + .1, -.07], [tip + .23, -.1], [tip + .2, .05]], casting ? p.accent : p.ink, null);
+  if (casting) {
+    const charge = Math.max(0, Math.min(1, ((e.shadowBoltTimer || 0) - 85) / 46));
+    ellipse(ctx, tip, 0, .13 + charge * .12, .13 + charge * .12, '#bd71ff', p.ink, .045);
   }
+  ctx.restore();
+  endCreature(ctx);
 }
 
-/**
- * Renderiza a animação de morte em 3 fases de Necromante.
- * @param {Object} de Entidade agonizante em dyingEnemies
- * @param {number} t Progresso normalizado de morte (0 a 1)
- * @param {number} R Raio de colisão da criatura
- */
-export function drawDying(de, t, R) {
-  // As vestes escuras desabam vazias no solo enquanto três almas sobem ao céu
-  ctx.translate(0, t * 10);
-  ctx.scale(1 + t * 0.3, Math.max(0.05, 1 - t * 0.92));
-
-  // Vestes colapsando
-  ctx.fillStyle = '#100c19';
-  ctx.beginPath();
-  ctx.moveTo(-R * 0.75, R * 0.7);
-  ctx.lineTo(0, -R * 0.35);
-  ctx.lineTo(R * 0.75, R * 0.7);
-  ctx.closePath();
-  ctx.fill();
-
-  // Estola e mitra douradas no chão
-  ctx.strokeStyle = '#d4af37';
-  ctx.lineWidth = 1.6;
-  ctx.stroke();
-
-  // Três chamas de alma subindo em espiral aos céus
-  ctx.fillStyle = '#00cec9';
-  for (let sm = 0; sm < 3; sm++) {
-    const sma = sm * 2.09 + t * 4;
-    const sx = Math.cos(sma) * (6 + sm * 3);
-    const sy = -R * 0.4 - t * 24 - sm * 5;
-    ctx.beginPath();
-    ctx.arc(sx, sy, 3.2, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
+export function drawDying(de, t) { drawCreatureDeath(ctx, de, t, draw, 'crumble'); }

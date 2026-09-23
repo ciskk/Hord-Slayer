@@ -10,19 +10,21 @@ export function spikeRetaliationBehavior(e, dt, angle, curSpeed, ctx) {
   const { enemyBullets, triggerShake } = ctx;
   e.x += Math.cos(angle) * curSpeed * dt;
   e.y += Math.sin(angle) * curSpeed * dt;
+  if (e.spikeBurstTimer > 0) e.spikeBurstTimer -= dt;
   if (e.hitFlash === 3) {
     e.spikeHits = (e.spikeHits || 0) + 1;
     if (e.spikeHits >= 4 && canSpawnEnemyBullet()) {
       e.spikeHits = 0;
+      e.spikeBurstTimer = 16;
       playSfx('crit');
       triggerShake(3);
       for (let s = 0; s < 8; s++) {
         const sa = s * (Math.PI * 2 / 8);
         enemyBullets.push({
-          x: e.x + Math.cos(sa) * 12,
-          y: e.y + Math.sin(sa) * 12,
-          vx: Math.cos(sa) * 3.8,
-          vy: Math.sin(sa) * 3.8,
+          x: e.x + Math.cos(sa) * 16,
+          y: e.y + Math.sin(sa) * 16,
+          vx: Math.cos(sa) * 4.2,
+          vy: Math.sin(sa) * 4.2,
           radius: 4.5,
           damage: 16,
           life: 55,
@@ -30,8 +32,9 @@ export function spikeRetaliationBehavior(e, dt, angle, curSpeed, ctx) {
           color: '#8e44ad'
         });
       }
-      createHitParticles(e.x, e.y, '#8e44ad', 10);
-      addDamageText(e.x, e.y, "ESPÃOS!", false, '#e056fd');
+      createHitParticles(e.x, e.y, '#8e44ad', 12);
+      createHitParticles(e.x, e.y, '#dfe4ea', 6);
+      addDamageText(e.x, e.y, "ESPÍCULAS!", false, '#e056fd');
     }
   }
 }

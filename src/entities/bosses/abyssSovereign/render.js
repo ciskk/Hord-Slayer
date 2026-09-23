@@ -1976,6 +1976,19 @@ function drawActiveSovereignAttacks(ctx, e, frameCount) {
   ctx.restore();
 }
 
+function lerpColorHex(a, b, t) {
+  const parse = (c) => {
+    const num = parseInt(c.slice(1), 16);
+    return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+  };
+  const [r1, g1, b1] = parse(a);
+  const [r2, g2, b2] = parse(b);
+  const r = Math.round(r1 + (r2 - r1) * t);
+  const g = Math.round(g1 + (g2 - g1) * t);
+  const bl = Math.round(b1 + (b2 - b1) * t);
+  return `rgb(${r}, ${g}, ${bl})`;
+}
+
 export function drawAbyssSovereign(ctx, e, frameCount) {
   // Neutraliza o espelhamento ctx.scale(e.facing, 1) vindo do enemiesRenderer.js
   // garantindo renderização matematicamente perfeita em coordenadas de mundo e ângulos reais
@@ -2010,21 +2023,61 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
   const isCasting = e.actionState === SOVEREIGN_STATES.CASTING;
   const isHit = e.hitFlash > 0;
 
+  const morph = e.phaseCinematic ? (e.phaseCinematic.morphProgress || 0) : (e.transformationProgress || 0);
+  const targetPhase = e.phaseCinematic ? e.phaseCinematic.phase : (e.phase || 1);
+
+  if (e.phaseCinematic) {
+    e.eyeAperture = Math.min(1.0, 0.4 + morph * 0.6);
+  }
+
   let primaryCol = '#8e44ad';
   let secondaryCol = '#341f97';
   let coreCol = '#e84393';
   let edgeCol = '#a29bfe';
 
-  if (e.phase === 2) {
-    primaryCol = '#e84393';
-    secondaryCol = '#6c5ce7';
-    coreCol = '#ff7675';
-    edgeCol = '#fd79a8';
-  } else if (e.phase === 3) {
-    primaryCol = '#00cec9';
-    secondaryCol = '#0984e3';
-    coreCol = '#ffffff';
-    edgeCol = '#81ecec';
+  if (targetPhase === 2) {
+    if (e.phaseCinematic && morph > 0) {
+      primaryCol = lerpColorHex('#8e44ad', '#e84393', morph);
+      secondaryCol = lerpColorHex('#341f97', '#6c5ce7', morph);
+      coreCol = lerpColorHex('#e84393', '#ff7675', morph);
+      edgeCol = lerpColorHex('#a29bfe', '#fd79a8', morph);
+    } else if (e.phase >= 2) {
+      primaryCol = '#e84393';
+      secondaryCol = '#6c5ce7';
+      coreCol = '#ff7675';
+      edgeCol = '#fd79a8';
+    }
+  } else if (targetPhase === 3) {
+    if (e.phaseCinematic && morph > 0) {
+      primaryCol = lerpColorHex('#e84393', '#00cec9', morph);
+      secondaryCol = lerpColorHex('#6c5ce7', '#0984e3', morph);
+      coreCol = lerpColorHex('#ff7675', '#ffffff', morph);
+      edgeCol = lerpColorHex('#fd79a8', '#81ecec', morph);
+    } else if (e.phase >= 3) {
+      primaryCol = '#00cec9';
+      secondaryCol = '#0984e3';
+      coreCol = '#ffffff';
+      edgeCol = '#81ecec';
+    }
+  }
+
+  // Ondulação de lentes gravitacionais em slow motion durante a metamorfose da fase
+  if (e.phaseCinematic && morph > 0.05) {
+    ctx.save();
+    const rippleAlpha = Math.sin(morph * Math.PI) * 0.72;
+    const rippleCol = targetPhase === 3 ? '0, 206, 201' : '232, 67, 147';
+    ctx.strokeStyle = `rgba(${rippleCol}, ${rippleAlpha})`;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * (0.8 + 1.2 * morph), 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = `rgba(255, 255, 255, ${rippleAlpha * 0.8})`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * (0.5 + 0.8 * morph), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   // 1. Selo Abissal no Solo

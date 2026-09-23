@@ -3,10 +3,10 @@
  * Subsistema Balístico, Poças Ambientais e Paridade de Dano Melee (Fase 3 e 5).
  */
 import { player, selectedHeroKey } from '../entities/player.js';
-import { enemies, bullets, enemyBullets, acidPuddles, MAX_CONCURRENT_ENEMY_BULLETS, canSpawnEnemyBullet } from '../state/collections.js';
+import { enemies, bullets, enemyBullets, acidPuddles, bossShockwaves, MAX_CONCURRENT_ENEMY_BULLETS, canSpawnEnemyBullet } from '../state/collections.js';
 import { triggerShake } from '../state/gameState.js';
 import { setLastAttackerInfo } from '../state/events.js';
-import { addDamageText, createHitParticles } from './combat.js';
+import { addDamageText, createHitParticles, applyFireBurn } from './combat.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { getNeighborIndices } from '../core/spatialGrid.js';
 import { addGroundCrater, updateGroundCraters } from '../render/groundCracks.js';
@@ -235,14 +235,33 @@ export function updateProjectiles(dt) {
 
         // Bloqueio Frontal Ativo do Guardião Blindado (SHIELDED) e Centurião da Guarda (PHALANX_LEADER)
         let isShieldBlocked = false;
-        if (e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER' || e.hasFrontalShield) {
-          const isFrontalHit = (b.x - e.x) * (e.facing || 1) > -e.radius * 0.25;
+        if ((e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER' || e.hasFrontalShield) && (!e.shieldStaggerTimer || e.shieldStaggerTimer <= 0)) {
+          // Determina a direção de onde o ataque está vindo em relação ao monstro
+          const attackAngle = (b.vx !== undefined && b.vy !== undefined && (b.vx !== 0 || b.vy !== 0))
+            ? Math.atan2(-b.vy, -b.vx)
+            : Math.atan2(player.y - e.y, player.x - e.x);
+
+          const facingAngle = (e.facing === -1) ? Math.PI : 0;
+          let angleDiff = Math.abs(attackAngle - facingAngle);
+          while (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+
+          // Escudo cobre apenas um cone frontal estrito (~63° para cada lado, total ~126° frontal)
+          // Qualquer ataque pelas costas, flancos ou eixos verticais causa dano 100% limpo!
+          const isFrontalHit = angleDiff <= Math.PI * 0.35;
           if (isFrontalHit) {
             isShieldBlocked = true;
-            const blockDmgFactor = e.baseType === 'PHALANX_LEADER' ? 0.15 : 0.25;
+            // Redução de dano equilibrada: ~45% a 50% de absorção (em vez dos antigos 75% e 85%)
+            const blockDmgFactor = e.baseType === 'PHALANX_LEADER' ? 0.50 : 0.55;
             finalDmg *= blockDmgFactor;
             e.shieldBlockFlash = 8;
             createHitParticles(e.x + (e.facing || 1) * e.radius * 0.8, e.y, e.baseType === 'PHALANX_LEADER' ? '#f1c40f' : '#74b9ff', 4);
+
+            // Quebra de Guarda com impacto pesado (Martelo)
+            if (b.type === 'HAMMER_SLAM') {
+              e.shieldStaggerTimer = 45; // 0.75s de guarda aberta
+              addDamageText(e.x, e.y - 12, "GUARDA QUEBRADA!", true, '#e67e22');
+              triggerShake(4);
+            }
           }
         }
 
@@ -266,13 +285,21 @@ export function updateProjectiles(dt) {
         } else if (b.type === 'STAFF') {
           playSfx('fire_hit');
           if (isCrit || isMeleeAdrenaline || isKaelExecute) playSfx('crit');
+          const burnDps = (player.damage || 45) * (player.evolvedStaff ? 0.50 : 0.35);
+          applyFireBurn(e, 180, burnDps, isCrit);
         } else if (b.type === 'SWORD') {
           playSfx('blade_hit');
           if (isCrit || isMeleeAdrenaline || isKaelExecute) playSfx('crit');
+          if (selectedHeroKey === 'MAGE' && isCrit) {
+            applyFireBurn(e, 180, (player.damage || 45) * 0.35, true);
+          }
         } else {
           if (isCrit || isMeleeAdrenaline || isKaelExecute) {
             playSfx('crit');
             triggerHaptic('light');
+            if (selectedHeroKey === 'MAGE' && isCrit) {
+              applyFireBurn(e, 180, (player.damage || 45) * 0.35, true);
+            }
           } else {
             playSfx('hit');
           }
@@ -336,6 +363,37 @@ export function updateProjectiles(dt) {
     eb.y += eb.vy * dt;
 
     if (eb.life <= 0) {
+      if (eb.isWebCocoon) {
+        acidPuddles.push({
+          x: eb.x,
+          y: eb.y,
+          radius: 38,
+          life: 240,
+          maxLife: 240,
+          isCaustic: true,
+          isWeb: true,
+          isFire: false
+        });
+        playSfx('acid');
+        createHitParticles(eb.x, eb.y, '#b2bec3', 8);
+      } else if (eb.isBoulder || eb.bulletType === 'BOULDER') {
+        bossShockwaves.push({
+          x: eb.x,
+          y: eb.y,
+          radius: 12,
+          maxRadius: 65,
+          speed: 4.5,
+          damage: eb.damage || 35,
+          hitPlayer: false,
+          colorRgb: '211, 84, 0'
+        });
+        addGroundCrater(eb.x, eb.y, 28);
+        playSfx('hammer_slam');
+        triggerShake(6);
+        triggerHaptic('heavy');
+        createHitParticles(eb.x, eb.y, '#d35400', 16);
+        createHitParticles(eb.x, eb.y, '#f1c40f', 8);
+      }
       enemyBullets.splice(i, 1);
       continue;
     }
@@ -350,7 +408,7 @@ export function updateProjectiles(dt) {
       if (selectedHeroKey === 'KNIGHT') finalEbDamage = Math.round(finalEbDamage * 0.80);
       if (player.armor > 0) finalEbDamage = Math.max(1, finalEbDamage - player.armor);
       
-      const projName = eb.isBossProjectile ? 'Projétil de Chefe' : (eb.bulletType === 'SHADOW_ORB' ? 'Orbe Sombrio' : (eb.isHook ? 'Corrente do Flagelador' : 'Projétil Profano'));
+      const projName = eb.isBoulder ? 'Rocha Vulcânica' : (eb.bulletType === 'BASALT_LANCE' ? 'Salva de Basalto' : (eb.isBossProjectile ? 'Projétil de Chefe' : (eb.bulletType === 'SHADOW_ORB' ? 'Orbe Sombrio' : (eb.isHook ? 'Corrente do Flagelador' : 'Projétil Profano'))));
       const projCat = eb.isBossProjectile ? 'BOSS' : (eb.isMiniBoss ? 'MINIBOSS' : 'PROJECTILE');
       setLastAttackerInfo({
         name: eb.sourceName || projName,
@@ -390,6 +448,20 @@ export function updateProjectiles(dt) {
           player.pushVx = Math.cos(bulletAng) * bulletPush;
           player.pushVy = Math.sin(bulletAng) * bulletPush;
         }
+      }
+
+      if (eb.isWebCocoon) {
+        acidPuddles.push({
+          x: player.x,
+          y: player.y,
+          radius: 38,
+          life: 240,
+          maxLife: 240,
+          isCaustic: true,
+          isWeb: true,
+          isFire: false
+        });
+        createHitParticles(player.x, player.y, '#b2bec3', 10);
       }
 
       enemyBullets.splice(i, 1);
@@ -446,6 +518,7 @@ export function updateAcidPuddles(dt) {
             e._puddleMaxDmg = baseDmg;
             e._puddleExtra = 0;
             e._puddleAlchemist = !!p.isAlchemist;
+            e._puddleFire = !!p.isFire;
             e._puddleEvolved = !!p.isEvolved;
             _affectedEnemies.push(e);
           } else {
@@ -453,6 +526,7 @@ export function updateAcidPuddles(dt) {
             e._puddleExtra++;
             if (p.isEvolved) e._puddleEvolved = true;
             if (p.isAlchemist) e._puddleAlchemist = true;
+            if (p.isFire) e._puddleFire = true;
           }
         }
       }
@@ -472,10 +546,7 @@ export function updateAcidPuddles(dt) {
       const pdx = player.x - p.x;
       const pdy = player.y - p.y;
       if ((pdx * pdx + pdy * pdy) < (p.radius + player.radius) ** 2) {
-        // Veneno e ácido não aplicam lentidão; teias e confinamentos continuam aplicando
-        if (p.isWeb) {
-          player.slowTimer = Math.max(player.slowTimer || 0, 18);
-        }
+        // Poças inimigas de veneno/ácido causam dano por tick sem aplicar lentidão ao jogador
         if (player.iFrames <= 0) {
           p.tickTimer = (p.tickTimer || 0) + dt;
           if (p.tickTimer > 20) {
@@ -549,6 +620,13 @@ export function updateAcidPuddles(dt) {
         }
         e.acidDotAcc = 0;
         e.acidDotTimer = 0;
+      }
+    }
+
+    if (e._puddleFire) {
+      applyFireBurn(e, 90, (player.damage || 45) * 0.30, false);
+      if (Math.random() < 0.03 * dt) {
+        createHitParticles(e.x, e.y, '#f39c12', 1);
       }
     }
   }

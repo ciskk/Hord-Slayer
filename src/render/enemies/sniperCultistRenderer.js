@@ -1,132 +1,45 @@
-/**
- * src/render/enemies/sniperCultistRenderer.js
- * 
- * Renderizador procedural modular de Cultista Franco-Atirador (SNIPER_CULTIST).
- */
-import { ctx, frameCount } from '../../main.js';
+import { ctx, frameCount } from '../../state/gameState.js';
+import { getRelativeAimAngle } from '../../core/math.js';
+import { beginCreature, endCreature, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
-/**
- * Renderiza a forma viva de Cultista Franco-Atirador.
- * O Canvas já está posicionado em (e.x, e.y) e escalado por e.facing.
- * @param {Object} e Entidade do monstro
-   */
+// A pointed hunter's hood, a full-height angular longbow, and a drawn ether arrow.
 export function draw(e) {
-  // =========================================================================
-  // 21. ATIRADOR DE ÉTER - Caçador de almas com arco de ossos e monóculo
-  // =========================================================================
-  const R_m = e.radius;
-  const isHit = e.hitFlash > 0;
-  const cloakCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#22183b');
-  const featherDark = isHit ? '#ffffff' : '#0c0717';
-  const boneBow = isHit ? '#ffffff' : '#dfe4ea';
-  const plasmaCol = isHit ? '#ffffff' : '#e056fd';
-
-  // 1. Manto de Caçador com Gola Espessa de Penas de Corvo
-  ctx.fillStyle = cloakCol;
-  ctx.beginPath();
-  ctx.ellipse(0, R_m * 0.15, R_m * 0.45, R_m * 0.65, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Gola de penas sobrepostas nos ombros
-  ctx.fillStyle = featherDark;
-  for (let f = -3; f <= 3; f++) {
-    const fa = f * 0.25;
-    ctx.fillRect(-R_m * 0.35 + f * 3.5, -R_m * 0.45, 4.5, 9);
+  const p = creaturePalette(e, '#703ca6', '#2c1747', '#d95aff');
+  const dead = e.deathPose || 0;
+  const charge = dead ? 0 : Math.min(1, Math.max(0, e.sniperCharge || 0));
+  const bob = dead || charge > 0.35 ? 0 : Math.sin(frameCount * 0.15) * 0.035;
+  beginCreature(ctx, e);
+  ctx.translate(0, bob);
+  polygon(ctx, [[-0.38, -0.44], [0.25, -0.38], [0.4, 0.74], [0.04, 0.59], [-0.1, 0.91], [-0.24, 0.65], [-0.63, 0.78]], p.body);
+  polygon(ctx, [[-0.19, -0.35], [0.2, -0.3], [0.28, 0.62], [-0.02, 0.52]], p.shade, null);
+  polygon(ctx, [[-0.45, -0.44], [-0.28, -0.94], [0.05, -1.2], [0.35, -0.53], [0.23, -0.29]], p.body);
+  polygon(ctx, [[-0.14, -0.74], [0.13, -0.77], [0.22, -0.5], [-0.04, -0.45]], p.ink, null);
+  stroke(ctx, [[0.01, -0.62], [0.15, -0.64]], charge > 0.75 ? p.bone : p.accent, 0.085);
+  stroke(ctx, [[-0.42, 0.52], [-0.27, -0.29]], p.bone, 0.08);
+  ctx.save();
+  ctx.rotate(getRelativeAimAngle(e.sniperAimAngle ?? e.aimAngle ?? (e.facing === -1 ? Math.PI : 0), e.facing || 1) + dead * 0.2);
+  stroke(ctx, [[0.09, 0.02], [0.65, 0]], p.ink, 0.21);
+  stroke(ctx, [[0.09, 0.02], [0.65, 0]], p.body, 0.12);
+  const pull = 0.28 - charge * 0.5;
+  // Bow limbs bend forward at their center; the string is pulled toward the archer.
+  stroke(ctx, [[0.46, -1], [0.75, -0.67], [0.91, 0], [0.75, 0.67], [0.46, 1]], p.ink, 0.2);
+  stroke(ctx, [[0.46, -1], [0.75, -0.67], [0.91, 0], [0.75, 0.67], [0.46, 1]], p.bone, 0.11);
+  stroke(ctx, [[0.46, -1], [pull, 0], [0.46, 1]], charge > 0.75 ? p.bone : p.accent, 0.055);
+  if (!dead) {
+    const tip = 1.33 - charge * 0.18;
+    stroke(ctx, [[pull, 0], [tip, 0]], p.accent, 0.09);
+    polygon(ctx, [[tip - 0.12, -0.16], [tip + 0.22, 0], [tip - 0.12, 0.16], [tip - 0.04, 0]], charge > 0.8 ? p.bone : p.accent);
+    if (charge > 0.35) {
+      ctx.save();
+      ctx.globalAlpha *= 0.3 + charge * 0.45;
+      ctx.setLineDash([8 / e.radius, 4 / e.radius]);
+      stroke(ctx, [[tip + 0.24, 0], [320 / e.radius, 0]], p.accent, 1.2 / e.radius);
+      ctx.restore();
+    }
   }
-
-  // Bandoleira de couro cruzando o peito com tubos de flechas
-  ctx.strokeStyle = '#8c7b75';
-  ctx.lineWidth = 2.0;
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.35, -R_m * 0.3);
-  ctx.lineTo(R_m * 0.25, R_m * 0.45);
-  ctx.stroke();
-
-  // 2. Capuz com Máscara e Monóculo Telescópico de 3 Lentes
-  const hY = -R_m * 0.45;
-  ctx.fillStyle = featherDark;
-  ctx.beginPath();
-  ctx.arc(0, hY, R_m * 0.36, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Monóculo telescópico de latão sobre o olho direito
-  ctx.fillStyle = '#d4af37';
-  ctx.beginPath();
-  ctx.arc(R_m * 0.18, hY - 1, 4.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = '#e056fd';
-  ctx.beginPath();
-  ctx.arc(R_m * 0.18, hY - 1, 2.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 3. Arco Composto Biomecânico de Ossos com Roldanas de Bronze
-  const bX = R_m * 0.55;
-  ctx.strokeStyle = boneBow;
-  ctx.lineWidth = 2.8;
-
-  // Corpo de costelas recurvadas
-  ctx.beginPath();
-  ctx.arc(bX, 0, R_m * 0.9, -Math.PI * 0.4, Math.PI * 0.4);
-  ctx.stroke();
-
-  // Roldanas mecânicas de bronze nas pontas
-  ctx.fillStyle = '#d4af37';
-  const tip1Y = Math.sin(-Math.PI * 0.4) * R_m * 0.9;
-  const tip2Y = Math.sin(Math.PI * 0.4) * R_m * 0.9;
-  ctx.fillRect(bX + Math.cos(-Math.PI * 0.4) * R_m * 0.9 - 2.5, tip1Y - 2.5, 5, 5);
-  ctx.fillRect(bX + Math.cos(Math.PI * 0.4) * R_m * 0.9 - 2.5, tip2Y - 2.5, 5, 5);
-
-  // Cabos tensores duplos de aço
-  ctx.strokeStyle = '#a29bfe';
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.moveTo(bX + Math.cos(-Math.PI * 0.4) * R_m * 0.9, tip1Y);
-  ctx.lineTo(R_m * 0.1, 0); // Ponto de puxada
-  ctx.lineTo(bX + Math.cos(Math.PI * 0.4) * R_m * 0.9, tip2Y);
-  ctx.stroke();
-
-  // 4. Flecha de Cristal Facetado com Ponta Farpada
-  ctx.fillStyle = plasmaCol;
-  ctx.fillRect(R_m * 0.1, -1.8, R_m * 1.05, 3.6);
-
-  // Ponta farpada de cristal
-  ctx.beginPath();
-  ctx.moveTo(R_m * 1.15, -4.5);
-  ctx.lineTo(R_m * 1.38, 0);
-  ctx.lineTo(R_m * 1.15, 4.5);
-  ctx.lineTo(R_m * 1.05, 0);
-  ctx.closePath();
-  ctx.fill();
+  ctx.restore();
+  endCreature(ctx);
 }
-
-/**
- * Renderiza a animação de morte em 3 fases de Cultista Franco-Atirador.
- * @param {Object} de Entidade agonizante em dyingEnemies
- * @param {number} t Progresso normalizado de morte (0 a 1)
- * @param {number} R Raio de colisão da criatura
- */
 export function drawDying(de, t, R) {
-  // Arco de ossos estala, penas negras dispersam e cultista tomba
-  ctx.translate(0, t * 10);
-  ctx.rotate(-t * 0.4);
-  ctx.scale(1, Math.max(0.08, 1 - t * 0.85));
-
-  ctx.fillStyle = '#22183b';
-  ctx.fillRect(-R * 0.35, -R * 0.45, R * 0.7, R * 0.8);
-
-  // Arco de ossos quebrado
-  ctx.strokeStyle = '#dfe4ea';
-  ctx.lineWidth = 2.4;
-  ctx.beginPath();
-  ctx.moveTo(R * 0.5, -R * 0.6);
-  ctx.lineTo(R * 0.6 + t * 6, -R * 0.1);
-  ctx.moveTo(R * 0.5, R * 0.6);
-  ctx.lineTo(R * 0.6 + t * 6, R * 0.1);
-  ctx.stroke();
-
-  // Penas negras flutuando
-  ctx.fillStyle = '#0c0717';
-  ctx.fillRect(-t * 8, -R * 0.6 - t * 6, 4.5, 3.5);
-  ctx.fillRect(t * 8, -R * 0.4 - t * 10, 4.5, 3.5);
+  drawCreatureDeath(ctx, { ...de, radius: R }, t, draw, 'fall');
 }

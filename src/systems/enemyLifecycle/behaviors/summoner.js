@@ -18,23 +18,26 @@ export function summonerBehavior(e, dt, angle, curSpeed, ctx) {
     e.y += Math.sin(angle) * curSpeed * 0.5 * dt;
   }
 
+  e.aimAngle = angle;
+
   // Orbe Entrópico Noturno a cada ~3s quando em alcance
   e.shadowBoltTimer = (e.shadowBoltTimer || 0) + dt;
   if (e.shadowBoltTimer >= 131 && canSpawnEnemyBullet() && !gameState.isWavePaused) {
     e.shadowBoltTimer = 0;
     playSfx('shoot');
+    // Disparo emerge do relicário no topo do báculo cerimonial
     enemyBullets.push({
-      x: e.x,
-      y: e.y - 10,
-      vx: Math.cos(angle) * 2.175,
-      vy: Math.sin(angle) * 2.175,
+      x: e.x + Math.cos(angle) * 16,
+      y: e.y + Math.sin(angle) * 16 - 8,
+      vx: Math.cos(angle) * 2.3,
+      vy: Math.sin(angle) * 2.3,
       radius: 6.5,
       damage: 18,
       life: 160,
       bulletType: 'SHADOW_ORB',
       color: '#9b59b6'
     });
-    createHitParticles(e.x, e.y - 10, '#9b59b6', 6);
+    createHitParticles(e.x + Math.cos(angle) * 18, e.y + Math.sin(angle) * 18 - 8, '#9b59b6', 6);
     addDamageText(e.x, e.y, "ORBE SOMBRIO!", false, '#a29bfe');
   }
 

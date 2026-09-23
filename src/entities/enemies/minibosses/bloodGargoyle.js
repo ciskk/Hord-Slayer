@@ -79,7 +79,12 @@ update(e, dt, ctx, dist, angle) {
     e.actionTimer -= dt;
     e.castProgress = 1 - (e.actionTimer / e.actionMaxTimer);
 
-    if (e.currentSkill === 'STONE_FORM') {
+    if (e.currentSkill === 'BLOOD_VOLLEY') {
+      e.aimAngle = angle;
+      if (Math.random() < 0.35) {
+        createHitParticles(e.x + (Math.random() - 0.5) * 20, e.y + (Math.random() - 0.5) * 20, '#ff1744', 1);
+      }
+    } else if (e.currentSkill === 'STONE_FORM') {
       // Regeneração moderada de exatamente 8% ao longo da duração
       e.hp = Math.min(e.maxHp, e.hp + (e.maxHp * 0.08) * (dt / e.actionMaxTimer));
       if (Math.floor(dt * 60) % 6 === 0) {
@@ -142,21 +147,26 @@ update(e, dt, ctx, dist, angle) {
       }
     } else if (e.currentSkill === 'BLOOD_VOLLEY') {
       safePlaySfx('shoot');
-      createHitParticles(e.x, e.y, '#e74c3c', 8);
-      // 3 projéteis em leque com velocidade reduzida (3.3)
+      const wingDist = (e.radius || 22) * 1.05;
+      createHitParticles(e.x, e.y, '#e74c3c', 10);
+      // 3 lâminas crescentes de sangue em leque
       for (let k = -1; k <= 1; k++) {
         const bAng = e.aimAngle + k * 0.22;
+        const bx = e.x + Math.cos(bAng) * wingDist;
+        const by = e.y + Math.sin(bAng) * wingDist;
         enemyBullets.push({
-          x: e.x,
-          y: e.y,
-          vx: Math.cos(bAng) * 3.3,
-          vy: Math.sin(bAng) * 3.3,
-          radius: 5.0,
+          x: bx,
+          y: by,
+          vx: Math.cos(bAng) * 3.4,
+          vy: Math.sin(bAng) * 3.4,
+          radius: 5.5,
           damage: Math.round(e.damage * 0.35),
           life: 75,
           bulletType: 'BLOOD',
-          color: '#ff4757'
+          color: '#ff4757',
+          sourceName: 'Gárgula de Sangue'
         });
+        createHitParticles(bx, by, '#ff1744', 3);
       }
     } else if (e.currentSkill === 'STONE_FORM') {
       e.isStoneForm = false;

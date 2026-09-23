@@ -14,6 +14,7 @@ update(e, dt, ctx, dist, angle) {
   const { acidPuddles, bossShockwaves, enemyBullets, createHitParticles } = ctx;
 
   if (e.actionState === 'CHASE') {
+    e.aimAngle = angle;
     e.x += Math.cos(angle) * e.speed * dt;
     e.y += Math.sin(angle) * e.speed * dt;
 
@@ -40,6 +41,7 @@ update(e, dt, ctx, dist, angle) {
   } else if (e.actionState === 'WINDUP') {
     e.actionTimer -= dt;
     e.castProgress = 1 - (e.actionTimer / e.actionMaxTimer);
+    e.aimAngle = angle;
     e.x += Math.cos(angle) * e.speed * 0.4 * dt;
     e.y += Math.sin(angle) * e.speed * 0.4 * dt;
     if (e.actionTimer <= 0) {
@@ -52,22 +54,27 @@ update(e, dt, ctx, dist, angle) {
   } else if (e.actionState === 'STRIKE') {
     if (e.currentSkill === 'FLAMETHROWER') {
       e.flameDuration -= dt;
+      // Rastreamento suave do alvo durante o jato contínuo
+      const dAim = Math.atan2(Math.sin(angle - e.aimAngle), Math.cos(angle - e.aimAngle));
+      e.aimAngle += dAim * Math.min(1, 1.8 * dt);
+
       if (Math.floor(dt * 60) % 4 === 0) {
         safePlaySfx('shoot');
         const spread = (Math.random() - 0.5) * 0.45;
         const fAng = e.aimAngle + spread;
+        const muzzleDist = (e.radius || 20) * 1.1;
         enemyBullets.push({
-          x: e.x + Math.cos(fAng) * 14,
-          y: e.y + Math.sin(fAng) * 14,
-          vx: Math.cos(fAng) * 4.2,
-          vy: Math.sin(fAng) * 4.2,
+          x: e.x + Math.cos(e.aimAngle) * muzzleDist,
+          y: e.y + Math.sin(e.aimAngle) * muzzleDist,
+          vx: Math.cos(fAng) * 4.4,
+          vy: Math.sin(fAng) * 4.4,
           radius: 6,
           damage: Math.round(e.damage * 0.28),
           life: 55,
           bulletType: 'FIRE_SHRAPNEL',
           color: '#e67e22'
         });
-        createHitParticles(e.x, e.y, '#f39c12', 3);
+        createHitParticles(e.x + Math.cos(e.aimAngle) * muzzleDist, e.y + Math.sin(e.aimAngle) * muzzleDist, '#f39c12', 3);
       }
 
       if (e.flameDuration <= 0) {

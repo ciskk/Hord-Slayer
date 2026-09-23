@@ -44,7 +44,14 @@ export function updateEnemies(dt, context) {
     const e = enemies[i];
 
     // 1. Decaimento de timers, knockback suave e DoTs cáusticos
-    const statusSignal = tickEnemyStatus(e, dt, player, triggerShake);
+    const statusSignal = !e.isBoss && !e.isBossSubTarget && e.hp <= 0 ? 'ok' : tickEnemyStatus(e, dt, player, triggerShake);
+    // Abates (inclusive DoT durante stun) entram na animação antes de executar IA.
+    if (!e.isBoss && !e.isBossSubTarget && e.hp <= 0) {
+      const deathResult = handleEnemyDeath(e, i, ctx);
+      if (deathResult?.playerDied) return { playerDied: true };
+      if (deathResult?.earlyExit) return { playerDied: false };
+      continue;
+    }
     if (statusSignal === 'skip' || statusSignal === 'stunned') {
       continue;
     }
@@ -56,7 +63,27 @@ export function updateEnemies(dt, context) {
       const targetY = isConfused ? (e.y + Math.cos(frameCount * 0.05 + i) * 120) : player.y;
 
       const angle = Math.atan2(targetY - e.y, targetX - e.x);
-      e.facing = (targetX - e.x) > 0 ? 1 : -1;
+
+      // Inércia de rotação para portadores de escudo pesado: 0.5s (30 frames) para virar de lado
+      const isShieldBearer = (e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER' || e.hasFrontalShield);
+      if (isShieldBearer) {
+        const desiredFacing = (targetX - e.x) >= 0 ? 1 : -1;
+        if (e.facing === undefined) e.facing = desiredFacing;
+        if (desiredFacing !== e.facing) {
+          if (e.turnDelayTimer === undefined || e.turnDelayTimer <= 0) {
+            e.turnDelayTimer = 30; // 0.5s a 60 FPS
+          } else {
+            e.turnDelayTimer -= dt;
+            if (e.turnDelayTimer <= 0) {
+              e.facing = desiredFacing;
+            }
+          }
+        } else {
+          e.turnDelayTimer = 0;
+        }
+      } else {
+        e.facing = (targetX - e.x) > 0 ? 1 : -1;
+      }
 
       let curSpeed = e.speed * getWorldEventEnemySpeedMult();
       if (e.emergeTimer > 0) {
@@ -74,9 +101,12 @@ export function updateEnemies(dt, context) {
         curSpeed *= 0.25;
       }
 
-      if (e.combatState === 'WINDUP') curSpeed *= 0.15;
-      else if (e.combatState === 'STRIKE') curSpeed *= 0.10;
-      else if (e.combatState === 'RECOVERY') curSpeed *= -0.30;
+      // Dash locomotion owns its attack/recovery movement; status slows still apply.
+      if (e.behavior !== 'dash' || e.dashState === 'chase') {
+        if (e.combatState === 'WINDUP') curSpeed *= 0.15;
+        else if (e.combatState === 'STRIKE') curSpeed *= 0.10;
+        else if (e.combatState === 'RECOVERY') curSpeed *= -0.30;
+      }
 
       if (e.isBoss && e.isEnraged && Math.floor(frameCount) % 5 === 0) {
         createHitParticles(
@@ -168,6 +198,6 @@ export function updateEnemies(dt, context) {
   }
 
   // 4. Processamento de ataques corpo a corpo
-  processEnemyMeleeAttacks(player, enemies, dt);
+  processEnemyMeleeAttacks(player, enemies, dt, freezeTimer);
   return { playerDied: false };
 }

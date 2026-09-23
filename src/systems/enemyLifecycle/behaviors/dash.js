@@ -1,52 +1,52 @@
-/**
- * src/systems/enemyLifecycle/behaviors/dash.js
- * IA do Assassino Espectral (Stalker) — Carga com emboscada de flanco.
- */
-import { createHitParticles } from '../../combat.js';
+import { STALKER_DASH } from '../../../config/stalkerDash.js';
 
-export function dashBehavior(e, dt, angle, curSpeed, ctx) {
-  const { player, frameCount } = ctx;
-  e.dashTimer = (e.dashTimer || 0) + dt;
+/** Bote do verme: preparação visível, trajetória comprometida e recuperação parada. */
+export function dashBehavior(e, dt, angle, curSpeed) {
+  if (!(dt > 0)) return;
+  const previousTimer = e.dashTimer || 0;
+  e.dashTimer = previousTimer + dt;
   if (e.dashState === 'chase') {
     e.x += Math.cos(angle) * curSpeed * dt;
     e.y += Math.sin(angle) * curSpeed * dt;
-    if (e.dashTimer > 81) {
+    if (e.dashTimer >= STALKER_DASH.chase) {
       e.dashState = 'aim';
       e.dashTimer = 0;
-      // Emboscada de Flanco para Stalker (Assassino Espectral)
-      if (e.baseType === 'STALKER' && Math.random() < 0.75) {
-        createHitParticles(e.x, e.y, '#6c5ce7', 6);
-        const flankOffset = (Math.random() < 0.5 ? 1 : -1) * (Math.PI * 0.4);
-        const flankAng = angle + flankOffset;
-        e.x = player.x - Math.cos(flankAng) * 90;
-        e.y = player.y - Math.sin(flankAng) * 90;
-        createHitParticles(e.x, e.y, '#a29bfe', 8);
-        e.dashAngle = Math.atan2(player.y - e.y, player.x - e.x);
-      } else {
-        e.dashAngle = angle;
-      }
+      // Lock before the dust warning: no teleport or retarget during the lunge.
+      e.dashAngle = angle;
+      e.combatState = 'CHASE';
+      e.attackTimer = 0;
     }
   } else if (e.dashState === 'aim') {
-    if (e.dashTimer > 15) {
+    if (e.dashTimer >= STALKER_DASH.windup) {
       e.dashState = 'dashing';
       e.dashTimer = 0;
+      e.combatState = 'STRIKE';
+      e.attackAngle = e.dashAngle;
+      e.attackTimer = STALKER_DASH.duration + dt;
+      e.hasHitInStrike = false;
     }
   } else if (e.dashState === 'dashing') {
-    curSpeed = e.speed * 4.2;
-    e.x += Math.cos(e.dashAngle) * curSpeed * dt;
-    e.y += Math.sin(e.dashAngle) * curSpeed * dt;
-    createHitParticles(e.x, e.y, '#9b59b6', 1);
-    if (e.dashTimer > 14) {
+    // Respect slows/stagger and cap travel when a frame spans the dash end.
+    const travelDt = Math.min(dt, Math.max(0, STALKER_DASH.duration - previousTimer));
+    const speed = Math.max(0, curSpeed) * STALKER_DASH.speedMultiplier;
+    e.x += Math.cos(e.dashAngle) * speed * travelDt;
+    e.y += Math.sin(e.dashAngle) * speed * travelDt;
+    if (e.dashTimer >= STALKER_DASH.duration) {
       e.dashState = 'cooldown';
       e.dashTimer = 0;
+      e.combatState = 'RECOVERY';
+      e.attackTimer = STALKER_DASH.recovery;
     }
   } else if (e.dashState === 'cooldown') {
-    curSpeed = e.speed * 0.4;
-    e.x += Math.cos(angle) * curSpeed * dt;
-    e.y += Math.sin(angle) * curSpeed * dt;
-    if (e.dashTimer > 27) {
+    // Miasma and interrupts may enter recovery outside this behavior.
+    e.combatState = 'RECOVERY';
+    e.attackTimer = Math.max(0, STALKER_DASH.recovery - e.dashTimer);
+    if (e.dashTimer >= STALKER_DASH.recovery) {
       e.dashState = 'chase';
       e.dashTimer = 0;
+      e.combatState = 'CHASE';
+      e.attackTimer = 0;
+      e.attackCooldown = e.attackCooldownMax || 19;
     }
   }
 }

@@ -34,16 +34,15 @@
   margin: 0 auto;
   --hero-theme-color: #f1c40f;
   transition: opacity 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: opacity;
 }
 
-/* Ocultação e Fade Suave do HUD e Botão de ULT Durante a Introdução Cinematográfica */
+/* Ocultação e Fade Suave do HUD e Botão de ULT Durante a Introdução Cinematográfica (GPU Composite Layer) */
 #hud.hud-cinematic-intro,
 #skill-btn-container.hud-cinematic-intro,
-body:has(#hud.hud-cinematic-intro) #skill-btn-container,
-body:has(#hud.hud-cinematic-intro) #blood-altar-touch-btn {
+#blood-altar-touch-btn.hud-cinematic-intro {
   opacity: 0 !important;
   pointer-events: none !important;
-  visibility: hidden !important;
 }
 
 /* Ocultação Absoluta do HUD e Botão de ULT Fora de Jogo e Durante Telas / Transições */
@@ -616,9 +615,11 @@ body:has(#bestiary-modal.active) #skill-btn-container {
 }
 
 #hud:not(.boss-active) #boss-hud {
-  opacity: 0;
+  opacity: 0 !important;
+  pointer-events: none !important;
   transform: translateY(-6px) scale(0.98);
   transition: opacity 0.3s ease, transform 0.3s ease;
+  animation: none !important;
 }
 
 @keyframes bossHudIntro {
@@ -1140,6 +1141,7 @@ body:has(#bestiary-modal.active) #skill-btn-container {
   justify-content: center;
   --skill-theme-color: #f1c40f;
   transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease, opacity 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform, opacity;
   filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.85));
   overflow: visible;
 }

@@ -84,7 +84,7 @@ O jogo progride através de 10 ondas de hordas cronometradas, 16 tipos de minibo
 | Chefe | Arena Temática | Mecânicas e Fases Principais |
 |---|---|---|
 | **Lorde Vampírico** | *Salão Carmesim* | Telegrafias de corte com foice e onda frontal de sangue, investida em névoa espectral, enxames de morcegos de longo alcance, gêiseres de sangue com adagas balísticas e repulsão tática. |
-| **Monólito Abissal** | *Caldeira Tectônica* | Litocistos Tectônicos orbitais destrutíveis, fontes termais de cura (+25 HP), esmagamento frontal pesado, erupção do epicentro, onda de fendas e vórtice da caldeira. |
+| **Monólito Abissal** | *Caldeira Tectônica* | Litocistos Tectônicos orbitais destrutíveis, fontes termais de cura (+25 HP), esmagamento frontal pesado, erupção do epicentro, salva vulcânica de lanças de basalto das manoplas, fendas tectônicas cruzadas em X, onda de fendas, chuva de meteoros e vórtice da caldeira. |
 | **Thanatos, o Ceifador Supremo** | *Necrópole Espectral* | Foice ornamental com manivela articulada sob inércia física, Lanternas de Almas com elo etéreo e colapso de 6.0s, cortes duplos, foices espirituais giratórias, teleporte com aviso holográfico (Blink) e vórtice colhedor. |
 | **Soberano do Abismo** | *Horizonte do Vazio* | **3 fases de combate**, introdução cinematográfica em 4 atos, barreira física de contenção do Altar, horizonte de eventos contrátil com asfixia, Âncoras Cósmicas com mitigação e regeneração de vida, Santuários Celestiais de cura, crucifixo giratório de feixes, corte dimensional, bombardeio abissal e sequência dramática de derrota (DEATH_COLLAPSE) em 4 atos com Supernova Dourada. |
 

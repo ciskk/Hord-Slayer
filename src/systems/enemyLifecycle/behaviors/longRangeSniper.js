@@ -18,15 +18,18 @@ export function longRangeSniperBehavior(e, dt, angle, curSpeed, ctx) {
   }
   e.sniperAimAngle = angle;
   e.sniperTimer = (e.sniperTimer || 0) + dt;
+  e.sniperCharge = Math.min(1, e.sniperTimer / 108);
+
   if (e.sniperTimer >= 108) {
     e.sniperTimer = 0;
+    e.sniperCharge = 0;
     if (canSpawnEnemyBullet()) {
       playSfx('shoot');
       enemyBullets.push({
-        x: e.x + Math.cos(e.sniperAimAngle) * 16,
-        y: e.y + Math.sin(e.sniperAimAngle) * 16,
-        vx: Math.cos(e.sniperAimAngle) * 6.8,
-        vy: Math.sin(e.sniperAimAngle) * 6.8,
+        x: e.x + Math.cos(e.sniperAimAngle) * 22,
+        y: e.y + Math.sin(e.sniperAimAngle) * 22,
+        vx: Math.cos(e.sniperAimAngle) * 7.2,
+        vy: Math.sin(e.sniperAimAngle) * 7.2,
         radius: 5,
         damage: e.damage,
         life: 110,

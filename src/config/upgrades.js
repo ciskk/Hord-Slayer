@@ -262,6 +262,22 @@ export const upgradesPool = [
     isAvailable: () => selectedHeroKey !== 'BARBARIAN'
   },
   {
+    id: 'ult_cooldown',
+    title: "Ímpeto Supremo",
+    rarity: "card-rare",
+    badge: "Passiva",
+    desc: "Acelera a convergência astral, reduzindo o tempo de recarga da habilidade suprema (ULT) em 5%",
+    getStat: () => `-5% Recarga ULT • Nv. ${((player.ultCooldownCount || 0) + 1)}`,
+    stat: "-5% Recarga ULT",
+    apply: () => {
+      player.ultCooldownCount = (player.ultCooldownCount || 0) + 1;
+      player.skillMaxCd = Math.max(60, Math.round(player.skillMaxCd * 0.95));
+      player.skillCd = Math.min(player.skillCd, player.skillMaxCd);
+      registerPassiveInInventory('ult_cooldown', 1, { stacks: player.ultCooldownCount });
+    },
+    isAvailable: () => (player.skillMaxCd || 420) > 60
+  },
+  {
     id: 'wings',
     title: "Asas do Vento",
     rarity: "card-common",

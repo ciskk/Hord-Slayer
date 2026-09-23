@@ -1,3 +1,4 @@
+import { isBossPhaseReady } from '../../../systems/bossPhaseCinematic.js';
 /**
  * src/entities/bosses/vampireLord/fsm.js
  * Máquina de estados FSM, IA de combate e ciclo de vida do Lorde Vampírico.
@@ -97,7 +98,7 @@ export function updateVampireLord(e, dt, context) {
 
   // 2. Transição para Fase de Fúria (< 45% HP) - Bloqueada durante a introdução
   const hpRatio = e.hp / e.maxHp;
-  if (e.actionState !== 'SPAWN_INTRO' && hpRatio < 0.45 && !e.hasEnraged) {
+  if (e.actionState !== 'SPAWN_INTRO' && hpRatio < 0.45 && !e.hasEnraged && isBossPhaseReady(e, 2)) {
     e.hasEnraged = true;
     e.isEnraged = true;
     e.speed *= 1.28;

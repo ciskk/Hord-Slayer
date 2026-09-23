@@ -13,6 +13,7 @@ export function corpseEaterBehavior(e, dt, angle, curSpeed, ctx) {
     e.devourTimer = 0;
     for (let d = dyingEnemies.length - 1; d >= 0; d--) {
       const dead = dyingEnemies[d];
+      if (dead.consumed || dead.corpseTimer <= 0) continue;
       const ddx = dead.x - e.x;
       const ddy = dead.y - e.y;
       if (ddx * ddx + ddy * ddy < 75 * 75) {
@@ -23,7 +24,8 @@ export function corpseEaterBehavior(e, dt, angle, curSpeed, ctx) {
         createHitParticles(e.x, e.y, '#c0392b', 8);
         playSfx('hit');
         addDamageText(e.x, e.y, "CARNE DEVORADA!", false, '#e74c3c');
-        dyingEnemies.splice(d, 1);
+        // Consumido uma única vez; a finalização visual pode terminar normalmente.
+        dead.consumed = true;
         break;
       }
     }

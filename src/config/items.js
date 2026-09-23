@@ -133,6 +133,15 @@ export const ITEMS = {
     description: "Reduz o tempo de recarga de todas as armas em 5% por nível (teto 55%; após converte em dano).",
     maxLevel: Infinity
   },
+  ULT_COOLDOWN: {
+    id: 'ult_cooldown',
+    category: ITEM_CATEGORIES.PASSIVE,
+    name: "Ímpeto Supremo",
+    icon: "ult_cooldown",
+    badge: "Passiva",
+    description: "Reduz o tempo de recarga da habilidade suprema (ULT) em 5% por nível.",
+    maxLevel: Infinity
+  },
   CRIT: {
     id: 'crit',
     category: ITEM_CATEGORIES.PASSIVE,

@@ -30,6 +30,11 @@ export function openChestModal(tier = 'BOSS') {
   gameState.isPaused = true;
   resetInputSoft();
 
+  if (!activeBoss) {
+    const bossHud = document.getElementById('boss-hud');
+    if (bossHud) bossHud.style.display = 'none';
+  }
+
   const modal = document.getElementById('chest-modal');
   const list = document.getElementById('chest-rewards-list');
   const claimBtn = document.getElementById('chest-claim-btn');

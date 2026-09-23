@@ -8,7 +8,7 @@ import { playSfx, triggerHaptic } from '../../core/audio.js';
 import { inputX, inputY } from '../../core/input.js';
 import { createHitParticles } from '../../systems/combat.js';
 import { bullets, enemies, enemyBullets } from '../../state/collections.js';
-import { gameState, triggerShake, camera, CAMERA_ZOOM } from '../../state/gameState.js';
+import { gameState, triggerShake, camera, CAMERA_ZOOM, cinematicCamera, matchIntro } from '../../state/gameState.js';
 import { getMetaBonuses } from '../../systems/progression.js';
 
 import { setInventoryPlayer, registerWeaponInInventory, registerPassiveInInventory } from './inventory.js';
@@ -53,6 +53,7 @@ export const player = {
   dashVy: 0,
   skillCd: 0,
   skillMaxCd: 420,
+  ultCooldownCount: 0,
   pushVx: 0,
   pushVy: 0,
   mass: 2.5,
@@ -298,7 +299,7 @@ export function getHeroSkillDirection(options = {}) {
 }
 
 export function triggerHeroSkill(options = {}) {
-  if (player.skillCd > 0 || !gameState.isInMatch || gameState.isPaused || gameState.isDead || gameState.isWon) return;
+  if (player.skillCd > 0 || !gameState.isInMatch || gameState.isPaused || gameState.isDead || gameState.isWon || (matchIntro && matchIntro.active) || cinematicCamera.isCinematic) return;
 
   if (selectedHeroKey === 'KNIGHT') {
     player.dashDuration = 24;
@@ -468,6 +469,7 @@ export function resetPlayer(heroKey) {
   player.damage = Math.round(c.stats.damage * meta.damageMult);
   player.baseDamage = c.stats.damage;
   player.damagePercentBonus = 0;
+  player.ultCooldownCount = 0;
   player.auraLvl = c.stats.auraLvl || 0;
   player.auraTimer = 0;
   player.auraTickFlash = 0;
@@ -502,6 +504,15 @@ export function resetPlayer(heroKey) {
   player.dashDuration = 0;
   player.dashVx = 0;
   player.dashVy = 0;
+  player.ignisDashDuration = 0;
+  player.ignisDashVx = 0;
+  player.ignisDashVy = 0;
+  player.berserkTimer = 0;
+  player.invisTimer = 0;
+  player.isPhasing = false;
+  player.alchemistSkillTimer = 0;
+  player.alchemistBuffTimer = 0;
+  player.alchemistSkillDisoriented = false;
   player.skillMaxCd = Math.round(c.stats.skillCooldownMax * (1 - player.cooldownReduction));
   player.skillCd = 0;
   player.knockbackReceived = c.stats.knockbackReceived !== undefined ? c.stats.knockbackReceived : 1.0;

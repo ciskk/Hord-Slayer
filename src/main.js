@@ -1,3 +1,4 @@
+import { updateBossPhaseCinematic } from './systems/bossPhaseCinematic.js';
 /**
  * src/main.js
  * Loop Principal, Pipeline de Física/Combate e Sincronização Grim Cyber-Gothic.
@@ -32,14 +33,15 @@ import {
   createHitParticles, 
   addBloodSplat, 
   processEnemyMeleeAttacks, 
-  updateCombatVisuals 
+  updateCombatVisuals,
+  applyFireBurn
 } from './systems/combat.js';
 import { 
   updateProjectiles, 
   updateAcidPuddles 
 } from './systems/projectiles.js';
 import { groundCraters } from './render/groundCracks.js';
-import { spawnSquad, spawnMobCluster, spawnProp, spawnInitialHorde } from './entities/enemies.js';
+import { spawnSquad, spawnMobCluster, spawnProp, spawnInitialHorde, isWormEnemyType, isKaelInvisible } from './entities/enemies.js';
 import { recordRunStats } from './systems/progression.js';
 import { 
   getCurrentWave, 
@@ -85,7 +87,7 @@ import {
   purgeAllNormalEnemies as purgeAllNormalEnemiesPickup, 
   triggerSuperMagnet as triggerSuperMagnetPickup 
 } from './systems/pickups.js';
-import { updateHUD, resetHUD, resetBossGhostHp, applyHeroVisuals } from './ui/hudController.js';
+import { updateHUD, resetHUD, resetBossGhostHp, applyHeroVisuals, isGhostHpDraining } from './ui/hudController.js';
 import { 
   updateWorldEvents, 
   resetWorldEvents, 
@@ -561,6 +563,45 @@ export function resetGame() {
 }
 
 function update(dt) {
+  if (updateBossPhaseCinematic(activeBoss, dt, {
+    triggerShake,
+    triggerHaptic,
+    playSfx,
+    bossShockwaves,
+    createHitParticles
+  })) {
+    if (activeBoss.phaseCinematic?.elapsed === dt) {
+      playSfx('charge');
+      triggerHaptic('medium');
+    }
+    cinematicCamera.isCinematic = true;
+    cinematicCamera.returningToPlayer = true;
+    const pan = 1 - Math.pow(0.94, dt);
+    const seq = activeBoss.phaseCinematic;
+    if (seq) {
+      const p = seq.elapsed / seq.duration;
+      const zoomProgress = Math.sin(p * Math.PI);
+      const targetZoom = baseCameraZoom * (1 + 0.35 * zoomProgress);
+      setCameraZoom(targetZoom);
+    }
+    camera.x += (activeBoss.x - cameraViewW / 2 - camera.x) * pan;
+    camera.y += (activeBoss.y - cameraViewH / 2 - camera.y) * pan;
+    cinematicCamera.letterboxProgress += (1 - cinematicCamera.letterboxProgress) * pan;
+
+    // Proteção garantida do jogador durante o slow motion cinematográfico
+    player.iFrames = Math.max(player.iFrames, 60);
+    player.bossIFrames = Math.max(player.bossIFrames, 60);
+
+    // SLOW MOTION CINEMATOGRÁFICO: avança animações e partículas a 15% da velocidade normal
+    // proporcionando uma transformação suave em vez de um congelamento estático
+    const slowDt = dt * 0.15;
+    advanceFrameCount(slowDt);
+    decayScreenShake(dt * 0.5);
+    updateCombatVisuals(slowDt);
+
+    return;
+  }
+
   if (typeof devCheats !== 'undefined') {
     if (devCheats.godMode && player) {
       player.hp = player.maxHp;
@@ -614,20 +655,24 @@ function update(dt) {
     cinematicCamera.letterboxProgress += (targetLetterbox - cinematicCamera.letterboxProgress) * (1 - Math.pow(1 - 0.08, dt));
 
     // Fade-in suave do HUD e do botão de ULT nos 35% finais do afastamento
-    if (rawProgress >= 0.65) {
+    if (rawProgress >= 0.65 && !matchIntro.hudRevealed) {
+      matchIntro.hudRevealed = true;
       const hudEl = document.getElementById('hud');
-      if (hudEl && hudEl.classList.contains('hud-cinematic-intro')) {
-        hudEl.classList.remove('hud-cinematic-intro');
-      }
+      if (hudEl) hudEl.classList.remove('hud-cinematic-intro');
       const skillBtn = document.getElementById('skill-btn-container');
-      if (skillBtn && skillBtn.classList.contains('hud-cinematic-intro')) {
-        skillBtn.classList.remove('hud-cinematic-intro');
-      }
+      if (skillBtn) skillBtn.classList.remove('hud-cinematic-intro');
     }
 
     // Finalização da introdução cinematográfica
     if (matchIntro.timer >= matchIntro.duration) {
       endMatchIntro();
+      player.dashDuration = 0;
+      player.dashVx = 0;
+      player.dashVy = 0;
+      player.ignisDashDuration = 0;
+      player.ignisDashVx = 0;
+      player.ignisDashVy = 0;
+      resetInput();
       cinematicCamera.letterboxProgress = 0;
       cinematicCamera.isCinematic = false;
       const hudEl = document.getElementById('hud');
@@ -952,7 +997,7 @@ function update(dt) {
 
       const dSq = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
       if (dSq < (player.radius + e.radius + 18) ** 2) {
-        let impactDmg = player.damage * 1.6;
+        let impactDmg = player.damage * 2.0;
         if (e.isBoss || e.isBossSubTarget) {
           impactDmg *= 1.25;
           if (e.isVulnerable) impactDmg *= 1.25;
@@ -961,6 +1006,7 @@ function update(dt) {
         e.hitFlash = 4;
         addDamageText(e.x, e.y, Math.round(impactDmg), true, '#f1c40f');
         createHitParticles(e.x, e.y, '#f1c40f', 3);
+        applyFireBurn(e, 240, (player.damage || 45) * 0.70, true);
       }
     }
 
@@ -974,6 +1020,10 @@ function update(dt) {
 
       for (let i = 0; i < enemies.length; i++) {
         const e = enemies[i];
+        if (!e || e.hp <= 0 || e.isTargetable === false) continue;
+        if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
+        if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
+
         const edx = e.x - player.x;
         const edy = e.y - player.y;
         const dist = Math.hypot(edx, edy);
@@ -983,6 +1033,16 @@ function update(dt) {
           e.x += nx * 24;
           e.y += ny * 24;
           e.hitFlash = 5;
+
+          let blastDmg = player.damage * 1.5;
+          if (e.isBoss || e.isBossSubTarget) {
+            blastDmg *= 1.25;
+            if (e.isVulnerable) blastDmg *= 1.25;
+          }
+          e.hp -= blastDmg;
+          addDamageText(e.x, e.y, Math.round(blastDmg), true, '#e67e22');
+          createHitParticles(e.x, e.y, '#f1c40f', 5);
+          applyFireBurn(e, 240, (player.damage || 45) * 0.70, true);
         }
       }
     }
@@ -1120,10 +1180,15 @@ function update(dt) {
   } else if (cinematicCamera.returningToPlayer) {
     const distToPlayer = Math.hypot(targetCamX - camera.x, targetCamY - camera.y);
     player.iFrames = Math.max(player.iFrames, 6);
+    if (Math.abs(CAMERA_ZOOM - baseCameraZoom) > 0.002) {
+      const returnZoomFactor = 1 - Math.pow(1 - 0.08, dt);
+      setCameraZoom(CAMERA_ZOOM + (baseCameraZoom - CAMERA_ZOOM) * returnZoomFactor);
+    }
     if (distToPlayer < 2.0) {
       cinematicCamera.returningToPlayer = false;
       camera.x = targetCamX;
       camera.y = targetCamY;
+      setCameraZoom(baseCameraZoom);
     } else {
       const returnFactor = 1 - Math.pow(1 - 0.08, dt);
       camera.x += (targetCamX - camera.x) * returnFactor;
@@ -1144,15 +1209,19 @@ function update(dt) {
   if (!gameState.isWavePaused) {
     setSpawnTimer(spawnTimer + dt * getWorldEventSpawnRateMult());
     if (spawnTimer >= currentWave.rate) {
+      const kaelInvis = isKaelInvisible();
+      const availableTypes = (kaelInvis && currentWave.types)
+        ? currentWave.types.filter(t => !isWormEnemyType(t))
+        : currentWave.types;
       const hasSquads = currentWave.allowedSquads && currentWave.allowedSquads.length > 0;
-      const hasTypes = currentWave.types && currentWave.types.length > 0;
+      const hasTypes = availableTypes && availableTypes.length > 0;
       const spawnSquadChosen = hasSquads && (!hasTypes || Math.random() < 0.65);
 
       if (spawnSquadChosen) {
         const squadKey = currentWave.allowedSquads[Math.floor(Math.random() * currentWave.allowedSquads.length)];
         spawnSquad(squadKey, currentWave.eliteChance);
       } else if (hasTypes) {
-        const chosenType = currentWave.types[Math.floor(Math.random() * currentWave.types.length)];
+        const chosenType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
         const count = currentWave.clusterSize 
           ? Math.floor(Math.random() * (currentWave.clusterSize[1] - currentWave.clusterSize[0] + 1)) + currentWave.clusterSize[0]
           : 5;
@@ -1286,8 +1355,25 @@ function loop(now) {
       if (!gameState.isPaused && !gameState.isWon) {
         if (deathSequence && deathSequence.active) {
           updateDeathSequence(dt);
+          const deathSeconds = Math.floor(frameCount / 60);
+          updateHUD(dt, {
+            gameState,
+            activeBoss,
+            currentArenaTheme,
+            seconds: deathSeconds,
+            currentWave: getCurrentWave(getEffectiveHordeSeconds(deathSeconds))
+          });
         } else if (!gameState.isDead) {
           update(dt);
+        } else if (gameState.isDead && isGhostHpDraining()) {
+          const deathSeconds = Math.floor(frameCount / 60);
+          updateHUD(dt, {
+            gameState,
+            activeBoss,
+            currentArenaTheme,
+            seconds: deathSeconds,
+            currentWave: getCurrentWave(getEffectiveHordeSeconds(deathSeconds))
+          });
         }
       }
       render();

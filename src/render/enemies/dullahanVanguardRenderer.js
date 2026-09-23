@@ -1,175 +1,42 @@
-/**
- * src/render/enemies/dullahanVanguardRenderer.js
- * 
- * Renderizador procedural modular de Cavaleiro Sem Cabeça (DULLAHAN_VANGUARD).
- */
-import { ctx, frameCount } from '../../main.js';
+import { ctx, frameCount } from '../../state/gameState.js';
+import { getRelativeAimAngle } from '../../core/math.js';
+import { beginCreature, endCreature, materialPolygon, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
-/**
- * Renderiza a forma viva de Cavaleiro Sem Cabeça.
- * O Canvas já está posicionado em (e.x, e.y) e escalado por e.facing.
- * @param {Object} e Entidade do monstro
-   */
+// Empty armored collar, severed head at the hip, and a long directional lance.
 export function draw(e) {
-  // =========================================================================
-  // 20. CAVALEIRO SEM CABEÇA - Armadura de aço negro, cabeça na mão e justa
-  // =========================================================================
-  const R_m = e.radius;
-  const isHit = e.hitFlash > 0;
-  const plateCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#1e242c');
-  const plateDark = isHit ? '#ffffff' : '#0c0f12';
-  const isCharging = e.lanceState === 'charging';
-  const flameBob = Math.sin(frameCount * 0.35) * 2.5;
-
-  // 1. Couraça Gótica em Aço Negro com Aresta Tapul
-  ctx.fillStyle = plateCol;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, R_m * 0.6, R_m * 0.75, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = plateDark;
-  ctx.lineWidth = 2.6;
-  ctx.stroke();
-
-  // Aresta central reforçada (Tapul)
-  ctx.strokeStyle = '#576574';
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.moveTo(0, -R_m * 0.6);
-  ctx.lineTo(R_m * 0.15, 0);
-  ctx.lineTo(0, R_m * 0.6);
-  ctx.stroke();
-
-  // Saia de faixas de aço articuladas (Fauld)
-  ctx.fillStyle = plateDark;
-  ctx.fillRect(-R_m * 0.45, R_m * 0.35, R_m * 0.9, 5);
-  ctx.fillRect(-R_m * 0.38, R_m * 0.48, R_m * 0.76, 5);
-
-  // 2. Gola Degolada Serrilhada com Labareda de Fogo-Fátuo
-  ctx.fillStyle = plateDark;
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.3, -R_m * 0.6);
-  ctx.lineTo(-R_m * 0.35, -R_m * 0.78);
-  ctx.lineTo(0, -R_m * 0.72);
-  ctx.lineTo(R_m * 0.35, -R_m * 0.78);
-  ctx.lineTo(R_m * 0.3, -R_m * 0.6);
-  ctx.closePath();
-  ctx.fill();
-
-  // Labareda crepitando do pescoço decepado
-  ctx.fillStyle = '#ff4757';
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.22, -R_m * 0.72);
-  ctx.lineTo(0, -R_m * 1.15 + flameBob);
-  ctx.lineTo(R_m * 0.22, -R_m * 0.72);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = '#f1c40f';
-  ctx.beginPath();
-  ctx.arc(0, -R_m * 0.85 + flameBob * 0.5, 3.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 3. A Cabeça Degolada com Elmo Aberto Segurada na Mão Esquerda
-  const headX = -R_m * 0.55;
-  const headY = R_m * 0.15;
-
-  // Elmo de justa aberto
-  ctx.fillStyle = plateDark;
-  ctx.beginPath();
-  ctx.arc(headX, headY, R_m * 0.34, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Chifres quebrados no elmo
-  ctx.strokeStyle = '#7f8c8d';
-  ctx.lineWidth = 2.0;
-  ctx.beginPath();
-  ctx.moveTo(headX - 4, headY - 8);
-  ctx.lineTo(headX - 10, headY - 14);
-  ctx.moveTo(headX + 4, headY - 8);
-  ctx.lineTo(headX + 8, headY - 12);
-  ctx.stroke();
-
-  // Crânio ressequido dentro do elmo
-  ctx.fillStyle = '#dfe4ea';
-  ctx.beginPath();
-  ctx.arc(headX + 2, headY, 5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Órbitas em brasas ardentes
-  ctx.fillStyle = '#ff1744';
-  ctx.fillRect(headX, headY - 2, 2.2, 2.2);
-  ctx.fillRect(headX + 4, headY - 2, 2.2, 2.2);
-
-  // 4. Lança de Justa Pesada com Guarda Cônica e Flâmula
-  const lanceLen = isCharging ? R_m * 2.1 : R_m * 1.45;
-  ctx.fillStyle = '#57606f';
-  ctx.fillRect(R_m * 0.2, -3, lanceLen, 6);
-
-  // Protetor cônico de mão (vamplate)
-  ctx.fillStyle = plateDark;
-  ctx.beginPath();
-  ctx.moveTo(R_m * 0.2, -8);
-  ctx.lineTo(R_m * 0.5, -4);
-  ctx.lineTo(R_m * 0.5, 4);
-  ctx.lineTo(R_m * 0.2, 8);
-  ctx.closePath();
-  ctx.fill();
-
-  // Ponta de torneio afiada
-  ctx.fillStyle = '#ecf0f1';
-  ctx.beginPath();
-  const lx = R_m * 0.2 + lanceLen;
-  ctx.moveTo(lx, -5);
-  ctx.lineTo(lx + 12, 0);
-  ctx.lineTo(lx, 5);
-  ctx.closePath();
-  ctx.fill();
-
-  // Flâmula heráldica rasgada de duas pontas tremulando
-  const fWave = Math.sin(frameCount * 0.3) * 3;
-  ctx.fillStyle = '#c0392b';
-  ctx.beginPath();
-  ctx.moveTo(lx - 8, 3);
-  ctx.lineTo(lx - 20, 10 + fWave);
-  ctx.lineTo(lx - 12, 4);
-  ctx.lineTo(lx - 20, 16 + fWave);
-  ctx.lineTo(lx - 8, 3);
-  ctx.closePath();
-  ctx.fill();
-}
-
-/**
- * Renderiza a animação de morte em 3 fases de Cavaleiro Sem Cabeça.
- * @param {Object} de Entidade agonizante em dyingEnemies
- * @param {number} t Progresso normalizado de morte (0 a 1)
- * @param {number} R Raio de colisão da criatura
- */
-export function drawDying(de, t, R) {
-  // Lança quebra, cavaleiro cai de joelhos e elmo degolado rola com olhos apagando
-  ctx.translate(0, t * 12);
-  ctx.scale(1 + t * 0.1, Math.max(0.08, 1 - t * 0.82));
-
-  // Couraça de placas
-  ctx.fillStyle = '#0c0f12';
-  ctx.beginPath();
-  ctx.ellipse(0, 0, R * 0.55, R * 0.68, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Elmo degolado rolando para a esquerda
+  const p = creaturePalette(e, '#426588', '#192c45', '#ff4757');
+  const dead = e.deathPose || 0;
+  const charging = e.deathPose === undefined && e.lanceState === 'charging';
+  const aiming = e.deathPose === undefined && e.lanceState === 'aim';
+  const stride = dead || aiming ? 0 : Math.sin(frameCount * (charging ? 0.48 : 0.18)) * 0.11;
+  beginCreature(ctx, e);
+  polygon(ctx, [[-0.38, -0.47], [-0.65, -0.2], [-0.67 - stride, 0.86], [-0.15, 0.59]], p.shade);
+  for (const side of [-1, 1]) polygon(ctx, [[side * 0.09, 0.34], [side * 0.41, 0.34], [side * 0.47 + side * stride, 0.92], [side * 0.1 + side * stride, 0.92]], p.shade);
+  materialPolygon(ctx, [[-0.47, -0.47], [-0.1, -0.64], [0.43, -0.45], [0.46, 0.31], [0.02, 0.62], [-0.48, 0.31]], p, 'metal');
+  polygon(ctx, [[0.02, -0.56], [0.39, -0.39], [0.34, 0.26], [0.02, 0.48]], p.shade, null);
+  for (const side of [-1, 1]) polygon(ctx, [[side * 0.29, -0.5], [side * 0.66, -0.74], [side * 0.78, -0.3], [side * 0.4, -0.12]], p.body);
+  // Keep the negative space above the collar: the flame cannot read as a head.
+  polygon(ctx, [[-0.24, -0.61], [-0.3, -0.86], [-0.1, -0.79], [0.1, -0.79], [0.3, -0.86], [0.24, -0.61]], p.shade);
+  stroke(ctx, [[-0.17, -0.73], [0.17, -0.73]], dead ? p.ink : p.accent, 0.095);
   ctx.save();
-  ctx.translate(-R * 0.8 - t * 12, t * 6);
-  ctx.rotate(-t * 2.5);
-  ctx.fillStyle = '#1e242c';
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 0.32, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.translate(-0.73 - dead * 0.15, 0.35 + dead * 0.15);
+  ctx.rotate(dead * 1.2);
+  polygon(ctx, [[-0.26, -0.19], [-0.2, -0.42], [0.18, -0.42], [0.32, -0.15], [0.2, 0.21], [-0.2, 0.21]], p.shade);
+  polygon(ctx, [[-0.12, -0.2], [0.15, -0.2], [0.18, 0.04], [0, 0.19], [-0.15, 0.02]], p.bone);
+  stroke(ctx, [[-0.08, -0.08], [0.12, -0.08]], dead ? p.ink : p.accent, 0.085);
   ctx.restore();
-
-  // Lança partida ao lado
-  ctx.strokeStyle = '#57606f';
-  ctx.lineWidth = 2.6;
-  ctx.beginPath();
-  ctx.moveTo(R * 0.3, 0);
-  ctx.lineTo(R * 1.3 + t * 8, t * 8);
-  ctx.stroke();
+  const aim = (aiming || charging || dead) ? (e.lanceAngle ?? e.aimAngle) : e.aimAngle;
+  ctx.save();
+  ctx.rotate(getRelativeAimAngle(aim ?? (e.facing === -1 ? Math.PI : 0), e.facing || 1) + dead * 0.3);
+  const length = charging ? 1.85 : 1.5;
+  stroke(ctx, [[0.2, 0.08], [length, 0.08]], p.ink, 0.2);
+  stroke(ctx, [[0.2, 0.08], [length, 0.08]], p.body, 0.1);
+  polygon(ctx, [[0.25, -0.18], [0.55, -0.04], [0.55, 0.2], [0.25, 0.33]], p.shade);
+  polygon(ctx, [[length - 0.1, -0.11], [length + 0.42, 0.08], [length - 0.1, 0.27]], p.bone);
+  polygon(ctx, [[length - 0.35, 0.13], [length - 0.35, 0.56], [length - 0.7, 0.35], [length - 0.58, 0.16]], p.accent);
+  ctx.restore();
+  endCreature(ctx);
+}
+export function drawDying(de, t, R) {
+  drawCreatureDeath(ctx, { ...de, radius: R }, t, draw, 'fall');
 }

@@ -6,7 +6,7 @@ export const ENEMY_TYPES = {
   ZOMBIE: { name: 'Zumbi Operário', radius: 13, speed: 1.38, hp: 175, color: '#2ecc71', behavior: 'chase', damage: 25, xp: 1 },
   BAT: { name: 'Morcego Carmesim', radius: 4.5, speed: 3.25, hp: 73, color: '#ff4757', behavior: 'swarm', damage: 18, xp: 1 },
   GOLEM: { name: 'Golem de Concreto', radius: 24, speed: 0.82, hp: 686, color: '#747d8c', behavior: 'tank', damage: 56, xp: 6 },
-  STALKER: { name: 'Assassino Espectral', radius: 12, speed: 1.35, hp: 189, color: '#9b59b6', behavior: 'dash', damage: 34, xp: 3 },
+  STALKER: { name: 'Assassino Espectral', radius: 12, speed: 1.35, hp: 189, color: '#d9b783', behavior: 'dash', damage: 34, xp: 3 },
   EXPLODER: { name: 'Carniçal Ígneo', radius: 13, speed: 2.1, hp: 147, color: '#e67e22', behavior: 'kamikaze', damage: 39, xp: 2 },
   NECRO: { name: 'Cultista das Sombras', radius: 15, speed: 0.95, hp: 294, color: '#34495e', behavior: 'summoner', damage: 34, xp: 8 },
   SHOOTER: { name: 'Autômato Artilheiro', radius: 14, speed: 1.1, hp: 231, color: '#0984e3', behavior: 'shooter', damage: 29, xp: 4 },

@@ -1,161 +1,36 @@
-/**
- * src/render/enemies/exploderRenderer.js
- * 
- * Renderizador procedural modular de Rastejante Suicida (EXPLODER).
- */
-import { ctx, frameCount } from '../../main.js';
+import { ctx, frameCount } from '../../state/gameState.js';
 import { player } from '../../entities/player.js';
+import { beginCreature, endCreature, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
-/**
- * Renderiza a forma viva de Rastejante Suicida.
- * O Canvas já está posicionado em (e.x, e.y) e escalado por e.facing.
- * @param {Object} e Entidade do monstro
-   */
+// A swollen ember belly and a single burning fuse announce the explosion.
 export function draw(e) {
-  // =========================================================================
-  // 4. CARNIÇAL ÍGNEO - Cobaia de alquimia com fornalha biológica enxertada
-  // =========================================================================
-  const R_m = e.radius;
-  const isFuse = e.fuseState === 'FUSE';
-  const fuseRatio = isFuse ? Math.min(1, Math.max(0, 1 - (e.fuseTimer || 0) / 36)) : 0;
-  const distToPlayer = Math.hypot(e.x - player.x, e.y - player.y);
-  const urgency = Math.min(1, Math.max(0, 1 - distToPlayer / 260));
-  const pulseSpeed = 0.12 + (isFuse ? 0.48 : urgency * 0.35);
-  const pustulePulse = Math.sin(frameCount * pulseSpeed) * (2.8 + (isFuse ? 6.5 : urgency * 4));
-  const isHit = e.hitFlash > 0;
-
-  const skinCharred = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#140803');
-  const skinRot = isHit ? '#ffffff' : '#2e1208';
-  const glassColor = 'rgba(230, 126, 34, 0.45)';
-  const copperPipe = isHit ? '#ffffff' : '#b87333';
-  const strapColor = isHit ? '#ffffff' : '#4a2810';
-
-  // 1. Pernas Carbonizadas com Amarras Arrebentadas
-  const legWalk = Math.sin(frameCount * 0.28) * 6;
-  ctx.strokeStyle = skinCharred;
-  ctx.lineWidth = 3.4;
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.35, R_m * 0.2);
-  ctx.lineTo(-R_m * 0.55 + legWalk, R_m * 0.65);
-  ctx.lineTo(-R_m * 0.45 + legWalk, R_m * 1.05);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(R_m * 0.15, R_m * 0.2);
-  ctx.lineTo(R_m * 0.05 - legWalk, R_m * 0.65);
-  ctx.lineTo(R_m * 0.25 - legWalk, R_m * 1.05);
-  ctx.stroke();
-
-  // Tiras de couro arrebentadas pendendo das pernas
-  ctx.strokeStyle = strapColor;
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.55 + legWalk, R_m * 0.65);
-  ctx.lineTo(-R_m * 0.8 + legWalk, R_m * 0.85);
-  ctx.stroke();
-
-  // 2. Torso Humanoide Curvado em 4 Apoios com Costelas Expostas
-  ctx.fillStyle = skinRot;
-  ctx.beginPath();
-  ctx.moveTo(-R_m * 0.45, -R_m * 0.1);
-  ctx.quadraticCurveTo(R_m * 0.1, -R_m * 0.65, R_m * 0.52, -R_m * 0.18);
-  ctx.lineTo(R_m * 0.28, R_m * 0.5);
-  ctx.lineTo(-R_m * 0.35, R_m * 0.35);
-  ctx.closePath();
-  ctx.fill();
-
-  // Costelas queimadas visíveis
-  ctx.strokeStyle = '#050201';
-  ctx.lineWidth = 1.4;
-  for (let cb = 0; cb < 4; cb++) {
-    ctx.beginPath();
-    ctx.moveTo(-R_m * 0.2 + cb * 3.5, 0);
-    ctx.lineTo(-R_m * 0.15 + cb * 3.5, R_m * 0.32);
-    ctx.stroke();
-  }
-
-  // 3. A Redoma de Vidro Enxertada na Coluna (O Alambique)
-  const domeR = (R_m * (isFuse ? 0.95 : 0.76)) + pustulePulse;
-  const domeX = -R_m * 0.48;
-  const domeY = -R_m * 0.45;
-
-  // Cinta metálica parafusada na coluna
-  ctx.fillStyle = '#2f3542';
-  ctx.fillRect(domeX - domeR * 0.3, domeY + domeR * 0.6, domeR * 0.6, 5);
-
-  // Vidro da redoma com líquido fervente
-  ctx.fillStyle = isFuse ? (fuseRatio > 0.6 ? '#f1c40f' : '#e67e22') : '#d35400';
-  ctx.beginPath();
-  ctx.arc(domeX, domeY, domeR, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = isFuse ? '#ffffff' : '#f39c12';
-  ctx.beginPath();
-  ctx.arc(domeX, domeY, domeR * 0.65, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Reflexo vítreo curvo na redoma
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.arc(domeX, domeY, domeR * 0.85, -Math.PI * 0.75, -Math.PI * 0.25);
-  ctx.stroke();
-
-  // 4. Tubos de Exaustão de Cobre da Nuca à Redoma
-  ctx.strokeStyle = copperPipe;
-  ctx.lineWidth = 2.4;
-  ctx.beginPath();
-  ctx.moveTo(domeX + domeR * 0.4, domeY - domeR * 0.5);
-  ctx.quadraticCurveTo(R_m * 0.15, -R_m * 0.8, R_m * 0.5, -R_m * 0.3);
-  ctx.stroke();
-
-  // 5. Cabeça Deformada com Mordaça de Ferro Cospe-Cinzas
-  ctx.fillStyle = skinCharred;
-  ctx.beginPath();
-  ctx.arc(R_m * 0.62, -R_m * 0.12, R_m * 0.36, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Mordaça metálica retangular forçando abertura bucal
-  ctx.fillStyle = '#2f3542';
-  ctx.fillRect(R_m * 0.65, -2, 6, 6);
-  ctx.fillStyle = isFuse ? '#ffffff' : '#f1c40f';
-  ctx.fillRect(R_m * 0.7, 0, 3, 3); // Brasa dentro da boca
-
-  // Olho vazado incandescente
-  ctx.fillStyle = isFuse ? '#ffffff' : '#e74c3c';
-  ctx.fillRect(R_m * 0.7, -R_m * 0.22, 3, 2.5);
-
-  // Fagulhas e fuligem subindo no FUSE
-  if (isFuse || Math.random() < 0.3) {
-    ctx.fillStyle = Math.random() < 0.5 ? '#f1c40f' : '#e74c3c';
-    ctx.fillRect(domeX + (Math.random() - 0.5) * 12, domeY - domeR - 4 - Math.random() * 8, 3, 3);
-  }
+  const dead = e.deathPose !== undefined;
+  const fuse = !dead && e.fuseState === 'FUSE';
+  const p = creaturePalette(e, '#b94a27', '#451627', '#ff8019');
+  const urgency = dead ? 0 : Math.max(0, 1 - Math.hypot((e.x || 0) - player.x, (e.y || 0) - player.y) / 260);
+  const progress = fuse ? Math.max(0, Math.min(1, 1 - (e.fuseTimer || 0) / 28)) : 0;
+  const pulse = dead ? 0 : Math.sin(frameCount * (fuse ? .6 : .12 + urgency * .3)) * (fuse ? .07 : .025);
+  const step = dead || fuse ? 0 : Math.sin(frameCount * .28) * .1;
+  beginCreature(ctx, e);
+  stroke(ctx, [[-.36, .25], [-.62, .63], [-.66 + step, .95]], p.ink, .25);
+  stroke(ctx, [[.28, .28], [.55, .56], [.67 - step, .94]], p.ink, .23);
+  polygon(ctx, [[-.85 - pulse, -.32], [-.55, -.84 - pulse], [.09, -.79], [.52 + pulse, -.27], [.44 + pulse, .52], [-.19, .85 + pulse], [-.79, .5]], p.shade, p.ink, .11);
+  // The fuse is an attack signal even though its AI deliberately sets hitFlash.
+  const ember = fuse ? (progress > .66 ? '#ffe3a0' : '#ffb74e') : p.accent;
+  ellipse(ctx, -.17, .07, .51 + pulse, .57 + pulse, ember, p.ink, .09);
+  ellipse(ctx, -.28, -.05, .25, .32, fuse ? '#fff3d4' : '#ffd38b', null);
+  polygon(ctx, [[-.78, -.32], [-.43, -.69], [-.26, -.58], [-.47, -.25]], p.body);
+  polygon(ctx, [[.17, -.68], [.35, -.94], [.68, -.83], [.86, -.55], [.71, -.28], [.34, -.35]], p.body);
+  polygon(ctx, [[.54, -.44], [.89, -.37], [.69, -.21], [.42, -.34]], p.shade);
+  stroke(ctx, [[.5, -.67], [.73, -.57]], ember, .1);
+  stroke(ctx, [[.52, -.39], [.72, -.39]], p.ink, .1);
+  stroke(ctx, [[.37, -.08], [.69, .22], [.87, .53]], p.ink, .24);
+  stroke(ctx, [[.37, -.08], [.69, .22], [.87, .53]], p.body, .14);
+  const wickTop = -.97 + progress * .19;
+  stroke(ctx, [[-.3, -.67], [-.43, -.93], [-.28, wickTop - .1]], p.ink, .17);
+  stroke(ctx, [[-.3, -.67], [-.43, -.93], [-.28, wickTop - .1]], p.body, .09);
+  if (!dead) polygon(ctx, [[-.42, wickTop -.1], [-.28, wickTop -.43 - pulse], [-.1, wickTop -.11], [-.25, wickTop + .03]], ember, p.ink, .06);
+  endCreature(ctx);
 }
 
-/**
- * Renderiza a animação de morte em 3 fases de Rastejante Suicida.
- * @param {Object} de Entidade agonizante em dyingEnemies
- * @param {number} t Progresso normalizado de morte (0 a 1)
- * @param {number} R Raio de colisão da criatura
- */
-export function drawDying(de, t, R) {
-  // Ruptura da redoma dorsal de vidro com ejeção de piche fervente e brasas
-  const burst = 1 + t * 1.8;
-  ctx.scale(burst, burst);
-
-  // Clarão central
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(0, 0, Math.max(1, R * 0.65 * (1 - t * 1.2)), 0, Math.PI * 2);
-  ctx.fill();
-
-  // Piche e brasas incandescentes
-  ctx.fillStyle = '#e67e22';
-  for (let sh = 0; sh < 7; sh++) {
-    const sa = sh * (Math.PI * 2 / 7) + t * 1.8;
-    const sDist = R * (0.8 + t * 2.2);
-    ctx.fillRect(Math.cos(sa) * sDist - 2.5, Math.sin(sa) * sDist - 2.5, 5, 5);
-  }
-  ctx.fillStyle = '#d35400';
-  ctx.fillRect(-R * 0.3, -R * 0.3, R * 0.6, R * 0.6);
-}
+export function drawDying(de, t) { drawCreatureDeath(ctx, de, t, draw, 'burst'); }

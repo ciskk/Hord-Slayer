@@ -1,3 +1,4 @@
+import { drawBossPhaseCinematic } from '../systems/bossPhaseCinematic.js';
 /**
  * src/render/renderer.js
  * 
@@ -223,7 +224,7 @@ export function render() {
   // mantendo coordenadas contínuas de ponto flutuante durante a transição cinematográfica de zoom
   const isIntroActive = matchIntro && matchIntro.active;
   const isDeathActive = deathSequence && deathSequence.active;
-  const isContinuousCam = isIntroActive || isDeathActive;
+  const isContinuousCam = isIntroActive || isDeathActive || !!(activeBoss && activeBoss.phaseCinematic);
   const renderCamX = isContinuousCam ? (-camera.x + shakeX) : Math.round(-camera.x + shakeX);
   const renderCamY = isContinuousCam ? (-camera.y + shakeY) : Math.round(-camera.y + shakeY);
   ctx.translate(renderCamX, renderCamY);
@@ -254,14 +255,26 @@ export function render() {
 
   renderAcidPuddles(ctx, acidPuddles, bounds, frameCount);
   renderGems(ctx, gems, bounds, frameCount, player);
-  renderBossTelegraphs(ctx, bossTelegraphs, frameCount);
-  renderBossShockwaves(ctx, bossShockwaves, activeBoss, frameCount);
-  renderBossProjectiles(ctx, bossProjectiles, frameCount);
 
   // Renderiza auras, bíblias protetoras e machados giratórios do jogador
   drawPlayerEquipment();
 
-  for (let i = 0; i < bullets.length; i++) {
+  const isDeathSeqActive = !!(deathSequence && deathSequence.active);
+  const projAlpha = isDeathSeqActive
+    ? (deathSequence.projectileFadeAlpha !== undefined ? deathSequence.projectileFadeAlpha : 1.0)
+    : (gameState && gameState.isDead ? 0 : 1.0);
+
+  if (projAlpha > 0.001) {
+    if (projAlpha < 1.0) {
+      ctx.save();
+      ctx.globalAlpha = projAlpha;
+    }
+
+    renderBossTelegraphs(ctx, bossTelegraphs, frameCount);
+    renderBossShockwaves(ctx, bossShockwaves, activeBoss, frameCount);
+    renderBossProjectiles(ctx, bossProjectiles, frameCount);
+
+    for (let i = 0; i < bullets.length; i++) {
     const b = bullets[i];
 
     if (b.type === 'HAMMER_SLAM') {
@@ -677,6 +690,53 @@ export function render() {
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-1, -1, 2, 2);
+    } else if (bType === 'BASALT_LANCE') {
+      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
+      ctx.rotate(bAng);
+
+      // Rastro incandescente de magma e brasas
+      const tailGrad = ctx.createLinearGradient(-22, 0, 8, 0);
+      tailGrad.addColorStop(0, 'rgba(230, 126, 34, 0)');
+      tailGrad.addColorStop(0.5, 'rgba(231, 76, 60, 0.55)');
+      tailGrad.addColorStop(0.85, 'rgba(243, 156, 18, 0.85)');
+      tailGrad.addColorStop(1, '#ffffff');
+      ctx.fillStyle = tailGrad;
+      ctx.beginPath();
+      ctx.moveTo(-22, 0);
+      ctx.lineTo(-4, -4);
+      ctx.lineTo(8, 0);
+      ctx.lineTo(-4, 4);
+      ctx.closePath();
+      ctx.fill();
+
+      // Corpo da Lança de Basalto (losango afiado de rocha e magma)
+      ctx.fillStyle = '#1e272e';
+      ctx.strokeStyle = '#e67e22';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(10, 0);
+      ctx.lineTo(-2, -5);
+      ctx.lineTo(-12, 0);
+      ctx.lineTo(-2, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Núcleo de lava superaquecido central
+      ctx.fillStyle = '#ff4757';
+      ctx.beginPath();
+      ctx.moveTo(7, 0);
+      ctx.lineTo(-1, -2.5);
+      ctx.lineTo(-8, 0);
+      ctx.lineTo(-1, 2.5);
+      ctx.closePath();
+      ctx.fill();
+
+      // Ponto especular branco na ponta perfurante
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(6, 0, 1.8, 0, Math.PI * 2);
+      ctx.fill();
     } else if (bType === 'CHAOS') {
       const cPulse = Math.sin(frameCount * 0.25) * 1.5;
       // Halo do Caos Pulsante
@@ -915,7 +975,304 @@ export function render() {
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(3, 0, 1.8, 0, Math.PI * 2);
+    } else if (bType === 'SNIPER_ARROW') {
+      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
+      ctx.rotate(bAng);
+
+      // Rastro de vácuo cintilante e estilhaços de éter
+      const arrowGrad = ctx.createLinearGradient(-26, 0, 8, 0);
+      arrowGrad.addColorStop(0, 'rgba(156, 136, 255, 0)');
+      arrowGrad.addColorStop(0.5, 'rgba(162, 155, 254, 0.45)');
+      arrowGrad.addColorStop(1, 'rgba(224, 86, 253, 0.9)');
+      ctx.fillStyle = arrowGrad;
+      ctx.beginPath();
+      ctx.moveTo(-26, 0);
+      ctx.lineTo(-4, -2.5);
+      ctx.lineTo(8, 0);
+      ctx.lineTo(-4, 2.5);
+      ctx.closePath();
+      ctx.fill();
+
+      // Haste de osso entalhada com runas
+      ctx.strokeStyle = '#dfe4ea';
+      ctx.lineWidth = 2.0;
+      ctx.beginPath();
+      ctx.moveTo(-16, 0);
+      ctx.lineTo(8, 0);
+      ctx.stroke();
+
+      // Fletching de penas astrais
+      ctx.fillStyle = '#a29bfe';
+      ctx.beginPath();
+      ctx.moveTo(-16, 0);
+      ctx.lineTo(-22, -4);
+      ctx.lineTo(-18, 0);
+      ctx.lineTo(-22, 4);
+      ctx.closePath();
+      ctx.fill();
+
+      // Ponta de cristal de éter facetada
+      ctx.fillStyle = '#e056fd';
+      ctx.beginPath();
+      ctx.moveTo(8, -4);
+      ctx.lineTo(16, 0);
+      ctx.lineTo(8, 4);
+      ctx.lineTo(6, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // Núcleo incandescente estelar
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(8, -1, 3, 2);
+    } else if (bType === 'CHAIN_HOOK') {
+      // Elos de corrente desenhados a partir da posição do monstro lançador
+      const parentX = eb.parentEntity ? eb.parentEntity.x : eb.parentX;
+      const parentY = eb.parentEntity ? eb.parentEntity.y : eb.parentY;
+      if (parentX !== undefined && parentY !== undefined) {
+        const pRelX = parentX - eb.x;
+        const pRelY = parentY - eb.y;
+        const chainLen = Math.hypot(pRelX, pRelY);
+        if (chainLen > 4) {
+          ctx.save();
+          // Linha guia de aço escuro
+          ctx.strokeStyle = '#2d3436';
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          ctx.moveTo(pRelX, pRelY);
+          ctx.lineTo(0, 0);
+          ctx.stroke();
+
+          // Elos metálicos ovais intercalados
+          const linkDist = 11;
+          const totalLinks = Math.floor(chainLen / linkDist);
+          ctx.strokeStyle = '#95a5a6';
+          ctx.lineWidth = 2.0;
+          for (let l = 1; l < totalLinks; l++) {
+            const frac = l / totalLinks;
+            const lx = pRelX * (1 - frac);
+            const ly = pRelY * (1 - frac);
+            ctx.strokeRect(lx - 2.5, ly - 2.5, 5, 5);
+          }
+          ctx.restore();
+        }
+      }
+
+      // Gancho de açougueiro pesado girando em direção ao vetor de movimento
+      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
+      ctx.rotate(bAng);
+
+      // Haste da manilha de fixação
+      ctx.fillStyle = '#576574';
+      ctx.fillRect(-8, -2.5, 6, 5);
+      ctx.strokeStyle = '#2f3542';
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(-8, -2.5, 6, 5);
+
+      // Corpo maciço do gancho curvo de ferro
+      ctx.fillStyle = '#dfe4ea';
+      ctx.beginPath();
+      ctx.moveTo(-2, -3);
+      ctx.lineTo(8, -3);
+      ctx.quadraticCurveTo(14, -2, 14, 5);
+      ctx.quadraticCurveTo(12, 12, 2, 11);
+      ctx.lineTo(5, 7);
+      ctx.quadraticCurveTo(9, 7, 9, 3);
+      ctx.lineTo(-2, 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#1e272e';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      // Ponta farpada afiada e mancha de sangue fresco
+      ctx.fillStyle = '#b33939';
+      ctx.beginPath();
+      ctx.moveTo(2, 11);
+      ctx.lineTo(8, 14);
+      ctx.lineTo(5, 7);
+      ctx.closePath();
+      ctx.fill();
+    } else if (bType === 'WEB_COCOON') {
+      const spin = frameCount * 0.22 + eb.x;
+      ctx.rotate(spin);
+
+      // Fios de seda soltos em espiral
+      ctx.strokeStyle = 'rgba(223, 228, 234, 0.65)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, (eb.radius || 7) + 3, 0, Math.PI * 1.5);
+      ctx.stroke();
+
+      // Núcleo denso do casulo de mortalha fúnebre
+      ctx.fillStyle = '#b2bec3';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, (eb.radius || 7), (eb.radius || 7) * 0.75, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#636e72';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+
+      // Bandagens transversais entrecruzadas
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-5, -4);
+      ctx.lineTo(5, 4);
+      ctx.moveTo(-5, 4);
+      ctx.lineTo(5, -4);
+      ctx.stroke();
+
+      // Gotículas de secreção venenosa aderente
+      ctx.fillStyle = '#16a085';
+      ctx.fillRect(-2, -2, 4, 4);
+    } else if (bType === 'THORN_SPIKE' || bType === 'CHITIN_SPIKE') {
+      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
+      ctx.rotate(bAng);
+
+      // Rastro de perfuração sombria
+      ctx.fillStyle = 'rgba(142, 68, 173, 0.45)';
+      ctx.fillRect(-10, -2, 12, 4);
+
+      // Agulha cirúrgica de ferro negro
+      ctx.fillStyle = '#2c3e50';
+      ctx.beginPath();
+      ctx.moveTo(-8, -2.5);
+      ctx.lineTo(9, 0);
+      ctx.lineTo(-8, 2.5);
+      ctx.lineTo(-6, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#9b59b6';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // Brilho especular de corte de ametista
+      ctx.fillStyle = '#e056fd';
+      ctx.fillRect(2, -0.8, 5, 1.6);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(6, -0.6, 2, 1.2);
+    } else if (bType === 'SWARM_HORNET' || bType === 'BAT') {
+      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
+      ctx.rotate(bAng);
+
+      // Batimento rápido de asas membranosas
+      const flap = Math.sin(frameCount * 0.75 + eb.x) * 6;
+      ctx.fillStyle = 'rgba(178, 190, 195, 0.6)';
+      ctx.beginPath();
+      ctx.ellipse(-2, -6 + flap * 0.3, 4, Math.abs(flap) + 2, -0.4, 0, Math.PI * 2);
+      ctx.ellipse(-2, 6 - flap * 0.3, 4, Math.abs(flap) + 2, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Corpo da vespa parasita em quitina esmeralda
+      ctx.fillStyle = '#16a085';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 6, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#0e6251';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // Ferrão afiado gotejante
+      ctx.fillStyle = '#f1c40f';
+      ctx.beginPath();
+      ctx.moveTo(5, -1.5);
+      ctx.lineTo(10, 0);
+      ctx.lineTo(5, 1.5);
+      ctx.closePath();
+      ctx.fill();
+
+      // Olhos facetados carmesins
+      ctx.fillStyle = '#ff4757';
+      ctx.fillRect(2, -2, 1.5, 1.5);
+      ctx.fillRect(2, 0.5, 1.5, 1.5);
+    } else if (bType === 'BLOOD') {
+      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
+      ctx.rotate(bAng);
+
+      // Rastro de corte de sangue translúcido
+      const cGrad = ctx.createLinearGradient(-16, 0, 10, 0);
+      cGrad.addColorStop(0, 'rgba(255, 23, 68, 0)');
+      cGrad.addColorStop(0.5, 'rgba(180, 10, 35, 0.65)');
+      cGrad.addColorStop(1, 'rgba(255, 255, 255, 0.95)');
+      ctx.fillStyle = cGrad;
+      ctx.beginPath();
+      ctx.moveTo(-16, 0);
+      ctx.quadraticCurveTo(-4, -8, 8, 0);
+      ctx.quadraticCurveTo(-4, 8, -16, 0);
+      ctx.fill();
+
+      // Lâmina curvada de cristal de sangue
+      ctx.fillStyle = '#ff1744';
+      ctx.beginPath();
+      ctx.moveTo(10, 0);
+      ctx.lineTo(-4, -6);
+      ctx.quadraticCurveTo(0, 0, -4, 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    } else if (bType === 'BOULDER') {
+      const bRad = eb.radius || 12;
+      const arcProgress = eb.maxLife ? Math.max(0, Math.min(1, 1 - (eb.life / eb.maxLife))) : 0.5;
+      const arcHeight = Math.sin(arcProgress * Math.PI) * 36;
+
+      // 1. Sombra desacoplada no solo
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      const shadowScale = Math.max(0.4, 1 - (arcHeight / 60));
+      ctx.beginPath();
+      ctx.ellipse(0, arcHeight, bRad * shadowScale * 1.25, bRad * shadowScale * 0.65, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 2. Elevação balística no plano Z
+      ctx.translate(0, -arcHeight);
+      const spin = frameCount * 0.14 + (eb.x * 0.05);
+      ctx.rotate(spin);
+
+      // 3. Rocha Basáltica com Facetas Angulares
+      ctx.fillStyle = '#2d3436';
+      ctx.beginPath();
+      ctx.moveTo(-bRad, -bRad * 0.4);
+      ctx.lineTo(-bRad * 0.4, -bRad);
+      ctx.lineTo(bRad * 0.6, -bRad * 0.8);
+      ctx.lineTo(bRad, -bRad * 0.2);
+      ctx.lineTo(bRad * 0.8, bRad * 0.7);
+      ctx.lineTo(-bRad * 0.2, bRad);
+      ctx.lineTo(-bRad * 0.9, bRad * 0.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#1e272e';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+
+      // 4. Fissuras de Magma Incandescente
+      ctx.strokeStyle = '#d35400';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(-bRad * 0.6, -bRad * 0.2);
+      ctx.lineTo(0, 0);
+      ctx.lineTo(bRad * 0.5, bRad * 0.3);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(bRad * 0.2, -bRad * 0.6);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#f1c40f';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-bRad * 0.3, -bRad * 0.1);
+      ctx.lineTo(0, 0);
+      ctx.lineTo(bRad * 0.3, bRad * 0.15);
+      ctx.stroke();
+
+      // 5. Núcleo Térmico Central
+      ctx.fillStyle = '#f39c12';
+      ctx.beginPath();
+      ctx.arc(0, 0, bRad * 0.25, 0, Math.PI * 2);
       ctx.fill();
     } else {
       // Projétil Padrão Polido (Ruby Shard)
@@ -934,48 +1291,85 @@ export function render() {
     ctx.restore();
   }
 
+    if (projAlpha < 1.0) {
+      ctx.restore();
+    }
+  }
+
+  const isBossBattle = !!(deathSequence && deathSequence.isBossBattle);
+  const mobAlpha = (isDeathSeqActive && !isBossBattle)
+    ? (deathSequence.mobFadeAlpha !== undefined ? deathSequence.mobFadeAlpha : 1.0)
+    : ((gameState && gameState.isDead && !isBossBattle) ? 0 : 1.0);
 
   // Defesa em profundidade: garante opacidade integral antes de desenhar entidades e jogador
   ctx.globalAlpha = 1.0;
 
-  renderEnemiesShadows(ctx, enemies, bounds, frameCount);
-  renderDyingEnemies(dyingEnemies, bounds);
-  renderEnemies(enemies, bounds);
+  if (mobAlpha > 0.001) {
+    if (mobAlpha < 1.0) {
+      ctx.save();
+      ctx.globalAlpha = mobAlpha;
+    }
+    renderEnemiesShadows(ctx, enemies, bounds, frameCount);
+    renderDyingEnemies(dyingEnemies, bounds);
+    renderEnemies(enemies, bounds);
+    if (mobAlpha < 1.0) {
+      ctx.restore();
+    }
+  }
+
   drawPlayerCharacter();
   renderDeathSequenceWorld(ctx);
   drawPlayerChestArrows(ctx, chests, player, frameCount);
 
-  for (let i = 0; i < particles.length; i++) {
-    const p = particles[i];
-    if (p.x >= viewLeft && p.x <= viewRight && p.y >= viewTop && p.y <= viewBottom) {
-      ctx.fillStyle = p.color;
-      ctx.fillRect(p.x, p.y, 3, 3);
+  const combatFxAlpha = isDeathSeqActive ? projAlpha : 1.0;
+  if (combatFxAlpha > 0.001) {
+    if (combatFxAlpha < 1.0) {
+      ctx.save();
+      ctx.globalAlpha = combatFxAlpha;
     }
-  }
-
-  if (damageTexts.length > 0) {
-    ctx.textAlign = 'center';
-    for (let i = 0; i < damageTexts.length; i++) {
-      const dtItem = damageTexts[i];
-      if (dtItem.x < viewLeft || dtItem.x > viewRight || dtItem.y < viewTop || dtItem.y > viewBottom) continue;
-      const alpha = Math.max(0, dtItem.life / dtItem.maxLife);
-      ctx.fillStyle = dtItem.color;
-      ctx.globalAlpha = alpha;
-      ctx.font = dtItem.isCrit ? 'bold 16px sans-serif' : 'bold 12px sans-serif';
-      if (dtItem.isCrit) {
-        ctx.strokeStyle = '#d35400';
-        ctx.lineWidth = 2.5;
-        ctx.strokeText(dtItem.text, dtItem.x, dtItem.y);
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      if (p.x >= viewLeft && p.x <= viewRight && p.y >= viewTop && p.y <= viewBottom) {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 3, 3);
       }
-      ctx.fillText(dtItem.text, dtItem.x, dtItem.y);
     }
-    ctx.globalAlpha = 1.0;
+
+    if (damageTexts.length > 0) {
+      ctx.textAlign = 'center';
+      for (let i = 0; i < damageTexts.length; i++) {
+        const dtItem = damageTexts[i];
+        if (dtItem.x < viewLeft || dtItem.x > viewRight || dtItem.y < viewTop || dtItem.y > viewBottom) continue;
+        const alpha = Math.max(0, dtItem.life / dtItem.maxLife);
+        ctx.fillStyle = dtItem.color;
+        ctx.globalAlpha = alpha;
+        ctx.font = dtItem.isCrit ? 'bold 16px sans-serif' : 'bold 12px sans-serif';
+        if (dtItem.isCrit) {
+          ctx.strokeStyle = '#d35400';
+          ctx.lineWidth = 2.5;
+          ctx.strokeText(dtItem.text, dtItem.x, dtItem.y);
+        }
+        ctx.fillText(dtItem.text, dtItem.x, dtItem.y);
+      }
+      ctx.globalAlpha = 1.0;
+    }
+    if (combatFxAlpha < 1.0) {
+      ctx.restore();
+    }
   }
 
   ctx.restore();
 
-
-  renderMinibossOffscreenRadar(ctx, enemies, camera, CAMERA_ZOOM, viewW, viewH, frameCount);
+  if (mobAlpha > 0.001) {
+    if (mobAlpha < 1.0) {
+      ctx.save();
+      ctx.globalAlpha = mobAlpha;
+      renderMinibossOffscreenRadar(ctx, enemies, camera, CAMERA_ZOOM, viewW, viewH, frameCount);
+      ctx.restore();
+    } else {
+      renderMinibossOffscreenRadar(ctx, enemies, camera, CAMERA_ZOOM, viewW, viewH, frameCount);
+    }
+  }
 
   // Radar Periférico de Baús de Miniboss e Boss Fora de Tela
   drawOffscreenChestRadar(ctx, chests, player, camera, CAMERA_ZOOM, viewW, viewH, frameCount);
@@ -1179,6 +1573,8 @@ export function render() {
   if ((deathSequence && deathSequence.active) || gameState.isDead) {
     renderDeathSequenceOverlay(ctx, viewW, viewH);
   }
+
+  drawBossPhaseCinematic(ctx, activeBoss, viewW, viewH, camera, CAMERA_ZOOM);
 
   // 5. Barras Pretas de Cinema (Letterbox) durante a intro do Boss ou início de partida
   if (cinematicCamera && cinematicCamera.letterboxProgress > 0.005) {

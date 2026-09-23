@@ -838,7 +838,7 @@ export function drawThermalVents(ctx, boss, frameCount) {
 export function drawTelegraphsAndZones(ctx, e, frameCount) {
   // 1. Telegrafia do Esmagamento Frontal (Cone com Rachaduras e Lock-in Cristalino)
   if (e.actionState === MONOLITH_STATES.WINDUP_SLAM) {
-    const maxTimer = e.isPhase3 ? 48 : (e.isEnraged ? 48 : 60);
+    const maxTimer = e.maxActionTimer || (e.isPhase3 ? 45 : (e.isEnraged ? 52 : 60));
     const progress = Math.min(1, Math.max(0, 1 - (e.actionTimer / maxTimer)));
     const aim = e.aimAngle || 0;
     const arcHalf = e.slamArc || (Math.PI * 0.31);
@@ -913,7 +913,7 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
 
   // 2. Telegrafia do EPICENTRO (Solo sob o chefe rachando)
   if (e.actionState === MONOLITH_STATES.WINDUP_EPICENTER) {
-    const maxTimer = e.isPhase3 ? 126 : (e.isEnraged ? 144 : 168);
+    const maxTimer = e.maxActionTimer || (e.isPhase3 ? 45 : (e.isEnraged ? 52 : 60));
     const progress = Math.min(1, Math.max(0, 1 - (e.actionTimer / maxTimer)));
     const coreR = 115;
 
@@ -954,7 +954,7 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
 
   // 3. Telegrafia da ONDA EXTERNA (O centro já explodiu e é SEGURO; o anel externo vai estourar!)
   if (e.actionState === MONOLITH_STATES.PROPAGATING_SURGE) {
-    const maxTimer = e.isPhase3 ? 96 : (e.isEnraged ? 114 : 135);
+    const maxTimer = e.maxActionTimer || (e.isPhase3 ? 32 : (e.isEnraged ? 41 : 49));
     const progress = Math.min(1, Math.max(0, 1 - (e.actionTimer / maxTimer)));
 
     ctx.save();
@@ -1014,7 +1014,7 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
 
   // 4. Telegrafia da Varredura de Placas (Plate Whirl)
   if (e.actionState === MONOLITH_STATES.WINDUP_WHIRL) {
-    const maxTimer = e.isPhase3 ? 48 : (e.isEnraged ? 48 : 60);
+    const maxTimer = e.maxActionTimer || (e.isPhase3 ? 45 : (e.isEnraged ? 52 : 60));
     const progress = Math.min(1, Math.max(0, 1 - (e.actionTimer / maxTimer)));
     const whirlR = 110;
 
@@ -1052,6 +1052,100 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
     }
     ctx.restore();
   }
+
+  // 5. Telegrafia da Salva Vulcânica de Basalto (Feixes-Guia das Manoplas e Mira Direcional)
+  if (e.actionState === MONOLITH_STATES.WINDUP_SALVO) {
+    const maxTimer = e.maxActionTimer || (e.isPhase3 ? 45 : (e.isEnraged ? 52 : 60));
+    const progress = Math.min(1, Math.max(0, 1 - (e.actionTimer / maxTimer)));
+    const aim = e.aimAngle || 0;
+    const beamLength = 650;
+
+    ctx.save();
+    // Feixes gêmeos das manoplas esquerda (-52) e direita (+52)
+    [-52, 52].forEach((offsetSide) => {
+      const startX = offsetSide;
+      const startY = 6;
+      const endX = startX + Math.cos(aim) * (beamLength * progress);
+      const endY = startY + Math.sin(aim) * (beamLength * progress);
+
+      const beamGrad = ctx.createLinearGradient(startX, startY, endX, endY);
+      beamGrad.addColorStop(0, 'rgba(255, 71, 87, 0.85)');
+      beamGrad.addColorStop(0.7, 'rgba(230, 126, 34, 0.55)');
+      beamGrad.addColorStop(1, 'rgba(241, 196, 15, 0.05)');
+
+      ctx.strokeStyle = beamGrad;
+      ctx.lineWidth = 2.0 + Math.sin(frameCount * 0.3) * 0.5;
+      ctx.setLineDash([8, 5]);
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Ponto de foco de calor na ponta de cada manopla
+      ctx.fillStyle = progress > 0.80 ? '#ffffff' : '#ff4757';
+      ctx.beginPath();
+      ctx.arc(startX, startY, 4 + progress * 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Mira reticular centralizada no alvo ao final do feixe
+    const targetDist = Math.min(400, beamLength * progress);
+    const tarX = Math.cos(aim) * targetDist;
+    const tarY = Math.sin(aim) * targetDist;
+
+    ctx.strokeStyle = progress > 0.85 ? '#ffffff' : 'rgba(255, 71, 87, 0.85)';
+    ctx.lineWidth = 2.0;
+    ctx.beginPath();
+    ctx.arc(tarX, tarY, 16 * (1 - progress * 0.25), 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // 6. Telegrafia das Fendas Tectônicas Cruzadas (Fraturas em X cortando a arena)
+  if (e.actionState === MONOLITH_STATES.WINDUP_CROSS_FISSURE) {
+    const maxTimer = e.maxActionTimer || (e.isPhase3 ? 45 : (e.isEnraged ? 52 : 60));
+    const progress = Math.min(1, Math.max(0, 1 - (e.actionTimer / maxTimer)));
+    const aim = e.aimAngle || 0;
+    const crossSpan = 450 * progress;
+
+    ctx.save();
+    // As duas diagonais cruzadas
+    const angles = [aim + Math.PI / 4, aim - Math.PI / 4];
+    angles.forEach((ang) => {
+      const x1 = Math.cos(ang) * -crossSpan;
+      const y1 = Math.sin(ang) * -crossSpan;
+      const x2 = Math.cos(ang) * crossSpan;
+      const y2 = Math.sin(ang) * crossSpan;
+
+      // Faixa de perigo da fratura
+      ctx.strokeStyle = `rgba(230, 126, 34, ${0.15 + progress * 0.35})`;
+      ctx.lineWidth = 26 * progress;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      // Linha central incandescente
+      ctx.strokeStyle = progress > 0.85 ? '#ffffff' : '#ff4757';
+      ctx.lineWidth = 2.4;
+      ctx.setLineDash([12, 6]);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+
+    // Núcleo de intersecção brilhante no centro do X
+    ctx.fillStyle = progress > 0.85 ? '#ffffff' : '#f39c12';
+    ctx.beginPath();
+    ctx.arc(0, 0, 8 * progress, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
 }
 
 /**
@@ -1065,7 +1159,7 @@ export function drawTelegraphsAndZones(ctx, e, frameCount) {
  * @param {boolean} isWindup
  */
 export function drawFloatingPlates(ctx, e, bob, frameCount, isVuln, isEnraged, isWindup) {
-  const isP3 = e.isPhase3;
+  const isP3 = e.isPhase3 || (e.phaseCinematic && e.phaseCinematic.phase === 3 && (e.phaseCinematic.morphProgress || 0) > 0.05);
 
   const plateColDark  = isVuln ? '#121619' : (isP3 ? '#30050a' : (isEnraged ? '#240a0e' : '#161d22'));
   const plateColMid   = isVuln ? '#1e252a' : (isP3 ? '#4d0b13' : (isEnraged ? '#391117' : '#26303a'));
@@ -1098,6 +1192,18 @@ export function drawFloatingPlates(ctx, e, bob, frameCount, isVuln, isEnraged, i
       px = Math.cos(spinAng) * 98;
       py = Math.sin(spinAng) * 58 + bob;
       rot = spinAng + Math.PI / 2;
+    } else if (e.actionState === MONOLITH_STATES.WINDUP_SALVO) {
+      // Placas recuadas nos ombros como dissipadores de calor
+      const spread = (i - 1.5) * 28;
+      px = spread;
+      py = -30 + bob;
+      rot = spread / 50;
+    } else if (e.actionState === MONOLITH_STATES.WINDUP_CROSS_FISSURE) {
+      // Placas abertas amplamente
+      const pAng = p.angleOffset + frameCount * 0.04;
+      px = Math.cos(pAng) * 92;
+      py = (Math.sin(pAng) * 44) + bob;
+      rot = pAng + Math.PI / 2;
     } else if (e.actionState === MONOLITH_STATES.CHANNELING_SIPHON) {
       const fastAng = p.angleOffset - frameCount * 0.14;
       px = Math.cos(fastAng) * 68;
@@ -1836,8 +1942,10 @@ export function drawAbyssalMonolith(ctx, e, frameCount) {
   }
 
   const isVuln = e.isVulnerable;
-  const isEnraged = e.isEnraged;
-  const isP3 = e.isPhase3;
+  const morph = e.phaseCinematic ? (e.phaseCinematic.morphProgress || 0) : (e.transformationProgress || 0);
+  const targetPhase = e.phaseCinematic ? e.phaseCinematic.phase : (e.phase || 1);
+  const isEnraged = e.isEnraged || (targetPhase >= 2 && morph > 0.05);
+  const isP3 = e.isPhase3 || (targetPhase === 3 && morph > 0.05);
   const isWindup = e.actionState.startsWith('WINDUP');
   const isChanneling = e.actionState === MONOLITH_STATES.CHANNELING_SIPHON;
 
@@ -1867,7 +1975,30 @@ export function drawAbyssalMonolith(ctx, e, frameCount) {
     ctx.translate((Math.random() - 0.5) * 3.0, (Math.random() - 0.5) * 3.0);
   }
 
+  // Tremor sísmico lento do corpo durante a metamorfose da fase
+  if (e.phaseCinematic && morph > 0.1 && morph < 0.9) {
+    const quake = Math.sin(frameCount * 0.4) * 2.0 * (1 - Math.abs(morph - 0.5) * 2);
+    ctx.translate(quake, 0);
+  }
+
   drawShadow(ctx, e, bob, isVuln);
+
+  // Aura térmica e pulsos de magma em slow motion durante a transição cinematográfica
+  if (e.phaseCinematic && morph > 0.05) {
+    ctx.save();
+    const heatAlpha = Math.sin(morph * Math.PI) * 0.65;
+    const heatColorStr = targetPhase === 3 ? '255, 71, 87' : '255, 159, 67';
+    const heatGrad = ctx.createRadialGradient(0, -6 + bob, 15, 0, -6 + bob, 120 * (0.8 + 0.5 * morph));
+    heatGrad.addColorStop(0, `rgba(${heatColorStr}, ${heatAlpha * 0.45})`);
+    heatGrad.addColorStop(0.65, `rgba(${heatColorStr}, ${heatAlpha * 0.18})`);
+    heatGrad.addColorStop(1, `rgba(${heatColorStr}, 0)`);
+    ctx.fillStyle = heatGrad;
+    ctx.beginPath();
+    ctx.arc(0, -6 + bob, 120 * (0.8 + 0.5 * morph), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   drawFloatingPlates(ctx, e, bob, frameCount, isVuln, isEnraged, isWindup);
   drawMegalithBody(ctx, e, bob, frameCount, isVuln, isEnraged, isP3);
   drawAbyssalCore(ctx, e, bob, frameCount, isVuln, isEnraged, isP3, isChanneling, isWindup);

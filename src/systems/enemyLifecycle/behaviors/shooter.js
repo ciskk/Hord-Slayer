@@ -30,6 +30,8 @@ export function shooterBehavior(e, dt, angle, curSpeed, ctx) {
       e.y += Math.sin(angle) * curSpeed * dt;
     }
 
+    e.aimAngle = angle;
+
     // Rajada Tática Tripla (3-Round Burst)
     if (e.burstRemaining > 0) {
       e.burstTimer = (e.burstTimer || 0) + dt;
@@ -37,12 +39,13 @@ export function shooterBehavior(e, dt, angle, curSpeed, ctx) {
         e.burstTimer = 0;
         e.burstRemaining--;
         if (canSpawnEnemyBullet()) {
-          const spreadAngle = angle + (e.burstRemaining - 1) * 0.12;
+          const spreadAngle = e.aimAngle + (e.burstRemaining - 1) * 0.10;
+          // Disparo emerge exatamente na boca do canhão rotativo (24px de offset)
           enemyBullets.push({
-            x: e.x + Math.cos(spreadAngle) * 14,
-            y: e.y + Math.sin(spreadAngle) * 14,
-            vx: Math.cos(spreadAngle) * 3.9,
-            vy: Math.sin(spreadAngle) * 3.9,
+            x: e.x + Math.cos(spreadAngle) * 24,
+            y: e.y + Math.sin(spreadAngle) * 24,
+            vx: Math.cos(spreadAngle) * 4.2,
+            vy: Math.sin(spreadAngle) * 4.2,
             radius: 5.5,
             damage: 16,
             life: 95,
@@ -50,10 +53,14 @@ export function shooterBehavior(e, dt, angle, curSpeed, ctx) {
             color: '#ff4757'
           });
           playSfx('shoot');
-          createHitParticles(e.x + Math.cos(spreadAngle) * 16, e.y + Math.sin(spreadAngle) * 16, '#ff4757', 3);
+          // Clarão de boca de fogo volumétrico
+          createHitParticles(e.x + Math.cos(spreadAngle) * 26, e.y + Math.sin(spreadAngle) * 26, '#ff4757', 3);
+          createHitParticles(e.x + Math.cos(spreadAngle) * 28, e.y + Math.sin(spreadAngle) * 28, '#ffffff', 1);
+          // Ejeção de estojo de latão superaquecido para o lado
+          createHitParticles(e.x - Math.sin(spreadAngle) * 8, e.y + Math.cos(spreadAngle) * 8, '#d4af37', 2);
           // Recuo mecânico
-          e.x -= Math.cos(spreadAngle) * 2.5;
-          e.y -= Math.sin(spreadAngle) * 2.5;
+          e.x -= Math.cos(spreadAngle) * 2.8;
+          e.y -= Math.sin(spreadAngle) * 2.8;
         }
       }
     } else {

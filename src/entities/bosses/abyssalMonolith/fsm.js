@@ -1,3 +1,4 @@
+import { isBossPhaseReady } from '../../../systems/bossPhaseCinematic.js';
 /**
  * src/entities/bosses/abyssalMonolith/fsm.js
  * Máquina de estados FSM, progressão de fases e ciclo de vida de "Ignis Lithos, o Titã de Basalto".
@@ -5,6 +6,8 @@
 
 import { playSfx, triggerHaptic } from '../../../core/audio.js';
 import { enemies } from '../../../main.js';
+import { selectedHeroKey } from '../../player.js';
+import { triggerDeath } from '../../../systems/ui.js';
 import { MONOLITH_STATES, MONOLITH_SKILLS, MONOLITH_CONFIG } from './constants.js';
 import { 
   updateThermalVents, 
@@ -20,7 +23,9 @@ import {
   executePlateWhirl, 
   executeMagmaSiphonRelease, 
   executeVolcanicFissure, 
-  executeBasaltBarrage 
+  executeBasaltBarrage,
+  executeMoltenSalvo,
+  executeCrossFissures
 } from './attacks.js';
 
 /**
@@ -76,6 +81,21 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
     e.gauntlets.left.rot += 0.25;
     e.gauntlets.right.rot += 0.25;
     targetGrip = 0.0; // Garras totalmente abertas para corte circular
+  } else if (e.actionState === MONOLITH_STATES.WINDUP_SALVO) {
+    // Manoplas apontadas para frente com micro-trepidação e canalização de calor
+    const shudder = Math.sin(frameCount * 0.45) * 2.5;
+    e.gauntlets.left.lift = -4 + shudder;
+    e.gauntlets.right.lift = -4 - shudder;
+    e.gauntlets.left.rot = -0.05;
+    e.gauntlets.right.rot = 0.05;
+    targetGrip = 0.45; // Garras semi-abertas canalizando energia
+  } else if (e.actionState === MONOLITH_STATES.WINDUP_CROSS_FISSURE) {
+    // Manoplas erguidas amplas em diagonais prontas para cravar no solo
+    e.gauntlets.left.lift = 38;
+    e.gauntlets.right.lift = 38;
+    e.gauntlets.left.rot = -0.70;
+    e.gauntlets.right.rot = 0.70;
+    targetGrip = 0.85; // Punhos tensos
   } else if (e.actionState === MONOLITH_STATES.CHANNELING_SIPHON) {
     e.gauntlets.left.lift = -8;
     e.gauntlets.right.lift = -8;
@@ -119,11 +139,27 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
     e.skillCooldown -= dt * (0.10 * activeOrbitals.length);
   }
 
+  // 4.1 Monitoramento de Proximidade Melee Contínua (Anti-Abraço)
+  if (e.repulsionCooldown === undefined) e.repulsionCooldown = 0;
+  if (e.meleeContactTimer === undefined) e.meleeContactTimer = 0;
+  if (e.repulsionCooldown > 0) e.repulsionCooldown -= dt;
+
+  const currentDistToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
+  if (e.actionState === MONOLITH_STATES.CHASE) {
+    if (currentDistToPlayer < 140) {
+      e.meleeContactTimer += dt;
+    } else {
+      e.meleeContactTimer = Math.max(0, e.meleeContactTimer - dt * 1.5);
+    }
+  } else if (e.actionState !== MONOLITH_STATES.WINDUP_WHIRL) {
+    e.meleeContactTimer = Math.max(0, e.meleeContactTimer - dt * 0.5);
+  }
+
   // 5. PROGRESSÃO DE FASES (bloqueada na introdução)
   const hpRatio = e.hp / e.maxHp;
 
   // Fase 2: Sobrecarga Magmática (< 60% HP)
-  if (e.actionState !== MONOLITH_STATES.SPAWN_INTRO && hpRatio < MONOLITH_CONFIG.P2_HP_RATIO && !e.hasTransitionedP2) {
+  if (e.actionState !== MONOLITH_STATES.SPAWN_INTRO && hpRatio < MONOLITH_CONFIG.P2_HP_RATIO && !e.hasTransitionedP2 && isBossPhaseReady(e, 2)) {
     e.hasTransitionedP2 = true;
     e.isEnraged = true;
     e.phase = 2;
@@ -148,7 +184,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
   }
 
   // Fase 3: Fusão Crítica (< 25% HP)
-  if (e.actionState !== MONOLITH_STATES.SPAWN_INTRO && hpRatio < MONOLITH_CONFIG.P3_HP_RATIO && !e.isPhase3) {
+  if (e.actionState !== MONOLITH_STATES.SPAWN_INTRO && hpRatio < MONOLITH_CONFIG.P3_HP_RATIO && !e.isPhase3 && isBossPhaseReady(e, 3)) {
     e.isPhase3 = true;
     e.phase = 3;
     e.speed = MONOLITH_CONFIG.PHASE3_SPEED;
@@ -294,7 +330,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
         } else {
           e.actionState = MONOLITH_STATES.CHASE;
           e.isVulnerable = false;
-          e.skillCooldown = 45;
+          e.skillCooldown = 25;
           triggerShake(8);
           playSfx('crit');
         }
@@ -307,12 +343,12 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
       if (Math.floor(frameCount) % 4 === 0) triggerShake(3.5);
       if (e.actionTimer <= 0) {
         e.actionState = MONOLITH_STATES.CHASE;
-        e.skillCooldown = 28;
+        e.skillCooldown = 20;
       }
       return;
     }
 
-    // Colapso Sísmico (Stun de 4.5s após quebrar todos os Litocistos)
+    // Colapso Sísmico (Stun de 2.5s após quebrar todos os Litocistos)
     case MONOLITH_STATES.RECOVERY: {
       e.recoveryTimer -= dt;
       e.isVulnerable = true;
@@ -331,7 +367,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
         e.isVulnerable = false;
         e.isTargetable = true;
         e.actionState = MONOLITH_STATES.CHASE;
-        e.skillCooldown = e.isEnraged ? 35 : 45;
+        e.skillCooldown = e.isEnraged ? 20 : 25;
 
         triggerShake(10);
         playSfx('boss');
@@ -353,11 +389,11 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
       }
       if (e.actionTimer <= 0) {
         e.actionState = MONOLITH_STATES.CHASE;
-        // Se acabou de dar o Slam, garante janela extra de respiro antes de sortear nova habilidade
+        // Se acabou de dar o Slam, garante janela moderada de respiro antes de sortear nova habilidade
         const isPostSlam = e.lastUsedSkill === MONOLITH_SKILLS.TECTONIC_SLAM;
         e.skillCooldown = isPostSlam 
-          ? (e.isPhase3 ? 42 : (e.isEnraged ? 48 : 56)) 
-          : (e.comboNext ? 16 : (e.isPhase3 ? 26 : (e.isEnraged ? 34 : 42)));
+          ? (e.isPhase3 ? 20 : (e.isEnraged ? 24 : 28)) 
+          : (e.comboNext ? 10 : (e.isPhase3 ? 14 : (e.isEnraged ? 18 : 22)));
         e.aimLocked = false;
       }
       return;
@@ -369,18 +405,18 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
     case MONOLITH_STATES.WINDUP_SLAM: {
       e.actionTimer -= dt;
 
-      // Lock-in Antecipado (~550ms a 600ms antes do impacto) dando tempo generoso para esquiva
-      const lockThreshold = e.isPhase3 ? 30 : (e.isEnraged ? 32 : 36);
+      // Lock-in antecipado: congela a mira ~600ms antes do impacto (36 frames na base / 1000ms total)
+      const lockThreshold = e.isPhase3 ? 28 : (e.isEnraged ? 32 : 36);
 
       if (e.actionTimer > lockThreshold) {
-        // Inércia de giro suave (velocidade angular finita de colosso de pedra)
+        // Inércia de giro ponderada e mais lenta de colosso de basalto
         const targetAngle = Math.atan2(player.y - e.y, player.x - e.x);
         if (e.aimAngle === undefined) e.aimAngle = targetAngle;
         let diff = targetAngle - e.aimAngle;
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
 
-        const maxTurnRate = (e.isPhase3 ? 0.08 : (e.isEnraged ? 0.065 : 0.052)) * dt;
+        const maxTurnRate = (e.isPhase3 ? 0.052 : (e.isEnraged ? 0.042 : 0.034)) * dt;
         e.aimAngle += Math.max(-maxTurnRate, Math.min(maxTurnRate, diff));
         e.aimLocked = false;
       } else {
@@ -472,6 +508,23 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
         player.y += (pdy / pDist) * pullForce;
       }
 
+      // Radiação Magmática: pune quem fica abraçado (< 90px) durante a canalização do vórtice
+      if (pDist < 90 && Math.floor(frameCount) % 15 === 0 && player.bossIFrames <= 0) {
+        let heatDmg = e.isPhase3 ? 22 : (e.isEnraged ? 18 : 15);
+        if (selectedHeroKey === 'KNIGHT') heatDmg = Math.round(heatDmg * 0.80);
+        player.hp -= heatDmg;
+        player.bossIFrames = 12;
+        playSfx('hit');
+        triggerShake(3);
+        addDamageText(player.x, player.y, `-${heatDmg}`, false, '#e67e22');
+        createHitParticles(player.x, player.y, '#e67e22', 4);
+        if (player.hp <= 0) {
+          player.hp = 0;
+          triggerDeath();
+          return;
+        }
+      }
+
       if (Math.floor(frameCount) % 2 === 0) {
         triggerShake(1.2);
         const pAngle = Math.random() * Math.PI * 2;
@@ -515,6 +568,46 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
       }
       if (e.actionTimer <= 0) {
         executeBasaltBarrage(e, context);
+      }
+      return;
+    }
+
+    // ==========================================
+    // SKILL 7: SALVA VULCÂNICA DE BASALTO
+    // ==========================================
+    case MONOLITH_STATES.WINDUP_SALVO: {
+      e.actionTimer -= dt;
+      // Mira suave seguindo o jogador até os últimos 10 frames
+      if (e.actionTimer > 10) {
+        const pvx = player.vx || 0;
+        const pvy = player.vy || 0;
+        e.aimAngle = Math.atan2((player.y + pvy * 6) - e.y, (player.x + pvx * 6) - e.x);
+      }
+      if (Math.floor(frameCount) % 3 === 0) {
+        // Fagulhas e energia de ignição convergindo nas manoplas
+        createHitParticles(e.x - 52, e.y + 6, '#ff4757', 1);
+        createHitParticles(e.x + 52, e.y + 6, '#e67e22', 1);
+      }
+      if (e.actionTimer <= 0) {
+        executeMoltenSalvo(e, context);
+      }
+      return;
+    }
+
+    // ==========================================
+    // SKILL 8: FENDAS TECTÔNICAS CRUZADAS
+    // ==========================================
+    case MONOLITH_STATES.WINDUP_CROSS_FISSURE: {
+      e.actionTimer -= dt;
+      if (e.actionTimer > 12) {
+        e.aimAngle = Math.atan2(player.y - e.y, player.x - e.x);
+      }
+      if (Math.floor(frameCount) % 3 === 0) {
+        triggerShake(1.5);
+        createHitParticles(player.x + (Math.random() - 0.5) * 60, player.y + (Math.random() - 0.5) * 60, '#e74c3c', 1);
+      }
+      if (e.actionTimer <= 0) {
+        executeCrossFissures(e, context);
       }
       return;
     }

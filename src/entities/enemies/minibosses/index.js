@@ -61,7 +61,26 @@ export function updateMiniBoss(e, dt, context) {
   const dy = player.y - e.y;
   const dist = Math.hypot(dx, dy);
   const angle = Math.atan2(dy, dx);
-  e.facing = dx >= 0 ? 1 : -1;
+  // Inércia de rotação para miniboss com escudo pesado (Centurião): 0.5s (30 frames) para girar
+  const isShieldBearer = (e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER' || e.hasFrontalShield);
+  if (isShieldBearer) {
+    const desiredFacing = dx >= 0 ? 1 : -1;
+    if (e.facing === undefined) e.facing = desiredFacing;
+    if (desiredFacing !== e.facing) {
+      if (e.turnDelayTimer === undefined || e.turnDelayTimer <= 0) {
+        e.turnDelayTimer = 30; // 0.5s a 60 FPS
+      } else {
+        e.turnDelayTimer -= dt;
+        if (e.turnDelayTimer <= 0) {
+          e.facing = desiredFacing;
+        }
+      }
+    } else {
+      e.turnDelayTimer = 0;
+    }
+  } else {
+    e.facing = dx >= 0 ? 1 : -1;
+  }
 
   const handler = MINIBOSS_HANDLERS[e.baseType];
   if (handler && handler.update) {

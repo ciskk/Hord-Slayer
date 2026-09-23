@@ -1134,6 +1134,13 @@ export function drawEclipseHalo(ctx, e, bob, frameCount, isVuln, isEnraged, isPh
   ctx.translate(0, haloY);
   ctx.scale(1, 0.44); // Perspectiva elíptica inclinada
 
+  if (e.phaseCinematic) {
+    const morph = e.phaseCinematic.morphProgress || 0;
+    const haloScale = 0.35 + 0.65 * morph;
+    ctx.scale(haloScale, haloScale);
+    ctx.globalAlpha *= Math.min(1.0, morph * 1.3);
+  }
+
   if (isPhase3) {
     // FASE 3: Auréola Estilhaçada em 4 Fragmentos Orbitais de Plasma
     const shards = 4;
@@ -2935,8 +2942,11 @@ export function drawSupremeReaper(ctx, e, frameCount) {
     drawCinematicScreenTitle(bannerCtx || ctx, e, frameCount);
   }
 
+  const morph = e.phaseCinematic ? (e.phaseCinematic.morphProgress || 0) : (e.transformationProgress || 0);
+  const targetPhase = e.phaseCinematic ? e.phaseCinematic.phase : (e.isPhase3 ? 3 : (e.isEnraged ? 2 : 1));
   const isVuln = e.isVulnerable;
-  const isEnraged = e.isEnraged || e.isPhase3;
+  const isEnraged = e.isEnraged || e.isPhase3 || (targetPhase >= 2 && morph > 0.05);
+  const isPhase3 = e.isPhase3 || (targetPhase === 3 && morph > 0.05);
   const isWindup = (
     e.actionState === REAPER_STATES.WINDUP ||
     e.actionState === REAPER_STATES.WINDUP_BOOMERANG ||
@@ -2998,11 +3008,28 @@ export function drawSupremeReaper(ctx, e, frameCount) {
   }
 
   drawReaperShadow(ctx, e, bob, isVuln, collapseProg);
+
+  // Aura espectral de almas e chamas astrais em slow motion durante a transição cinematográfica
+  if (e.phaseCinematic && morph > 0.05) {
+    ctx.save();
+    const soulAlpha = Math.sin(morph * Math.PI) * 0.65;
+    const soulCol = targetPhase === 3 ? '223, 230, 233' : '162, 155, 254';
+    const soulGrad = ctx.createRadialGradient(0, -20 + bob, 15, 0, -20 + bob, 130 * (0.8 + 0.45 * morph));
+    soulGrad.addColorStop(0, `rgba(${soulCol}, ${soulAlpha * 0.45})`);
+    soulGrad.addColorStop(0.6, `rgba(${soulCol}, ${soulAlpha * 0.15})`);
+    soulGrad.addColorStop(1, `rgba(${soulCol}, 0)`);
+    ctx.fillStyle = soulGrad;
+    ctx.beginPath();
+    ctx.arc(0, -20 + bob, 130 * (0.8 + 0.45 * morph), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   drawSpectralWings(ctx, e, bob, isVuln, isEnraged, e.wingFlap || 0);
-  drawEclipseHalo(ctx, e, bob, frameCount, isVuln, isEnraged, e.isPhase3, collapseProg);
+  drawEclipseHalo(ctx, e, bob, frameCount, isVuln, isEnraged, isPhase3, collapseProg);
   drawDorsalSpineAndBackRibs(ctx, bob, frameCount, isVuln, isEnraged, collapseProg);
   drawReaperRobe(ctx, e, bob, frameCount, isVuln, isEnraged, e.tilt || 0, collapseProg);
-  drawSoulNexusCore(ctx, bob, frameCount, isVuln, isEnraged, collapseProg, e.isPhase3);
+  drawSoulNexusCore(ctx, bob, frameCount, isVuln, isEnraged, collapseProg, isPhase3);
   drawFrontRibcageArmor(ctx, bob, frameCount, isVuln, isEnraged, collapseProg);
 
   // Braços esqueléticos e manoplas conectando a foice

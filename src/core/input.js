@@ -6,7 +6,7 @@ import {
   openBossSelectModal, 
   closeBossSelectModal 
 } from '../systems/ui.js';
-import { gameState } from '../main.js';
+import { gameState, matchIntro } from '../state/gameState.js';
 import { getActiveBloodAltar, setPlayerChannelingAltar } from '../systems/worldEvents.js';
 
 // Rastreamento de teclas simultâneas ativas
@@ -440,8 +440,8 @@ window.addEventListener('keydown', e => {
     }
   }
 
-  // Canalização do Altar de Sangue com Espaço ou E ou F (segurar 1.0s)
-  if (e.code === 'Space' || e.code === 'KeyE' || e.code === 'KeyF') {
+  // Canalização do Altar de Sangue exclusivamente com F (segurar 1.0s)
+  if (e.code === 'KeyF') {
     const altar = getActiveBloodAltar();
     if (altar && altar.state === 'SPAWNED' && player) {
       const dist = Math.hypot(player.x - altar.x, player.y - altar.y);
@@ -464,6 +464,13 @@ window.addEventListener('keydown', e => {
       }
       return;
     }
+    if (matchIntro && matchIntro.active) {
+      matchIntro.skipped = true;
+      if (matchIntro.timer < matchIntro.holdDuration) {
+        matchIntro.timer = matchIntro.holdDuration;
+      }
+      return;
+    }
     triggerHeroSkill();
     return;
   }
@@ -483,7 +490,7 @@ window.addEventListener('keydown', e => {
 window.addEventListener('keyup', e => {
   activeKeyCodes.delete(e.code);
 
-  if (e.code === 'Space' || e.code === 'KeyE' || e.code === 'KeyF') {
+  if (e.code === 'KeyF') {
     setPlayerChannelingAltar(false);
   }
 
@@ -527,5 +534,12 @@ window.addEventListener('contextmenu', e => {
   cursorState.x = e.clientX;
   cursorState.y = e.clientY;
   cursorState.lastMovedTime = performance.now();
+  if (matchIntro && matchIntro.active) {
+    matchIntro.skipped = true;
+    if (matchIntro.timer < matchIntro.holdDuration) {
+      matchIntro.timer = matchIntro.holdDuration;
+    }
+    return;
+  }
   triggerHeroSkill({ cursorX: e.clientX, cursorY: e.clientY });
 });

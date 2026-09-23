@@ -16,6 +16,7 @@ update(e, dt, ctx, dist, angle) {
   const { player, enemyBullets, bossTelegraphs, bossShockwaves, createHitParticles } = ctx;
 
   if (e.actionState === 'CHASE') {
+    e.aimAngle = angle;
     e.x += Math.cos(angle) * e.speed * dt;
     e.y += Math.sin(angle) * e.speed * dt;
 
@@ -28,6 +29,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionState = 'WINDUP';
         e.actionTimer = 19;
         e.actionMaxTimer = 19;
+        e.aimAngle = angle;
         safePlaySfx('charge');
         ctx.addDamageText(e.x, e.y, "ESPIRAIS DO CAOS!", true, '#c0392b');
       } else if (e.cycleIndex === 1) {
@@ -71,6 +73,7 @@ update(e, dt, ctx, dist, angle) {
   } else if (e.actionState === 'WINDUP') {
     e.actionTimer -= dt;
     e.castProgress = 1 - (e.actionTimer / e.actionMaxTimer);
+    e.aimAngle = angle;
     createHitParticles(e.x, e.y, '#c0392b', 1);
 
     if (e.actionTimer <= 0) {
@@ -81,19 +84,26 @@ update(e, dt, ctx, dist, angle) {
     if (e.currentSkill === 'CHAOS_SPIRAL') {
       safePlaySfx('shoot');
       const spinAng = (ctx.frameCount || 0) * 0.15;
-      for (let s = 0; s < (e.enraged ? 6 : 4); s++) {
-        const sOffset = spinAng + (s * Math.PI * 2) / (e.enraged ? 6 : 4);
+      e.spiralAngle = spinAng;
+      const count = e.enraged ? 6 : 4;
+      const tentacleReach = (e.radius || 22) * 1.25;
+
+      for (let s = 0; s < count; s++) {
+        const sOffset = spinAng + (s * Math.PI * 2) / count;
+        const bx = e.x + Math.cos(sOffset) * tentacleReach;
+        const by = e.y + Math.sin(sOffset) * tentacleReach;
         enemyBullets.push({
-          x: e.x,
-          y: e.y,
-          vx: Math.cos(sOffset) * 4.0,
-          vy: Math.sin(sOffset) * 4.0,
-          radius: 5,
+          x: bx,
+          y: by,
+          vx: Math.cos(sOffset) * 4.2,
+          vy: Math.sin(sOffset) * 4.2,
+          radius: 5.5,
           damage: Math.round(e.damage * 0.35),
           life: 85,
           bulletType: 'CHAOS',
           color: '#c0392b'
         });
+        createHitParticles(bx, by, '#e74c3c', 3);
       }
     } else if (e.currentSkill === 'HELLFIRE_CHARGE') {
       const speed = e.speed * 4.4;

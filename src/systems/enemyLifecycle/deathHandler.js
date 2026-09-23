@@ -23,7 +23,7 @@ import { addPersistentGold, addXP, getPersistentGold, selectedHeroKey } from '..
 import { getGemConfig } from '../pickups.js';
 import { onBossDefeated, setFirstBossKilled } from '../waves.js';
 import { getNeighborIndices } from '../../core/spatialGrid.js';
-import { spawnMobCluster } from '../../entities/enemies.js';
+import { spawnMobCluster, isKaelInvisible } from '../../entities/enemies.js';
 
 /**
  * Processa a morte de um inimigo: efeitos visuais, drops, explosões,
@@ -81,7 +81,7 @@ export function handleEnemyDeath(e, i, ctx) {
     createHitParticles(e.x, e.y, '#a29bfe', 8);
   }
 
-  if (!e.isBoss && !e.isBossSubTarget && !e.explodedNaturally) {
+  if (!e.isBoss && !e.isBossSubTarget) {
     const hitAng = Math.atan2(e.y - player.y, e.x - player.x);
     addDyingEnemy(e, hitAng);
   }
@@ -267,56 +267,58 @@ export function handleEnemyDeath(e, i, ctx) {
       });
     }
 
-    for (let k = 0; k < 2; k++) {
-      const subT = ENEMY_TYPES.SPLITTER_MINI;
-      // Ângulos de ejeção divergentes (+- 65 graus do vetor de impacto da morte)
-      const deathAng = Math.atan2(e.y - player.y, e.x - player.x);
-      const ejectAng = deathAng + (k === 0 ? -1 : 1) * (Math.PI * 0.38);
-      enemies.push({
-        x: e.x,
-        y: e.y,
-        baseType: 'SPLITTER_MINI',
-        radius: subT.radius,
-        speed: subT.speed,
-        hp: subT.hp,
-        maxHp: subT.hp,
-        color: subT.color,
-        damage: subT.damage,
-        behavior: subT.behavior,
-        xp: subT.xp,
-        facing: Math.cos(ejectAng) >= 0 ? 1 : -1,
-        hitFlash: 0,
-        orbitalHitCd: 0,
-        slowTimer: 0,
-        slowFactor: 0,
-        stunTimer: 0,
-        emergeTimer: 0,
-        emergeDuration: 0,
-        // Salto balístico de ejeção de nascimento
-        leapState: 'jumping',
-        leapTimer: 0,
-        leapDuration: 14,
-        leapAngle: ejectAng,
-        leapSpeed: subT.speed * 3.4,
-        jumpZ: 15,
-        jumpMaxZ: 22,
-        leapCooldown: 35 + Math.floor(Math.random() * 25),
-        landingSplashTimer: 0,
-        combatState: 'CHASE',
-        attackTimer: 0,
-        attackRange: 24,
-        attackWindupFrames: 14,
-        attackStrikeFrames: 4,
-        attackRecoveryFrames: 27,
-        attackCooldown: 12,
-        attackCooldownMax: 19,
-        attackAngle: 0,
-        hasHitInStrike: false,
-        fuseState: 'CHASE',
-        fuseTimer: 0,
-        fuseTelegraph: null,
-        explodedNaturally: false
-      });
+    if (!isKaelInvisible()) {
+      for (let k = 0; k < 2; k++) {
+        const subT = ENEMY_TYPES.SPLITTER_MINI;
+        // Ângulos de ejeção divergentes (+- 65 graus do vetor de impacto da morte)
+        const deathAng = Math.atan2(e.y - player.y, e.x - player.x);
+        const ejectAng = deathAng + (k === 0 ? -1 : 1) * (Math.PI * 0.38);
+        enemies.push({
+          x: e.x,
+          y: e.y,
+          baseType: 'SPLITTER_MINI',
+          radius: subT.radius,
+          speed: subT.speed,
+          hp: subT.hp,
+          maxHp: subT.hp,
+          color: subT.color,
+          damage: subT.damage,
+          behavior: subT.behavior,
+          xp: subT.xp,
+          facing: Math.cos(ejectAng) >= 0 ? 1 : -1,
+          hitFlash: 0,
+          orbitalHitCd: 0,
+          slowTimer: 0,
+          slowFactor: 0,
+          stunTimer: 0,
+          emergeTimer: 0,
+          emergeDuration: 0,
+          // Salto balístico de ejeção de nascimento
+          leapState: 'jumping',
+          leapTimer: 0,
+          leapDuration: 14,
+          leapAngle: ejectAng,
+          leapSpeed: subT.speed * 3.4,
+          jumpZ: 15,
+          jumpMaxZ: 22,
+          leapCooldown: 35 + Math.floor(Math.random() * 25),
+          landingSplashTimer: 0,
+          combatState: 'CHASE',
+          attackTimer: 0,
+          attackRange: 24,
+          attackWindupFrames: 14,
+          attackStrikeFrames: 4,
+          attackRecoveryFrames: 27,
+          attackCooldown: 12,
+          attackCooldownMax: 19,
+          attackAngle: 0,
+          hasHitInStrike: false,
+          fuseState: 'CHASE',
+          fuseTimer: 0,
+          fuseTelegraph: null,
+          explodedNaturally: false
+        });
+      }
     }
   }
 
@@ -445,6 +447,7 @@ export function handleEnemyDeath(e, i, ctx) {
 
     spawnChest(e.x, e.y, 'BOSS');
     if (setActiveBoss) setActiveBoss(null);
+    ctx.activeBoss = null;
     const hud = document.getElementById('hud');
     if (hud) hud.classList.remove('boss-active');
     bossTelegraphs.length = 0;
@@ -454,9 +457,14 @@ export function handleEnemyDeath(e, i, ctx) {
     gameState.isWavePaused = true;
     const bossHud = document.getElementById('boss-hud');
     if (bossHud) {
-      const capturedActiveBoss = ctx.activeBoss;
+      bossHud.classList.remove('enraged', 'hit-shake', 'hit-flash');
+      if (gameState.isPaused) {
+        bossHud.style.display = 'none';
+      }
       setTimeout(() => {
-        if (!capturedActiveBoss) bossHud.style.display = 'none';
+        if (!ctx.activeBoss) {
+          bossHud.style.display = 'none';
+        }
       }, 350);
     }
   } else if (e.isMiniBoss) {

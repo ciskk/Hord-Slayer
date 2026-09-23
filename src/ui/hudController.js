@@ -8,7 +8,7 @@ import { HERO_EMBLEMS_SVG, CHARACTER_PROFILES } from '../config/heroProfiles.js'
 import { CHARACTERS } from '../config/characters.js';
 import { ARENA_PALETTES } from '../render/environment.js';
 import { player, getPersistentGold, selectedHeroKey, triggerHeroSkill } from '../entities/player.js';
-import { waveAnnouncement, frameCount } from '../state/gameState.js';
+import { waveAnnouncement, frameCount, matchIntro, deathSequence } from '../state/gameState.js';
 import { getTimeUntilNextWave, getEffectiveHordeSeconds } from '../systems/waves.js';
 
 let _cachedSkillContainer = null;
@@ -29,11 +29,13 @@ export function initSkillUI(onSkillTrigger = triggerHeroSkill) {
   skillContainer.addEventListener('touchstart', e => {
     e.stopPropagation();
     e.preventDefault();
+    if (matchIntro && matchIntro.active) return;
     if (typeof onSkillTrigger === 'function') onSkillTrigger({ ignoreCursor: true });
   }, { passive: false });
 
   skillContainer.addEventListener('click', e => {
     e.stopPropagation();
+    if (matchIntro && matchIntro.active) return;
     if (typeof onSkillTrigger === 'function') onSkillTrigger({ ignoreCursor: true });
   });
 }
@@ -198,6 +200,7 @@ export function resetBossGhostHp() {
   }
   if (hudDom && hudDom.bossHud) {
     hudDom.bossHud.classList.remove('hit-shake', 'hit-flash', 'enraged');
+    hudDom.bossHud.style.display = 'none';
   }
   if (hudDom && hudDom.hudRoot) {
     hudDom.hudRoot.classList.remove('boss-active');
@@ -279,15 +282,65 @@ export function resetHUD(initialHp = 120) {
   applyHeroVisuals();
 }
 
+export function startPlayerHpDepletion() {
+  ensureHudElementsCached();
+  if (player) {
+    player.hp = 0;
+  }
+  _lastHp = 0;
+  _lastHpPct = 0;
+  if (hudDom.hpVal) hudDom.hpVal.innerText = '0';
+  if (hudDom.hpPctVal) hudDom.hpPctVal.innerText = '0%';
+  if (hudDom.hpFill) hudDom.hpFill.style.width = '0%';
+  if (hudDom.hpContainer) {
+    hudDom.hpContainer.classList.remove('critical', 'hp-micro-shake');
+    requestAnimationFrame(() => {
+      if (hudDom.hpContainer) {
+        hudDom.hpContainer.classList.add('hp-micro-shake');
+      }
+    });
+  }
+  if (ghostHp <= 0 && player && player.maxHp > 0) {
+    ghostHp = player.maxHp;
+  }
+  ghostHpTimer = 0;
+}
+
+export function snapPlayerHpToZero() {
+  ghostHp = 0;
+  ghostHpTimer = 0;
+  _lastHp = 0;
+  _lastGhostHp = 0;
+  _lastHpPct = 0;
+  ensureHudElementsCached();
+  if (hudDom.hpVal) hudDom.hpVal.innerText = '0';
+  if (hudDom.hpPctVal) hudDom.hpPctVal.innerText = '0%';
+  if (hudDom.hpFill) hudDom.hpFill.style.width = '0%';
+  if (hudDom.hpGhostFill) hudDom.hpGhostFill.style.width = '0%';
+  if (hudDom.hpContainer) {
+    hudDom.hpContainer.classList.remove('critical');
+  }
+}
+
+export function isGhostHpDraining() {
+  return ghostHp > 0;
+}
+
 export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, seconds, currentWave }) {
   // Atualização Visual do HUD de HP com Decaimento da Barra Fantasma (Ghost Bar)
-  if (player.hp < ghostHp) {
+  const targetHp = Math.max(0, player.hp);
+  if (targetHp < ghostHp) {
     ghostHpTimer += dt;
-    if (ghostHpTimer > 20) {
-      ghostHp = Math.max(player.hp, ghostHp - 1.8 * dt);
+    const isFatal = targetHp <= 0 || (deathSequence && deathSequence.active) || (gameState && gameState.isDead);
+    const delayThreshold = isFatal ? 12 : 20;
+    if (ghostHpTimer > delayThreshold) {
+      const drainSpeed = isFatal 
+        ? Math.max(2.5, ((player.maxHp || 120) / 40)) * dt 
+        : 1.8 * dt;
+      ghostHp = Math.max(0, ghostHp - drainSpeed);
     }
   } else {
-    ghostHp = player.hp;
+    ghostHp = targetHp;
     ghostHpTimer = 0;
   }
 
@@ -325,10 +378,10 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
   }
 
   const hpPct = Math.max(0, Math.min(100, Math.round((currentHp / player.maxHp) * 100)));
-  if (hpPct !== _lastHpPct) {
+  if (hpPct !== _lastHpPct || (currentHp === 0 && hudDom.hpFill && hudDom.hpFill.style.width !== '0%')) {
     _lastHpPct = hpPct;
     if (hudDom.hpPctVal) hudDom.hpPctVal.innerText = `${hpPct}%`;
-    if (hudDom.hpFill) hudDom.hpFill.style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
+    if (hudDom.hpFill) hudDom.hpFill.style.width = currentHp <= 0 ? '0%' : `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
     if (hudDom.hpContainer) {
       if (hpPct <= 30 && player.hp > 0) {
         hudDom.hpContainer.classList.add('critical');
@@ -338,10 +391,16 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
     }
   }
 
-  const roundedGhostHp = Math.round(ghostHp);
-  if (roundedGhostHp !== _lastGhostHp) {
+  const targetGhostHp = Math.max(0, ghostHp);
+  const roundedGhostHp = Math.round(targetGhostHp);
+  if (roundedGhostHp !== _lastGhostHp || (targetGhostHp === 0 && _lastGhostHp !== 0)) {
     _lastGhostHp = roundedGhostHp;
-    if (hudDom.hpGhostFill) hudDom.hpGhostFill.style.width = `${Math.max(0, (ghostHp / player.maxHp) * 100)}%`;
+    if (hudDom.hpGhostFill) {
+      hudDom.hpGhostFill.style.width = targetGhostHp <= 0 ? '0%' : `${Math.max(0, (targetGhostHp / player.maxHp) * 100)}%`;
+    }
+  }
+  if (targetGhostHp <= 0 && hudDom.hpGhostFill && hudDom.hpGhostFill.style.width !== '0%') {
+    hudDom.hpGhostFill.style.width = '0%';
   }
 
   // Dirty Checking de Nível, Kills e Progressão de XP
@@ -425,6 +484,14 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
     _lastBossActive = isBossActive;
     if (hudDom.hudRoot) {
       hudDom.hudRoot.classList.toggle('boss-active', isBossActive);
+    }
+    if (!isBossActive && hudDom.bossHud) {
+      hudDom.bossHud.classList.remove('hit-shake', 'hit-flash', 'enraged');
+      setTimeout(() => {
+        if (!_lastBossActive && hudDom.bossHud) {
+          hudDom.bossHud.style.display = 'none';
+        }
+      }, 350);
     }
   }
 
@@ -520,6 +587,12 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
       if (hudDom.bossHpGhostFill) {
         hudDom.bossHpGhostFill.style.width = `${bossGhostHpPct}%`;
       }
+    }
+  } else {
+    if (hudDom.bossHud && hudDom.bossHud.style.display !== 'none' && !_lastBossActive) {
+      hudDom.bossHud.style.display = 'none';
+      _lastBossHpPct = -1;
+      _lastBossGhostHp = -1;
     }
   }
 

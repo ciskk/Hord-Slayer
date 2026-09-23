@@ -23,5 +23,7 @@ export {
   executePlateWhirl, 
   executeMagmaSiphonRelease, 
   executeVolcanicFissure, 
-  executeBasaltBarrage 
+  executeBasaltBarrage,
+  executeMoltenSalvo,
+  executeCrossFissures
 } from './attacks.js';

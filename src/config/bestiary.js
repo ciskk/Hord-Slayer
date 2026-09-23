@@ -58,17 +58,17 @@ export const BESTIARY_ENTRIES = [
   {
     id: 'STALKER',
     name: 'Assassino Espectral',
-    title: 'Predador das Dimensões Etéreas',
+    title: 'Verme das Terras Sepulcrais',
     category: 'HORDE',
     threat: 3,
-    color: '#9b59b6',
+    color: '#d9b783',
     hp: 189,
     damage: 34,
     speed: 'Rápido / Bote (1.35)',
     role: 'Emboscador de Arranque',
-    microLore: 'Assassinos que venderam suas almas a divindades do éter. Eles viajam através das frestas da realidade e só se materializam no instante exato da lâmina nas costas.',
-    tactics: 'Fique atento ao clarão roxo e ao silêncio que precede o seu bote relâmpago. Desvie em ângulo perpendicular para fazê-los errar o salto letal.',
-    quotes: ['“Tua sombra já é minha...”', '*farfalhar etéreo desaparece no vazio*']
+    microLore: 'Vermes de pele bege e presas de marfim que revolvem a terra das sepulturas. Contraem seus anéis antes de se lançar sobre a presa em um bote feroz.',
+    tactics: 'A poeira subindo do solo e o alerta vermelho anunciam o bote. A direção é fixada antes do ataque: desvie para o lado e aproveite a pausa do verme após a investida.',
+    quotes: ['*a terra se revolve sob os anéis*', '*presas raspam a pedra da sepultura*']
   },
   {
     id: 'EXPLODER',
@@ -126,8 +126,8 @@ export const BESTIARY_ENTRIES = [
     damage: 40,
     speed: 'Inabalável (1.0)',
     role: 'Bloqueador Frontal',
-    microLore: 'Cavaleiros que juraram defender as criptas ancestrais até o fim dos tempos. Seus broquéis encantados com aço frio desviam quase todo impacto frontal.',
-    tactics: 'Ataques desferidos contra a frente do escudo sofrem redução maciça de 75% no dano. Flanqueie-o ou use armas de área 360° para atingir suas costas vulneráveis.',
+    microLore: 'Cavaleiros que juraram defender as criptas ancestrais até o fim dos tempos. Seus broquéis encantados com aço frio absorvem 45% do impacto frontal, mas a inércia do escudo pesado impõe atraso para girar.',
+    tactics: 'Ataques no cone frontal do escudo sofrem absorção de 45%. Seu escudo leva 0.5s de atraso para girar: aproveite para flanquear e desferir 100% de dano limpo nas costas e laterais. Impactos contundentes (como Martelo) causam Quebra de Guarda por 0.75s.',
     quotes: ['*impacto metálico ecoa sem romper a guarda*', '“Nenhum passo além!”']
   },
   {
@@ -434,8 +434,8 @@ export const BESTIARY_ENTRIES = [
     damage: 44,
     speed: 'Avanço de Escudo (1.2)',
     role: 'Fortaleza com Escudo Torre',
-    microLore: 'Veterano imortal das guerras de unificação imperial. Seu escudo torre de bronze negro desvia 85% dos ataques frontais e quebra a postura de quem ousa enfrentá-lo.',
-    tactics: 'Ataques frontais são inúteis. Congele-o, atraia seu golpe de investida e explore suas costas desprotegidas.',
+    microLore: 'Veterano imortal das guerras de unificação imperial. Seu colossal escudo torre de bronze negro absorve 50% do dano frontal, mas a inércia do broquel titânico restringe manobras bruscas.',
+    tactics: 'O escudo torre cobre apenas um cone frontal estrito, reduzindo o dano em 50%. Ele leva 0.5s de atraso para girar de lado: atravesse sua passada com dash para punir suas costas desprotegidas com 100% de dano. Golpes contundentes causam Quebra de Guarda temporária.',
     quotes: ['“Pelo Império das Sombras! Romper fileiras!”']
   },
   {
@@ -660,8 +660,8 @@ export const BESTIARY_ENTRIES = [
   {
     id: 'BOSS_2',
     bossId: 2,
-    name: 'Monólito Abissal',
-    title: 'O Coração Tectônico da Terra',
+    name: 'Ignis Lithos, o Monólito Abissal',
+    title: 'O Titã Tectônico de Basalto',
     category: 'BOSS',
     threat: 5,
     color: '#c0392b',
@@ -669,8 +669,8 @@ export const BESTIARY_ENTRIES = [
     damage: 135,
     speed: 'Colosso Telúrico (0.95)',
     role: 'Chefe Supremo da Onda 6',
-    microLore: 'Uma montanha sagrada arrancada do manto terrestre e corrompida pelo núcleo do Abismo. Não possui carne nem mente: apenas ódio tectônico em forma de placas de basalto e lava pulsante.',
-    tactics: 'Seus esmagamentos criam zonas de lava mortais no epicentro seguidas de ondas sísmicas externas. Mantenha distância durante o esmagamento e ataque após a dispersão das fendas.',
+    microLore: 'Uma montanha sagrada arrancada do manto terrestre e forjada no fogo do Abismo. Não possui carne nem mente: apenas ódio tectônico em forma de placas de basalto e magma incandescente. Suas erupções e fendas cobrem o solo com precisão letal.',
+    tactics: 'Seus ataques sísmicos e erupções detonam em cadência ágil (~800ms). Lutar grudado ao titã é mortal: permanecer colado nele desencadeia turbilhões imediatos de placas rochosas e pulsos de calor por radiação. Destrua os Litocistos orbitais e aproveite suas janelas de recuperação sísmica.',
     quotes: [
       '“As placas despertam... silêncio para os ossos da terra.”',
       '“A TERRA REIVINDICA VOSSA CARCAÇA! RUAM!”',

@@ -12,9 +12,10 @@ init(e) {
   e.skillCooldown = 62;
 },
 update(e, dt, ctx, dist, angle) {
-  const { player, bossTelegraphs, bossShockwaves, createHitParticles } = ctx;
+  const { player, bossTelegraphs, bossShockwaves, enemyBullets, createHitParticles } = ctx;
 
   if (e.actionState === 'CHASE') {
+    e.aimAngle = angle;
     e.x += Math.cos(angle) * e.speed * dt;
     e.y += Math.sin(angle) * e.speed * dt;
 
@@ -23,8 +24,11 @@ update(e, dt, ctx, dist, angle) {
       if (dist > 160) {
         e.currentSkill = 'BOULDER_TOSS';
         e.actionState = 'WINDUP';
-        e.actionTimer = 32;
-        e.actionMaxTimer = 32;
+        e.actionTimer = 28;
+        e.actionMaxTimer = 28;
+        e.aimAngle = angle;
+        e.tossTargetX = player.x;
+        e.tossTargetY = player.y;
         safePlaySfx('charge');
         ctx.addDamageText(e.x, e.y, "CATAPULTA!", true, '#d35400');
 
@@ -32,9 +36,9 @@ update(e, dt, ctx, dist, angle) {
           type: 'FALLING_ROCK',
           x: player.x,
           y: player.y,
-          radius: 65,
-          timer: 32,
-          maxTimer: 32,
+          radius: 60,
+          timer: 28 + 24,
+          maxTimer: 28 + 24,
           damage: Math.round(e.damage * 1.3),
           color: '#d35400'
         });
@@ -86,7 +90,33 @@ update(e, dt, ctx, dist, angle) {
       }
     } else if (e.currentSkill === 'BOULDER_TOSS') {
       safePlaySfx('shoot');
-      createHitParticles(e.x, e.y, '#d35400', 10);
+      createHitParticles(e.x, e.y, '#d35400', 12);
+      const flightDuration = 24;
+      const tx = e.tossTargetX !== undefined ? e.tossTargetX : player.x;
+      const ty = e.tossTargetY !== undefined ? e.tossTargetY : player.y;
+      const tDist = Math.hypot(tx - e.x, ty - e.y);
+      const tSpeed = Math.max(3.8, tDist / flightDuration);
+      const tAng = Math.atan2(ty - e.y, tx - e.x);
+      e.aimAngle = tAng;
+
+      enemyBullets.push({
+        x: e.x,
+        y: e.y - 22,
+        targetX: tx,
+        targetY: ty,
+        vx: Math.cos(tAng) * tSpeed,
+        vy: Math.sin(tAng) * tSpeed,
+        radius: 12,
+        damage: Math.round(e.damage * 1.3),
+        life: flightDuration,
+        maxLife: flightDuration,
+        bulletType: 'BOULDER',
+        isBoulder: true,
+        color: '#d35400',
+        isBossProjectile: true,
+        isMiniBoss: true,
+        sourceName: 'Colosso Ferruginoso'
+      });
     }
 
     e.chargeDuration -= dt;

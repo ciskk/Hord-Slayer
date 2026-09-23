@@ -19,6 +19,7 @@ export function tickEnemyStatus(e, dt, player, triggerShake) {
   if (e.hitFlash > 0) e.hitFlash -= dt;
   if (e.orbitalHitCd > 0) e.orbitalHitCd -= dt;
   if (e.axeHitCd > 0) e.axeHitCd -= dt;
+  if (e.shieldStaggerTimer > 0) e.shieldStaggerTimer -= dt;
 
   // Timer de emergência (vermes e parasitas nascendo do solo)
   if (e.emergeTimer > 0) {
@@ -92,6 +93,35 @@ export function tickEnemyStatus(e, dt, player, triggerShake) {
     }
     if (e.acidBurnTimer <= 0) {
       e.acidBurnEvolved = false;
+    }
+  }
+
+  // DoT de Queimadura Ígnea Contínua (Ignis)
+  if (e.fireBurnTimer > 0) {
+    e.fireBurnTimer -= dt;
+    const frameDmg = (e.fireBurnDmg || 0.35) * dt;
+
+    e.hp -= frameDmg;
+    e.hitFlash = Math.max(e.hitFlash || 0, 1);
+
+    e.fireBurnDmgAcc = (e.fireBurnDmgAcc || 0) + frameDmg;
+    e.fireBurnTickTimer = (e.fireBurnTickTimer || 0) + dt;
+    if (e.fireBurnTickTimer >= 18) {
+      const displayDmg = Math.round(e.fireBurnDmgAcc);
+      if (displayDmg >= 1) {
+        const burnColor = e.fireBurnCrit ? '#f39c12' : '#e67e22';
+        addDamageText(e.x, e.y - (e.radius || 14) * 0.5, displayDmg, !!e.fireBurnCrit, burnColor);
+        createHitParticles(e.x, e.y, '#f39c12', 2);
+        createHitParticles(e.x, e.y, '#e74c3c', 1);
+      }
+      e.fireBurnDmgAcc = 0;
+      e.fireBurnTickTimer = 0;
+    }
+    if (e.fireBurnTimer <= 0) {
+      e.fireBurnDmg = 0;
+      e.fireBurnCrit = false;
+      e.fireBurnDmgAcc = 0;
+      e.fireBurnTickTimer = 0;
     }
   }
 
