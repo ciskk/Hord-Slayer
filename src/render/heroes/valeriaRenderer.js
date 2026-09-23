@@ -9,6 +9,8 @@
 /**
  * Renderiza o modelo procedural de Valeria.
  */
+import { skinGradient, skinPolygon, skinLine, skinGem, skinSprig } from './skinMaterials.js';
+
 export function drawValeriaModel(c, charDef, state, {
   bob = 0,
   legSwing = 0,
@@ -57,6 +59,8 @@ export function drawValeriaModel(c, charDef, state, {
     const coatSway = isMoving ? Math.sin(walkCycle * 1.1) * 3.5 : Math.sin(tFrame * 0.07) * 1.4;
     const isOvercharged = isAlchemistSkill || (alchemistSkillTimer > 0);
     const isDetailed = scale >= 1.5;
+    const velvetMaterial = skinGradient(c, -12, bob, 21, 10, coatDark, coatLight, '#508b71');
+    const agedBrass = skinGradient(c, -8, -5+bob, 16, 8, brassDark, brassCol, '#e4c997');
 
     // --- 0. RIM LIGHT CÁUSTICA (Luz de contorno violeta/roxa emitida pelo veneno) ---
     c.save();
@@ -150,7 +154,7 @@ export function drawValeriaModel(c, charDef, state, {
     c.fill();
 
     // Camada principal de veludo viridian
-    c.fillStyle = coatCol;
+    c.fillStyle = velvetMaterial;
     c.beginPath();
     c.moveTo(-5, 1 + bob);
     c.lineTo(-12 - Math.abs(coatSway * 0.9), 15 + bob);
@@ -178,6 +182,12 @@ export function drawValeriaModel(c, charDef, state, {
     c.lineTo(-7 - Math.abs(coatSway * 0.5), 17 + bob);
     c.lineTo(-2, 15 + bob);
     c.stroke();
+
+    // Botanical needlework follows the moving panel of the expedition coat.
+    skinSprig(c, -8-Math.abs(coatSway*.5), 14+bob, 8, .24, '#c3b484', isDetailed);
+    if (isDetailed) {
+      skinLine(c, [[-11-Math.abs(coatSway*.8),14+bob],[-7-Math.abs(coatSway*.5),16+bob],[-3,14+bob]], '#83b498', .3);
+    }
 
     // Ponto de brilho metálico na ponta da bainha
     c.fillStyle = brassGlint;
@@ -260,6 +270,16 @@ export function drawValeriaModel(c, charDef, state, {
     c.moveTo(-4.2, 1.5);  c.lineTo(-4.0, 1.7);
     c.moveTo(-4.2, 5.5);  c.lineTo(-4.0, 5.7);
     c.stroke();
+
+    // Oxidation lives at solder joints; machined collars catch a warm highlight.
+    for (const jointY of [-3.5,.5,4.5]) {
+      skinLine(c, [[-3.4,jointY-.3],[-2.8,jointY+.3]], '#6d9c85', .75);
+      skinLine(c, [[-4.5,jointY+1],[-4,jointY+1.5]], '#f0c393', .35);
+    }
+    if (isDetailed) {
+      // Etched capacity markings remain on the glass, under the gauge.
+      for (let tick=0;tick<5;tick++) skinLine(c, [[.8,-4+tick*2],[1.6,-4+tick*2]], '#e2dace99', .3);
+    }
 
     // Manômetro de latão trabalhado com escala de pressão
     c.fillStyle = brassCol;
@@ -377,7 +397,7 @@ export function drawValeriaModel(c, charDef, state, {
     // 6. TRONCO, ESCLAVINA DE OMBROS E CORSELETE ACINTURADO
     // =========================================================================
     // Casaco viridian nobre com costuras de alfaiataria
-    c.fillStyle = coatCol;
+    c.fillStyle = velvetMaterial;
     c.beginPath();
     c.moveTo(-8.0, -5 + bob);
     c.lineTo(8.0, -5 + bob);
@@ -404,6 +424,12 @@ export function drawValeriaModel(c, charDef, state, {
     c.closePath();
     c.fill();
 
+    // Turned lapels expose green velvet and a fine brass botanical clasp.
+    for (const side of [-1,1]) {
+      skinPolygon(c, [[side*2.4,-5.4+bob],[side*7.6,-5+bob],[side*6.2,-.6+bob],[side*3.1,1+bob]], velvetMaterial, '#b6aa7e', .5);
+      if (isDetailed) skinSprig(c, side*5.4, -.4+bob, 3.6, side*.2, '#d7c694', true);
+    }
+
     // Botões de latão chanfrado com ponto especular
     c.fillStyle = brassBright;
     c.beginPath();
@@ -425,6 +451,9 @@ export function drawValeriaModel(c, charDef, state, {
     c.lineTo(-4.0, 5.0 + bob);
     c.closePath();
     c.fill();
+
+    skinPolygon(c, [[-4.5,-1.5+bob],[-3.3,-1+bob],[-2.8,4.4+bob],[-3.7,4.4+bob]], '#674632');
+    skinPolygon(c, [[3.3,-1+bob],[4.5,-1.5+bob],[3.7,4.4+bob],[2.8,4.4+bob]], '#674632');
 
     // Amarração em "X" com ilhoses de latão e relevo
     c.strokeStyle = brassCol;
@@ -492,10 +521,20 @@ export function drawValeriaModel(c, charDef, state, {
     c.lineWidth = 0.8;
     c.strokeRect(1.5, 1.5 + bob, 2.2, 3.6);
 
+    if (isDetailed) {
+      // Parchment labels and wax seals distinguish the three reagents.
+      for (let vial=0;vial<3;vial++) {
+        const vx=-4.5+vial*3, vy=-1.8+bob+vial*2.5;
+        skinPolygon(c, [[vx,vy],[vx+2.2,vy],[vx+2.2,vy+1],[vx,vy+1]], '#decda8');
+        skinLine(c, [[vx+.5,vy+.5],[vx+1.7,vy+.5]], '#685546', .25);
+        skinGem(c, vx+1, vy-2, .45, '#623740', '#bc6a78', '#ad8963');
+      }
+    }
+
     // Cinturão utilitário com fivela de latão chanfrada
     c.fillStyle = leatherDark;
     c.fillRect(-6.5, 4.5 + bob, 13.0, 3.4);
-    c.fillStyle = brassCol;
+    c.fillStyle = agedBrass;
     c.fillRect(-2.5, 4.0 + bob, 5.0, 4.4);
     c.fillStyle = trimGold;
     c.fillRect(-1.2, 5.0 + bob, 2.4, 2.4);
@@ -624,6 +663,12 @@ export function drawValeriaModel(c, charDef, state, {
     c.fillRect(-1.2, -14.8 + bob, 0.6, 0.6);
 
     // =========================================================================
+    // Etched lens rims with tiny mounting screws and shaded brass edges.
+    if (isDetailed) {
+      skinLine(c, [[-4.8,-15.1+bob],[-4.1,-15.6+bob]], '#f2d5a4', .35);
+      skinLine(c, [[2.8,-15.1+bob],[3.5,-14.6+bob]], '#f2d5a4', .35);
+    }
+
     // 10. CABELOS ROXOS E TRANÇA LONGA COM ANÉIS DOURADOS
     // =========================================================================
     // Calota superior do cabelo em 3 tons
@@ -698,6 +743,8 @@ export function drawValeriaModel(c, charDef, state, {
       c.fillStyle = brassCol;
       c.fillRect(10, -4.2 + bob, 2.5, 1.8);
 
+      skinLine(c, [[8.4,-1.2+bob],[9.8,-1.6+bob],[10.2,-.5+bob]], '#789b6d', .7);
+
       // Frasco projetado à frente em trajetória balística
       c.save();
       c.translate(15, -4 + bob);
@@ -753,6 +800,8 @@ export function drawValeriaModel(c, charDef, state, {
       c.fillStyle = brassCol;
       c.fillRect(9.5, -5.8 + bob, 2.4, 1.5);
 
+      skinLine(c, [[8.4,-3.2+bob],[9.8,-3.6+bob],[10.2,-2.5+bob]], '#789b6d', .7);
+
       // Frasco suspenso energizado com sobrepressão e aura pulsante
       c.save();
       c.translate(13, -8 + bob);
@@ -789,6 +838,9 @@ export function drawValeriaModel(c, charDef, state, {
       c.fillRect(3.5, 3.0 + bob, 2.2, 1.6);
       c.fillStyle = brassGlint;
       c.fillRect(3.8, 3.2 + bob, 0.8, 0.8);
+
+      skinLine(c, [[3.3,4.8+bob],[4.6,4.2+bob],[5,5.3+bob]], '#789b6d', .7);
+      if (isDetailed) skinLine(c, [[3.5,2.8+bob],[3.5,4.3+bob]], '#b7986c', .3);
 
       // Frasco Erlenmeyer Lapidado na Mão
       c.save();
@@ -839,6 +891,11 @@ export function drawValeriaModel(c, charDef, state, {
       c.moveTo(-3.3, 1.0);
       c.lineTo(-4.4, 4.0);
       c.stroke();
+
+      // Small maker's label leaves the liquid surface and meniscus visible.
+      skinPolygon(c, [[-.9,1.4],[2.2,1.4],[2.6,3.7],[-1.3,3.7]], '#e5d3ae', '#9e855d', .35);
+      skinLine(c, [[.6,1.9],[1.3,3],[0,3],[.6,1.9]], '#67416b', .4);
+      if (isDetailed) skinLine(c, [[2,-2.4],[2.5,-1.1]], '#cadfd0', .3);
 
       // Fumaça sutil subindo da rolha
       const vaporY = -7.5 - ((tFrame * 0.15) % 4);

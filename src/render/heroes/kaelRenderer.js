@@ -18,6 +18,14 @@
  * 11. Respiração Gelada do Vácuo (micro-sopros de névoa rítmicos sincronizados com o ciclo de respiração)
  */
 
+import { skinGradient, skinPolygon, skinLine, skinGem } from './skinMaterials.js';
+
+// A split-diamond maker's mark links mask and scabbards.
+function drawVoidSeal(c, x, y, size, color) {
+  skinLine(c, [[x,y-size],[x+size*.65,y],[x,y+size],[x-size*.65,y],[x,y-size]], color, .35);
+  skinLine(c, [[x,y-size*.45],[x,y+size*.45]], color, .3);
+}
+
 function drawRoundedRect(c, x, y, w, h, r) {
   if (c.roundRect) {
     c.beginPath();
@@ -39,6 +47,7 @@ function drawRoundedRect(c, x, y, w, h, r) {
 
 export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame, isPhasing, isAttacking) {
   const cCol = (charDef && charDef.color) || {};
+  const isDetailed = (state.scale ?? 1) >= 1.5;
 
   // Paleta de Materiais Nobres Ouro & Subtons do Vácuo
   const cowlBase = cCol.cowlBase || '#1a1429';
@@ -52,7 +61,7 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   const maskSilver = cCol.maskSilver || '#cbd5e1';
   const maskSilverBright = cCol.maskSilverBright || '#f8fafc';
 
-  const eyeGlow = isPhasing ? '#f3e8ff' : (cCol.eyeGlowPurple || '#c084fc');
+  const eyeGlow = isPhasing ? '#f3e8ff' : (cCol.eyeGlowCyan || '#38bdf8');
   const eyeGlowCyan = isPhasing ? '#bae6fd' : (cCol.eyeGlowCyan || '#38bdf8');
   const eyeCore = '#ffffff';
   const eyeMist = isPhasing ? 'rgba(243, 232, 255, 0.75)' : (cCol.eyeMist || 'rgba(168, 85, 247, 0.45)');
@@ -253,6 +262,8 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
       c.fillStyle = gemPurpleBright;
       c.fillRect(-0.3, 2.0, 0.6, 2.0);
 
+      if (isDetailed) drawVoidSeal(c, 0, 5.5, 1.4, '#b9a4d0');
+
       // Guarda transversal em asas de corvo de prata lunar
       c.fillStyle = silverPlate;
       c.beginPath();
@@ -357,7 +368,7 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   // 4. TRONCO ATLÉTICO EM 'V' & GIBÃO DE COURO COM LAMELAS DE OBSIDIANA (3/4)
   // =========================================================================
   // 4A. Base anatômica com cintura afilada (V-Taper com projeção 3/4)
-  c.fillStyle = leatherMid;
+  c.fillStyle = skinGradient(c, -7, bob, 14, 6, leatherDark, leatherMid, '#435060');
   c.beginPath();
   c.moveTo(-7.2, -3.5 + bob);
   c.lineTo(6.8, -3.5 + bob);
@@ -393,7 +404,7 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
 
   chevrons.forEach((chv) => {
     // Lamela de obsidiana metálica
-    c.fillStyle = obsidianMetal;
+    c.fillStyle = skinGradient(c, -5, chv.y+bob, 10, 1.5, '#11121e', obsidianMetal, '#536477');
     c.beginPath();
     c.moveTo(chv.apexX - chv.wLeft, chv.y + bob);
     c.lineTo(chv.apexX, chv.y + chv.indent + bob);
@@ -435,6 +446,12 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
     c.fillStyle = silverGlint;
     c.fillRect(chv.apexX - 0.4, chv.y + chv.indent + bob - 0.4, 0.8, 0.8);
   });
+
+  if (isDetailed) {
+    for (const side of [-1,1]) for (let seam=0;seam<5;seam++) {
+      skinLine(c, [[side*(6.2-seam*.18),-.8+bob+seam*1.05],[side*(5.8-seam*.18),-.6+bob+seam*1.05]], '#91a0b3', .3);
+    }
+  }
 
   // Linha de costura e runa discreta no esterno
   c.strokeStyle = gemPurple;
@@ -533,6 +550,13 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   // =========================================================================
   // 6. OMBREIRAS EM ASAS DE CORVO, BRAÇOS & MANOPLAS
   // =========================================================================
+  // Asymmetric raven mantle: three longer plates on the rear shoulder.
+  for (let feather=0;feather<3;feather++) {
+    const fx=-7-feather*1.9, fy=-2+bob+feather*.8;
+    skinPolygon(c, [[fx+1.4,fy-2],[fx-1.8,fy-1],[fx-1.5,fy+3.7],[fx+.8,fy+1]], '#273040', '#7c8ba4', .5);
+    skinLine(c, [[fx,fy-.4],[fx-.5,fy+2.6]], '#b9c3d0', .4);
+  }
+
   // 6A. Braço Esquerdo (traseiro) com Manopla de Couro e Ataduras
   c.fillStyle = leatherDark;
   c.fillRect(-8.4, -1.0 + bob, 2.8, 5.4);
@@ -690,7 +714,7 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   // 8A. Domo esculpido do capuz em perfil dinâmico 3/4
   // - A nuca e a parte traseira (-x) têm volume profundo de tecido
   // - O topo inclina-se para a frente e o bico do predador projeta-se sobre a fronte (+x)
-  c.fillStyle = cowlBase;
+  c.fillStyle = skinGradient(c, -8, -16+bob, 15, 10, cowlShadow, cowlBase, '#50445e');
   c.beginPath();
   c.moveTo(-7.6, -4.2 + bob);                                // Base traseira sobre o ombro
   c.quadraticCurveTo(-9.6, -11.5 + bob, -6.5, -17.2 + bob);  // Curva posterior da nuca
@@ -738,6 +762,14 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   c.quadraticCurveTo(-9.2, -11.5 + bob, -6.2, -17.0 + bob);
   c.stroke();
 
+  // Sewn hood panels frame the face without adding another magical halo.
+  skinLine(c, [[-5.4,-16.3+bob],[-2.6,-17.1+bob],[.6,-15.3+bob]], '#857894', .45);
+  if (isDetailed) {
+    for (let stitch=0;stitch<5;stitch++) {
+      skinLine(c, [[-6.8+stitch*.27,-13.8+bob+stitch*1.5],[-6.2+stitch*.27,-13.6+bob+stitch*1.5]], '#9c90ad88', .3);
+    }
+  }
+
   // 8B. Caverna de sombra volumétrica profunda dentro do capuz (Orientada em 3/4)
   // A abertura abre-se predominantemente na metade frontal (+x)
   c.fillStyle = cowlShadow;
@@ -753,7 +785,7 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   // 9. MÁSCARA FANTASMA DE OBSIDIANA (MEIA-MÁSCARA FACETADA EM PERFIL 3/4)
   // =========================================================================
   // 9A. Faceta Superior / Frontal (recebe a luz do éter e projeta o nariz em 3/4)
-  c.fillStyle = maskFacetLight;
+  c.fillStyle = skinGradient(c, -1, -9+bob, 6, 4, '#202233', maskFacetLight, '#687c91');
   c.beginPath();
   c.moveTo(1.2, -9.2 + bob);   // Raiz nasal sob a sombra do capuz
   c.lineTo(4.8, -7.0 + bob);   // Ponta saliente do nariz / bico da máscara
@@ -791,6 +823,9 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   c.lineTo(3.8, -6.5 + bob);
   c.lineTo(2.4, -5.2 + bob);
   c.stroke();
+
+  if (isDetailed) drawVoidSeal(c, .6, -6.1+bob, .85, '#c4d4e3');
+  skinGem(c, 3.1, -5.4+bob, .6, '#44345b', '#afa4cd', '#8a97a8');
 
   // Pontos de brilho especular em prata lunar no nariz e no queixo
   c.fillStyle = maskSilverBright;

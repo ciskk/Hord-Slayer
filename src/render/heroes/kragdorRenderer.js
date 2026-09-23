@@ -9,6 +9,8 @@
 /**
  * Renderiza o modelo procedural de Kragdor.
  */
+import { skinGradient, skinPolygon, skinLine, skinGem } from './skinMaterials.js';
+
 export function drawKragdorModel(c, charDef, state, {
   bob = 0,
   legSwing = 0,
@@ -26,7 +28,7 @@ export function drawKragdorModel(c, charDef, state, {
     const skinShadow = cCol.skinShadow || '#8e4823';
     const skinHigh = cCol.skinHighlight || '#df8b56';
     const scarCol = cCol.scar || '#ba5338';
-    const runeCol = isBerserk ? '#ffffff' : (cCol.tattoo || '#f39c12');
+    const runeCol = isBerserk ? '#ffe5ae' : '#b58652';
     const runeGlow = isBerserk ? (cCol.tattooGlow || '#ff7675') : 'rgba(243, 156, 18, 0.45)';
     const hairCol = cCol.hair || '#d35400';
     const hairDark = cCol.hairDark || '#962d1d';
@@ -49,6 +51,7 @@ export function drawKragdorModel(c, charDef, state, {
     const ironCol = cCol.iron || '#47535e';
     const brassCol = cCol.brass || '#f39c12';
     const isDetailed = scale >= 1.5;
+    const hideMaterial = skinGradient(c, -14, bob, 24, 13, '#1c181b', furBase, '#8b7561');
 
     // --- 0. EFEITO ESPECIAL BERSERK: Halo de Fúria e Trincas de Solo ---
     if (isBerserk) {
@@ -84,7 +87,7 @@ export function drawKragdorModel(c, charDef, state, {
     c.fill();
 
     // Camada principal de pele desgastada com pontas denteadas
-    c.fillStyle = capeCol;
+    c.fillStyle = skinGradient(c, -16, bob, 19, 16, capeInner, capeCol, '#985653');
     c.beginPath();
     c.moveTo(-6, -2 + bob);
     c.lineTo(-15 - Math.abs(capeWave * 1.1), 15 + bob);
@@ -110,6 +113,14 @@ export function drawKragdorModel(c, charDef, state, {
     c.lineTo(-13 - Math.abs(capeWave * 1.0), 18 + bob);
     c.lineTo(-9 - Math.abs(capeWave * 0.7), 19 + bob);
     c.stroke();
+
+    // Heavy overlapping fur tips soften the silhouette of the hide mantle.
+    for (let tuft=0;tuft<7;tuft++) {
+      const tx=-14+tuft*2.1-Math.abs(capeWave)*(1-tuft*.12);
+      const ty=12+bob+Math.sin(tuft*.7)*2;
+      skinPolygon(c, [[tx-1.5,ty-3],[tx+1.8,ty-2],[tx+1.1,ty+2.5],[tx,ty+1],[tx-1.1,ty+3.3]], hideMaterial, '#241c19', .45);
+      skinLine(c, [[tx-.5,ty-1.2],[tx,ty+1.5]], '#bea58a', .45);
+    }
 
     // --- 2. COLDRE DORSAL DO MACHADO COLOSSO (Exibido em repouso / preview) ---
     const isAxeOrbitActive = !!state.isAxeOrbiting || (typeof player !== 'undefined' && player.axeCount > 0 && !state.showDorsalAxeForce);
@@ -224,9 +235,17 @@ export function drawKragdorModel(c, charDef, state, {
     c.fillRect(legLeftX + 0.2, 14.2 + bob, 1.2, 1.0);
     c.fillRect(legRightX + 0.2, 14.2 + bob, 1.2, 1.0);
 
+    for (const lx of [legLeftX, legRightX]) {
+      // Stitched hide patches above hammered iron toe caps.
+      skinPolygon(c, [[lx+.5,9.6+bob],[lx+3.7,10+bob],[lx+3.5,12.5+bob],[lx+.8,12.2+bob]], '#65503c', '#241e19', .4);
+      if (isDetailed) for (let stitch=0;stitch<3;stitch++) {
+        skinLine(c, [[lx+1+stitch*.9,10+bob],[lx+.8+stitch*.9,10.8+bob]], '#bc9a6c', .3);
+      }
+    }
+
     // --- 4. TRONCO MUSCULOSO DE COLOSSO NÓRDICO (ANATOMIA 2.5D) ---
     // Base muscular em formato V-Taper
-    c.fillStyle = skinCol;
+    c.fillStyle = skinGradient(c, -11, -5+bob, 23, 9, skinShadow, skinCol, '#e3a675');
     c.beginPath();
     c.moveTo(-11.0, -5 + bob);
     c.lineTo(11.0, -5 + bob);
@@ -279,7 +298,7 @@ export function drawKragdorModel(c, charDef, state, {
 
     // Tatuagens Rúnicas Nórdicas (Pulsam em chamas no modo Berserk)
     c.strokeStyle = runeCol;
-    c.lineWidth = isBerserk ? 2.0 : 1.5;
+    c.lineWidth = isBerserk ? 1.6 : 1.0;
     c.beginPath();
     c.moveTo(-7, -2 + bob);
     c.lineTo(-3, 0 + bob);
@@ -299,6 +318,15 @@ export function drawKragdorModel(c, charDef, state, {
       c.fillRect(-3.5, 0.2 + bob, 1.5, 1.5);
       c.fillRect(2.5, -0.8 + bob, 1.5, 1.5);
       c.restore();
+    }
+
+    // Fine branches turn the broad tattoos into a connected ancestral sigil.
+    if (isDetailed || isBerserk) {
+      const intensity = isBerserk ? .65 + Math.sin(tFrame*.12)*.25 : .55;
+      const ink = isBerserk ? `rgba(255,215,154,${intensity})` : '#835b3b';
+      skinLine(c, [[-7,-2+bob],[-8,-.2+bob],[-6,1+bob]], ink, .55);
+      skinLine(c, [[5,-1+bob],[7,-2.5+bob],[7.5,-.3+bob]], ink, .55);
+      skinLine(c, [[3,2+bob],[5,3+bob],[4.3,4+bob]], ink, .55);
     }
 
     // Arnês de Couro em "X" com Broche Central de Bronze
@@ -346,6 +374,8 @@ export function drawKragdorModel(c, charDef, state, {
     c.fillStyle = ironCol;
     c.fillRect(-0.8, 5.2 + bob, 1.6, 1.8);
 
+    skinGem(c, 0, 5.8+bob, 1.6, '#69402a', '#d8b77b', '#ac8d59');
+
     // --- 5. OMBREIRA TRASEIRA DE CRÂNIO DE FERA COM CRAVOS E RELEVO ---
     c.fillStyle = boneCol;
     c.beginPath();
@@ -376,6 +406,11 @@ export function drawKragdorModel(c, charDef, state, {
     // Ponta brilhante do espigão
     c.fillStyle = '#ffffff';
     c.fillRect(-17.5, -7.2 + bob, 1.4, 1.4);
+
+    if (isDetailed) {
+      skinLine(c, [[-12.8,-5.3+bob],[-11.6,-4.5+bob],[-12.4,-3.8+bob]], '#8e7f6b', .35);
+      skinLine(c, [[-14,-2+bob],[-13.2,-1.2+bob],[-13.8,0+bob]], '#8e7f6b', .35);
+    }
 
     // --- 6. BRAÇOS MUSCULOSOS COM MUNHEQUEIRAS REFORÇADAS E VEIAS ---
     c.fillStyle = skinCol;
@@ -446,6 +481,13 @@ export function drawKragdorModel(c, charDef, state, {
     c.fillStyle = boneLight;
     c.fillRect(-4.5, -5.5 + bob, 1.8, 1.2);
     c.fillRect(2.5, -5.5 + bob, 1.8, 1.2);
+
+    for (const side of [-1,1]) for (let tuft=0;tuft<4;tuft++) {
+      const tx=side*(5+tuft*1.65), ty=-6.5+bob+tuft*.6;
+      skinPolygon(c, [[tx-side*1.6,ty-2],[tx+side*.8,ty-1.8],[tx+side*1.5,ty+2.5],[tx,ty+1.2],[tx-side*.6,ty+2.9]], hideMaterial, '#312723', .35);
+      skinLine(c, [[tx,ty-.9],[tx+side*.5,ty+1.5]], '#c1aa91', .5);
+      if (isDetailed) skinLine(c, [[tx-side*.6,ty-.6],[tx,ty+1.8]], '#937f6b', .3);
+    }
 
     // --- 8. CABEÇA, ROSTO E OLHOS FURIOSOS ---
     c.fillStyle = skinCol;
@@ -552,6 +594,16 @@ export function drawKragdorModel(c, charDef, state, {
     c.fill();
     c.fillStyle = hairHigh;
     c.fillRect(2.2, -6.8 + bob, 3.0, 1.0);
+
+    // Interlocking beard strands with an aged iron clasp.
+    for (let braid=0;braid<4;braid++) {
+      const by=-4.7+bob+braid*1.6;
+      skinLine(c, [[1.7,by-.7],[3.7,by+.5],[5.3,by-.5]], '#efb076', .6);
+      skinLine(c, [[2,by],[3.7,by+1],[5.1,by+.1]], hairDark, .4);
+    }
+    if (isDetailed) {
+      skinLine(c, [[2.4,2.8+bob],[2.9,3.5+bob],[3.4,2.8+bob]], '#705f4e', .3);
+    }
 
     // --- 10. CABELOS LONGOS SELVAGENS ONDULANTES ---
     const hairWave = isMoving ? Math.sin(walkCycle) * 3.8 : Math.sin(tFrame * 0.08) * 1.8;

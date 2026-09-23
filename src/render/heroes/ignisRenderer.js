@@ -9,6 +9,8 @@
 /**
  * Renderiza o modelo procedural de Ignis.
  */
+import { skinGradient, skinPolygon, skinLine, skinGem, skinSprig } from './skinMaterials.js';
+
 export function drawIgnisModel(c, charDef, state, {
   bob = 0,
   legSwing = 0,
@@ -53,6 +55,9 @@ export function drawIgnisModel(c, charDef, state, {
     const staffGold = cCol.staffGold || '#f1c40f';
     const crystalCol = cCol.crystal || '#ff4757';
     const coronaCol = cCol.staffCorona || '#f39c12';
+    const isDetailed = scale >= 1.5;
+    const volcanicSilk = skinGradient(c, -12, bob, 22, 10, robeDark, '#342337', '#674050');
+    const copperMetal = skinGradient(c, -6, -5+bob, 14, 9, '#542936', '#a76240', '#efb978');
 
     // --- ULT: Pós-Imagens Térmicas, Asas Espectrais de Fênix e Jato de Fogo ---
     if (isDashing) {
@@ -216,7 +221,7 @@ export function drawIgnisModel(c, charDef, state, {
     c.fill();
 
     // Camada externa nobre de seda vulcânica obsidiana
-    c.fillStyle = robeBase;
+    c.fillStyle = volcanicSilk;
     c.beginPath();
     c.moveTo(-4, -3 + bob);
     c.lineTo(-14 - Math.abs(capeWave * 1.0), 15 + bob);
@@ -255,6 +260,15 @@ export function drawIgnisModel(c, charDef, state, {
     c.fillRect(-11 - Math.abs(capeWave * 0.9), 17 + bob, 1.4, 1.4);
     c.fillStyle = flameBright;
     c.fillRect(-11.5 - Math.abs(capeWave * 0.9), emberCapY, 1.0, 1.0);
+
+    // Layered phoenix feathers sewn into the mantle, with dark enamel centres.
+    for (let feather=0;feather<3;feather++) {
+      const fx = -11 + feather*3.1 - Math.abs(capeWave)*(1-feather*.2);
+      const fy = 13+bob-feather*.6;
+      skinPolygon(c, [[fx-1.5,fy-7],[fx+1.6,fy-6],[fx+1,fy],[fx-.5,fy+3],[fx-2,fy-.5]], volcanicSilk, '#986748', .4);
+      skinLine(c, [[fx,fy-5],[fx-.4,fy+1.4]], '#c58c60', .4);
+      if (isDetailed) skinSprig(c, fx-.3, fy+.5, 4.5, .07, '#a17256', false);
+    }
 
     // 2. COLDRE DORSAL DO CAJADO DA TORMENTA (Em repouso/preview, recolhe ao conjurar)
     if (!isCasting) {
@@ -354,7 +368,7 @@ export function drawIgnisModel(c, charDef, state, {
 
     // 4. TRONCO COM TÚNICA DRAPEADA, CORSELETE & FAIXA DE SEDA SOLAR
     // Túnica base de obsidiana
-    c.fillStyle = robeBase;
+    c.fillStyle = volcanicSilk;
     c.beginPath();
     c.moveTo(-7.5, -5 + bob);
     c.lineTo(7.5, -5 + bob);
@@ -378,7 +392,7 @@ export function drawIgnisModel(c, charDef, state, {
     c.fillRect(-2, -4 + bob, 4, 11);
 
     // Corselete escuro com debrum e amarração nobre
-    c.fillStyle = corsetCol;
+    c.fillStyle = skinGradient(c, -5, bob, 10, 0, '#1a1522', corsetCol, '#63414c');
     c.beginPath();
     c.moveTo(-5.5, -4 + bob);
     c.lineTo(5.5, -4 + bob);
@@ -389,6 +403,13 @@ export function drawIgnisModel(c, charDef, state, {
     c.strokeStyle = goldTrim;
     c.lineWidth = 0.9;
     c.stroke();
+
+    // Copper boning and obsidian inlays create a tailored breastpiece.
+    for (const side of [-1, 1]) {
+      skinPolygon(c, [[side*2,-3+bob],[side*4.6,-3+bob],[side*3.6,3.8+bob],[side*2.1,3.8+bob]], copperMetal, '#dfad70', .4);
+      skinPolygon(c, [[side*2.7,-2+bob],[side*3.7,-2+bob],[side*3,2.7+bob]], '#231e2a');
+      if (isDetailed) skinLine(c, [[side*3,-1.5+bob],[side*2.8,.4+bob],[side*3.2,1+bob]], '#be7d55', .3);
+    }
 
     // AMULETO "CORAÇÃO DE MAGMA" NO PEITO
     const amuletPulse = Math.sin(tFrame * 0.15) * 0.3 + 0.7;
@@ -419,6 +440,15 @@ export function drawIgnisModel(c, charDef, state, {
     c.fill();
     c.fillStyle = '#ffffff';
     c.fillRect(-0.4, -1.6 + bob, 0.8, 0.8);
+
+    skinGem(c, 0, -1+bob, 1.65, '#a42b44', '#ffb66d', '#f3ca83');
+
+    // Split embroidered skirt panels sit below the sash and move with the cloth.
+    for (const side of [-1,1]) {
+      const sway = capeWave*.18;
+      skinPolygon(c, [[side*2.4,5+bob],[side*5.6,5+bob],[side*7+sway,12+bob],[side*4.2+sway,15+bob],[side*2.7,10+bob]], volcanicSilk, '#b27a51', .5);
+      skinSprig(c, side*4.7+sway, 12+bob, 5, side*.2, '#d6a16a', isDetailed);
+    }
 
     // Faixa de seda solar (Obi Arcano) com laço e fitas rituais
     c.fillStyle = sashCol;
@@ -517,6 +547,13 @@ export function drawIgnisModel(c, charDef, state, {
     c.stroke();
     c.fillStyle = goldLight;
     c.fillRect(7.5, -6.0 + bob, 3.0, 1.0);
+
+    // Overlapping copper-edged feather plates distinguish armour from silk.
+    for (const side of [-1,1]) for (let plate=0;plate<3;plate++) {
+      const px=side*(6+plate*1.5), py=-4+bob+plate*.7;
+      skinPolygon(c, [[px-side*1.4,py-2],[px+side*1.2,py-2.4],[px+side*2,py+1.8],[px,py+.8]], '#302530', '#c38b59', .5);
+      if (isDetailed) skinLine(c, [[px,py-1.3],[px+side*.7,py+.5]], '#f1c594', .3);
+    }
 
     // 7. GOLA ALTA DE ARQUIMAGA & PESCOÇO DE PORCELANA
     // Gola alta de veludo carmesim imperial com debrum dourado atrás do pescoço
@@ -646,6 +683,9 @@ export function drawIgnisModel(c, charDef, state, {
     c.fillStyle = '#ff7675';
     c.fillRect(3.8, -7.0 + bob, 0.7, 0.4);
 
+    // Warm reflected light on the jaw; restrained so the face stays readable.
+    skinPolygon(c, [[4.6,-9+bob],[5,-6.8+bob],[3.4,-5.5+bob],[2.8,-6+bob]], '#f7b77a66');
+
     // 10. CABELO RUIVO VOLUMOSO & FRANJA ELEGANTE
     // Calota superior em ruivo escuro
     c.fillStyle = hairDark;
@@ -716,6 +756,14 @@ export function drawIgnisModel(c, charDef, state, {
     c.fill();
     c.fillStyle = '#ffffff';
     c.fillRect(1.6, -16.6 + bob, 0.6, 0.6);
+
+    if (isDetailed) {
+      skinGem(c, 1, -15.5+bob, 1.05, '#962a38', '#ffd08a', '#e4ad6b');
+      // Fine combed strands are static in local coordinates, avoiding shimmer.
+      for (let strand=0;strand<3;strand++) {
+        skinLine(c, [[-4+strand*1.4,-16+bob],[-5+strand*1.3,-13.6+bob],[-4.8+strand*1.2,-11.8+bob]], '#ed9b6888', .3);
+      }
+    }
 
     // 12. PARTÍCULAS E BRASAS ELEMENTAIS TRASEIRAS
     const fSparkY2 = 9 + bob - (((tFrame + 10) * 0.35) % 8);

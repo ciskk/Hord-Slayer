@@ -10,6 +10,8 @@
  * Renderiza com máxima fidelidade o Martelo Sagrado / Martelo dos Titãs de Sir Roland.
  * Utilizado tanto no coldre dorsal quanto empunhado ativamente em combate.
  */
+import { skinGradient, skinPolygon, skinLine, skinGem, skinSprig } from './skinMaterials.js';
+
 export function drawRolandHammerModel(c, cCol, isEvolved = false, runeGlowMult = 1.0) {
   const hammerWood = cCol.hammerWood || '#3d271d';
   const hammerSteel = isEvolved ? '#3d1c06' : (cCol.hammerSteel || '#57606f');
@@ -47,8 +49,13 @@ export function drawRolandHammerModel(c, cCol, isEvolved = false, runeGlowMult =
 
   // Cabeça titânica do martelo de guerra
   // Bloco principal de ferro temperado
-  c.fillStyle = hammerSteel;
+  c.fillStyle = skinGradient(c, -9, -15, 18, 8, '#26303e', hammerSteel, hammerSteelLight);
   c.fillRect(-9, -15, 18, 12);
+  // Recessed end caps and silver inlay give the head a forged, layered profile.
+  for (const side of [-1, 1]) {
+    skinPolygon(c, [[side*8,-14], [side*11,-12], [side*11,-6], [side*8,-4]], hammerSteel, hammerGold, .65);
+    skinLine(c, [[side*9,-11], [side*10,-10], [side*9,-7]], hammerGoldLight, .55);
+  }
 
   // Face chanfrada superior com reflexo especular de luz
   c.fillStyle = hammerSteelLight;
@@ -149,6 +156,8 @@ export function drawRolandModel(c, charDef, state, {
     const hammerRuneGlow = cCol.hammerRuneGlow || '#ffffff';
     const eyeGlow = cCol.eyeGlow || '#00d2d3';
     const holyGlow = cCol.holyGlow || 'rgba(241, 196, 15, 0.40)';
+    const isDetailed = scale >= 1.5;
+    const polishedSteel = skinGradient(c, -9, -15 + bob, 24, 12, steelDark, steelMid, '#c1d2df');
 
     // --- ULT: Pós-Imagens Douradas e Solo Sagrado com Runas ---
     if (isDashing) {
@@ -189,7 +198,7 @@ export function drawRolandModel(c, charDef, state, {
     c.fill();
 
     // Manto exterior de veludo púrpura
-    c.fillStyle = cCol.cape || '#481b6d';
+    c.fillStyle = skinGradient(c, -17, bob, 18, 10, '#210f35', cCol.cape || '#481b6d', '#73548d');
     c.beginPath();
     c.moveTo(-5, -3 + bob);
     c.lineTo(-15 - Math.abs(capeWave * 1.1), 15 + bob);
@@ -219,6 +228,12 @@ export function drawRolandModel(c, charDef, state, {
     c.lineTo(-9 - Math.abs(capeWave * 0.6), 16.2 + bob);
     c.lineTo(-2.5, 15.2 + bob);
     c.stroke();
+
+    // Sewn laurel border follows the moving velvet, before equipment occludes it.
+    skinSprig(c, -10 - Math.abs(capeWave * .7), 14 + bob, 8, -.32, '#bda275', isDetailed);
+    if (isDetailed) {
+      skinLine(c, [[-13-Math.abs(capeWave),13+bob],[-10-Math.abs(capeWave*.6),15+bob],[-4,14+bob]], '#e6cc91', .3);
+    }
 
     // 2. Coldre Dorsal do Martelo Sagrado (Visível em repouso/guarda, empunhado nas mãos no ataque)
     if (!isHammerAttacking) {
@@ -312,9 +327,18 @@ export function drawRolandModel(c, charDef, state, {
     c.fillRect(legLeftX + 3.2, 13.2 + bob, 1.8, 0.9);
     c.fillRect(legRightX + 3.2, 13.2 + bob, 1.8, 0.9);
 
+    // Articulated boot seams and rivets read as metal instead of flat rectangles.
+    for (const lx of [legLeftX, legRightX]) {
+      skinLine(c, [[lx+.4,14+bob],[lx+4.7,14+bob]], '#526174', .5);
+      if (isDetailed) {
+        skinLine(c, [[lx+1,11+bob],[lx+2.5,10+bob],[lx+3.5,11+bob]], goldDark, .35);
+        skinLine(c, [[lx+1,15+bob],[lx+1,13+bob]], '#526174', .35);
+      }
+    }
+
     // 4. Tronco com Couraça Chanfrada (Gothic Cuirass) e Tabardo Sagrado
     // Placa peitoral de aço curvado com rebites e chanfros
-    c.fillStyle = steelMid;
+    c.fillStyle = polishedSteel;
     c.beginPath();
     c.moveTo(-9, -5 + bob);
     c.lineTo(9, -5 + bob);
@@ -346,7 +370,7 @@ export function drawRolandModel(c, charDef, state, {
     c.strokeRect(-5, -6.5 + bob, 10, 2.2);
 
     // Tabardo monástico sagrado drapeado com sombras de dobra
-    c.fillStyle = tabardCol;
+    c.fillStyle = skinGradient(c, -5, bob, 10, 0, '#b7ae99', tabardCol, '#fff4dd');
     c.beginPath();
     c.moveTo(-5.2, -5 + bob);
     c.lineTo(5.2, -5 + bob);
@@ -388,6 +412,22 @@ export function drawRolandModel(c, charDef, state, {
     c.fillStyle = goldLight;
     c.fillRect(-0.5, -0.7 + bob, 1.0, 0.8);
 
+    // Heraldic shield backing, raised cross and laurel in old gold.
+    skinPolygon(c, [[-3.4,-3.5+bob],[3.4,-3.5+bob],[2.7,1.6+bob],[0,3.5+bob],[-2.7,1.6+bob]], '#782b35', '#d5b877', .55);
+    skinLine(c, [[0,-2.6+bob],[0,2+bob]], '#f3dd9d', .85);
+    skinLine(c, [[-1.9,-1+bob],[1.9,-1+bob]], '#f3dd9d', .85);
+    if (isDetailed) {
+      skinSprig(c, -3.3, 3+bob, 4.2, -.18, '#ac8e54', true);
+      skinSprig(c, 3.3, 3+bob, 4.2, .18, '#ac8e54', true);
+      // Chainmail only in the exposed flank joints.
+      c.save();
+      c.strokeStyle = '#acb6c1'; c.lineWidth = .32;
+      for (const sx of [-7, 6]) for (let row=0; row<5; row++) {
+        c.beginPath(); c.arc(sx+(row%2)*.4, bob-3+row*1.15, .55, 0, Math.PI*1.8); c.stroke();
+      }
+      c.restore();
+    }
+
     // Cinto nobre de combate e correia transversal do coldre
     c.fillStyle = '#231711';
     c.fillRect(-7, 4.5 + bob, 14, 3.2);
@@ -415,6 +455,14 @@ export function drawRolandModel(c, charDef, state, {
     c.fillStyle = goldGlint;
     c.fillRect(-2.2, 4.2 + bob, 1.2, 1.0);
 
+    // Wax seal and folded oath parchment hang from the belt.
+    skinPolygon(c, [[-6,6+bob],[-3.7,6+bob],[-3.2,11+bob],[-4.6,10.4+bob],[-5.7,11+bob]], '#d9c5a0', '#776448', .4);
+    skinGem(c, -5, 6+bob, 1.35, '#712639', '#c8605c', goldDark);
+    if (isDetailed) {
+      skinLine(c, [[-5,8+bob],[-4,8.2+bob]], '#806c52', .3);
+      skinLine(c, [[-4.8,9+bob],[-3.9,9.2+bob]], '#806c52', .3);
+    }
+
     // 5. Ombreira Traseira e Braço Esquerdo
     c.fillStyle = steelDark;
     c.fillRect(-11, -3 + bob, 4, 8);
@@ -438,7 +486,7 @@ export function drawRolandModel(c, charDef, state, {
 
     // 6. Cabeça e Grande Elmo Gótico (Greathelm) com Crista e Visor
     // Cúpula do elmo em aço chanfrado 3D
-    c.fillStyle = steelMid;
+    c.fillStyle = polishedSteel;
     c.beginPath();
     c.moveTo(-5.5, -6 + bob);
     c.lineTo(6.5, -6 + bob);
@@ -547,9 +595,18 @@ export function drawRolandModel(c, charDef, state, {
     c.arc(-2.8, -14.8 + bob, 1.0, 0, Math.PI * 2);
     c.fill();
 
+    if (isDetailed) {
+      // Feather barbs and engraved temple grooves, lit from the upper left.
+      for (let i=0;i<5;i++) {
+        skinLine(c, [[-4-i*1.5-plumeSway*.4,-16+bob],[-5-i*1.7-plumeSway*.6,-18+bob+i*.25]], '#c7a3da', .35);
+      }
+      skinLine(c, [[-4,-13+bob],[-5,-10+bob],[-3,-8+bob]], '#95a8b9', .4);
+      skinLine(c, [[-3.8,-12.7+bob],[-4.5,-10+bob]], '#182231', .35);
+    }
+
     // 7. Pauldron Nobre Dianteiro (Ombreira Gótica Esculpida com Frisos de Ouro)
     // Placa de aço polido
-    c.fillStyle = steelMid;
+    c.fillStyle = polishedSteel;
     c.beginPath();
     c.moveTo(5, -6 + bob);
     c.lineTo(13.5, -4 + bob);
@@ -576,6 +633,14 @@ export function drawRolandModel(c, charDef, state, {
     // Ponto especular no topo do pauldron
     c.fillStyle = steelHighlight;
     c.fillRect(9, -4.5 + bob, 3, 1);
+
+    // Scalloped lower plate with an inset sunstone and engraved wing relief.
+    skinPolygon(c, [[5,-1+bob],[12,0+bob],[10.5,3.3+bob],[5.4,1.5+bob]], polishedSteel, goldDark, .65);
+    skinGem(c, 9, -2+bob, 1.5, '#72521e', '#e6cd80', goldLight);
+    if (isDetailed) {
+      skinSprig(c, 7, .8+bob, 3, -.65, '#e5ddc4', true);
+      skinLine(c, [[10,1+bob],[11,1.3+bob]], '#e9edf0', .4);
+    }
 
     // 8. Braços, Manoplas Articuladas e Empunhadura Dinâmica do Martelo Sagrado
     if (isHammerAttacking) {
