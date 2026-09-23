@@ -300,7 +300,21 @@ export function recordRunStats(delta = {}) {
   return evaluateAchievements(stats);
 }
 
+let isEvaluatingAchievements = false;
+
 export function evaluateAchievements(stats = getLifetimeStats()) {
+  // A conquista de todos os heróis consulta isHeroUnlocked, que também faz
+  // avaliação retroativa. A passagem externa já registra todas as recompensas.
+  if (isEvaluatingAchievements) return [];
+  isEvaluatingAchievements = true;
+  try {
+    return evaluateAchievementPass(stats);
+  } finally {
+    isEvaluatingAchievements = false;
+  }
+}
+
+function evaluateAchievementPass(stats) {
   const unlockedIds = getUnlockedAchievementIds();
   const newlyUnlocked = [];
 

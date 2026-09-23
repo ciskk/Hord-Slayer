@@ -55,7 +55,8 @@ function getStalkerSpawnPoint(angle = null) {
  * @returns {boolean}
  */
 export function isKaelInvisible() {
-  return Boolean(player && player.invisTimer > 0 && (selectedHeroKey === 'ROGUE' || !selectedHeroKey));
+  // Derivado do timer da partida atual; não mantém uma flag global de bloqueio.
+  return selectedHeroKey === 'ROGUE' && Number.isFinite(player.invisTimer) && player.invisTimer > 0;
 }
 
 /**
