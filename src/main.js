@@ -45,6 +45,7 @@ import { spawnSquad, spawnMobCluster, spawnProp, spawnInitialHorde, isWormEnemyT
 import { recordRunStats } from './systems/progression.js';
 import { 
   getCurrentWave, 
+  getHordeArenaTheme,
   getEffectiveHordeSeconds,
   checkBossSchedule, 
   resetBossSchedule,
@@ -66,7 +67,7 @@ import {
   presentDeferredLevelUpModal
 } from './systems/ui.js';
 import { render } from './render/renderer.js';
-import { transitionToArenaTheme, getWaveArenaTheme, resetEnvironment } from './render/environment.js';
+import { transitionToArenaTheme, resetEnvironment } from './render/environment.js';
 import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
 import { initResponsive, layoutMetrics, GRAPHICS_QUALITY, getGraphicsQuality, setGraphicsQuality, resolveTargetDpr } from './core/responsive.js';
 import { clearSpriteCache } from './render/enemies/spriteCache.js';
@@ -391,7 +392,7 @@ export function terminateMatch() {
   resetBossSchedule();
   resetMiniBossSchedule();
   resetUpgradeQueue();
-  setCurrentArenaTheme('IVORY_OSSUARY');
+  setCurrentArenaTheme('CEMETERY');
   cinematicCamera.isCinematic = false;
   cinematicCamera.returningToPlayer = false;
   cinematicCamera.letterboxProgress = 0;
@@ -704,9 +705,9 @@ function update(dt) {
     waveAnnouncement.timer -= dt;
   }
 
-  // Transição suave de arena a cada 3 ondas
-  if (!activeBoss) {
-    const targetTheme = getWaveArenaTheme(currentWave.index);
+  // A região avança após a vitória e coleta da recompensa; ondas não a fazem regredir.
+  if (!activeBoss && !gameState.isWavePaused && !gameState.isWon) {
+    const targetTheme = getHordeArenaTheme();
     if (targetTheme !== currentArenaTheme) {
       transitionToArenaTheme(targetTheme);
     }

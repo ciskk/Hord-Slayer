@@ -11,8 +11,8 @@ import { playSfx, triggerHaptic } from '../core/audio.js';
 import { triggerDeath, openChestModal } from './ui.js';
 import { addDamageText, createHitParticles, addBloodSplat } from './combat.js';
 import { addXP } from '../entities/player.js';
-import { transitionToArenaTheme, getWaveArenaTheme } from '../render/environment.js';
-import { getCurrentWave, getEffectiveHordeSeconds } from './waves.js';
+import { transitionToArenaTheme } from '../render/environment.js';
+import { getHordeArenaTheme } from './waves.js';
 import { onAltarChestCollected } from './worldEvents.js';
 
 export function getGemConfig(xp) {
@@ -258,10 +258,7 @@ export function updatePickups(dt, {
           onAltarChestCollected();
         }
         if (tier === 'BOSS') {
-          const waveSeconds = Math.floor(frameCount / 60);
-          const hordeSeconds = getEffectiveHordeSeconds(waveSeconds);
-          const currentWave = getCurrentWave(hordeSeconds);
-          transitionToArenaTheme(getWaveArenaTheme(currentWave.index), 120);
+          transitionToArenaTheme(getHordeArenaTheme(), 120);
           setIsWavePaused(false);
           resetSpawnTimer();
         }

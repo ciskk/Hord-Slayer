@@ -45,7 +45,7 @@ export const ACHIEVEMENTS = [
   {
     id: 'hero_kael',
     title: "Sombra do Abismo",
-    desc: "Derrote o Monólito Abissal (Chefe 2) na Caldeira Tectônica para libertar Kael, o Andarilho Sombrio.",
+    desc: "Derrote o Monólito Abissal (Chefe 2) na Cratera de Basalto para libertar Kael, o Andarilho Sombrio.",
     category: "hero",
     tier: "HERÓICO",
     heroKey: "ROGUE",
@@ -278,7 +278,7 @@ export const ACHIEVEMENTS = [
   {
     id: 'boss_monolith',
     title: "Quebrador de Titãs",
-    desc: "Destrua o Monólito Abissal (Chefe 2) na Caldeira Tectônica sob o tremor dos continentes.",
+    desc: "Destrua o Monólito Abissal (Chefe 2) na Cratera de Basalto sob o tremor dos continentes.",
     category: "boss",
     tier: "HERÓICO",
     icon: "hammer",

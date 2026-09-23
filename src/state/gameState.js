@@ -136,7 +136,7 @@ export let frameCount = 0;
 export let spawnTimer = 999;
 export let screenShake = 0;
 export let freezeTimer = 0;
-export let currentArenaTheme = 'IVORY_OSSUARY';
+export let currentArenaTheme = 'CEMETERY';
 export let lastTime = typeof performance !== 'undefined' ? performance.now() : 0;
 
 export const waveAnnouncement = {

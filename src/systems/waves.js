@@ -9,6 +9,7 @@ import { recordRunStats } from './progression.js';
 
 import { triggerBossBark } from './barks.js';
 import { isBossBlockedByWorldEvent } from './worldEvents.js';
+import { getRegionForProgress } from '../config/arenas.js';
 
 export const BOSS_QUEUE = [
   { bossId: 1, delay: 60 },
@@ -18,6 +19,10 @@ export const BOSS_QUEUE = [
 ];
 
 export let currentBossIndex = 0;
+
+export function getHordeArenaTheme() {
+  return getRegionForProgress(currentBossIndex);
+}
 export let nextBossSpawnTime = BOSS_QUEUE[0].delay;
 export let firstBossKilled = false;
 export let bossFightStartTime = 0;
@@ -145,6 +150,8 @@ export function checkBossSchedule(seconds) {
  * @returns {Object} Configuração da onda.
  */
 export function getCurrentWave(seconds) {
+  // Desde a onda 2, STALKER também participa dos grupos: depender só de
+  // HORDE_RUSH criava ondas inteiras sem vermes. A ULT filtra apenas o spawn atual.
   if (seconds < 25) {
     return {
       index: 1,
@@ -160,7 +167,7 @@ export function getCurrentWave(seconds) {
       index: 2,
       name: "Onda 2: Revoada Carmesim",
       allowedSquads: ['HORDE_RUSH', 'SWARM_PINCER'],
-      types: ['ZOMBIE', 'BAT', 'VOID_SCAVENGER'],
+      types: ['ZOMBIE', 'BAT', 'VOID_SCAVENGER', 'STALKER'],
       clusterSize: [5, 8],
       rate: 78,
       eliteChance: 0.06
@@ -170,7 +177,7 @@ export function getCurrentWave(seconds) {
       index: 3,
       name: "Onda 3: Batalhão Blindado",
       allowedSquads: ['HORDE_RUSH', 'PHALANX', 'SWARM_PINCER'],
-      types: ['ZOMBIE', 'SHIELDED', 'BAT', 'TOLL_BELLRINGER'],
+      types: ['ZOMBIE', 'SHIELDED', 'BAT', 'TOLL_BELLRINGER', 'STALKER'],
       clusterSize: [6, 9],
       rate: 68,
       eliteChance: 0.10
@@ -180,7 +187,7 @@ export function getCurrentWave(seconds) {
       index: 4,
       name: "Onda 4: Fogo Cruzado Industrial",
       allowedSquads: ['PHALANX', 'DISRUPTION', 'EXECUTION_SQUAD'],
-      types: ['SHIELDED', 'SHOOTER', 'EXPLODER', 'FORGE_PYREGUARD', 'CHAIN_FLAYER'],
+      types: ['SHIELDED', 'SHOOTER', 'EXPLODER', 'FORGE_PYREGUARD', 'CHAIN_FLAYER', 'STALKER'],
       clusterSize: [6, 9],
       rate: 66,
       eliteChance: 0.12
@@ -190,7 +197,7 @@ export function getCurrentWave(seconds) {
       index: 5,
       name: "Onda 5: Praga Rastejante",
       allowedSquads: ['DISRUPTION', 'SIEGE_BATTERY', 'EXECUTION_SQUAD'],
-      types: ['SPLITTER', 'CRYPT_WEAVER', 'BASALT_GARGOYLE', 'PLAGUE_APOTHECARY'],
+      types: ['SPLITTER', 'CRYPT_WEAVER', 'BASALT_GARGOYLE', 'PLAGUE_APOTHECARY', 'STALKER'],
       clusterSize: [6, 10],
       rate: 58,
       eliteChance: 0.15
@@ -200,7 +207,7 @@ export function getCurrentWave(seconds) {
       index: 6,
       name: "Onda 6: Rito das Sombras",
       allowedSquads: ['SIEGE_BATTERY', 'SNIPER_PINCER', 'DEATH_PROCESSION'],
-      types: ['NECRO', 'SHOOTER', 'GOLEM', 'RUNE_SCRIBE', 'SNIPER_CULTIST'],
+      types: ['NECRO', 'SHOOTER', 'GOLEM', 'RUNE_SCRIBE', 'SNIPER_CULTIST', 'STALKER'],
       clusterSize: [7, 10],
       rate: 52,
       eliteChance: 0.18
@@ -210,7 +217,7 @@ export function getCurrentWave(seconds) {
       index: 7,
       name: "Onda 7: Cerco de Gigantes",
       allowedSquads: ['DEATH_PROCESSION', 'EXECUTION_SQUAD', 'AMBUSH_COVEN'],
-      types: ['GOLEM', 'BASALT_GARGOYLE', 'FORGE_PYREGUARD', 'MAIDEN_THORNS', 'DULLAHAN_VANGUARD'],
+      types: ['GOLEM', 'BASALT_GARGOYLE', 'FORGE_PYREGUARD', 'MAIDEN_THORNS', 'DULLAHAN_VANGUARD', 'STALKER'],
       clusterSize: [7, 11],
       rate: 46,
       eliteChance: 0.22
@@ -240,7 +247,7 @@ export function getCurrentWave(seconds) {
       index: 10,
       name: "Onda 10: O Julgamento Final",
       allowedSquads: ['AMBUSH_COVEN', 'DEATH_PROCESSION', 'EXECUTION_SQUAD', 'SNIPER_PINCER', 'PHALANX'],
-      types: ['GOLEM', 'DULLAHAN_VANGUARD', 'GRAVE_GORGON', 'MAIDEN_THORNS', 'CURSED_CHEST'],
+      types: ['GOLEM', 'DULLAHAN_VANGUARD', 'GRAVE_GORGON', 'MAIDEN_THORNS', 'CURSED_CHEST', 'STALKER'],
       clusterSize: [9, 14],
       rate: 32,
       eliteChance: 0.40
