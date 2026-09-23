@@ -14,10 +14,9 @@ export const upgradesPool = [
     apply: () => {
       player.axeSpeedCount = (player.axeSpeedCount || 0) + 1;
       player.axeSpinSpeed = (player.axeSpinSpeed || 0.085) + 0.005;
-      const w = player.weapons.find(wp => wp.type === 'AXE');
-      if (w) w.damageMult += 0.04;
+      player.axeDamageMult = (player.axeDamageMult || 1) + 0.04;
     },
-    isAvailable: () => !player.evolvedAxe && player.weapons.some(w => w.type === 'AXE')
+    isAvailable: () => !player.evolvedAxe && player.axeCount > 0
   },
   {
     id: 'axe_extra',
@@ -25,17 +24,14 @@ export const upgradesPool = [
     rarity: "card-legendary",
     badge: "Machado",
     desc: "Adiciona +1 machado ao anel orbital que translada ao redor do bárbaro",
-    getStat: () => `+1 Machado no Anel (${(player.axeCount || 1) + 1}/4)`,
-    stat: "+1 Machado no Anel (Máx: 4)",
+    getStat: () => `+1 Machado no Anel (${Math.min(3, (player.axeCount || 1) + 1)}/3)`,
+    stat: "+1 Machado no Anel (Máx: 3)",
     apply: () => {
-      player.axeCount = (player.axeCount || 1) + 1;
-      const w = player.weapons.find(wp => wp.type === 'AXE');
-      if (w) {
-        w.count = player.axeCount;
-      }
+      if (player.evolvedAxe || player.axeCount <= 0) return;
+      player.axeCount = Math.min(3, player.axeCount + 1);
       registerWeaponInInventory('AXE', player.axeCount);
     },
-    isAvailable: () => !player.evolvedAxe && player.weapons.some(w => w.type === 'AXE') && (player.axeCount || 1) < 4
+    isAvailable: () => !player.evolvedAxe && player.axeCount > 0 && player.axeCount < 3
   },
   {
     id: 'axe_radius',
@@ -50,10 +46,9 @@ export const upgradesPool = [
       if ((player.axeRadius || 56) < 120) {
         player.axeRadius = Math.min(120, (player.axeRadius || 56) + 6);
       }
-      const w = player.weapons.find(wp => wp.type === 'AXE');
-      if (w) w.damageMult += 0.10;
+      player.axeDamageMult = (player.axeDamageMult || 1) + 0.10;
     },
-    isAvailable: () => !player.evolvedAxe && player.weapons.some(w => w.type === 'AXE')
+    isAvailable: () => !player.evolvedAxe && player.axeCount > 0
   },
 
   // --- Aprimoramentos das Poções (Valéria) ---

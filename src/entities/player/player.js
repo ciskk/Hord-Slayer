@@ -480,6 +480,9 @@ export function resetPlayer(heroKey) {
   player.orbitalDamageMult = 1.0;
   player.evolvedOrbitals = false;
   player.axeCount = c.stats.axeCount || 0;
+  player.axeSpeedCount = 0;
+  player.axeSpinSpeed = 0.085;
+  player.axeRadiusCount = 0;
   player.axeAngle = 0;
   player.axeRadius = 56;
   player.axeDamageMult = 1.0;

@@ -61,7 +61,7 @@ export const ITEMS = {
     icon: "axe",
     badge: "Machado",
     description: "Translada em órbita; o cabo repele inimigos e a ponta desfere corte crítico integral.",
-    maxLevel: 4,
+    maxLevel: 3,
     evolutionId: 'evolved_axe'
   },
   ORBITALS: {
