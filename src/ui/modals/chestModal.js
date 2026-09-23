@@ -17,10 +17,10 @@ import { resetInput, resetInputSoft, restoreKeyboardMovement } from '../../core/
 import { getRandomUpgrades, getRandomChestUpgrades, checkSynergies } from '../../config/upgrades.js';
 import { player, addPersistentGold } from '../../entities/player.js';
 import { renderIcon } from '../icons.js';
-import { UPGRADE_ICONS } from './upgradeModal.js';
+import { UPGRADE_ICONS, REWARD_ICONS } from '../cardIcons.js';
 import { recordRunStats } from '../../config/achievements.js';
-import { transitionToArenaTheme, getWaveArenaTheme } from '../../render/environment.js';
-import { getCurrentWave, getEffectiveHordeSeconds } from '../../systems/waves.js';
+import { transitionToArenaTheme } from '../../render/environment.js';
+import { getHordeArenaTheme } from '../../systems/waves.js';
 import { onAltarChestCollected } from '../../systems/worldEvents.js';
 
 let chestKeydownHandler = null;
@@ -127,7 +127,7 @@ export function openChestModal(tier = 'BOSS') {
       desc: "O altar consagra sua vitória: restaura sua vida ao máximo e concede almas persistentes.",
       stat: "Vida Total & +40 Ouro",
       badge: "Dádiva de Sangue",
-      iconSvg: `<svg viewBox="0 0 24 24"><path fill="#ff3838" d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`,
+      iconSvg: REWARD_ICONS.blood_tribute,
       apply: () => {
         player.hp = player.maxHp;
         addPersistentGold(40);
@@ -185,7 +185,7 @@ export function openChestModal(tier = 'BOSS') {
       desc: "Todos os poderes conhecidos atingiram o apogeu! Recupera vitalidade e concede ouro da arena.",
       stat: "+100 HP & +25 Ouro",
       badge: "Fortuna",
-      iconSvg: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#ffd166"/></svg>`,
+      iconSvg: UPGRADE_ICONS.blessing,
       apply: () => {
         player.hp = Math.min(player.maxHp, player.hp + 100);
         addPersistentGold(25);
@@ -207,7 +207,7 @@ export function openChestModal(tier = 'BOSS') {
         desc: `[Transmutação Cósmica] ${u.desc}`,
         stat: u.stat,
         badge: "Dádiva Astral",
-        iconSvg: `<svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#ffd166"/></svg>`,
+        iconSvg: UPGRADE_ICONS[u.id] || UPGRADE_ICONS.blessing,
         apply: () => {
           u.apply();
           addPersistentGold(25);
@@ -220,7 +220,7 @@ export function openChestModal(tier = 'BOSS') {
         desc: "A fenda cósmica duplicou o tesouro, vertendo essências imortais adicionais.",
         stat: "+40 Almas Persistentes",
         badge: "Dádiva Astral",
-        iconSvg: `<svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#ffd166"/></svg>`,
+        iconSvg: REWARD_ICONS.soul_transmutation,
         apply: () => {
           addPersistentGold(40);
         }
@@ -281,10 +281,7 @@ export function openChestModal(tier = 'BOSS') {
       restoreKeyboardMovement();
 
       if (!activeBoss) {
-        const waveSeconds = Math.floor(frameCount / 60);
-        const hordeSeconds = getEffectiveHordeSeconds(waveSeconds);
-        const currentWave = getCurrentWave(hordeSeconds);
-        transitionToArenaTheme(getWaveArenaTheme(currentWave.index), 90);
+        transitionToArenaTheme(getHordeArenaTheme(), 90);
         setIsWavePaused(false);
         resetSpawnTimer();
         triggerShake(8);

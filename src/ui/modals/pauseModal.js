@@ -221,7 +221,7 @@ export function renderPauseInventory() {
         chip.style.borderColor = 'rgba(168, 85, 247, 0.7)';
         chip.style.background = 'rgba(48, 16, 68, 0.55)';
         chip.innerHTML = `
-          ${renderIcon('sparkle', { size: 10, color: '#c084fc' })}
+          ${renderIcon('pact', { size: 10, color: '#c084fc' })}
           <span style="color:#c084fc; font-weight:800;">${p.title}:</span>
           <span class="passive-val" style="color:#2ecc71; font-weight:800;">${p.bonus}</span>
           <span style="color:#ff6b6b; font-size:9.5px; margin-left:3px;">(${p.penalty})</span>

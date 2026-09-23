@@ -77,7 +77,9 @@ function getNaturalContentHeight(target, mTop, mBottom) {
  * Aplica o cálculo de Smart Auto-Fit em um único container.
  * @param {HTMLElement} container Elemento que atua como viewport/limite da lista.
  * @param {Object} [customOptions] Sobrescreve opções padrão.
- * @returns {number} A escala final aplicada (entre minScale e 1.0).
+ * data-autofit-overflow="scale" permite reduzir abaixo de minScale quando o
+ * conteúdo precisa caber integralmente, sem fallback para rolagem.
+ * @returns {number} A escala final aplicada.
  */
 export function autoFitElement(container, customOptions = {}) {
   if (!container || !(container instanceof HTMLElement)) return 1.0;
@@ -154,7 +156,7 @@ export function autoFitElement(container, customOptions = {}) {
   // 5. O conteúdo ultrapassa o espaço disponível: calcula a escala necessária
   const requiredScale = Math.min(maxScale, (availH - bufferPx) / naturalH);
 
-  if (requiredScale >= minScale) {
+  if (requiredScale >= minScale || container.dataset.autofitOverflow === 'scale') {
     // Excesso moderado: Reduz proporcionalmente e uniformemente até caber perfeitamente
     const scale = Math.floor(requiredScale * 1000) / 1000;
     applyAutoFitScale(container, target, scale, naturalH);

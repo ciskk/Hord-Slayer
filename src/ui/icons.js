@@ -8,6 +8,12 @@
  */
 
 export const ICONS = {
+  // A sealed, cut gemstone distinguishes a pact from a fusion sparkle.
+  pact: `
+    <path d="M12 2 21 12 12 22 3 12Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M12 7v7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="12" cy="17" r="1.2" fill="currentColor"/>
+  `,
   // ==========================================
   // 1. COMBATE & ARSENAL DE ARMAS
   // ==========================================
