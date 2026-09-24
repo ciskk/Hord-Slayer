@@ -225,6 +225,7 @@ export function updateAbyssSovereign(e, dt, context) {
     if (e.defeatTimer <= 0) {
       if (!e.hasDefeatCompleted) {
         e.hasDefeatCompleted = true;
+        e.fadeAlpha = 0;
         if (context.onDefeatComplete) {
           context.onDefeatComplete();
         }

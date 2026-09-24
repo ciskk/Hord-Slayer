@@ -519,51 +519,55 @@ export function finalizeVictoryAndReturnToMenu() {
   gameState.isPaused = false;
   resetInput();
 
-  const timerElem = document.getElementById('timer-val');
-  const survivalTime = timerElem ? timerElem.innerText : '00:00';
-  const survivalSecs = parseTimeToSeconds(survivalTime);
-  const currentHeroDef = CHARACTERS[selectedHeroKey] || CHARACTERS.KNIGHT;
-  const { weapons: playerWeapons, passives: playerPassives } = harvestPlayerRunArsenal();
-  const evolvedCount = playerWeapons.filter(w => w.evolved).length;
+  try {
+    const timerElem = document.getElementById('timer-val');
+    const survivalTime = timerElem ? timerElem.innerText : '00:00';
+    const survivalSecs = parseTimeToSeconds(survivalTime);
+    const currentHeroDef = CHARACTERS[selectedHeroKey] || CHARACTERS.KNIGHT;
+    const { weapons: playerWeapons, passives: playerPassives } = harvestPlayerRunArsenal();
+    const evolvedCount = playerWeapons.filter(w => w.evolved).length;
 
-  recordRunStats({
-    kills: gameState.kills,
-    wave: 10,
-    bossDefeated: 4,
-    survivalSeconds: survivalSecs,
-    level: player.level,
-    evolvedWeaponsCount: evolvedCount,
-    runFinished: true
-  });
+    recordRunStats({
+      kills: gameState.kills,
+      wave: 10,
+      bossDefeated: 4,
+      survivalSeconds: survivalSecs,
+      level: player.level,
+      evolvedWeaponsCount: evolvedCount,
+      runFinished: true
+    });
 
-  // Gravação individual de vitória para o herói selecionado
-  recordHeroRunStats(selectedHeroKey, {
-    seconds: survivalSecs,
-    timeStr: survivalTime,
-    kills: gameState.kills,
-    isVictory: true
-  });
+    // Gravação individual de vitória para o herói selecionado
+    recordHeroRunStats(selectedHeroKey, {
+      seconds: survivalSecs,
+      timeStr: survivalTime,
+      kills: gameState.kills,
+      isVictory: true
+    });
 
-  const recordResult = checkAndRecordBestRun({
-    heroKey: selectedHeroKey,
-    heroName: currentHeroDef.name || 'Sir Roland',
-    heroTitle: currentHeroDef.title || 'O Paladino',
-    isVictory: true,
-    wave: 10,
-    waveText: 'Onda 10 (Vitória Suprema)',
-    time: survivalTime,
-    seconds: survivalSecs,
-    kills: gameState.kills,
-    level: player.level,
-    souls: getPersistentGold(),
-    weapons: playerWeapons,
-    passives: playerPassives,
-    verdictTitle: 'VITÓRIA SUPREMA ABSOLUTA',
-    verdictSub: 'Expurgou o Soberano do Abismo e consagrou a luz eterna'
-  });
+    const recordResult = checkAndRecordBestRun({
+      heroKey: selectedHeroKey,
+      heroName: currentHeroDef.name || 'Sir Roland',
+      heroTitle: currentHeroDef.title || 'O Paladino',
+      isVictory: true,
+      wave: 10,
+      waveText: 'Onda 10 (Vitória Suprema)',
+      time: survivalTime,
+      seconds: survivalSecs,
+      kills: gameState.kills,
+      level: player.level,
+      souls: getPersistentGold(),
+      weapons: playerWeapons,
+      passives: playerPassives,
+      verdictTitle: 'VITÓRIA SUPREMA ABSOLUTA',
+      verdictSub: 'Expurgou o Soberano do Abismo e consagrou a luz eterna'
+    });
 
-  if (recordResult && recordResult.bestRun) {
-    recordRunStats({ score: recordResult.bestRun.score });
+    if (recordResult && recordResult.bestRun) {
+      recordRunStats({ score: recordResult.bestRun.score });
+    }
+  } catch (err) {
+    console.warn('Aviso: Falha ao gravar estatísticas da vitória suprema:', err);
   }
 
   bullets.length = 0;
@@ -587,16 +591,26 @@ export function finalizeVictoryAndReturnToMenu() {
     deathKeydownHandler = null;
   }
 
+  // Remove imediatamente o overlay de fade de vitória para evitar tela preta infinita
+  const fadeOverlay = document.getElementById('victory-fade-overlay');
+  if (fadeOverlay) {
+    fadeOverlay.classList.remove('active');
+    fadeOverlay.style.transition = 'none';
+    fadeOverlay.style.opacity = '0';
+    fadeOverlay.style.display = 'none';
+  }
+
   // Retorna triunfalmente ao menu de seleção de personagens
   openCharacterSelect();
 
-  setTimeout(() => {
-    const fadeOverlay = document.getElementById('victory-fade-overlay');
+  // Restaura a transição do overlay de forma assíncrona para próximas partidas
+  requestAnimationFrame(() => {
     if (fadeOverlay) {
-      fadeOverlay.classList.remove('active');
-      fadeOverlay.style.opacity = '0';
+      fadeOverlay.style.display = '';
+      fadeOverlay.style.transition = '';
+      fadeOverlay.style.removeProperty('opacity');
     }
-  }, 400);
+  });
 }
 
 export function closeDeathModal() {

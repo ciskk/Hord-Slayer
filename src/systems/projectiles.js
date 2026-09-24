@@ -6,10 +6,11 @@ import { player, selectedHeroKey } from '../entities/player.js';
 import { enemies, bullets, enemyBullets, acidPuddles, bossShockwaves, MAX_CONCURRENT_ENEMY_BULLETS, canSpawnEnemyBullet } from '../state/collections.js';
 import { triggerShake } from '../state/gameState.js';
 import { setLastAttackerInfo } from '../state/events.js';
-import { addDamageText, createHitParticles, applyFireBurn } from './combat.js';
+import { addDamageText, createHitParticles, applyFireBurn, applyFreeze } from './combat.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { getNeighborIndices } from '../core/spatialGrid.js';
 import { addGroundCrater, updateGroundCraters } from '../render/groundCracks.js';
+import { addKaelHitFissure } from '../render/kaelUlt.js';
 import { triggerDeath } from './ui.js';
 
 export { bullets, enemyBullets, acidPuddles, MAX_CONCURRENT_ENEMY_BULLETS, canSpawnEnemyBullet };
@@ -91,8 +92,8 @@ export function updateProjectiles(dt) {
             if (e.baseType === 'LITOCISTO') {
               impactDmg *= 4.0;
             } else if ((e.isBoss || e.isMiniBoss) && !e.isBossSubTarget) {
-              // Resiliência de carapaça contra impacto direto de estilhaços de vidro (-25%)
-              impactDmg *= 0.75;
+              // Decomposição Cáustica em Chefes: fator 10/9 (1.1111x) que, somado à base 1.35x, atinge exatamente 2.0x do impacto original (50% mais fácil)
+              impactDmg *= (10 / 9);
             }
             e.hp -= impactDmg;
             e.hitFlash = 4;
@@ -293,6 +294,11 @@ export function updateProjectiles(dt) {
           if (selectedHeroKey === 'MAGE' && isCrit) {
             applyFireBurn(e, 180, (player.damage || 45) * 0.35, true);
           }
+          if (b.isSpectral || player.invisTimer > 0) {
+            addKaelHitFissure(e.x, e.y, b.angle || 0);
+            createHitParticles(b.x, b.y, '#f3e8ff', 3);
+            createHitParticles(b.x, b.y, '#38bdf8', 3);
+          }
         } else {
           if (isCrit || isMeleeAdrenaline || isKaelExecute) {
             playSfx('crit');
@@ -324,9 +330,7 @@ export function updateProjectiles(dt) {
         createHitParticles(b.x, b.y, isShieldBlocked ? '#74b9ff' : (isKaelExecute ? '#7c3aed' : (isMeleeAdrenaline ? '#f1c40f' : (b.color || '#3498db'))), isCrit || isKaelExecute ? 5 : 3);
 
         if (player.slowChance > 0 && Math.random() < player.slowChance) {
-          e.slowTimer = 150;
-          e.slowFactor = 0.55;
-          createHitParticles(e.x, e.y, '#74b9ff', 2);
+          applyFreeze(e);
         }
 
         if (b.type !== 'HAMMER_SLAM') {
@@ -594,8 +598,11 @@ export function updateAcidPuddles(dt) {
       finalDot *= (1 + e.acidStacks * 0.06);
     }
 
+    if ((e.isBoss || e.isMiniBoss) && e._puddleAlchemist) {
+      finalDot *= (40 / 27);
+    }
+
     e.hp -= finalDot;
-    e.hitFlash = Math.max(e.hitFlash || 0, 1);
 
     if (e._puddleAlchemist) {
       e.slowTimer = Math.max(e.slowTimer || 0, 40);
@@ -632,7 +639,7 @@ export function updateAcidPuddles(dt) {
   }
 
   // Regeneração Global da Valéria (Opção A: Anti-Stacking Absoluto)
-  // Calibrado para recuperar 100% da vida (105 HP) em exatamente 20 segundos
+  // Calibrado para recuperar vida da Valéria (70 HP máx) sobre o miasma aliado
   // 105 HP / 20s = 5.25 HP/s -> +2 HP a cada 23 frames (~0.38s = 5.22 HP/s)
   if (playerInAlchemistPuddle && selectedHeroKey === 'ALCHEMIST') {
     player.alchemistHealTimer = (player.alchemistHealTimer || 0) + dt;

@@ -42,7 +42,7 @@ export function isWormEnemyType(typeKey) {
   return typeKey === 'STALKER' || typeKey === 'SPLITTER' || typeKey === 'SPLITTER_MINI' || typeKey === 'TRAIL_CRAWLER';
 }
 
-/** O verme emerge perto do jogador; a mira fica fixa durante os 200 ms de poeira. */
+/** O verme emerge perto do jogador; a mira fica fixa durante os 500 ms de poeira. */
 function getStalkerSpawnPoint(angle = null) {
   const a = angle ?? Math.random() * Math.PI * 2;
   const distance = STALKER_DASH.spawnMinDistance
@@ -331,6 +331,11 @@ export function createEnemy(typeKey, x, y, isElite = false) {
  */
 export function spawnMobCluster(typeKey, count, eliteChance = 0, forcedAngle = null) {
   if (isKaelInvisible() && isWormEnemyType(typeKey)) return;
+  // Não acumular emboscadas: apenas um Assassino Espectral vivo na arena.
+  if (typeKey === 'STALKER') {
+    if (enemies.some(e => e.baseType === 'STALKER' && e.hp > 0)) return;
+    count = Math.min(count, 1);
+  }
   const def = ENEMY_TYPES[typeKey] || ENEMY_TYPES.ZOMBIE;
   const minutes = frameCount / 3600;
   const scaleFactor = 1.0 + (minutes * 0.28);
@@ -383,6 +388,9 @@ export function spawnSquad(squadKey, eliteChance = 0, forcedAngle = null) {
 
   for (let i = 0; i < squadDef.members.length; i++) {
     const member = squadDef.members[i];
+    if (member.type === 'STALKER' && enemies.some(e => e.baseType === 'STALKER' && e.hp > 0)) {
+      continue;
+    }
     if (isKaelInvisible() && isWormEnemyType(member.type)) {
       continue;
     }

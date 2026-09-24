@@ -16,7 +16,8 @@
 .levelup-screen-overlay.autofit-active,
 .pause-screen-overlay.autofit-active,
 .chest-screen-overlay.autofit-active,
-.death-screen-overlay.autofit-active {
+.death-screen-overlay.autofit-active,
+.locked-hero-overlay.autofit-active {
   overflow: hidden !important;
   overflow-x: hidden !important;
   overflow-y: hidden !important;
@@ -37,6 +38,7 @@
 .chest-screen-overlay .autofit-scaled,
 .death-screen-overlay .autofit-scaled,
 .pause-screen-overlay .autofit-scaled,
+.locked-hero-overlay .autofit-scaled,
 .modal-overlay .autofit-scaled {
   transform-origin: center center !important;
 }

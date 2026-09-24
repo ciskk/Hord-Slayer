@@ -10,6 +10,10 @@
  * Renderiza o modelo procedural de Valeria.
  */
 import { skinGradient, skinPolygon, skinLine, skinGem, skinSprig } from './skinMaterials.js';
+import {
+  getValeriaPressure, drawValeriaSeal, drawValeriaVapor, drawValeriaReactiveCloth,
+  drawValeriaPressureRig, drawValeriaRespirator, drawValeriaVolatileFlask
+} from '../valeriaUlt.js';
 
 export function drawValeriaModel(c, charDef, state, {
   bob = 0,
@@ -58,6 +62,7 @@ export function drawValeriaModel(c, charDef, state, {
     const hairSway = isMoving ? Math.sin(walkCycle) * 4.5 : Math.sin(tFrame * 0.08) * 1.8;
     const coatSway = isMoving ? Math.sin(walkCycle * 1.1) * 3.5 : Math.sin(tFrame * 0.07) * 1.4;
     const isOvercharged = isAlchemistSkill || (alchemistSkillTimer > 0);
+    const pressure = getValeriaPressure(alchemistSkillTimer, isAlchemistSkill);
     const isDetailed = scale >= 1.5;
     const velvetMaterial = skinGradient(c, -12, bob, 21, 10, coatDark, coatLight, '#508b71');
     const agedBrass = skinGradient(c, -8, -5+bob, 16, 8, brassDark, brassCol, '#e4c997');
@@ -77,66 +82,8 @@ export function drawValeriaModel(c, charDef, state, {
     // 1. HABILIDADE: CÍRCULO RÚNICO DE TRANSMUTAÇÃO NO SOLO
     // =========================================================================
     if (isOvercharged) {
-      c.save();
-      const circleR = 24 + Math.sin(tFrame * 0.25) * 2.5;
-      const rot1 = tFrame * 0.035;
-      const rot2 = -tFrame * 0.025;
-
-      // Anel rúnico externo com brilho
-      c.strokeStyle = acidGlow;
-      c.lineWidth = 2.0;
-      c.beginPath();
-      c.ellipse(0, 14 + bob, circleR, circleR * 0.38, 0, 0, Math.PI * 2);
-      c.stroke();
-
-      // Círculo interno tracejado com rotação
-      c.save();
-      c.translate(0, 14 + bob);
-      c.scale(1, 0.38);
-      c.rotate(rot1);
-      c.setLineDash([4, 4]);
-      c.strokeStyle = acidBase;
-      c.lineWidth = 1.4;
-      c.beginPath();
-      c.arc(0, 0, circleR - 5, 0, Math.PI * 2);
-      c.stroke();
-
-      // Geometria de transmutação no solo (Triângulo Sagrado dos Elementos)
-      c.setLineDash([]);
-      c.rotate(rot2);
-      c.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-      c.lineWidth = 1.1;
-      c.beginPath();
-      for (let pt = 0; pt < 3; pt++) {
-        const pAng = (pt * Math.PI * 2 / 3);
-        const px = Math.cos(pAng) * (circleR - 7);
-        const py = Math.sin(pAng) * (circleR - 7);
-        if (pt === 0) c.moveTo(px, py);
-        else c.lineTo(px, py);
-      }
-      c.closePath();
-      c.stroke();
-
-      // Glifo central alquímico no solo
-      c.fillStyle = acidGlow;
-      c.beginPath();
-      c.arc(0, 0, 3.2, 0, Math.PI * 2);
-      c.fill();
-      c.restore();
-
-      // Miasma cáustico ascendente com partículas violeta e púrpura
-      for (let m = 0; m < 5; m++) {
-        const mAng = (m * Math.PI * 0.4) + tFrame * 0.12;
-        const mx = Math.cos(mAng) * 16;
-        const my = 12 + bob + Math.sin(mAng) * 5 - ((tFrame * 0.5 + m * 3.5) % 13);
-        c.fillStyle = m % 2 === 0 
-          ? `rgba(214, 162, 232, ${0.48 - (m * 0.07)})` 
-          : `rgba(155, 89, 182, ${0.42 - (m * 0.07)})`;
-        c.beginPath();
-        c.arc(mx, my, 2.2, 0, Math.PI * 2);
-        c.fill();
-      }
-      c.restore();
+      drawValeriaSeal(c, tFrame, pressure, isDetailed);
+      drawValeriaVapor(c, tFrame, bob, pressure, false, state.effectHeadroom);
     }
 
     // =========================================================================
@@ -163,6 +110,8 @@ export function drawValeriaModel(c, charDef, state, {
     c.lineTo(3, 1 + bob);
     c.closePath();
     c.fill();
+
+    drawValeriaReactiveCloth(c, tFrame, pressure, isDetailed, bob, coatSway);
 
     // Abas com reflexo suave de luz
     c.fillStyle = coatHigh;
@@ -327,15 +276,15 @@ export function drawValeriaModel(c, charDef, state, {
     c.fillStyle = brassGlint;
     c.fillRect(-2.0, -9.8, 2.8, 0.6);
 
+    drawValeriaPressureRig(c, tFrame, pressure, isDetailed);
+
     // Vapores químicos desprendendo da chaminé em arcos (Roxo / Violeta Alquímico)
-    const steamAlpha = isOvercharged ? 0.85 : 0.42;
-    for (let st = 1; st <= (isOvercharged ? 3 : 2); st++) {
-      const stProg = ((tFrame * (isOvercharged ? 0.20 : 0.09) + st * 0.45) % 1);
+    const steamAlpha = .42;
+    for (let st = 1; st <= (isOvercharged ? 0 : 2); st++) {
+      const stProg = ((tFrame * .09 + st * .45) % 1);
       const stX = -1.2 - (stProg * 6.5);
       const stY = -10.5 - (stProg * 8.5);
-      c.fillStyle = isOvercharged 
-        ? `rgba(224, 86, 253, ${(1 - stProg) * steamAlpha})` 
-        : `rgba(155, 89, 182, ${(1 - stProg) * steamAlpha})`;
+      c.fillStyle = `rgba(155, 89, 182, ${(1 - stProg) * steamAlpha})`;
       c.beginPath();
       c.arc(stX, stY, 1.6 + stProg * 3.2, 0, Math.PI * 2);
       c.fill();
@@ -730,6 +679,8 @@ export function drawValeriaModel(c, charDef, state, {
     c.fillRect(-11.0 - wave1 * 0.5, -9.8 + bob + wave1 * 0.3, 0.8, 0.8);
     c.fillRect(-16.0 - wave2 * 0.6, 0.7 + bob + wave2 * 0.4, 0.8, 0.8);
 
+    drawValeriaRespirator(c, bob, pressure, isDetailed);
+
     // =========================================================================
     // 11. BRAÇO DIANTEIRO E POSTURAS DE COMBATE (FRASCO ERLENMEYER & ARREMESSO)
     // =========================================================================
@@ -750,37 +701,41 @@ export function drawValeriaModel(c, charDef, state, {
       c.translate(15, -4 + bob);
       c.rotate(0.35);
 
-      c.fillStyle = 'rgba(155, 89, 182, 0.45)';
-      c.beginPath();
-      c.arc(0, 0, 7.5, 0, Math.PI * 2);
-      c.fill();
+      if (isOvercharged) {
+        drawValeriaVolatileFlask(c, tFrame, pressure, state.evolvedPotion, isDetailed);
+      } else {
+        c.fillStyle = 'rgba(155, 89, 182, 0.45)';
+        c.beginPath();
+        c.arc(0, 0, 7.5, 0, Math.PI * 2);
+        c.fill();
 
-      c.fillStyle = 'rgba(240, 255, 250, 0.90)';
-      c.beginPath();
-      c.moveTo(-1.6, -4.5); c.lineTo(1.6, -4.5);
-      c.lineTo(4.8, 4.2);   c.lineTo(-4.8, 4.2);
-      c.closePath();
-      c.fill();
-      c.strokeStyle = 'rgba(255, 255, 255, 0.95)';
-      c.lineWidth = 1.0;
-      c.stroke();
+        c.fillStyle = 'rgba(240, 255, 250, 0.90)';
+        c.beginPath();
+        c.moveTo(-1.6, -4.5); c.lineTo(1.6, -4.5);
+        c.lineTo(4.8, 4.2);   c.lineTo(-4.8, 4.2);
+        c.closePath();
+        c.fill();
+        c.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+        c.lineWidth = 1.0;
+        c.stroke();
 
-      c.fillStyle = acidBase;
-      c.beginPath();
-      c.moveTo(-3.6, 0); c.lineTo(3.6, 0);
-      c.lineTo(4.2, 3.8); c.lineTo(-4.2, 3.8);
-      c.closePath();
-      c.fill();
+        c.fillStyle = acidBase;
+        c.beginPath();
+        c.moveTo(-3.6, 0); c.lineTo(3.6, 0);
+        c.lineTo(4.2, 3.8); c.lineTo(-4.2, 3.8);
+        c.closePath();
+        c.fill();
 
-      // Reflexo curvo no frasco arremessado
-      c.strokeStyle = '#ffffff';
-      c.lineWidth = 0.9;
-      c.beginPath();
-      c.moveTo(-3.2, 0.5); c.lineTo(-4.0, 3.4);
-      c.stroke();
+        // Reflexo curvo no frasco arremessado
+        c.strokeStyle = '#ffffff';
+        c.lineWidth = 0.9;
+        c.beginPath();
+        c.moveTo(-3.2, 0.5); c.lineTo(-4.0, 3.4);
+        c.stroke();
 
-      c.fillStyle = '#8b5a2b';
-      c.fillRect(-1.6, -6.0, 3.2, 1.8);
+        c.fillStyle = '#8b5a2b';
+        c.fillRect(-1.6, -6.0, 3.2, 1.8);
+      }
       c.restore();
 
       // Fagulhas e respingos químicos no arremesso
@@ -802,31 +757,11 @@ export function drawValeriaModel(c, charDef, state, {
 
       skinLine(c, [[8.4,-3.2+bob],[9.8,-3.6+bob],[10.2,-2.5+bob]], '#789b6d', .7);
 
-      // Frasco suspenso energizado com sobrepressão e aura pulsante
+      // Reator de vidro preso à manopla: líquido, refração e gaiola de latão.
       c.save();
-      c.translate(13, -8 + bob);
-      const auraPulse = Math.sin(tFrame * 0.3) * 3;
-      c.fillStyle = 'rgba(214, 162, 232, 0.50)';
-      c.beginPath();
-      c.arc(0, 0, 8.5 + auraPulse, 0, Math.PI * 2);
-      c.fill();
-
-      c.fillStyle = 'rgba(255, 255, 255, 0.92)';
-      c.beginPath();
-      c.moveTo(-2.2, -5.2); c.lineTo(2.2, -5.2);
-      c.lineTo(5.8, 5.2); c.lineTo(-5.8, 5.2);
-      c.closePath();
-      c.fill();
-      c.strokeStyle = '#ffffff';
-      c.lineWidth = 1.0;
-      c.stroke();
-
-      c.fillStyle = acidGlow;
-      c.beginPath();
-      c.moveTo(-4.6, -1.0); c.lineTo(4.6, -1.0);
-      c.lineTo(5.2, 4.8); c.lineTo(-5.2, 4.8);
-      c.closePath();
-      c.fill();
+      c.translate(14, -8 + bob + Math.sin(tFrame * .075) * .5);
+      c.rotate(-.12 + Math.sin(tFrame * .06) * .04);
+      drawValeriaVolatileFlask(c, tFrame, pressure, state.evolvedPotion, isDetailed);
       c.restore();
     } else {
       // POSTURA NORMAL: Mão empunhando o frasco Erlenmeyer com firmeza
@@ -905,4 +840,14 @@ export function drawValeriaModel(c, charDef, state, {
       c.fill();
       c.restore();
     }
+    if (isOvercharged) {
+      // Reflexos localizados: preservar pele, olhos e leitura da silhueta.
+      c.save(); c.globalAlpha *= pressure;
+      skinLine(c, [[7.6,-5+bob],[6.8,-1+bob],[4.8,5+bob]], '#dca9e7', .55);
+      skinLine(c, [[-10-coatSway*.3,13+bob],[-7-coatSway*.3,16+bob],[-3,14+bob]], '#be94d0', .6);
+      skinLine(c, [[-4,-15.7+bob],[-2.4,-16.1+bob]], '#ead3ed', .45);
+      c.restore();
+      drawValeriaVapor(c, tFrame, bob, pressure, true);
+    }
+
 }

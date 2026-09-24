@@ -4,6 +4,10 @@
  * Desacoplado de I/O de DOM e persistência.
  */
 import { CHARACTERS } from '../../config/characters.js';
+import { KRAGDOR_ULT } from '../../config/kragdorUlt.js';
+import { KAEL_ULT } from '../../config/kaelUlt.js';
+import { beginIgnisStep } from '../../render/ignisUlt.js';
+import { beginKaelPhase, clearKaelPhaseEffects } from '../../render/kaelUlt.js';
 import { playSfx, triggerHaptic } from '../../core/audio.js';
 import { inputX, inputY } from '../../core/input.js';
 import { createHitParticles } from '../../systems/combat.js';
@@ -58,6 +62,7 @@ export const player = {
   pushVy: 0,
   mass: 2.5,
   ignisDashDuration: 0,
+  ignisFireTrailTimer: 0,
   ignisDashVx: 0,
   ignisDashVy: 0,
   axeCount: 0,
@@ -87,6 +92,8 @@ export const player = {
   vx: 0,
   vy: 0,
   berserkTimer: 0,
+  roarOriginX: 0,
+  roarOriginY: 0,
   invisTimer: 0,
   isPhasing: false,
 
@@ -303,6 +310,8 @@ export function triggerHeroSkill(options = {}) {
 
   if (selectedHeroKey === 'KNIGHT') {
     player.dashDuration = 24;
+    player.rolandTrailDistance = 0;
+    player.rolandImpactCooldown = 0;
     player.iFrames = 50;
     player.bossIFrames = 50;
     const moveAng = getHeroSkillDirection(options);
@@ -317,6 +326,7 @@ export function triggerHeroSkill(options = {}) {
     triggerHaptic('heavy');
   } else if (selectedHeroKey === 'MAGE') {
     player.ignisDashDuration = 22;
+    player.ignisFireTrailTimer = 0;
     player.iFrames = 30;
     player.bossIFrames = 30;
     const moveAng = getHeroSkillDirection(options);
@@ -330,17 +340,21 @@ export function triggerHeroSkill(options = {}) {
     playSfx('flame_dash');
     triggerShake(9);
     triggerHaptic('heavy');
-    createHitParticles(player.x, player.y, '#ffffff', 16);
+    beginIgnisStep(player.x, player.y, player.facing);
   } else if (selectedHeroKey === 'ROGUE') {
-    player.invisTimer = 180;
+    player.invisTimer = KAEL_ULT.duration;
     player.iFrames = 20;
     player.isPhasing = true;
     playSfx('smoke_bomb');
     triggerHaptic('heavy');
-    createHitParticles(player.x, player.y, '#2c3e50', 20);
-    createHitParticles(player.x, player.y, '#bdc3c7', 15);
+    beginKaelPhase(player.x, player.y, player.facing);
+    createHitParticles(player.x, player.y, '#171324', 16);
+    createHitParticles(player.x, player.y, '#7c3aed', 18);
+    createHitParticles(player.x, player.y, '#38bdf8', 12);
   } else if (selectedHeroKey === 'BARBARIAN') {
-    player.berserkTimer = 240;
+    player.berserkTimer = KRAGDOR_ULT.duration;
+    player.roarOriginX = player.x;
+    player.roarOriginY = player.y;
     player.iFrames = 25;
     playSfx('barbarian_roar');
     triggerShake(12);
@@ -348,7 +362,7 @@ export function triggerHeroSkill(options = {}) {
     createHitParticles(player.x, player.y, '#e74c3c', 24);
 
     // Rugido Ancestral: Atordoar, tornar vulnerável e repelir inimigos na área
-    const roarRadius = 220;
+    const roarRadius = KRAGDOR_ULT.radius;
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
       if (!e || e.hp <= 0 || e.isBoss) continue;
@@ -356,9 +370,10 @@ export function triggerHeroSkill(options = {}) {
       const dy = e.y - player.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < roarRadius) {
-        e.stunTimer = 90;
+        e.stunTimer = KRAGDOR_ULT.stunDuration;
         e.isVulnerable = true;
-        e.vulnerableTimer = 180;
+        e.vulnerableTimer = KRAGDOR_ULT.vulnerableDuration;
+        e.roarMarkTimer = KRAGDOR_ULT.vulnerableDuration;
         // Knockback radial
         const pushForce = 6;
         const ang = Math.atan2(dy, dx);
@@ -508,11 +523,15 @@ export function resetPlayer(heroKey) {
   player.dashVx = 0;
   player.dashVy = 0;
   player.ignisDashDuration = 0;
+  player.ignisFireTrailTimer = 0;
   player.ignisDashVx = 0;
   player.ignisDashVy = 0;
   player.berserkTimer = 0;
+  player.roarOriginX = 0;
+  player.roarOriginY = 0;
   player.invisTimer = 0;
   player.isPhasing = false;
+  clearKaelPhaseEffects();
   player.alchemistSkillTimer = 0;
   player.alchemistBuffTimer = 0;
   player.alchemistSkillDisoriented = false;

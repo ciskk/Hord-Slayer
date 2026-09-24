@@ -7,7 +7,7 @@ import { triggerDeath } from './ui.js';
 import { triggerShake } from '../state/gameState.js';
 import { bossShockwaves } from '../state/collections.js';
 import { setLastAttackerInfo } from '../state/events.js';
-import { selectedHeroKey } from '../entities/player.js';
+import { selectedHeroKey, player } from '../entities/player.js';
 import { getEnemyDeathProfile } from '../config/enemyDeaths.js';
 
 
@@ -490,3 +490,20 @@ export function applyFireBurn(target, duration = 180, dps = 20, isCrit = false) 
   target.fireBurnTimer = Math.max(target.fireBurnTimer || 0, duration);
   if (isCrit) target.fireBurnCrit = true;
 }
+
+/**
+ * Aplica congelamento/lentidão criogênica em uma entidade inimiga (Golpe Criogênico).
+ * @param {object} target - Entidade inimiga.
+ * @param {number} duration - Duração base em frames (padrão 150 = 2.5s).
+ * @param {number} slowFactor - Fator de desaceleração (padrão 0.55).
+ */
+export function applyFreeze(target, duration = 150, slowFactor = 0.55) {
+  if (!target || target.hp <= 0 || target.isTargetable === false) return;
+  const bonusDuration = (player && player.slowDurationBonus ? player.slowDurationBonus * 60 : 0);
+  const totalDuration = Math.round(duration + bonusDuration);
+  target.slowTimer = Math.max(target.slowTimer || 0, totalDuration);
+  target.slowFactor = slowFactor;
+  target.freezeTimer = Math.max(target.freezeTimer || 0, totalDuration);
+  createHitParticles(target.x, target.y, '#74b9ff', 2);
+}
+

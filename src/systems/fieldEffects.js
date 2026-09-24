@@ -7,7 +7,7 @@
  */
 import { getNeighborIndices } from '../core/spatialGrid.js';
 import { playSfx } from '../core/audio.js';
-import { addDamageText, createHitParticles } from './combat.js';
+import { addDamageText, createHitParticles, applyFreeze } from './combat.js';
 
 export function updateFieldEffects(dt, { 
   player, 
@@ -74,9 +74,9 @@ export function updateFieldEffects(dt, {
           createHitParticles(e.x, e.y, isKaelExecute ? '#7c3aed' : '#f1c40f', 2);
 
           if (player.slowChance > 0 && Math.random() < player.slowChance) {
-            e.slowTimer = 150;
-            e.slowFactor = 0.55;
-            createHitParticles(e.x, e.y, '#74b9ff', 2);
+            applyFreeze(e);
+
+
           }
 
           if (e.isBoss && (e.hp / e.maxHp) < 0.45 && !e.isEnraged) {
@@ -154,9 +154,9 @@ export function updateFieldEffects(dt, {
           createHitParticles(ox, oy, hitColor, player.evolvedOrbitals ? 4 : 3);
 
           if (player.slowChance > 0 && Math.random() < player.slowChance) {
-            e.slowTimer = 150;
-            e.slowFactor = 0.55;
-            createHitParticles(e.x, e.y, '#74b9ff', 2);
+            applyFreeze(e);
+
+
           }
 
           if (e.isBoss && (e.hp / e.maxHp) < 0.45 && !e.isEnraged) {

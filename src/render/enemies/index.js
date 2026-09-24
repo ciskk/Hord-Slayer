@@ -91,10 +91,15 @@ export function drawEnemyShape(e) {
       drawMiniBossShape(e);
     } else {
       drawCommonEnemyGroundDecorations(e);
+      if (e.baseType === 'STALKER' && e.dashState === 'aim') {
+        stalker.drawBurrowWarning(e);
+        ctx.restore();
+        return; // O corpo só emerge quando os 500 ms de aviso terminam.
+      }
       applyKinematicDeformations(e);
 
       const isHit = e.hitFlash > 0;
-      const baseCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : e.color);
+      const baseCol = isHit ? '#ffffff' : e.color;
 
       const renderer = ENEMY_RENDERERS[e.baseType];
       if (renderer && renderer.draw) {

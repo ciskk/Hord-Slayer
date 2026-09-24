@@ -13,6 +13,75 @@
 import { enemies, frameCount } from '../main.js';
 import { addDamageText, createHitParticles } from '../systems/combat.js';
 import { getNeighborIndices } from '../core/spatialGrid.js';
+import { drawRolandShockwave } from './rolandUlt.js';
+import { updateIgnisStepEffects } from './ignisUlt.js';
+import { updateKaelPhaseEffects } from './kaelUlt.js';
+// Separate cosmetic budget: Ignis fissures never evict Roland's damaging craters.
+export { drawIgnisStepGround } from './ignisUlt.js';
+
+// Cosmetic ULT effects have their own budget and never replace damaging craters.
+export const consecratedTrail = [];
+export const rolandShockwaves = [];
+
+export function addConsecratedTrail(x, y, angle) {
+  if (consecratedTrail.length >= 14) consecratedTrail.shift();
+  consecratedTrail.push({ x, y, angle, life: 46 });
+}
+
+export function addRolandShockwave(x, y, radius = 76) {
+  if (rolandShockwaves.length >= 3) rolandShockwaves.shift();
+  rolandShockwaves.push({ x, y, radius, life: 26 });
+}
+
+export function clearRolandChargeEffects() {
+  consecratedTrail.length = 0;
+  rolandShockwaves.length = 0;
+}
+
+function updateRolandChargeEffects(dt) {
+  for (const effects of [consecratedTrail, rolandShockwaves]) {
+    for (let i = effects.length - 1; i >= 0; i--) {
+      effects[i].life -= dt;
+      if (effects[i].life <= 0) effects.splice(i, 1);
+    }
+  }
+}
+
+function drawRolandChargeGround(ctx, left, right, top, bottom) {
+  for (const mark of consecratedTrail) {
+    if (left !== undefined && (mark.x + 40 < left || mark.x - 40 > right || mark.y + 40 < top || mark.y - 40 > bottom)) continue;
+    const age = 46 - mark.life;
+    const alpha = Math.min(1, mark.life / 22);
+    ctx.save(); ctx.translate(mark.x, mark.y); ctx.rotate(mark.angle);
+    ctx.globalAlpha *= alpha;
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-17, 0); ctx.lineTo(-9, -3); ctx.lineTo(-2, 2);
+    ctx.lineTo(7, -2); ctx.lineTo(16, 0);
+    ctx.moveTo(-9, -3); ctx.lineTo(-5, -9); ctx.lineTo(-10, -15);
+    ctx.moveTo(7, -2); ctx.lineTo(5, 7); ctx.lineTo(11, 13);
+    ctx.strokeStyle = 'rgba(39, 27, 13, 0.65)'; ctx.lineWidth = 5; ctx.stroke();
+    ctx.strokeStyle = 'rgba(239, 178, 51, 0.4)'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.strokeStyle = '#ffdc83'; ctx.lineWidth = 1.3; ctx.stroke();
+    ctx.strokeStyle = '#fff4d1'; ctx.lineWidth = 0.5; ctx.stroke();
+    if (age < 20) {
+      ctx.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI / 2 + 0.4, d = 3 + age * 0.65;
+        const x = Math.cos(a) * d, y = Math.sin(a) * d;
+        ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a) * 2, y + Math.sin(a) * 2);
+      }
+      ctx.strokeStyle = `rgba(255, 234, 178, ${1 - age / 20})`;
+      ctx.lineWidth = 1; ctx.stroke();
+    }
+    ctx.restore();
+  }
+  for (const wave of rolandShockwaves) {
+    const r = wave.radius + 18;
+    if (left !== undefined && (wave.x + r < left || wave.x - r > right || wave.y + r < top || wave.y - r > bottom)) continue;
+    drawRolandShockwave(ctx, wave.x, wave.y, 26 - wave.life, wave.radius);
+  }
+}
 
 function pseudoRand(seed) {
   const x = Math.sin(seed) * 10000;
@@ -71,6 +140,9 @@ export function addGroundCrater(x, y, angle, radius, count = 1, isEvolved = fals
  * Atualiza o ciclo de vida das crateras e aplica dano residual da terra consagrada.
  */
 export function updateGroundCraters(dt) {
+  updateIgnisStepEffects(dt);
+  updateKaelPhaseEffects(dt);
+  updateRolandChargeEffects(dt);
   if (groundCraters.length === 0) return;
 
   for (let i = groundCraters.length - 1; i >= 0; i--) {
@@ -115,6 +187,7 @@ export function updateGroundCraters(dt) {
  * Renderiza todas as crateras ativas diretamente na camada do solo da arena.
  */
 export function drawGroundCraters(ctx, viewLeft, viewRight, viewTop, viewBottom) {
+  drawRolandChargeGround(ctx, viewLeft, viewRight, viewTop, viewBottom);
   for (let i = 0; i < groundCraters.length; i++) {
     const c = groundCraters[i];
     if (viewLeft !== undefined && (c.x + c.radius * 1.5 < viewLeft || c.x - c.radius * 1.5 > viewRight || c.y + c.radius * 1.5 < viewTop || c.y - c.radius * 1.5 > viewBottom)) continue;

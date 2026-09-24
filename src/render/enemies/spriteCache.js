@@ -123,8 +123,7 @@ export function drawCachedEnemy(targetCtx, e, renderer) {
   if (!atlasCanvas || !atlasCtx) return false;
 
   const isHit = e.hitFlash > 0;
-  const isSlow = e.slowTimer > 0;
-  const stateKey = isHit ? 'h' : (isSlow ? 's' : 'n');
+  const stateKey = isHit ? 'h' : 'n';
   const animStep = Math.abs(Math.floor(frameCount * 0.18)) % 6;
   const variant = e.variant || 0;
   const key = `${e.baseType}_r${e.radius}_v${variant}_f${animStep}_${stateKey}`;
@@ -172,7 +171,7 @@ export function drawCachedEnemy(targetCtx, e, renderer) {
         y: 0,
         facing: 1,
         hitFlash: isHit ? 4 : 0,
-        slowTimer: isSlow ? 100 : 0,
+        slowTimer: 0,
         combatState: 'CHASE'
       };
 

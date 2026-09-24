@@ -9,6 +9,9 @@ import { ctx, frameCount, bullets, matchIntro } from '../main.js';
 import { deathSequence, gameState } from '../state/gameState.js';
 import { HERO_SOUL_PALETTES } from './deathAnimation.js';
 import { player, selectedHeroKey } from '../entities/player.js';
+import { drawKragdorAxes } from './kragdorAxes.js';
+import { drawKragdorRoar } from './kragdorUlt.js';
+import { KRAGDOR_ULT } from '../config/kragdorUlt.js';
 import { CHARACTERS } from '../config/characters.js';
 import { renderHeroModel } from './heroes/index.js';
 export { renderHeroModel } from './heroes/index.js';
@@ -144,9 +147,8 @@ export function drawPlayerAura() {
   ctx.restore();
 }
 
-// Cache estático de sprites pré-renderizados para Tomos Orbitais e Machados de Kragdor
+// Cache estático de sprites pré-renderizados para Tomos Orbitais
 const bookSpriteCache = {};
-const axeSpriteCache = {};
 
 function getBookSprite(isEvolved) {
   const key = isEvolved ? 1 : 0;
@@ -232,144 +234,6 @@ function getBookSprite(isEvolved) {
 
   c.restore();
   bookSpriteCache[key] = off;
-  return off;
-}
-
-function getAxeSprite(isEvolved, isBerserk) {
-  const key = `${isEvolved ? 1 : 0}_${isBerserk ? 1 : 0}`;
-  if (axeSpriteCache[key]) return axeSpriteCache[key];
-
-  const off = document.createElement('canvas');
-  off.width = 64;
-  off.height = 64;
-  const c = off.getContext('2d');
-  
-  c.save();
-  c.translate(32, 24);
-
-  const shaftWood = '#3d271d';
-  const steelDark = '#2c3e50';
-  const steelMid = isEvolved ? '#d35400' : (isBerserk ? '#c0392b' : '#7f8c8d');
-  const steelLight = isEvolved ? '#f39c12' : (isBerserk ? '#e74c3c' : '#bdc3c7');
-  const edgeGlow = isEvolved ? '#ffffff' : (isBerserk ? '#ffffff' : '#f1c40f');
-
-  // Cabo de Madeira Rústico voltado para o centro orbital (local +Y)
-  c.fillStyle = shaftWood;
-  c.fillRect(-2.5, -12, 5, 38);
-
-  // Tiras de Couro Cruzadas no Cabo
-  c.strokeStyle = '#1e130c';
-  c.lineWidth = 1.4;
-  c.beginPath();
-  for (let w = -4; w <= 20; w += 6) {
-    c.moveTo(-2.5, w);
-    c.lineTo(2.5, w + 3.5);
-  }
-  c.stroke();
-
-  // Pomo Inferior de Ferro com Espigão de Contrapeso
-  c.fillStyle = steelDark;
-  c.fillRect(-3.5, 23, 7, 3.5);
-  c.beginPath();
-  c.moveTo(-2, 26.5);
-  c.lineTo(2, 26.5);
-  c.lineTo(0, 30.5);
-  c.closePath();
-  c.fill();
-
-  // Braçadeira de Fixação da Cabeça do Machado (Eye / Collar)
-  c.fillStyle = steelDark;
-  c.fillRect(-3.5, -14, 7, 10);
-  c.fillStyle = '#f1c40f';
-  c.fillRect(-1.0, -11, 2, 2);
-
-  // --- Cabeça do Machado (Lâmina Nórdica Assimétrica / Bearded Axe) ---
-  c.fillStyle = steelMid;
-  c.beginPath();
-  c.moveTo(2.5, -14);
-  c.lineTo(15, -18);                                 // Ponta superior afiada
-  c.quadraticCurveTo(20, -9, 14, 2);                 // Curva pronunciada da barba nórdica
-  c.quadraticCurveTo(8, -1, 2.5, -5);                // Reentrância inferior voltando ao cabo
-  c.closePath();
-  c.fill();
-  c.strokeStyle = steelDark;
-  c.lineWidth = 1.4;
-  c.stroke();
-
-  // Bisel de Desbaste Interno da Lâmina
-  c.fillStyle = steelLight;
-  c.beginPath();
-  c.moveTo(4, -13);
-  c.lineTo(14, -16.5);
-  c.quadraticCurveTo(18, -9, 13, 0.5);
-  c.lineTo(5, -4.5);
-  c.closePath();
-  c.fill();
-
-  // Gume de Corte Afiado (Sweet Spot: Corte Crítico e Cura da Passiva)
-  c.strokeStyle = edgeGlow;
-  c.lineWidth = isBerserk || isEvolved ? 2.8 : 2.0;
-  c.beginPath();
-  c.moveTo(15, -18);
-  c.quadraticCurveTo(20, -9, 14, 2);
-  c.stroke();
-
-  // Runas Mágicas Entalhadas na Lâmina
-  c.strokeStyle = isBerserk ? '#ffffff' : (isEvolved ? '#ffffff' : '#f39c12');
-  c.lineWidth = 1.4;
-  c.beginPath();
-  c.moveTo(7, -12);
-  c.lineTo(11, -9);
-  c.lineTo(8, -6);
-  c.stroke();
-
-  // --- Espigão / Quebra-Armaduras Traseiro (Local -X) ---
-  if (isEvolved) {
-    // Na Tempestade de Aço, o machado torna-se de Lâmina Dupla Titânica
-    c.fillStyle = steelMid;
-    c.beginPath();
-    c.moveTo(-2.5, -14);
-    c.lineTo(-15, -18);
-    c.quadraticCurveTo(-20, -9, -14, 2);
-    c.quadraticCurveTo(-8, -1, -2.5, -5);
-    c.closePath();
-    c.fill();
-    c.strokeStyle = steelDark;
-    c.lineWidth = 1.4;
-    c.stroke();
-
-    c.fillStyle = steelLight;
-    c.beginPath();
-    c.moveTo(-4, -13);
-    c.lineTo(-14, -16.5);
-    c.quadraticCurveTo(-18, -9, -13, 0.5);
-    c.lineTo(-5, -4.5);
-    c.closePath();
-    c.fill();
-
-    c.strokeStyle = edgeGlow;
-    c.lineWidth = 2.8;
-    c.beginPath();
-    c.moveTo(-15, -18);
-    c.quadraticCurveTo(-20, -9, -14, 2);
-    c.stroke();
-  } else {
-    // Machado Padrão: Espigão Quebra-Crânios Rústico na Traseira
-    c.fillStyle = steelDark;
-    c.beginPath();
-    c.moveTo(-2.5, -13);
-    c.lineTo(-9.5, -10);
-    c.lineTo(-2.5, -7);
-    c.closePath();
-    c.fill();
-
-    c.strokeStyle = steelLight;
-    c.lineWidth = 1.2;
-    c.stroke();
-  }
-
-  c.restore();
-  axeSpriteCache[key] = off;
   return off;
 }
 
@@ -468,50 +332,7 @@ export function drawPlayerOrbitals() {
  * e blit acelerado via Sprite Cache pré-renderizado.
  */
 export function drawSpinningAxes() {
-  if (player.axeCount <= 0) return;
-
-  const count = player.evolvedAxe ? Math.max(player.axeCount, 6) : player.axeCount;
-  const r = player.axeRadius || 56;
-  const isBerserk = (player.berserkTimer || 0) > 0;
-  const isEvolved = !!player.evolvedAxe;
-
-  // 1. Anel Guia Orbital
-  ctx.strokeStyle = isEvolved 
-    ? 'rgba(230, 126, 34, 0.45)' 
-    : (isBerserk ? 'rgba(231, 76, 60, 0.40)' : 'rgba(241, 196, 15, 0.22)');
-  ctx.lineWidth = isEvolved ? 3.0 : (isBerserk ? 2.5 : 1.8);
-  ctx.beginPath();
-  ctx.arc(player.x, player.y, r, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Sprite pré-renderizado de alta resolução do Machado
-  const axeSprite = getAxeSprite(isEvolved, isBerserk);
-
-  // 2. Renderização de cada Machado Nórdico e seu Rastro de Corte
-  for (let i = 0; i < count; i++) {
-    const angle = player.axeAngle + (i * (Math.PI * 2 / count));
-    const ax = player.x + Math.cos(angle) * r;
-    const ay = player.y + Math.sin(angle) * r;
-
-    // 2.1 Esteira Dinâmica de Corte em Arco (1 único traço nítido e luminoso ao invés de 2 arcos pesados de 9px e 18px)
-    const trailLength = isBerserk ? 0.65 : (isEvolved ? 0.52 : 0.38);
-    const ribbonStart = angle - trailLength;
-
-    ctx.strokeStyle = isBerserk 
-      ? 'rgba(231, 76, 60, 0.70)' 
-      : (isEvolved ? 'rgba(243, 156, 18, 0.65)' : 'rgba(241, 196, 15, 0.45)');
-    ctx.lineWidth = isEvolved ? 4.5 : (isBerserk ? 4.0 : 3.0);
-    ctx.beginPath();
-    ctx.arc(player.x, player.y, r + 2, ribbonStart, angle);
-    ctx.stroke();
-
-    // 2.2 Desenho Acelerado via Sprite Blit
-    ctx.save();
-    ctx.translate(ax, ay);
-    ctx.rotate(angle + Math.PI / 2);
-    ctx.drawImage(axeSprite, -32, -24);
-    ctx.restore();
-  }
+  drawKragdorAxes(ctx, player);
 }
 
 /**
@@ -521,6 +342,12 @@ export function drawPlayerEquipment() {
   if (matchIntro && matchIntro.active) return;
   if (deathSequence && deathSequence.active) return;
   if (gameState && gameState.isDead) return;
+  if (selectedHeroKey === 'BARBARIAN' && player.berserkTimer > 0) {
+    drawKragdorRoar(ctx, {
+      x: player.roarOriginX, y: player.roarOriginY,
+      age: KRAGDOR_ULT.duration - player.berserkTimer
+    });
+  }
   drawPlayerAura();
   drawPlayerOrbitals();
   drawSpinningAxes();
@@ -534,7 +361,10 @@ export function drawPlayerCharacter() {
   const isIntro = !!(matchIntro && matchIntro.active);
   const isDying = !!(deathSequence && deathSequence.active) || !!(gameState && gameState.isDead);
 
-  const isInvulnBlink = !isIntro && !isDying && player.iFrames > 0 && Math.floor(player.iFrames / 4) % 2 === 0;
+  const isRoaring = selectedHeroKey === 'BARBARIAN' && player.berserkTimer > KRAGDOR_ULT.duration - KRAGDOR_ULT.poseDuration;
+  const isHolyCharge = selectedHeroKey === 'KNIGHT' && player.dashDuration > 0;
+  const isFireStep = selectedHeroKey === 'MAGE' && player.ignisDashDuration > 0;
+  const isInvulnBlink = !isIntro && !isDying && !isRoaring && !isHolyCharge && !isFireStep && player.iFrames > 0 && Math.floor(player.iFrames / 4) % 2 === 0;
 
   ctx.save();
   if (isInvulnBlink) {
@@ -549,6 +379,7 @@ export function drawPlayerCharacter() {
     x: player.x,
     y: player.y,
     facing: player.facing,
+    showDorsalAxe: false,
     scale: 1,
     isDying,
     fallProgress,
@@ -560,7 +391,11 @@ export function drawPlayerCharacter() {
     berserkTimer: (isIntro || isDying) ? 0 : player.berserkTimer,
     invisTimer: (isIntro || isDying) ? 0 : player.invisTimer,
     dashDuration: (isIntro || isDying) ? 0 : player.dashDuration,
+    dashVx: player.dashVx,
+    dashVy: player.dashVy,
     ignisDashDuration: (isIntro || isDying) ? 0 : player.ignisDashDuration,
+    ignisDashVx: player.ignisDashVx,
+    ignisDashVy: player.ignisDashVy,
     staffCastTimer: (isIntro || isDying) ? 0 : player.staffCastTimer,
     isPhasing: (isIntro || isDying) ? false : player.isPhasing,
     evolvedPotion: player.evolvedPotion,

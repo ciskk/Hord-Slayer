@@ -8,6 +8,14 @@
  * dinâmico de ataque realista com armas empunhadas e efeitos de combate autênticos.
  */
 
+import { AXE_BASE_RADIUS, AXE_SPIN_DIRECTION, getAxeSpinSpeed } from '../config/axes.js';
+import { drawKragdorAxes } from './kragdorAxes.js';
+import { drawKragdorRoar } from './kragdorUlt.js';
+import { drawIgnisHeatRing, drawIgnisStepBurst, drawIgnisFlame } from './ignisUlt.js';
+import { VALERIA_ULT_VISUAL_DURATION } from './valeriaUlt.js';
+import { KRAGDOR_ULT } from '../config/kragdorUlt.js';
+import { KAEL_ULT } from '../config/kaelUlt.js';
+import { drawKaelPreviewStage } from './kaelUlt.js';
 import { renderHeroModel } from './playerRenderer.js';
 import { generateGroundCracks, drawDetailedGroundCracks } from './groundCracks.js';
 import { CHARACTERS } from '../config/characters.js';
@@ -32,8 +40,16 @@ let surgeTimer = 0;
 
 // Sistema de Animação de Ataque Real com Armas
 let attackTimer = 0;
+let previewAxeAngle = 0;
+let previewSkillAge = 0;
+let lastPreviewFrameTime = null;
 const ATTACK_CYCLE_FRAMES = 74;
 let previewKnightCrackData = null;
+
+function getPreviewBerserkTimer() {
+  return currentHeroKey === 'BARBARIAN' && currentPose === 'skill'
+    ? Math.max(0, KRAGDOR_ULT.duration - previewSkillAge) : 0;
+}
 
 // Backdrop em Cache da Arena com Blur (Performance 60 FPS)
 let arenaBgCanvas = null;
@@ -211,6 +227,8 @@ export function setPreviewHero(heroKey) {
   if (currentHeroKey !== heroKey) {
     currentHeroKey = heroKey;
     attackTimer = 0;
+    previewAxeAngle = 0;
+    previewSkillAge = 0;
     triggerHeroSurge(false);
   }
 }
@@ -233,6 +251,7 @@ export function setPreviewFacing(dir) {
  */
 export function triggerHeroAttack(playSound = true) {
   attackTimer = 0;
+  previewAxeAngle = 0;
   triggerHaptic('medium');
 
   if (playSound) {
@@ -252,8 +271,13 @@ export function triggerHeroAttack(playSound = true) {
 export function setPreviewPose(pose) {
   if (['idle', 'combat', 'skill'].includes(pose)) {
     currentPose = pose;
+    if (pose === 'skill' && (currentHeroKey === 'MAGE' || currentHeroKey === 'ALCHEMIST')) previewSkillAge = 0;
     if (pose === 'combat') {
       triggerHeroAttack(true);
+    } else if (pose === 'skill' && currentHeroKey === 'BARBARIAN') {
+      previewSkillAge = 0;
+      try { playSfx('barbarian_roar'); } catch (e) {}
+      triggerHaptic('heavy');
     } else {
       triggerHeroSurge(true);
     }
@@ -275,10 +299,13 @@ export function getPreviewInfo() {
 
 export function setPreviewAttackFrame(frame) {
   attackTimer = Math.max(0, Math.min(ATTACK_CYCLE_FRAMES - 1, frame));
+  const skillCycle = currentHeroKey === 'ALCHEMIST' ? VALERIA_ULT_VISUAL_DURATION + 36 : (currentHeroKey === 'ROGUE' ? KAEL_ULT.duration + 36 : KRAGDOR_ULT.duration + 36);
+  previewSkillAge = Math.max(0, frame) % skillCycle;
+  previewAxeAngle = AXE_SPIN_DIRECTION * frame * getAxeSpinSpeed({ berserkTimer: getPreviewBerserkTimer() });
 }
 
 export function renderPreviewAtFrame(frame) {
-  attackTimer = Math.max(0, Math.min(ATTACK_CYCLE_FRAMES - 1, frame));
+  setPreviewAttackFrame(frame);
   renderStage();
 }
 
@@ -332,6 +359,7 @@ export function startPreview(heroKey) {
   if (!previewCanvas) return;
   resizePreviewCanvas();
   isRunning = true;
+  lastPreviewFrameTime = null;
 
   if (animFrameId) cancelAnimationFrame(animFrameId);
   renderLoop();
@@ -351,9 +379,27 @@ export function stopPreview() {
 /**
  * Loop principal de animação a 60 FPS com física e iluminação dinâmica.
  */
-function renderLoop() {
+function renderLoop(timestamp) {
   if (!isRunning || !previewCanvas || !previewCtx) return;
 
+  const dt = timestamp !== undefined && lastPreviewFrameTime !== null
+    ? Math.min(3, (timestamp - lastPreviewFrameTime) / (1000 / 60)) : 1;
+  lastPreviewFrameTime = timestamp ?? null;
+  if (currentHeroKey === 'BARBARIAN' && currentPose === 'skill') {
+    previewSkillAge = (previewSkillAge + dt) % (KRAGDOR_ULT.duration + 36);
+  }
+  if (currentHeroKey === 'MAGE' && currentPose === 'skill') {
+    previewSkillAge = (previewSkillAge + dt) % 100;
+  }
+  if (currentHeroKey === 'ALCHEMIST' && currentPose === 'skill') {
+    previewSkillAge = (previewSkillAge + dt) % (VALERIA_ULT_VISUAL_DURATION + 36);
+  }
+  if (currentHeroKey === 'ROGUE' && currentPose === 'skill') {
+    previewSkillAge = (previewSkillAge + dt) % (KAEL_ULT.duration + 36);
+  }
+  if (currentHeroKey === 'BARBARIAN' && currentPose !== 'idle') {
+    previewAxeAngle = (previewAxeAngle + AXE_SPIN_DIRECTION * getAxeSpinSpeed({ berserkTimer: getPreviewBerserkTimer() }) * dt) % (Math.PI * 2);
+  }
   previewTime += 1;
   if (currentPose === 'combat') {
     attackTimer = (attackTimer + 1) % ATTACK_CYCLE_FRAMES;
@@ -421,7 +467,6 @@ function computeHeroScale(width, height) {
   const maxSafeScaleH = (height * 0.72) / 44;
   const maxSafeScaleW = (width * 0.82) / 70;
   const safeScale = Math.min(targetScale, Math.max(3.2, Math.min(maxSafeScaleH, maxSafeScaleW)));
-
   return { heroScale: safeScale, isCompact, isTall };
 }
 
@@ -457,6 +502,41 @@ function renderStage() {
   // 4. Sombra de contato e oclusão de ambiente sob as botas
   drawSimpleHeroShadow(c, centerX, footY, isCompact, heroScale);
 
+  if (currentHeroKey === 'BARBARIAN' && currentPose === 'skill') {
+    drawKragdorRoar(c, {
+      x: centerX, y: centerY, age: previewSkillAge,
+      radius: Math.min(KRAGDOR_ULT.radius * heroScale, width * 0.46, height * 0.40)
+    });
+  }
+
+  if (currentHeroKey === 'MAGE' && currentPose === 'skill') {
+    // Stateless preview: never emits into the arena pools or creates another loop.
+    const age = previewSkillAge % 100;
+    c.save(); c.translate(centerX, centerY); c.scale(heroScale, heroScale);
+    const origin = -currentFacing * 9, arrival = currentFacing * 9;
+    c.save(); c.translate(origin, 12); c.scale(.5, .5);
+    drawIgnisHeatRing(c, 0, 0, age); c.restore();
+    drawIgnisStepBurst(c, origin, 0, age, false, currentFacing);
+    if (age >= 22) {
+      c.save(); c.translate(arrival, 12); c.scale(.5, .5);
+      drawIgnisHeatRing(c, 0, 0, age - 22, true); c.restore();
+      c.save(); c.translate(arrival, 0); c.scale(.65, .65);
+      drawIgnisStepBurst(c, 0, 0, age - 22, true, currentFacing); c.restore();
+    }
+    if (age < 68) {
+      c.globalAlpha *= Math.min(1, (68 - age) / 24);
+      for (let i = 0; i < 4; i++) {
+        if (age < i * 5) break;
+        drawIgnisFlame(c, origin + currentFacing * i * 6, 14, 3, 6 + Math.sin(age * .2 + i) * 2, Math.sin(age * .3 + i), '#ffad54');
+      }
+    }
+    c.restore();
+  }
+
+  if (currentHeroKey === 'ROGUE' && currentPose === 'skill') {
+    drawKaelPreviewStage(c, centerX, centerY, heroScale, previewSkillAge, currentFacing);
+  }
+
   // 5. Renderização do Modelo do Herói em escala ampliada
   drawHeroInstance(c, centerX, centerY, colors, heroScale);
 
@@ -464,7 +544,19 @@ function renderStage() {
   drawAtmosphericParticles(c, centerX, centerY + Math.round(10 * heroScale), colors);
 
   // 7. Efeitos Visuais Cinéticos de Ataque e Empunhadura de Armas Reais
-  if (currentPose === 'combat') {
+  if (currentHeroKey === 'BARBARIAN' && currentPose !== 'idle') {
+    // Enquadra apenas o efeito orbital; herói e pedestal mantêm a escala dos demais campeões.
+    const orbitExtent = AXE_BASE_RADIUS + 30;
+    const orbitScale = Math.min(heroScale, width * 0.46 / orbitExtent, height * 0.40 / orbitExtent);
+    c.save();
+    c.translate(centerX, centerY);
+    c.scale(orbitScale, orbitScale);
+    drawKragdorAxes(c, {
+      x: 0, y: 0, axeCount: 1, axeAngle: previewAxeAngle,
+      berserkTimer: getPreviewBerserkTimer()
+    });
+    c.restore();
+  } else if (currentPose === 'combat') {
     drawHeroWeaponAttack(c, centerX, centerY, currentHeroKey, currentFacing, heroScale, attackTimer, colors);
   }
 }
@@ -869,8 +961,9 @@ function drawHeroInstance(c, x, y, colors, heroScale = 6.6) {
   const breathBob = Math.sin(t * 0.06) * 2.8 * bobFactor;
 
   // Pulso de energia da aura na habilidade
-  if (isSkill || surgeTimer > 0) {
-    if (surgeTimer > 0) surgeTimer--;
+  const showSurge = surgeTimer > 0;
+  if (surgeTimer > 0) surgeTimer--;
+  if ((isSkill || showSurge) && !(isSkill && (currentHeroKey === 'BARBARIAN' || currentHeroKey === 'MAGE' || currentHeroKey === 'ALCHEMIST' || currentHeroKey === 'ROGUE'))) {
     const pulseRadius = Math.round(heroScale * 11.5) + Math.sin(t * 0.2) * 8;
     c.save();
     c.strokeStyle = colors.primary;
@@ -888,14 +981,14 @@ function drawHeroInstance(c, x, y, colors, heroScale = 6.6) {
   const knightProgress = isKnightHammerSwing ? Math.max(0, Math.min(1, attackTimer / 46)) : -1;
   const isMageStaffCast = isCombat && currentHeroKey === 'MAGE';
   const isRogueBladeAttack = isCombat && currentHeroKey === 'ROGUE';
-  const isBarbarianAxeCleave = isCombat && currentHeroKey === 'BARBARIAN';
   const isAlchemistPotionThrow = isCombat && currentHeroKey === 'ALCHEMIST';
 
   const heroState = {
-    x: x,
+    x: x + (isSkill && currentHeroKey === 'MAGE' ? currentFacing * (-9 + Math.min(1, (previewSkillAge % 100) / 22) * 18) * heroScale : 0),
     y: y + breathBob,
     facing: currentFacing,
     scale: heroScale,
+    effectHeadroom: Math.max(23, y / heroScale - 10),
     isMoving: false,
     walkCycle: 0,
     frameCount: t,
@@ -903,31 +996,33 @@ function drawHeroInstance(c, x, y, colors, heroScale = 6.6) {
     showShadow: false,
 
     // KNIGHT & MAGE
-    isDashing: isSkill && (currentHeroKey === 'KNIGHT' || currentHeroKey === 'MAGE'),
+    isDashing: isSkill && (currentHeroKey === 'KNIGHT' || (currentHeroKey === 'MAGE' && previewSkillAge % 100 < 22)),
     isRetaliating: isSkill && currentHeroKey === 'KNIGHT',
     isHammerAttacking: isKnightHammerSwing,
     hammerProgress: knightProgress,
 
     // BARBARIAN
-    isBerserk: isSkill && currentHeroKey === 'BARBARIAN',
-    berserkTimer: isSkill && currentHeroKey === 'BARBARIAN' ? 120 : 0,
-    showDorsalAxe: currentHeroKey === 'BARBARIAN' && !isBarbarianAxeCleave,
+    isBerserk: getPreviewBerserkTimer() > 0,
+    berserkTimer: getPreviewBerserkTimer(),
+    showDorsalAxe: currentHeroKey === 'BARBARIAN' && currentPose === 'idle',
 
     // ROGUE
-    isPhasing: isSkill && currentHeroKey === 'ROGUE',
-    invisTimer: isSkill && currentHeroKey === 'ROGUE' ? 60 : 0,
+    isPhasing: isSkill && currentHeroKey === 'ROGUE' && previewSkillAge < KAEL_ULT.duration,
+    invisTimer: isSkill && currentHeroKey === 'ROGUE' ? Math.max(0, KAEL_ULT.duration - previewSkillAge) : 0,
     isSwordAttacking: isRogueBladeAttack,
     showDorsalBlades: currentHeroKey === 'ROGUE',
 
     // MAGE
+    ignisDashVx: currentFacing * 15.5,
+    ignisDashVy: 0,
     isCasting: isMageStaffCast,
     staffCastTimer: isSkill && currentHeroKey === 'MAGE' ? 40 : (isMageStaffCast ? 30 : 0),
 
     // ALCHEMIST
     isThrowing: isAlchemistPotionThrow,
-    isAlchemistSkill: isSkill && currentHeroKey === 'ALCHEMIST',
+    isAlchemistSkill: isSkill && currentHeroKey === 'ALCHEMIST' && previewSkillAge < VALERIA_ULT_VISUAL_DURATION,
     isAlchemistCombat: isCombat && currentHeroKey === 'ALCHEMIST',
-    alchemistSkillTimer: isSkill && currentHeroKey === 'ALCHEMIST' ? 60 : 0,
+    alchemistSkillTimer: isSkill && currentHeroKey === 'ALCHEMIST' ? Math.max(0, VALERIA_ULT_VISUAL_DURATION - previewSkillAge) : 0,
 
     fluidColor: isSkill ? '#a29bfe' : '#9b59b6',
     evolvedPotion: isSkill
@@ -1139,61 +1234,6 @@ function drawHeroWeaponAttack(c, cx, cy, heroKey, facing, scale, t, colors) {
       drawSpiritDagger(c, 16 * scale, -2 * scale, 0.7, scale * 0.44, recAlpha);
       drawSpiritDagger(c, 12 * scale, 4 * scale, -0.5, scale * 0.44, recAlpha);
     }
-  } else if (heroKey === 'BARBARIAN') {
-    // ------------------------------------------------------------------------
-    // 4. KRAGDOR: TURBILHÃO DO MACHADO NÓRDICO EM 360° COM RASTRO CARMESIM
-    // ------------------------------------------------------------------------
-    const cleaveStart = 16;
-    const cleaveDuration = 28;
-
-    if (t < cleaveStart) {
-      // Puxando machado com fúria berserk
-      const prep = t / cleaveStart;
-      const bX = -10 * scale - prep * 8 * scale;
-      const bY = -18 * scale - prep * 6 * scale;
-      drawNorseAxe(c, bX, bY, -0.8 - prep * 0.5, scale * 0.42, 1.0);
-    } else if (t <= cleaveStart + cleaveDuration) {
-      // Turbilhão de corte 360° em alta rotação
-      const cleaveP = (t - cleaveStart) / cleaveDuration;
-      const cleaveAngle = -Math.PI * 0.8 + cleaveP * Math.PI * 2.1;
-      const arcR = 34 * scale;
-
-      // Motion ribbon carmesim em arco amplo
-      c.save();
-      c.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-      c.lineWidth = 4 * scale * 0.4;
-      c.beginPath();
-      c.arc(0, 0, arcR, cleaveAngle - 1.3, cleaveAngle);
-      c.stroke();
-
-      c.strokeStyle = 'rgba(231, 76, 60, 0.75)';
-      c.lineWidth = 10 * scale * 0.4;
-      c.beginPath();
-      c.arc(0, 0, arcR, cleaveAngle - 1.6, cleaveAngle + 0.1);
-      c.stroke();
-      c.restore();
-
-      // Machado empunhado girando na ponta do arco
-      const axeX = Math.cos(cleaveAngle) * arcR;
-      const axeY = Math.sin(cleaveAngle) * arcR * 0.5;
-      drawNorseAxe(c, axeX, axeY, cleaveAngle + Math.PI / 2, scale * 0.42, 1.0);
-
-      // Fagulhas e respingos de sangue da fúria
-      for (let sp = 0; sp < 4; sp++) {
-        const sX = axeX + (Math.random() - 0.5) * 14 * scale;
-        const sY = axeY + (Math.random() - 0.5) * 10 * scale;
-        c.fillStyle = sp % 2 === 0 ? '#ff4757' : '#ffffff';
-        c.beginPath();
-        c.arc(sX, sY, 2.0, 0, Math.PI * 2);
-        c.fill();
-      }
-    } else {
-      // Recuperação pós-corte do machado
-      const rec = (t - (cleaveStart + cleaveDuration)) / (ATTACK_CYCLE_FRAMES - (cleaveStart + cleaveDuration));
-      const bX = 14 * scale - rec * 6 * scale;
-      const bY = 4 * scale + rec * 8 * scale;
-      drawNorseAxe(c, bX, bY, 0.4 - rec * 0.6, scale * 0.42, 1.0 - rec * 0.3);
-    }
   } else if (heroKey === 'ALCHEMIST') {
     // ------------------------------------------------------------------------
     // 5. VALÉRIA: ARREMESSO DE FRASCO QUÍMICO E POÇA ÁCIDA EFERVESCENTE
@@ -1381,41 +1421,6 @@ function drawSpiritDagger(c, x, y, angle, scale, alpha = 1.0) {
   c.lineTo(0, 17.5);
   c.closePath();
   c.fill();
-
-  c.restore();
-}
-
-function drawNorseAxe(c, x, y, angle, scale, alpha = 1.0) {
-  c.save();
-  c.translate(x, y);
-  c.rotate(angle);
-  c.globalAlpha = alpha;
-  c.scale(scale, scale);
-
-  // Cabo rústico
-  c.fillStyle = '#3d271d';
-  c.fillRect(-2.5, -12, 5, 36);
-
-  // Cabeça nórdica com barba de corte
-  c.fillStyle = '#7f8c8d';
-  c.beginPath();
-  c.moveTo(2.5, -12);
-  c.lineTo(16, -16);
-  c.quadraticCurveTo(22, -8, 15, 4);
-  c.quadraticCurveTo(8, 0, 2.5, -4);
-  c.closePath();
-  c.fill();
-  c.strokeStyle = '#2c3e50';
-  c.lineWidth = 1.4;
-  c.stroke();
-
-  // Gume de corte brilhante
-  c.strokeStyle = '#ffffff';
-  c.lineWidth = 2.0;
-  c.beginPath();
-  c.moveTo(16, -16);
-  c.quadraticCurveTo(22, -8, 15, 4);
-  c.stroke();
 
   c.restore();
 }

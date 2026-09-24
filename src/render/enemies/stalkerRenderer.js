@@ -3,6 +3,29 @@ import { getRelativeAimAngle } from '../../core/math.js';
 import { STALKER_DASH } from '../../config/stalkerDash.js';
 import { beginCreature, endCreature, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
+/** Aviso no solo em escala própria, sem squash, rotação ou cache do corpo. */
+export function drawBurrowWarning(e) {
+  const progress = Math.min(1, Math.max(0, (e.dashTimer || 0) / STALKER_DASH.windup));
+  beginCreature(ctx, e);
+  ellipse(ctx, 0, 0, 2.2, 1.25, '#30231e', '#efc78a', .1);
+  ellipse(ctx, 0, 0, 1.25 + progress * .6, .65 + progress * .35, '#65452e', '#c79559', .08);
+  for (let i = 0; i < 10; i++) {
+    const a = i * Math.PI * 2 / 10;
+    stroke(ctx, [[Math.cos(a) * .5, Math.sin(a) * .3],
+      [Math.cos(a + .12) * 1.3, Math.sin(a + .12) * .7],
+      [Math.cos(a) * 2, Math.sin(a) * 1.1]], '#171310', .1);
+    const age = (progress * 1.8 + i / 10) % 1;
+    const x = Math.cos(a) * (1 + age * 1.25);
+    const y = Math.sin(a) * .55 - age * 1.6;
+    ctx.save();
+    ctx.globalAlpha *= .8 * (1 - age * .65);
+    ellipse(ctx, x, y, .3 + age * .4, .22 + age * .32, '#e5bc80', null);
+    polygon(ctx, [[x,y],[x+.12,y-.2],[x+.23,y+.02]], '#fff0be', null);
+    ctx.restore();
+  }
+  endCreature(ctx);
+}
+
 /** Beige annelid: tapered segmented tail, thick collar and exposed ivory fangs. */
 export function draw(e) {
   const p = creaturePalette(e, '#d9b783', '#886044', '#f0d5a2');
@@ -13,20 +36,6 @@ export function draw(e) {
   const committed = ['aim', 'dashing', 'cooldown'].includes(e.dashState);
   beginCreature(ctx, e);
   ctx.translate(0, .32); // Belly contacts the ground shadow instead of floating above it.
-  // Dust rises from the contact patch before launch, below the red attack marker.
-  if (aiming) {
-    for (let i = 0; i < 7; i++) {
-      const age = (progress * 1.6 + i / 7) % 1;
-      const side = i % 2 ? 1 : -1;
-      ctx.save();
-      ctx.globalAlpha *= (.18 + progress * .36) * (1 - age * .65);
-      const x = side * (.48 + age * .7) + Math.sin(i * 3.1) * .18;
-      const y = .48 - age * (.55 + progress * .65);
-      ellipse(ctx, x, y, .14 + age * .19, .09 + age * .15, p.body, null);
-      polygon(ctx, [[x, y-.13], [x+.06,y-.22], [x+.12,y-.11]], p.accent, null);
-      ctx.restore();
-    }
-  }
   if (committed) ctx.rotate(getRelativeAimAngle(e.dashAngle ?? (e.facing === -1 ? Math.PI : 0), e.facing || 1));
   const stretch = dashing ? 1.16 : aiming ? .8 : 1;
   ctx.scale(stretch, aiming ? 1.1 : dashing ? .86 : 1);

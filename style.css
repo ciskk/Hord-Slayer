@@ -33,3 +33,13 @@
 @import "./css/responsive/landscape.css";
 @import "./css/responsive/portrait.css";
 @import "./css/responsive/autofit.css";
+
+@keyframes urgentPulse {
+  0% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.1); filter: brightness(1.5); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+.urgent-pulse {
+  animation: urgentPulse 0.5s infinite;
+}

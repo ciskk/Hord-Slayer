@@ -97,7 +97,7 @@ export function renderHeroModel(c, heroKey, state = {}) {
     }
   }
 
-  if (berserkTimer > 0 || isBerserk) {
+  if ((berserkTimer > 0 || isBerserk) && heroKey !== 'BARBARIAN') {
     const bPulse = Math.sin(tFrame * 0.3) * 4;
     c.strokeStyle = 'rgba(231, 76, 60, 0.8)';
     c.lineWidth = 3.5;
@@ -108,7 +108,7 @@ export function renderHeroModel(c, heroKey, state = {}) {
     c.fill();
   }
 
-  if (invisTimer > 0) {
+  if (invisTimer > 0 && heroKey !== 'ROGUE') {
     c.globalAlpha = 0.45;
   }
 
@@ -123,7 +123,8 @@ export function renderHeroModel(c, heroKey, state = {}) {
     isBerserk, berserkTimer,
     isThrowing, isAlchemistSkill, isAlchemistCombat, alchemistSkillTimer, fluidColor,
     isCasting, staffCastTimer,
-    isPhasing, isAttacking
+    isPhasing, isAttacking,
+    invisTimer
   };
 
   if (heroKey === 'KNIGHT') {
@@ -135,7 +136,7 @@ export function renderHeroModel(c, heroKey, state = {}) {
   } else if (heroKey === 'MAGE') {
     drawIgnisModel(c, charDef, state, heroOptions);
   } else if (heroKey === 'ROGUE') {
-    drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame, isPhasing, isAttacking);
+    drawKaelModel(c, charDef, state, heroOptions);
   } else {
     // Fallback genérico para chaves de heróis não mapeadas
     c.fillStyle = charDef.color.cape || '#7f8c8d';

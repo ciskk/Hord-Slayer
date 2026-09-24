@@ -20,6 +20,8 @@ export function tickEnemyStatus(e, dt, player, triggerShake) {
   if (e.orbitalHitCd > 0) e.orbitalHitCd -= dt;
   if (e.axeHitCd > 0) e.axeHitCd -= dt;
   if (e.shieldStaggerTimer > 0) e.shieldStaggerTimer -= dt;
+  if (e.roarMarkTimer > 0) e.roarMarkTimer = Math.max(0, e.roarMarkTimer - dt);
+  if (e.freezeTimer > 0) e.freezeTimer -= dt;
 
   // Timer de emergência (vermes e parasitas nascendo do solo)
   if (e.emergeTimer > 0) {
@@ -72,12 +74,14 @@ export function tickEnemyStatus(e, dt, player, triggerShake) {
     e.acidBurnTimer -= dt;
     const stacks = Math.max(1, e.acidStacks || 1);
     // Teto rígido com 5 stacks: ~75-95 DPS estável (+30% da corrosão)
-    const burnBasePerFrame = (e.acidBurnEvolved ? 0.35 : 0.24) * stacks;
+    // Dano base aumentado em +35% para hordas (0.24 -> 0.324; evoluído 0.35 -> 0.4725)
+    const burnBasePerFrame = (e.acidBurnEvolved ? 0.4725 : 0.324) * stacks;
     const corrosionMult = 1 + (stacks * 0.06);
-    const frameDmg = burnBasePerFrame * corrosionMult * dt;
+    // Decomposição Cáustica em Chefes: fator 40/27 (1.4815x) que, combinado à base 1.35x, atinge exatamente 2.0x DPS baseline (50% mais fácil)
+    const bossCorrosionBonus = (e.isBoss || e.isMiniBoss) ? (40 / 27) : 1.0;
+    const frameDmg = burnBasePerFrame * corrosionMult * bossCorrosionBonus * dt;
 
     e.hp -= frameDmg;
-    e.hitFlash = Math.max(e.hitFlash || 0, 1);
 
     e.burnDmgAcc = (e.burnDmgAcc || 0) + frameDmg;
     e.burnTickTimer = (e.burnTickTimer || 0) + dt;
@@ -102,7 +106,6 @@ export function tickEnemyStatus(e, dt, player, triggerShake) {
     const frameDmg = (e.fireBurnDmg || 0.35) * dt;
 
     e.hp -= frameDmg;
-    e.hitFlash = Math.max(e.hitFlash || 0, 1);
 
     e.fireBurnDmgAcc = (e.fireBurnDmgAcc || 0) + frameDmg;
     e.fireBurnTickTimer = (e.fireBurnTickTimer || 0) + dt;

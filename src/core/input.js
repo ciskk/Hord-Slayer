@@ -378,6 +378,14 @@ window.addEventListener('keydown', e => {
   // Pausa com Esc ou P (ou fechar menu de bosses/astrolábio se estiver aberto)
   if (e.code === 'Escape' || e.code === 'KeyP') {
     e.preventDefault();
+    const lockedHeroModal = document.getElementById('locked-hero-modal');
+    if (lockedHeroModal && lockedHeroModal.style.display !== 'none' && !lockedHeroModal.classList.contains('modal-hidden')) {
+      const closeBtn = document.getElementById('locked-hero-close-btn');
+      if (closeBtn) {
+        closeBtn.click();
+        return;
+      }
+    }
     const blessingsDrawer = document.getElementById('blessings-summary-drawer');
     if (blessingsDrawer && blessingsDrawer.style.display === 'block') {
       blessingsDrawer.style.display = 'none';

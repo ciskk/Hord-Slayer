@@ -14,7 +14,6 @@ export function endCreature(ctx) { ctx.restore(); }
 
 export function creaturePalette(e, body, shade, accent) {
   if (e.hitFlash > 0) return { body: '#ffffff', shade: '#c8e5ff', accent: '#ffffff', ink: INK, bone: '#ffffff' };
-  if (e.slowTimer > 0) return { body: '#74b9ff', shade: '#2569a8', accent, ink: INK, bone: '#e3f4ff' };
   return { body, shade, accent, ink: INK, bone: '#edf1fa' };
 }
 

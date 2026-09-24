@@ -1,9 +1,10 @@
+import { AXE_BASE_RADIUS, AXE_SPIN_DIRECTION, getAxeCount, getAxeSpinSpeed } from '../../config/axes.js';
 /**
  * src/entities/player/weapons.js
  * Execução e Simulação de Armas, Ataques Ativos e Machados Nórdicos do Jogador.
  */
 import { playSfx, triggerHaptic } from '../../core/audio.js';
-import { createHitParticles, addDamageText } from '../../systems/combat.js';
+import { createHitParticles, addDamageText, applyFreeze } from '../../systems/combat.js';
 import { bullets, enemyBullets, enemies } from '../../state/collections.js';
 import { triggerShake, cameraViewW, cameraViewH } from '../../state/gameState.js';
 import { getNeighborIndices } from '../../core/spatialGrid.js';
@@ -22,8 +23,8 @@ const _axeCandidates = [];
 export function updateSpinningAxes(dt) {
   if (player.axeCount <= 0) return;
 
-  const currentSpinSpeed = (player.axeSpinSpeed || 0.085) * (player.berserkTimer > 0 ? 2.0 : 1.0);
-  player.axeAngle += currentSpinSpeed * dt;
+  const currentSpinSpeed = getAxeSpinSpeed(player);
+  player.axeAngle += AXE_SPIN_DIRECTION * currentSpinSpeed * dt;
 
   if (player.axeBossHealCd > 0) {
     player.axeBossHealCd = Math.max(0, player.axeBossHealCd - dt);
@@ -32,8 +33,8 @@ export function updateSpinningAxes(dt) {
   // Otimização Zero-GC: Cooldown individual no inimigo (e.axeHitCd) decrece em main.js em O(1),
   // eliminando varreduras com entries(), deletes e enemies.includes() na thread de combate.
 
-  const effectiveRadius = player.axeRadius || 56;
-  const count = player.evolvedAxe ? Math.max(player.axeCount, 6) : player.axeCount;
+  const effectiveRadius = player.axeRadius || AXE_BASE_RADIUS;
+  const count = getAxeCount(player);
   const hitRadius = player.evolvedAxe ? 28 : 22;
 
   // Consulta espacial consolidada uma única vez para o anel orbital completo
@@ -163,7 +164,7 @@ export function updateSpinningAxes(dt) {
           const kbMult = player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0;
           const bossResist = e.isFinalBoss ? 0.10 : ((e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.50 : 1.0));
           if (isOuterZone) {
-            const tanAng = angle + Math.PI * 0.5;
+            const tanAng = angle + AXE_SPIN_DIRECTION * Math.PI * 0.5;
             const pushForce = (player.evolvedAxe ? 12 : 7) * (player.berserkTimer > 0 ? 1.6 : 1.0) * kbMult * bossResist;
             e.pushVx = (e.pushVx || 0) + Math.cos(tanAng) * pushForce;
             e.pushVy = (e.pushVy || 0) + Math.sin(tanAng) * pushForce;
@@ -176,9 +177,9 @@ export function updateSpinningAxes(dt) {
         }
 
         if (player.slowChance > 0 && Math.random() < player.slowChance) {
-          e.slowTimer = 150;
-          e.slowFactor = 0.55;
-          createHitParticles(e.x, e.y, '#74b9ff', 2);
+          applyFreeze(e);
+
+
         }
 
         if (e.isBoss && (e.hp / e.maxHp) < 0.45 && !e.isEnraged) {
@@ -280,6 +281,7 @@ export function fireWeapons() {
           life: player.evolvedSword ? 68 : 52,
           piercing: player.evolvedSword ? 4 : 2,
           isEvolved: player.evolvedSword,
+          isSpectral: player.invisTimer > 0,
           trail: []
         });
       }
@@ -349,8 +351,8 @@ export function fireWeapons() {
 
       for (let i = 0; i < count; i++) {
         const arcOffset = i * 0.35;
-        // Anti-Shotgun: 1º frasco causa 100% de impacto; frascos adicionais na mesma salva causam 25% de respingo
-        const volleyMult = i === 0 ? 1.0 : 0.25;
+        // Anti-Shotgun: 1º frasco causa 100% de impacto; frascos adicionais na mesma salva causam 25% de respingo (40% contra chefes)
+        const volleyMult = i === 0 ? 1.0 : (isBossOrSub ? 0.40 : 0.25);
 
         bullets.push({
           type: 'POTION',

@@ -11,6 +11,62 @@
  * Utilizado tanto no coldre dorsal quanto empunhado ativamente em combate.
  */
 import { skinGradient, skinPolygon, skinLine, skinGem, skinSprig } from './skinMaterials.js';
+import { drawRolandBarrier } from '../rolandUlt.js';
+
+/** Temporary consecrated engraving, only layered over the model during ULT. */
+function drawConsecratedPlate(c, bob, t) {
+  c.save(); c.translate(0, bob);
+  // Recesses paired with lit bevels: helmet, exposed cuirass and shoulder lames.
+  for (let i = 0; i < 3; i++) {
+    const x = -5 + i * 1.5;
+    skinLine(c, [[x,-13.5],[x-.5,-11],[x+.5,-8]], '#253040', .75);
+    skinLine(c, [[x+.45,-13.5],[x,-11],[x+1,-8]], '#d9c8a2', .35);
+    skinLine(c, [[5.5,-3+i*1.7],[11.7-i*.4,-1.5+i*1.7]], '#364251', .75);
+    skinLine(c, [[5.5,-3.4+i*1.7],[11.7-i*.4,-1.9+i*1.7]], '#ffe1a1', .4);
+  }
+  for (const side of [-1, 1]) {
+    skinLine(c, [[side*7,-3],[side*6,0],[side*6,3]], '#e5ba60', .7);
+    skinLine(c, [[side*8,-2],[side*7,1],[side*7,3]], '#fff0ca', .35);
+    skinLine(c, [[side*9,-3],[side*10,-1],[side*11,-3]], '#fff0bc', .7);
+  }
+  // Crown-like oath inscription follows the brow, keeping the visor readable.
+  skinLine(c, [[-1,-14],[0,-12],[1,-14],[2,-12],[3,-14],[4,-12],[5,-13]], '#ffdf85', .65);
+  skinLine(c, [[-1,-11.3],[6,-11.3]], '#f5d07b', .7);
+  c.globalAlpha *= .5 + Math.sin(t * .23) * .2;
+  skinLine(c, [[-5,-14.5],[0,-15],[6,-13.8]], '#fff9e3', .85);
+  skinLine(c, [[6,-5.7],[12,-4]], '#fff9e3', 1);
+  c.fillStyle = '#fff0b9';
+  c.fillRect(-.6, -3, 1.2, 5); c.fillRect(-2, -1.7, 4, 1);
+  c.restore();
+}
+
+function drawChargeGrip(c, colors, evolved, bob, t) {
+  const weight = Math.sin(t * .38);
+  c.save(); c.translate(2 + weight * .35, 4 + bob); c.rotate(.95 + weight * .045);
+  // Pivot at the grip: the heavy head barely oscillates under a two-hand brace.
+  c.translate(0, -15);
+  drawRolandHammerModel(c, colors, evolved, 1.5 + Math.sin(t * .25) * .35);
+  c.strokeStyle = 'rgba(255, 217, 129, 0.25)'; c.lineWidth = 4;
+  c.strokeRect(-10, -14, 20, 10);
+  c.strokeStyle = '#fff0c4'; c.lineWidth = .65;
+  for (let i = 0; i < 3; i++) {
+    const x = -6 + i * 6;
+    c.beginPath(); c.moveTo(x, -11); c.lineTo(x, -7);
+    c.moveTo(x-1.5, -10); c.lineTo(x, -9); c.lineTo(x+1.5, -10); c.stroke();
+  }
+  // Specular sweep is constrained to the head face, no blur or new gradients.
+  const glint = (t * .7 % 16) - 8;
+  c.strokeStyle = 'rgba(255, 250, 226, 0.8)';
+  c.beginPath(); c.moveTo(glint, -13.5); c.lineTo(glint + 1.5, -5); c.stroke();
+  for (const y of [12, 22]) {
+    c.fillStyle = '#354151'; c.fillRect(-4, y-2, 8, 5);
+    c.fillStyle = '#b6c4cd'; c.fillRect(-3.5, y-2, 7, 2.5);
+    c.fillStyle = '#edc776'; c.fillRect(-4, y+2, 8, 1);
+    c.strokeStyle = '#526174'; c.lineWidth = .6;
+    c.beginPath(); c.moveTo(-1,y-2); c.lineTo(-1,y+1); c.moveTo(1,y-2); c.lineTo(1,y+1); c.stroke();
+  }
+  c.restore();
+}
 
 export function drawRolandHammerModel(c, cCol, isEvolved = false, runeGlowMult = 1.0) {
   const hammerWood = cCol.hammerWood || '#3d271d';
@@ -128,6 +184,11 @@ export function drawRolandModel(c, charDef, state, {
   evolvedHammer = false,
   hammerProgress = -1
 } = {}) {
+    const dashAge = state.dashDuration > 0 ? 24 - state.dashDuration : tFrame % 24;
+    const dashVx = (state.dashVx ?? (state.facing || 1)) * (state.facing || 1);
+    const dashVy = state.dashVy || 0;
+    const dashSpeed = Math.hypot(dashVx, dashVy) || 1;
+    const dashX = dashVx / dashSpeed, dashY = dashVy / dashSpeed;
     // isDashing handled via state
     // isRetaliating handled via state
     // O martelo nas costas desaparece no instante em que o ataque HAMMER_SLAM está ativo
@@ -159,30 +220,13 @@ export function drawRolandModel(c, charDef, state, {
     const isDetailed = scale >= 1.5;
     const polishedSteel = skinGradient(c, -9, -15 + bob, 24, 12, steelDark, steelMid, '#c1d2df');
 
-    // --- ULT: Pós-Imagens Douradas e Solo Sagrado com Runas ---
+    // ULT posture: planted feet, lowered center of mass and forward plate brace.
     if (isDashing) {
+      if (dashY < -0.3) drawRolandBarrier(c, dashX, dashY, dashAge, bob);
       c.save();
-      for (let g = 1; g <= 3; g++) {
-        const ghostDist = g * 9;
-        c.fillStyle = `rgba(241, 196, 15, ${0.32 / g})`;
-        c.beginPath();
-        c.ellipse(-ghostDist, 0, 12, 16, 0, 0, Math.PI * 2);
-        c.fill();
-      }
-      // Solo Consagrado na base
-      c.strokeStyle = 'rgba(241, 196, 15, 0.75)';
-      c.lineWidth = 1.8;
-      c.beginPath();
-      c.ellipse(0, 14 + bob, 22, 7, 0, 0, Math.PI * 2);
-      c.stroke();
-      // Mini runas de luz no chão consagrado
-      c.strokeStyle = 'rgba(255, 234, 167, 0.6)';
-      c.lineWidth = 1.0;
-      c.beginPath();
-      c.moveTo(-14, 14 + bob); c.lineTo(14, 14 + bob);
-      c.moveTo(0, 10 + bob); c.lineTo(0, 18 + bob);
-      c.stroke();
-      c.restore();
+      c.translate(0, 2);
+      c.transform(1, 0, -0.13 * dashX, 0.96, 0, 0);
+      bob *= 0.35;
     }
 
     // 1. Capa Nobre Dupla de Veludo e Borda Bordada em Ouro
@@ -236,7 +280,7 @@ export function drawRolandModel(c, charDef, state, {
     }
 
     // 2. Coldre Dorsal do Martelo Sagrado (Visível em repouso/guarda, empunhado nas mãos no ataque)
-    if (!isHammerAttacking) {
+    if (!isHammerAttacking && !isDashing) {
       c.save();
       c.translate(-2, -3 + bob);
       c.rotate(-0.58);
@@ -643,7 +687,13 @@ export function drawRolandModel(c, charDef, state, {
     }
 
     // 8. Braços, Manoplas Articuladas e Empunhadura Dinâmica do Martelo Sagrado
-    if (isHammerAttacking) {
+    if (isDashing) {
+      drawConsecratedPlate(c, bob, tFrame);
+      // Braced forearms connect shoulders to the two articulated grip points.
+      skinLine(c, [[-9,0+bob],[-6,5+bob],[2,7+bob]], steelDark, 4.5);
+      skinLine(c, [[9,0+bob],[7,3+bob],[4,4+bob]], steelLight, 4);
+      drawChargeGrip(c, cCol, evolvedHammer, bob, tFrame);
+    } else if (isHammerAttacking) {
       const p = Math.max(0, Math.min(1, hammerProgress));
       let hX = 0, hY = 0, hAngle = 0;
       let runeGlow = 1.0;
@@ -800,77 +850,15 @@ export function drawRolandModel(c, charDef, state, {
       c.fillRect(8.0, 4.2 + bob, 1.0, 1.0);
     }
 
-    // --- ULT: Asas Astrais de Éter e Aríete Frontal de Torre (Pavise) ---
     if (isDashing) {
-      c.save();
-      const wingFlap = Math.sin(tFrame * 0.45) * 6;
-
-      // Asas Astrais Celestiais de Luz Translúcida
-      c.fillStyle = 'rgba(241, 196, 15, 0.40)';
-      c.strokeStyle = '#00d2d3';
-      c.lineWidth = 2.0;
-
-      // Asa Esquerda
-      c.beginPath();
-      c.moveTo(-4, -10 + bob);
-      c.quadraticCurveTo(-18, -26 + wingFlap, -34, -18 + wingFlap);
-      c.lineTo(-24, -8 + wingFlap * 0.5);
-      c.lineTo(-30, 2 + wingFlap);
-      c.lineTo(-14, 4 + bob);
-      c.closePath();
-      c.fill();
-      c.stroke();
-
-      // Asa Direita
-      c.beginPath();
-      c.moveTo(2, -10 + bob);
-      c.quadraticCurveTo(14, -28 + wingFlap, 32, -22 + wingFlap);
-      c.lineTo(22, -9 + wingFlap * 0.5);
-      c.lineTo(28, 0 + wingFlap);
-      c.lineTo(10, 2 + bob);
-      c.closePath();
-      c.fill();
-      c.stroke();
-
-      // Grande Aríete Sagrado Frontal (Escudo Torre Pavise)
-      const pPulse = Math.sin(tFrame * 0.5) * 2.5;
-      const shX = 16;
-      c.fillStyle = 'rgba(241, 196, 15, 0.35)';
-      c.strokeStyle = '#ffffff';
-      c.lineWidth = 3.2;
-
-      c.beginPath();
-      c.moveTo(shX, -22 + pPulse);
-      c.lineTo(shX + 11, -12);
-      c.lineTo(shX + 10, 14);
-      c.lineTo(shX, 22 - pPulse);
-      c.lineTo(shX - 4, 16);
-      c.lineTo(shX - 4, -16);
-      c.closePath();
-      c.fill();
-      c.stroke();
-
-      // Cruz Heráldica Incandescente no Centro do Pavise
-      c.strokeStyle = '#f1c40f';
-      c.lineWidth = 3.5;
-      c.beginPath();
-      c.moveTo(shX + 4, -14); c.lineTo(shX + 4, 14);
-      c.moveTo(shX - 1, -2); c.lineTo(shX + 8, -2);
-      c.stroke();
-
-      // Ondas frontais de pressão e corte cinético
-      c.strokeStyle = 'rgba(0, 206, 201, 0.65)';
-      c.lineWidth = 2.2;
-      c.beginPath();
-      c.arc(shX + 8, 0, 18 + pPulse * 1.5, -Math.PI * 0.45, Math.PI * 0.45);
-      c.stroke();
       c.restore();
+      if (dashY >= -0.3) drawRolandBarrier(c, dashX, dashY, dashAge, bob);
     }
 
     // Glifo Rúnico de Retaliação Melee
     if (isRetaliating) {
       c.save();
-      c.strokeStyle = 'rgba(0, 206, 201, 0.85)';
+      c.strokeStyle = isDashing ? 'rgba(255, 220, 137, 0.65)' : 'rgba(0, 206, 201, 0.85)';
       c.lineWidth = 2.2;
       c.beginPath();
       for (let g = 0; g < 6; g++) {

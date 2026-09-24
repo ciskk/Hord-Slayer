@@ -1,3 +1,4 @@
+import { AXE_MAX_COUNT } from './axes.js';
 import { player, selectedHeroKey, registerWeaponInInventory, registerPassiveInInventory, addPersistentGold } from '../entities/player.js';
 import { getAvailableSynergies } from './items.js';
 
@@ -24,14 +25,14 @@ export const upgradesPool = [
     rarity: "card-legendary",
     badge: "Machado",
     desc: "Adiciona +1 machado ao anel orbital que translada ao redor do bárbaro",
-    getStat: () => `+1 Machado no Anel (${Math.min(3, (player.axeCount || 1) + 1)}/3)`,
-    stat: "+1 Machado no Anel (Máx: 3)",
+    getStat: () => `+1 Machado no Anel (${Math.min(AXE_MAX_COUNT, (player.axeCount || 1) + 1)}/${AXE_MAX_COUNT})`,
+    stat: `+1 Machado no Anel (Máx: ${AXE_MAX_COUNT})`,
     apply: () => {
       if (player.evolvedAxe || player.axeCount <= 0) return;
-      player.axeCount = Math.min(3, player.axeCount + 1);
+      player.axeCount = Math.min(AXE_MAX_COUNT, player.axeCount + 1);
       registerWeaponInInventory('AXE', player.axeCount);
     },
-    isAvailable: () => !player.evolvedAxe && player.axeCount > 0 && player.axeCount < 3
+    isAvailable: () => !player.evolvedAxe && player.axeCount > 0 && player.axeCount < AXE_MAX_COUNT
   },
   {
     id: 'axe_radius',

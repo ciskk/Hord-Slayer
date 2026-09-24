@@ -8,6 +8,8 @@
  * - Projéteis arcanos complexos de chefes (foice de Thanatos, esferas de vácuo, etc.)
  */
 
+import { drawIgnisResidualFire } from '../ignisUlt.js';
+
 let _heatGlowCanvas = null;
 const _magmaGradCache = new Array(85);
 
@@ -51,6 +53,10 @@ export function renderAcidPuddles(ctx, acidPuddles, bounds, frameCount) {
 
     // 1. Rastro de Fogo Vivo e Leito de Magma Incandescente (Ignis Ult / Passo Ígneo)
     if (p.isFire) {
+      if (p.isIgnisStep) {
+        drawIgnisResidualFire(ctx, p.x, p.y, r, fadeProgress, frameCount);
+        continue;
+      }
       const shrinkFactor = 0.35 + 0.65 * fadeProgress;
       const baseR = Math.max(6, (p.radius || 38) * shrinkFactor);
       const fireAlpha = Math.min(1, fadeProgress * 1.15);

@@ -1523,6 +1523,43 @@
   display: none !important;
 }
 
+/* Estado de Selo Ativo Interativo (Botão Clicável para Exibir Requisitos) */
+.btn-ignition-catalyst.is-locked {
+  background: linear-gradient(135deg, rgba(65, 16, 26, 0.95) 0%, rgba(135, 24, 40, 0.92) 50%, rgba(55, 12, 22, 0.95) 100%) !important;
+  border: 1.5px solid rgba(255, 118, 117, 0.75) !important;
+  color: #ffb8b8 !important;
+  box-shadow: 0 -3px 12px rgba(4, 6, 14, 0.8), 0 4px 18px rgba(0, 0, 0, 0.85), 0 0 20px rgba(255, 118, 117, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+  cursor: pointer !important;
+  justify-content: space-between !important;
+  opacity: 1 !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-ignition-catalyst.is-locked:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(85, 20, 35, 0.98) 0%, rgba(165, 30, 50, 0.96) 50%, rgba(75, 15, 30, 0.98) 100%) !important;
+  border-color: #ff7675 !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.9), 0 0 32px rgba(255, 118, 117, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+  filter: brightness(1.12);
+}
+
+.btn-ignition-catalyst.is-locked:active {
+  transform: translateY(1px);
+}
+
+.btn-ignition-catalyst.is-locked .btn-shimmer-sweep {
+  display: block !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 118, 117, 0.45), transparent);
+}
+
+.btn-ignition-catalyst.is-locked .btn-hotkey-hint {
+  display: inline-flex !important;
+  background: rgba(255, 118, 117, 0.22);
+  color: #ffeaa7;
+  border: 1px solid rgba(255, 118, 117, 0.45);
+}
+
 /* ======================================================== */
 /* 4. ANIMAÇÕES COREOGRAFADAS DE ENTRADA                     */
 /* ======================================================== */
@@ -1696,3 +1733,672 @@
     display: none;
   }
 }
+
+/* ======================================================== */
+/* 5. POP-UP DE PERSONAGEM BLOQUEADO (SELO PRIMORDIAL)      */
+/* ======================================================== */
+
+.locked-hero-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 125;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(env(safe-area-inset-top, 16px), 16px)
+           max(env(safe-area-inset-right, 16px), 16px)
+           max(env(safe-area-inset-bottom, 16px), 16px)
+           max(env(safe-area-inset-left, 16px), 16px);
+  touch-action: auto;
+  pointer-events: auto;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+}
+
+.locked-hero-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 5, 9, 0.86);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: lockedBackdropFade 0.28s ease-out forwards;
+}
+
+.locked-hero-overlay.closing .locked-hero-backdrop {
+  animation: lockedBackdropFadeOut 0.22s ease-in forwards;
+}
+
+.locked-hero-card {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: min(92vw, 430px);
+  max-height: min(92vh, 92dvh);
+  background: linear-gradient(168deg, rgba(28, 13, 20, 0.97) 0%, rgba(15, 17, 26, 0.98) 55%, rgba(9, 10, 16, 0.99) 100%);
+  border: 1.5px solid rgba(255, 118, 117, 0.55);
+  border-radius: 18px;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.95), 0 0 40px rgba(255, 118, 117, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  padding: clamp(14px, 2.5vw, 20px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  contain: paint;
+  scrollbar-width: none !important;
+  transform-origin: center center;
+  animation: sealModalEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.locked-hero-card::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.locked-hero-overlay.closing .locked-hero-card {
+  animation: sealModalLeave 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.locked-hero-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+  overflow: hidden;
+  transform-origin: center top;
+}
+
+.locked-card-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #ff7675 35%, #ffd166 65%, transparent 100%);
+  opacity: 0.85;
+}
+
+.locked-card-glow-mesh {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle at top right, rgba(255, 118, 117, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  border-top-right-radius: 18px;
+}
+
+/* Botão Fechar Rápido (X) */
+.locked-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 118, 117, 0.12);
+  border: 1px solid rgba(255, 118, 117, 0.35);
+  border-radius: 50%;
+  color: #ff9f9f;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+}
+
+.locked-close-btn:hover {
+  background: rgba(255, 118, 117, 0.28);
+  border-color: #ff7675;
+  color: #ffffff;
+  transform: rotate(90deg) scale(1.08);
+  box-shadow: 0 0 14px rgba(255, 118, 117, 0.5);
+}
+
+.locked-close-btn:active {
+  transform: rotate(90deg) scale(0.95);
+}
+
+.locked-close-icon {
+  width: 15px;
+  height: 15px;
+}
+
+/* Topo e Identidade do Herói */
+.locked-hero-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 118, 117, 0.2);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.locked-eyebrow-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.locked-eyebrow-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 118, 117, 0.45), transparent);
+}
+
+.locked-eyebrow-sigil {
+  font-size: 8px;
+  color: #ff7675;
+}
+
+.locked-eyebrow-text {
+  font-family: var(--font-heading);
+  font-size: clamp(8px, 1.8vw, 9.5px);
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #ff7675;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.locked-hero-identity-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.locked-emblem-cluster {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.locked-emblem-disc {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(45, 14, 25, 0.95) 0%, rgba(18, 8, 14, 0.95) 100%);
+  border: 1.8px solid rgba(255, 118, 117, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(255, 118, 117, 0.35);
+  animation: sealPulseRing 3.6s ease-in-out infinite alternate;
+}
+
+.locked-emblem-disc svg {
+  width: 36px;
+  height: 36px;
+  filter: drop-shadow(0 0 6px rgba(255, 118, 117, 0.4));
+}
+
+.locked-seal-lock-badge {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #14070a;
+  border: 1.4px solid #ff7675;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 8px rgba(255, 118, 117, 0.6);
+}
+
+.locked-hero-textual {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.locked-hero-archetype {
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  color: #ffd166;
+  text-transform: uppercase;
+}
+
+.locked-hero-name {
+  font-family: var(--font-heading);
+  font-size: clamp(19px, 3vw, 23px);
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.1;
+  text-shadow: 0 0 16px rgba(255, 118, 117, 0.35);
+}
+
+.locked-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  margin-top: 3px;
+  padding: 2.5px 8px;
+  background: rgba(255, 118, 117, 0.15);
+  border: 1px solid rgba(255, 118, 117, 0.4);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ff9f9f;
+  text-transform: uppercase;
+}
+
+.locked-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff7675;
+  box-shadow: 0 0 6px #ff7675;
+  animation: lockedDotPulse 1.8s ease-in-out infinite;
+}
+
+/* Corpo do Modal (Seção do Objetivo Principal) */
+.locked-hero-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.locked-section-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.locked-section-card.objective-section {
+  background: linear-gradient(135deg, rgba(42, 14, 24, 0.7) 0%, rgba(20, 9, 16, 0.85) 100%);
+  border: 1.2px solid rgba(255, 118, 117, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.locked-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.locked-section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.locked-section-title {
+  font-family: var(--font-heading);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #f1f5f9;
+  text-transform: uppercase;
+  flex: 1;
+  min-width: 0;
+}
+
+.locked-tier-pill {
+  font-family: var(--font-body);
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255, 209, 102, 0.15);
+  border: 1px solid rgba(255, 209, 102, 0.4);
+  color: #ffd166;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.locked-mission-desc {
+  font-size: 12px;
+  color: #f8fafc;
+  line-height: 1.5;
+  font-weight: 500;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Barra de Progresso Cósmico */
+.locked-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 8px 10px;
+  background: rgba(6, 8, 14, 0.65);
+  border: 1px solid rgba(255, 118, 117, 0.22);
+  border-radius: 9px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.locked-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+
+.locked-prog-label {
+  font-family: var(--font-heading);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  color: #ff9f9f;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-shadow: 0 0 10px rgba(255, 118, 117, 0.45);
+}
+
+.locked-prog-spark {
+  color: #ff7675;
+  font-size: 8px;
+  line-height: 1;
+  animation: lockedDotPulse 2s ease-in-out infinite;
+}
+
+.locked-prog-val {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ffeaa7;
+  text-shadow: 0 0 8px rgba(255, 209, 102, 0.4);
+  background: rgba(255, 209, 102, 0.1);
+  border: 1px solid rgba(255, 209, 102, 0.3);
+  padding: 2.5px 8px;
+  border-radius: 6px;
+  box-shadow: 0 0 10px rgba(255, 209, 102, 0.12);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.prog-cur-tgt {
+  color: #ffd166;
+  font-weight: 800;
+}
+
+.prog-pct-pill {
+  font-family: var(--font-body);
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: #ff9f9f;
+  background: rgba(255, 118, 117, 0.22);
+  border: 1px solid rgba(255, 118, 117, 0.35);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.locked-progress-track {
+  height: 7px;
+  background: rgba(4, 6, 10, 0.9);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 118, 117, 0.3);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+  width: 100%;
+}
+
+.locked-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff7675 0%, #ffd166 100%);
+  box-shadow: 0 0 10px rgba(255, 118, 117, 0.6), 0 0 4px rgba(255, 209, 102, 0.7);
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Rodapé de Ações de Comando */
+.locked-hero-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-locked-action {
+  height: 42px;
+  border-radius: 10px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.btn-locked-codex {
+  flex: 1;
+  background: rgba(30, 24, 45, 0.9);
+  border: 1.2px solid rgba(162, 155, 254, 0.45);
+  color: #dcdde1;
+}
+
+.btn-locked-codex:hover {
+  background: rgba(45, 34, 70, 0.95);
+  border-color: #a29bfe;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 16px rgba(162, 155, 254, 0.35);
+}
+
+.btn-locked-codex:active {
+  transform: translateY(1px);
+}
+
+.btn-locked-confirm {
+  flex: 1.2;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(80, 18, 30, 0.95) 0%, rgba(150, 25, 45, 0.95) 50%, rgba(70, 14, 25, 0.95) 100%);
+  border: 1.5px solid rgba(255, 118, 117, 0.7);
+  color: #ffffff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 118, 117, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.btn-locked-confirm:hover {
+  transform: translateY(-2px);
+  border-color: #ff7675;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.9), 0 0 28px rgba(255, 118, 117, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  filter: brightness(1.1);
+}
+
+.btn-locked-confirm:active {
+  transform: translateY(1px);
+}
+
+.btn-locked-confirm .btn-hotkey-hint {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 800;
+  color: #ffb8b8;
+  background: rgba(255, 118, 117, 0.25);
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 118, 117, 0.4);
+}
+
+/* Animações Keyframe */
+@keyframes sealModalEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.88) translateY(20px);
+    filter: blur(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes sealModalLeave {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.92) translateY(14px);
+    filter: blur(6px);
+  }
+}
+
+@keyframes lockedBackdropFade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes lockedBackdropFadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes sealPulseRing {
+  0% {
+    box-shadow: 0 0 14px rgba(255, 118, 117, 0.25);
+    border-color: rgba(255, 118, 117, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 26px rgba(255, 118, 117, 0.65);
+    border-color: rgba(255, 118, 117, 0.95);
+  }
+}
+
+@keyframes lockedDotPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.75);
+  }
+}
+
+/* Responsividade Mobile para o Pop-up */
+@media (max-width: 600px) {
+  .locked-hero-card {
+    padding: 12px 14px;
+    width: 100%;
+    max-width: calc(100vw - 24px);
+    max-height: 90vh;
+    box-sizing: border-box;
+    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: hidden !important;
+    contain: paint;
+  }
+
+  .locked-hero-content {
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .locked-hero-identity-row {
+    gap: 12px;
+  }
+
+  .locked-emblem-disc {
+    width: 48px;
+    height: 48px;
+  }
+
+  .locked-emblem-disc svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .locked-hero-name {
+    font-size: 18px;
+  }
+
+  .locked-mission-desc {
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .locked-hero-footer {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .btn-locked-action {
+    width: 100%;
+    height: 38px;
+    font-size: 10px;
+    box-sizing: border-box;
+  }
+
+  .locked-prog-label {
+    font-size: 8.5px;
+    letter-spacing: 1px;
+    gap: 4px;
+  }
+
+  .locked-prog-val {
+    font-size: 9px;
+    padding: 2px 6px;
+    gap: 4px;
+  }
+
+  .prog-pct-pill {
+    font-size: 8px;
+    padding: 0 4px;
+  }
+}
+

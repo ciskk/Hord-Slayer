@@ -92,6 +92,7 @@ export function autoFitElement(container, customOptions = {}) {
   const minScale = parseFloat(container.dataset.autofitMinScale) || customOptions.minScale || AUTO_FIT_DEFAULTS.minScale;
   const maxScale = parseFloat(container.dataset.autofitMaxScale) || customOptions.maxScale || AUTO_FIT_DEFAULTS.maxScale;
   const bufferPx = customOptions.bufferPx !== undefined ? customOptions.bufferPx : AUTO_FIT_DEFAULTS.bufferPx;
+  const direction = container.dataset.autofitDirection || customOptions.direction || AUTO_FIT_DEFAULTS.direction;
 
   // Localiza o alvo interno que deve ser escalado
   let target = null;
@@ -125,13 +126,19 @@ export function autoFitElement(container, customOptions = {}) {
   const cStyle = window.getComputedStyle(container);
   const padTop = parseFloat(cStyle.paddingTop) || 0;
   const padBottom = parseFloat(cStyle.paddingBottom) || 0;
+  const padLeft = parseFloat(cStyle.paddingLeft) || 0;
+  const padRight = parseFloat(cStyle.paddingRight) || 0;
   const availH = container.clientHeight - padTop - padBottom;
+  const availW = container.clientWidth - padLeft - padRight;
 
   // 3. Medição robusta cross-browser do tamanho real natural do conteúdo
   const tStyle = window.getComputedStyle(target);
   const mTop = parseFloat(tStyle.marginTop) || 0;
   const mBottom = parseFloat(tStyle.marginBottom) || 0;
+  const mLeft = parseFloat(tStyle.marginLeft) || 0;
+  const mRight = parseFloat(tStyle.marginRight) || 0;
   const naturalH = getNaturalContentHeight(target, mTop, mBottom);
+  const naturalW = Math.max(target.scrollWidth || 0, target.offsetWidth || 0) + mLeft + mRight;
 
   // Restaura estilo de max-height original
   if (originalMaxHeight) {
@@ -146,16 +153,39 @@ export function autoFitElement(container, customOptions = {}) {
     return 1.0;
   }
 
-  // 4. Verificação de necessidade de escala
-  if (naturalH <= availH) {
+  // 4. Verificação de necessidade de escala (direção height, width ou both)
+  let scaleH = 1.0;
+  let scaleW = 1.0;
+
+  if (direction === 'height' || direction === 'both') {
+    if (availH > 0 && naturalH > availH) {
+      scaleH = (availH - bufferPx) / naturalH;
+    }
+  }
+
+  if (direction === 'width' || direction === 'both') {
+    if (availW > 0 && naturalW > availW) {
+      scaleW = (availW - bufferPx) / naturalW;
+    }
+  }
+
+  let requiredScale = 1.0;
+  if (direction === 'width') {
+    requiredScale = scaleW;
+  } else if (direction === 'height') {
+    requiredScale = scaleH;
+  } else {
+    requiredScale = Math.min(scaleH, scaleW);
+  }
+  requiredScale = Math.min(maxScale, requiredScale);
+
+  if (requiredScale >= 0.999) {
     // Cabe naturalmente: Preserva escala 1.0 e comportamento padrão
     resetAutoFit(container, target);
     return 1.0;
   }
 
   // 5. O conteúdo ultrapassa o espaço disponível: calcula a escala necessária
-  const requiredScale = Math.min(maxScale, (availH - bufferPx) / naturalH);
-
   if (requiredScale >= minScale || container.dataset.autofitOverflow === 'scale') {
     // Excesso moderado: Reduz proporcionalmente e uniformemente até caber perfeitamente
     const scale = Math.floor(requiredScale * 1000) / 1000;
@@ -170,18 +200,19 @@ export function autoFitElement(container, customOptions = {}) {
 
 /**
  * Aplica a escala proporcional uniforme ao elemento alvo usando transform: scale().
- * Mantém a largura dentro de 100% com box-sizing para eliminar qualquer scrollbar horizontal no PC e mobile.
+ * Mantém a largura contida e elimina qualquer scrollbar horizontal no PC e mobile.
  */
 function applyAutoFitScale(container, target, scale, naturalH) {
   target.style.zoom = '';
 
   // Modal overlays usam center center para manter o conteúdo centralizado com margin: auto
   const isModalOverlay = container.classList.contains('modal-overlay') ||
-    container.closest && container.closest('.modal-overlay') ||
+    (container.closest && container.closest('.modal-overlay')) ||
     container.classList.contains('levelup-screen-overlay') ||
     container.classList.contains('chest-screen-overlay') ||
     container.classList.contains('death-screen-overlay') ||
-    container.classList.contains('pause-screen-overlay');
+    container.classList.contains('pause-screen-overlay') ||
+    container.classList.contains('locked-hero-overlay');
 
   if (isModalOverlay) {
     target.style.transformOrigin = 'center center';
@@ -193,8 +224,10 @@ function applyAutoFitScale(container, target, scale, naturalH) {
   target.style.setProperty('--autofit-scale', String(scale));
 
   // Mantém estritamente contido na largura do pai (Zero scrollbars horizontais no PC e mobile)
-  target.style.width = '100%';
-  target.style.maxWidth = '100%';
+  if (!isModalOverlay) {
+    target.style.width = '100%';
+    target.style.maxWidth = '100%';
+  }
   target.style.boxSizing = 'border-box';
 
   // Compensa a altura visual excedente recolhendo o espaço inferior no container

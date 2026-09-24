@@ -52,7 +52,7 @@ export function drawMiniBossShape(e) {
   const R = e.radius;
   const isHit = e.hitFlash > 0;
   const isEnraged = !!e.enraged;
-  const eliteColor = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : (e.color || '#f39c12'));
+  const eliteColor = isHit ? '#ffffff' : (e.color || '#f39c12');
 
   drawThreatGlyph(R, eliteColor, isHit, isEnraged);
 

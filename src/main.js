@@ -34,13 +34,16 @@ import {
   addBloodSplat, 
   processEnemyMeleeAttacks, 
   updateCombatVisuals,
-  applyFireBurn
+  applyFireBurn,
+  applyFreeze
 } from './systems/combat.js';
 import { 
   updateProjectiles, 
   updateAcidPuddles 
 } from './systems/projectiles.js';
-import { groundCraters } from './render/groundCracks.js';
+import { groundCraters, addConsecratedTrail, addRolandShockwave, clearRolandChargeEffects } from './render/groundCracks.js';
+import { traceIgnisStep, clearIgnisStepEffects, updateIgnisStepEffects } from './render/ignisUlt.js';
+import { traceKaelPhase, clearKaelPhaseEffects, updateKaelPhaseEffects } from './render/kaelUlt.js';
 import { spawnSquad, spawnMobCluster, spawnProp, spawnInitialHorde, isWormEnemyType, isKaelInvisible } from './entities/enemies.js';
 import { recordRunStats } from './systems/progression.js';
 import { 
@@ -124,6 +127,7 @@ import {
   waveAnnouncement,
   lastAnnouncedWaveIndex,
   deferredLevelUpGraceTimer,
+  postScreenSlowMoTimer,
   setLastTime,
   resetSpawnTimer,
   setSpawnTimer,
@@ -134,6 +138,7 @@ import {
   setFrameCount,
   advanceFrameCount,
   setFreezeTimer,
+  setPostScreenSlowMoTimer,
   setDeferredLevelUpGraceTimer,
   setLastAnnouncedWaveIndex,
   updateDimensions,
@@ -220,8 +225,10 @@ export {
   waveAnnouncement,
   lastAnnouncedWaveIndex,
   deferredLevelUpGraceTimer,
+  postScreenSlowMoTimer,
   setLastTime,
   resetSpawnTimer,
+  setPostScreenSlowMoTimer,
   setCurrentArenaTheme,
   setIsWavePaused,
   triggerShake,
@@ -311,6 +318,27 @@ export function resize() {
 
   // Invalida e sincroniza o atlas de monstros com a nova resolução/DPR
   clearSpriteCache();
+
+  // Layout responsivo do boss timer
+  const bossTimerBadge = document.querySelector('.boss-timer-badge');
+  if (bossTimerBadge) {
+    if (window.innerWidth <= 768) {
+      const leftGroup = document.querySelector('.hud-meta-group.left');
+      if (leftGroup && bossTimerBadge.parentNode !== leftGroup) {
+        leftGroup.appendChild(bossTimerBadge);
+        bossTimerBadge.style.marginRight = '0';
+        bossTimerBadge.style.marginLeft = '8px';
+      }
+    } else {
+      const rightGroup = document.querySelector('.hud-top-cluster-right');
+      const timerBadge = document.querySelector('.timer-badge');
+      if (rightGroup && bossTimerBadge.parentNode !== rightGroup) {
+        rightGroup.insertBefore(bossTimerBadge, timerBadge);
+        bossTimerBadge.style.marginRight = '8px';
+        bossTimerBadge.style.marginLeft = '0';
+      }
+    }
+  }
 }
 
 initResponsive(() => {
@@ -371,6 +399,9 @@ export function terminateMatch() {
   enemyBullets.length = 0;
   acidPuddles.length = 0;
   groundCraters.length = 0;
+  clearRolandChargeEffects();
+  clearIgnisStepEffects();
+  clearKaelPhaseEffects();
   gems.length = 0;
   particles.length = 0;
   damageTexts.length = 0;
@@ -782,13 +813,24 @@ function update(dt) {
 
       for (let k = 0; k < enemies.length; k++) {
         const en = enemies[k];
-        if (!en || en.hp <= 0 || en.isBoss) continue;
+        if (!en || en.hp <= 0) continue;
         const edx = en.x - player.x;
         const edy = en.y - player.y;
         if (edx * edx + edy * edy < 120 * 120) {
-          en.confusedTimer = 110;
-          addDamageText(en.x, en.y - 10, "DESORIENTADO!", false, '#a55eea');
-          createHitParticles(en.x, en.y, '#9b59b6', 5);
+          if (en.isBoss || en.isMiniBoss) {
+            // Reagente Cáustico em Chefes: dissolve defesas aplicando 5 stacks imediatos de corrosão e vulnerabilidade
+            en.acidStacks = 5;
+            en.acidStackTimer = 240;
+            en.acidBurnTimer = Math.max(en.acidBurnTimer || 0, 240);
+            en.isVulnerable = true;
+            en.vulnerableTimer = Math.max(en.vulnerableTimer || 0, 180);
+            addDamageText(en.x, en.y - 12, "CORROSÃO TOTAL!", true, '#a55eea');
+            createHitParticles(en.x, en.y, '#a55eea', 8);
+          } else {
+            en.confusedTimer = 110;
+            addDamageText(en.x, en.y - 10, "DESORIENTADO!", false, '#a55eea');
+            createHitParticles(en.x, en.y, '#9b59b6', 5);
+          }
         }
       }
     } else if (player.alchemistSkillTimer <= 0) {
@@ -868,8 +910,12 @@ function update(dt) {
   }
   player.speed = currentSpeed;
 
+  const wasIgnisDashing = player.ignisDashDuration > 0;
+  const wasKaelPhasing = (player.invisTimer > 0) || player.isPhasing;
   if (player.dashDuration > 0) {
+    const previousDashDuration = player.dashDuration;
     player.dashDuration -= dt;
+    player.rolandImpactCooldown = Math.max(0, (player.rolandImpactCooldown || 0) - dt);
     setDeferredLevelUpGraceTimer(10);
 
     const inputLen = Math.hypot(inputX, inputY);
@@ -894,12 +940,21 @@ function update(dt) {
 
     player.vx = player.dashVx;
     player.vy = player.dashVy;
+    const chargeStartX = player.x, chargeStartY = player.y;
     player.x += player.dashVx * dt;
     player.y += player.dashVy * dt;
-    createHitParticles(player.x, player.y, '#f1c40f', 3);
-    createHitParticles(player.x, player.y, '#ffffff', 2);
-    if (Math.floor(frameCount) % 3 === 0) {
-      createHitParticles(player.x, player.y, '#00d2d3', 2);
+    // Distance-spaced stamps remain continuous at variable frame rates and turns.
+    const chargeDistance = Math.hypot(player.x - chargeStartX, player.y - chargeStartY);
+    const chargeAngle = Math.atan2(player.dashVy, player.dashVx);
+    const carry = player.rolandTrailDistance || 0;
+    let stamps = 0;
+    for (let d = 28 - carry; d <= chargeDistance && stamps < 8; d += 28, stamps++) {
+      const ratio = d / chargeDistance;
+      addConsecratedTrail(chargeStartX + (player.x - chargeStartX) * ratio, chargeStartY + (player.y - chargeStartY) * ratio + 13, chargeAngle);
+    }
+    player.rolandTrailDistance = (carry + chargeDistance) % 28;
+    if (previousDashDuration > 12 && player.dashDuration <= 12) {
+      addRolandShockwave(player.x, player.y + 10, 64);
     }
 
     for (let i = 0; i < enemies.length; i++) {
@@ -917,14 +972,17 @@ function update(dt) {
         }
         e.hp -= impactDmg;
         e.hitFlash = 5;
+        if (player.rolandImpactCooldown <= 0) {
+          addRolandShockwave(player.x, player.y + 10, 72);
+          player.rolandImpactCooldown = 8;
+        }
         addDamageText(e.x, e.y, Math.round(impactDmg), true, '#f1c40f');
-        createHitParticles(e.x, e.y, '#f1c40f', 4);
-        createHitParticles(e.x, e.y, '#ffffff', 3);
+        // Radial embers are batched in the capped shockwave renderer above.
 
         if (player.slowChance > 0 && Math.random() < player.slowChance) {
-          e.slowTimer = 150;
-          e.slowFactor = 0.55;
-          createHitParticles(e.x, e.y, '#74b9ff', 2);
+          applyFreeze(e);
+
+
         }
 
         if (e.isBoss && (e.hp / e.maxHp) < 0.45 && !e.isEnraged) {
@@ -941,9 +999,7 @@ function update(dt) {
       triggerShake(13);
       playSfx('boss');
       triggerHaptic('heavy');
-      createHitParticles(player.x, player.y, '#f1c40f', 24);
-      createHitParticles(player.x, player.y, '#ffffff', 18);
-      createHitParticles(player.x, player.y, '#00cec9', 14);
+      addRolandShockwave(player.x, player.y + 10, 90);
     }
   } else if (player.ignisDashDuration > 0) {
     player.ignisDashDuration -= dt;
@@ -975,17 +1031,17 @@ function update(dt) {
     player.y += player.ignisDashVy * dt;
     player.iFrames = Math.max(player.iFrames, 8);
 
-    createHitParticles(player.x, player.y, '#ffffff', 2);
-    createHitParticles(player.x, player.y, '#f1c40f', 3);
-    createHitParticles(player.x, player.y, '#e67e22', 2);
-
-    if (Math.floor(frameCount) % 2 === 0) {
+    player.ignisFireTrailTimer -= dt;
+    if (player.ignisFireTrailTimer <= 0) {
+      // Keep the original two-frame cadence across high refresh rates.
+      player.ignisFireTrailTimer = 2 + (player.ignisFireTrailTimer % 2);
       acidPuddles.push({
         x: player.x,
         y: player.y,
         radius: 38,
         life: 280,
         maxLife: 280,
+        isIgnisStep: true,
         isFire: true
       });
     }
@@ -1015,9 +1071,6 @@ function update(dt) {
       triggerShake(11);
       playSfx('boss');
       triggerHaptic('heavy');
-      createHitParticles(player.x, player.y, '#ffffff', 18);
-      createHitParticles(player.x, player.y, '#f1c40f', 24);
-      createHitParticles(player.x, player.y, '#e74c3c', 18);
 
       for (let i = 0; i < enemies.length; i++) {
         const e = enemies[i];
@@ -1146,6 +1199,14 @@ function update(dt) {
         triggerHaptic('light');
       }
     }
+  }
+
+  // Emit at the resolved world position, after arena collision and knockback.
+  if (wasIgnisDashing) {
+    traceIgnisStep(player.x, player.y, player.ignisDashDuration <= 0, player.facing);
+  }
+  if (wasKaelPhasing) {
+    traceKaelPhase(player.x, player.y, player.invisTimer <= 0, player.facing, player.isMoving);
   }
 
   // Verificação e Liberação de Level-Up Diferido (Pós-ULT)
@@ -1349,10 +1410,20 @@ function loop(now) {
   const rawDt = (now - lastTime) / (1000 / 60);
   setLastTime(now);
   const speed = (typeof devCheats !== 'undefined' && devCheats.gameSpeed) ? devCheats.gameSpeed : 1.0;
-  const dt = Math.min(Math.max(rawDt, 0.1), 2.5) * speed;
+  let dt = Math.min(Math.max(rawDt, 0.1), 2.5) * speed;
+
+  if (postScreenSlowMoTimer > 0) {
+    setPostScreenSlowMoTimer(postScreenSlowMoTimer - rawDt);
+    dt *= 0.15; // Slow-mo pós-telas
+  }
 
   try {
     if (gameState.isInMatch) {
+      // Cosmetic lifetimes continue when gameplay updates stop for death/victory.
+      if (!gameState.isPaused && (gameState.isDead || gameState.isWon || deathSequence?.active)) {
+        updateIgnisStepEffects(dt);
+        updateKaelPhaseEffects(dt);
+      }
       if (!gameState.isPaused && !gameState.isWon) {
         if (deathSequence && deathSequence.active) {
           updateDeathSequence(dt);

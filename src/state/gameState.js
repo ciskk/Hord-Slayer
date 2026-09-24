@@ -149,6 +149,8 @@ export const waveAnnouncement = {
 export let lastAnnouncedWaveIndex = 0;
 export let deferredLevelUpGraceTimer = 0;
 
+export let postScreenSlowMoTimer = 0;
+
 // Mutators e Setters Seguros
 export function setLastTime(t) { lastTime = t; }
 export function resetSpawnTimer() { spawnTimer = 999; }
@@ -160,6 +162,7 @@ export function decayScreenShake(dt) { if (screenShake > 0) screenShake = Math.m
 export function setFrameCount(val) { frameCount = val; }
 export function advanceFrameCount(dt) { frameCount += dt; }
 export function setFreezeTimer(val) { freezeTimer = val; }
+export function setPostScreenSlowMoTimer(val) { postScreenSlowMoTimer = val; }
 export function setDeferredLevelUpGraceTimer(val) { deferredLevelUpGraceTimer = val; }
 export function setLastAnnouncedWaveIndex(idx) { lastAnnouncedWaveIndex = idx; }
 

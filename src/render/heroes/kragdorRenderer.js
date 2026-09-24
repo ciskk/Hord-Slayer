@@ -9,6 +9,9 @@
 /**
  * Renderiza o modelo procedural de Kragdor.
  */
+import { getKragdorRoarPose } from '../../config/kragdorUlt.js';
+import { drawKragdorFury } from '../kragdorUlt.js';
+import { drawKragdorAxe } from './kragdorAxe.js';
 import { skinGradient, skinPolygon, skinLine, skinGem } from './skinMaterials.js';
 
 export function drawKragdorModel(c, charDef, state, {
@@ -22,7 +25,9 @@ export function drawKragdorModel(c, charDef, state, {
   isBerserk = false,
   berserkTimer = 0
 } = {}) {
-    // isBerserk handled via state
+    const roarPose = isBerserk ? getKragdorRoarPose(berserkTimer) : 0;
+    bob += roarPose * 1.5;
+    capeWave += roarPose * 3;
     const cCol = charDef.color || {};
     const skinCol = cCol.skin || '#c67846';
     const skinShadow = cCol.skinShadow || '#8e4823';
@@ -44,35 +49,13 @@ export function drawKragdorModel(c, charDef, state, {
     const leatherDark = cCol.leatherDark || '#1a120e';
     const leatherMid = cCol.armor || '#2c1e18';
     const leatherLight = cCol.leatherLight || '#5a3a2a';
-    const axeSteel = cCol.axeSteel || '#7f8c8d';
     const axeSteelLight = cCol.axeSteelLight || '#b2bec3';
-    const axeEdge = cCol.axeEdge || '#f1c40f';
-    const axeWood = cCol.axeWood || '#3d271d';
     const ironCol = cCol.iron || '#47535e';
     const brassCol = cCol.brass || '#f39c12';
     const isDetailed = scale >= 1.5;
     const hideMaterial = skinGradient(c, -14, bob, 24, 13, '#1c181b', furBase, '#8b7561');
 
-    // --- 0. EFEITO ESPECIAL BERSERK: Halo de Fúria e Trincas de Solo ---
-    if (isBerserk) {
-      c.save();
-      const furyPulse = Math.sin(tFrame * 0.25) * 3;
-      c.strokeStyle = 'rgba(231, 76, 60, 0.55)';
-      c.lineWidth = 2.0;
-      c.beginPath();
-      c.ellipse(0, 14 + bob, 22 + furyPulse, 7.5 + furyPulse * 0.35, 0, 0, Math.PI * 2);
-      c.stroke();
-
-      // Fagulhas e emanação de vapor de sangue nos ombros
-      for (let f = 0; f < 3; f++) {
-        const fAng = tFrame * 0.15 + f * (Math.PI * 2 / 3);
-        const fx = Math.cos(fAng) * (14 + furyPulse);
-        const fy = -4 + bob + Math.sin(fAng) * 8 - ((tFrame * 0.4 + f * 4) % 10);
-        c.fillStyle = f % 2 === 0 ? 'rgba(231, 76, 60, 0.65)' : 'rgba(243, 156, 18, 0.75)';
-        c.fillRect(fx - 1, fy - 1, 2, 2);
-      }
-      c.restore();
-    }
+    if (isBerserk) drawKragdorFury(c, berserkTimer, tFrame, bob, state.effectHeadroom);
 
     // --- 1. CAPA PESADA DE PELE DE FERA COM BORDA SERRILHADA E RIM LIGHT ---
     // Forro interno escuro
@@ -123,73 +106,12 @@ export function drawKragdorModel(c, charDef, state, {
     }
 
     // --- 2. COLDRE DORSAL DO MACHADO COLOSSO (Exibido em repouso / preview) ---
-    const isAxeOrbitActive = !!state.isAxeOrbiting || (typeof player !== 'undefined' && player.axeCount > 0 && !state.showDorsalAxeForce);
-    const showBackAxe = state.showDorsalAxe !== undefined ? state.showDorsalAxe : (!isAxeOrbitActive || state.scale > 2.0);
-
+    const showBackAxe = state.showDorsalAxe ?? !state.isAxeOrbiting;
     if (showBackAxe) {
       c.save();
       c.translate(-3, -2 + bob);
       c.rotate(-0.55);
-
-      // Cabo de carvalho nórdico com ataduras de couro cruzadas
-      c.fillStyle = axeWood;
-      c.fillRect(-2, -6, 4, 32);
-      c.strokeStyle = leatherDark;
-      c.lineWidth = 1;
-      c.beginPath();
-      c.moveTo(-2, 3); c.lineTo(2, 6);
-      c.moveTo(-2, 11); c.lineTo(2, 14);
-      c.moveTo(-2, 19); c.lineTo(2, 22);
-      c.stroke();
-
-      // Pomo inferior reforçado com ferro e correia
-      c.fillStyle = ironCol;
-      c.fillRect(-2.5, 25, 5, 3.5);
-      c.fillStyle = brassCol;
-      c.fillRect(-1.5, 26, 3, 1.5);
-
-      // Cabeça do Machado Colosso Nórdico (Lâmina Barbada Assimétrica)
-      c.fillStyle = axeSteel;
-      c.beginPath();
-      c.moveTo(-2, -6);
-      c.lineTo(-13, -15);
-      c.lineTo(-17, -8);
-      c.quadraticCurveTo(-14, 2, -18, 10);
-      c.lineTo(-12, 6);
-      c.lineTo(-2, 0);
-      c.closePath();
-      c.fill();
-      c.strokeStyle = ironCol;
-      c.lineWidth = 1.2;
-      c.stroke();
-
-      // Chanfro de aço claro polido
-      c.fillStyle = axeSteelLight;
-      c.beginPath();
-      c.moveTo(-5, -6);
-      c.lineTo(-12, -13);
-      c.lineTo(-11, 4);
-      c.lineTo(-5, 0);
-      c.closePath();
-      c.fill();
-
-      // Gume dourado incandescente afiado
-      c.strokeStyle = axeEdge;
-      c.lineWidth = 1.8;
-      c.beginPath();
-      c.moveTo(-13, -15);
-      c.lineTo(-17, -8);
-      c.quadraticCurveTo(-14, 2, -18, 10);
-      c.stroke();
-
-      // Brilho especular branco no corte da lâmina
-      c.strokeStyle = '#ffffff';
-      c.lineWidth = 1.0;
-      c.beginPath();
-      c.moveTo(-14, -11);
-      c.lineTo(-15, -4);
-      c.stroke();
-
+      drawKragdorAxe(c, cCol);
       c.restore();
     }
 
@@ -412,43 +334,30 @@ export function drawKragdorModel(c, charDef, state, {
       skinLine(c, [[-14,-2+bob],[-13.2,-1.2+bob],[-13.8,0+bob]], '#8e7f6b', .35);
     }
 
-    // --- 6. BRAÇOS MUSCULOSOS COM MUNHEQUEIRAS REFORÇADAS E VEIAS ---
-    c.fillStyle = skinCol;
-    c.fillRect(-11.5, -3 + bob, 4.8, 8.5);
-    c.fillRect(7.0, -3 + bob, 4.8, 8.5);
-
-    // Sombra de volume no bíceps
-    c.fillStyle = skinShadow;
-    c.fillRect(-11.5, 1.0 + bob, 4.8, 1.5);
-    c.fillRect(7.0, 1.0 + bob, 4.8, 1.5);
-
-    // Destaque de luz no deltoide externo
-    c.fillStyle = skinHigh;
-    c.fillRect(-11.0, -3.0 + bob, 1.5, 4.0);
-    c.fillRect(10.0, -3.0 + bob, 1.5, 4.0);
-
-    // Veias de adrenalina pulsando no modo Berserk
-    if (isBerserk) {
-      c.strokeStyle = 'rgba(255, 71, 87, 0.9)';
-      c.lineWidth = 0.9;
-      c.beginPath();
-      c.moveTo(-10.5, -1 + bob); c.lineTo(-8.5, 1.5 + bob);
-      c.moveTo(8.5, -1 + bob); c.lineTo(10.5, 1.5 + bob);
-      c.stroke();
+    // Punhos se abrem em um brado de guerra, voltando à postura normal sem mudar a escala.
+    for (const side of [-1, 1]) {
+      c.save();
+      c.translate(side < 0 ? -9.1 : 9.4, -3 + bob);
+      c.rotate(-side * roarPose * 1.7);
+      c.fillStyle = skinCol;
+      c.fillRect(-2.4, 0, 4.8, 8.5);
+      c.fillStyle = skinShadow;
+      c.fillRect(-2.4, 4, 4.8, 1.5);
+      c.fillStyle = skinHigh;
+      c.fillRect(side < 0 ? -1.9 : 0.6, 0, 1.5, 4);
+      if (isBerserk) {
+        c.strokeStyle = '#ffb477';
+        c.lineWidth = 0.9;
+        c.beginPath(); c.moveTo(-1.4, 2); c.lineTo(0.8, 4.5); c.stroke();
+      }
+      c.fillStyle = leatherDark;
+      c.fillRect(-2.9, 5, 5.5, 4);
+      c.fillStyle = ironCol;
+      c.fillRect(-1.4, 5.8, 1.8, 1.8);
+      c.fillStyle = '#ffffff';
+      c.fillRect(-0.9, 5.8, 0.8, 0.8);
+      c.restore();
     }
-
-    // Munhequeiras duplas de couro curtido
-    c.fillStyle = leatherDark;
-    c.fillRect(-12.0, 2.0 + bob, 5.5, 4.0);
-    c.fillRect(6.5, 2.0 + bob, 5.5, 4.0);
-
-    // Rebites de ferro polido com brilho
-    c.fillStyle = ironCol;
-    c.fillRect(-11.0, 2.8 + bob, 1.8, 1.8);
-    c.fillRect(8.0, 2.8 + bob, 1.8, 1.8);
-    c.fillStyle = '#ffffff';
-    c.fillRect(-10.5, 2.8 + bob, 0.8, 0.8);
-    c.fillRect(8.5, 2.8 + bob, 0.8, 0.8);
 
     // --- 7. GOLA DE PELES DE LOBO SELVAGEM (TUFOS RECORTADOS EM CAMADAS) ---
     // Camada escura de base
@@ -692,4 +601,14 @@ export function drawKragdorModel(c, charDef, state, {
     c.fillStyle = '#ffffff';
     c.fillRect(-10.0, -21.0 + bob, 1.2, 1.5);
     c.fillRect(9.0, -21.0 + bob, 1.2, 1.5);
+    // Boca aberta e dentes iluminados na liberação do rugido.
+    if (roarPose > 0.05) {
+      c.fillStyle = '#28120f';
+      c.beginPath();
+      c.ellipse(2.4, -5.8 + bob, 2.0, 1.1 + roarPose * 1.3, -0.15, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#ffe5b8';
+      c.fillRect(0.8, -7 + bob, 3.1, 0.8);
+    }
+
 }

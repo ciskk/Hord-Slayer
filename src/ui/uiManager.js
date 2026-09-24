@@ -19,7 +19,7 @@ export * from './modals/codexModal.js';
 // 2. Dependências para a inicialização e fiação dos eventos (initUI)
 import { levelUp } from './modals/upgradeModal.js';
 import { togglePause, openPause, renderPauseInventory } from './modals/pauseModal.js';
-import { openCharacterSelect, isMobileScreen } from './modals/characterSelectModal.js';
+import { openCharacterSelect, closeLockedHeroModal, isMobileScreen } from './modals/characterSelectModal.js';
 import { 
   openAchievementsModal, 
   closeAchievementsModal, 
@@ -105,6 +105,8 @@ export function initUI() {
     const drawer = document.getElementById('blessings-summary-drawer');
     if (drawer) drawer.style.display = 'none';
   });
+  bindClick('locked-hero-close-btn', () => closeLockedHeroModal());
+  bindClick('locked-hero-ok-btn', () => closeLockedHeroModal());
 
   // Fechamento por clique fora (Backdrop)
   const achievementsModalEl = document.getElementById('achievements-modal');

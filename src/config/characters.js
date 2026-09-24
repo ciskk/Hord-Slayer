@@ -84,7 +84,7 @@ export const CHARACTERS = {
     skill: {
       name: "Passo Ígneo",
       cooldown: "6s",
-      desc: "Teletransporte térmico em alta velocidade deixando um rastro de magma e asas de fogo com imunidade."
+      desc: "Avanço ígneo com imunidade: deixa uma pós-imagem térmica e fendas em combustão, encerrando com uma onda de fogo, fumaça e brasas."
     },
     desc: "Passiva: Críticos aplicam queimadura residual.<br><b>Arma Inicial: Cajado da Tormenta</b> (Canaliza e dispara esferas concentradas de poder mágico ígneo).<br><b>Poder: Passo Ígneo</b> (Dash veloz com rastro contínuo de fogo e fantasmas térmicos, atravessando inimigos com imunidade).",
     color: { 
@@ -157,9 +157,9 @@ export const CHARACTERS = {
     skill: {
       name: "Manto de Fumaça",
       cooldown: "4.9s",
-      desc: "Invisibilidade instantânea com velocidade dobrada, empurrão de choque e 100% de chance crítica por 2.0s."
+      desc: "Invisibilidade instantânea com velocidade dobrada, empurrão de choque e 100% de chance crítica por 3.0s."
     },
-    desc: "Passiva: 2.0x de dano em oponentes com menos de 35% de vida (1.5x contra chefes).<br><b>Arma Inicial: Lâminas Espirituais</b> (Espadas astrais velozes arremessadas contra inimigos no alcance).<br><b>Poder: Bomba de Fumaça</b> (Invisibilidade com dobro de velocidade, transposição de massa com empurrão atordoante e 100% de crítico por 2.0s).",
+    desc: "Passiva: 2.0x de dano em oponentes com menos de 35% de vida (1.5x contra chefes).<br><b>Arma Inicial: Lâminas Espirituais</b> (Espadas astrais velozes arremessadas contra inimigos no alcance).<br><b>Poder: Bomba de Fumaça</b> (Invisibilidade com dobro de velocidade, transposição de massa com empurrão atordoante e 100% de crítico por 3.0s).",
     color: { 
       // Capuz & Tecidos Abissais (Obsidian Plum nobre)
       cowlBase: "#1a1429",
@@ -354,7 +354,7 @@ export const CHARACTERS = {
     lore: "Erudita dos venenos arcanos e ácidos mutagênicos. Domina a criação de compostos voláteis que dissolvem defesas e paralisam hordas sem depender de força bruta.",
     passive: {
       name: "Miasma Corrosivo & Fixação Cáustica",
-      desc: "Poças e impactos aplicam corrosão (+6% de dano sofrido por acúmulo, até +30%) e veneno aderente contínuo. Poças dissolvem tiros e aplicam 70% de lentidão. Pisar nelas concede 3s de cura contínua e +15% de velocidade."
+      desc: "Especialista Glass Cannon (70 HP máx, +35% de dano geral). Poças e impactos aplicam corrosão (+6% de dano por acúmulo, até +30%) e veneno aderente com decomposição cáustica que dobra o dano contra chefes (50% mais rápido). Poças curam e aceleram."
     },
     weapon: {
       name: "Frascos Cáusticos",
@@ -364,9 +364,9 @@ export const CHARACTERS = {
     skill: {
       name: "Reagente Volátil",
       cooldown: "6.5s",
-      desc: "Detona 6 frascos radiais sob 0.6s de imunidade evasiva, liberando uma cortina de fumaça que desorienta inimigos no entorno por 1.8s."
+      desc: "Detona 6 frascos radiais sob 0.6s de imunidade evasiva, liberando fumaça que desorienta hordas por 1.8s e aplica Corrosão Total com Vulnerabilidade em Chefes."
     },
-    desc: "Passiva: Poças e impactos aplicam corrosão (até +30% de dano sofrido) e veneno aderente que drena vida mesmo em movimento. Dissolve tiros e dá 70% de lentidão. Pisar nelas dá 3s de cura e +15% de velocidade.<br><b>Arma Inicial: Frascos Cáusticos</b> (Bombardeio químico com veneno aderente e poças secundárias).<br><b>Poder: Reagente Volátil</b> (6 frascos com 0.6s de imunidade e fumaça desorientadora).",
+    desc: "Passiva: Glass Cannon Cáustica (70 HP máx, +35% de dano em hordas). Aplica corrosão (até +30% de dano) e veneno mortal calibrado para abater chefes 50% mais rápido (2.0x DPS). Poças dissolvem tiros e curam ao pisar.<br><b>Arma Inicial: Frascos Cáusticos</b> (Bombardeio químico e poças).<br><b>Poder: Reagente Volátil</b> (6 frascos com 0.6s de imunidade; desorienta hordas e aplica Corrosão Total em Chefes).",
     color: { 
       armor: "#1b2a22", 
       coat: "#1b4438",
@@ -406,10 +406,10 @@ export const CHARACTERS = {
     },
     startingWeapon: "POTION",
     stats: { 
-      hp: 105, 
-      maxHp: 105, 
+      hp: 70, 
+      maxHp: 70, 
       speed: 2.92, 
-      damage: 43, 
+      damage: 58.05, 
       auraLvl: 0, 
       projectiles: 1, 
       orbitals: 0, 

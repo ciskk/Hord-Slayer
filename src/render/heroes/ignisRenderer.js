@@ -10,6 +10,75 @@
  * Renderiza o modelo procedural de Ignis.
  */
 import { skinGradient, skinPolygon, skinLine, skinGem, skinSprig } from './skinMaterials.js';
+import { drawIgnisFlame } from '../ignisUlt.js';
+
+/** Embossed weave is clipped to the existing cloth path and stable in cloth space. */
+function drawVolcanicCloth(c, x, y, width, height, wave, detailed) {
+  c.save(); c.clip();
+  const fold = c.createLinearGradient(x, y, x + width, y + height * .15);
+  fold.addColorStop(0, '#0c0b13'); fold.addColorStop(.3, '#513344');
+  fold.addColorStop(.48, '#8f5b56'); fold.addColorStop(.62, '#251b2c');
+  fold.addColorStop(1, '#100d19');
+  c.fillStyle = fold;
+  for (let i = 0; i < 4; i++) {
+    const fx = x + i * width / 4;
+    c.beginPath(); c.moveTo(fx, y);
+    c.bezierCurveTo(fx - 1, y + height * .4, fx + wave - 3, y + height * .7, fx + wave - 2, y + height);
+    c.lineTo(fx + wave + 2.5, y + height);
+    c.quadraticCurveTo(fx + 3, y + height * .5, fx + 1, y); c.fill();
+  }
+  // Scorched hem with broken copper stitches and ash grains, batched by material.
+  c.fillStyle = '#140f18';
+  c.beginPath(); c.moveTo(x - 5, y + height - 2);
+  for (let i = 0; i <= 10; i++) {
+    c.lineTo(x + i * width / 10, y + height - 2 - (i % 3) * .8);
+  }
+  c.lineTo(x + width + 5, y + height + 5); c.lineTo(x - 5, y + height + 5); c.fill();
+  c.strokeStyle = '#bd825a'; c.lineWidth = detailed ? .35 : .5;
+  c.beginPath();
+  for (let i = 0; i < 7; i++) {
+    const sx = x + i * width / 7;
+    c.moveTo(sx, y + height - 4 + (i % 2) * .6);
+    c.lineTo(sx + .8, y + height - 3.5 + (i % 2) * .6);
+  }
+  c.stroke();
+  if (detailed) {
+    c.strokeStyle = '#daa17b33'; c.lineWidth = .22; c.beginPath();
+    for (let i = 0; i < 16; i++) {
+      const ty = y + i * height / 16;
+      c.moveTo(x, ty); c.lineTo(x + width, ty + 1.5);
+    }
+    c.stroke();
+    c.fillStyle = '#bc947066';
+    for (let i = 0; i < 22; i++) c.fillRect(x + (i * 7.31 % width), y + (i * 3.17 % height), .35, .55);
+  }
+  c.restore();
+}
+
+/** Continuous plasma deformation, shared by holstered and casting poses. */
+function drawStormCore(c, y, t, casting, corona, core) {
+  c.save(); c.translate(0, y);
+  const pulse = 1 + Math.sin(t * .13) * .08 + Math.sin(t * .31) * .04;
+  c.scale(pulse, pulse);
+  const halo = c.createRadialGradient(0, -1, .5, 0, -1, casting ? 11 : 8);
+  halo.addColorStop(0, '#fff1b89c'); halo.addColorStop(.4, '#ff922855');
+  halo.addColorStop(1, '#e54b1600');
+  c.fillStyle = halo; c.beginPath(); c.arc(0, -1, casting ? 11 : 8, 0, Math.PI * 2); c.fill();
+  for (let i = 0; i < 3; i++) {
+    const sway = Math.sin(t * .17 + i * 2.1) * 2 + Math.sin(t * .29 + i) * .7;
+    drawIgnisFlame(c, (i - 1) * 2.2, 2, 2.5, (casting ? 11 : 8) + Math.sin(t * .21 + i) * 2, sway, i === 1 ? corona : '#ce4432');
+  }
+  drawIgnisFlame(c, 0, 2, 2.2, 7, Math.sin(t * .23), '#ffdf8c');
+  drawIgnisFlame(c, -.2, 1, 1, 4.6, Math.sin(t * .19) * .5, core);
+  c.strokeStyle = '#f4cb89'; c.lineWidth = .55; c.beginPath();
+  c.ellipse(0, 0, 5.7, 2.3, -.4 + Math.sin(t * .035) * .25, .1, 5.6); c.stroke();
+  for (let i = 0; i < 3; i++) {
+    const p = ((t + i * 17) % 52) / 52;
+    c.save(); c.globalAlpha *= Math.sin(p * Math.PI); c.fillStyle = '#ffe3a3';
+    c.fillRect(Math.sin(t * .08 + i * 2.4) * (3 + p * 3), -2 - p * 14, .7, 1.3); c.restore();
+  }
+  c.restore();
+}
 
 export function drawIgnisModel(c, charDef, state, {
   bob = 0,
@@ -23,8 +92,6 @@ export function drawIgnisModel(c, charDef, state, {
   isDashing = false,
   staffCastTimer = 0
 } = {}) {
-    // isDashing handled via state
-    // isCasting handled via state
     const cCol = charDef.color || {};
     const robeBase = cCol.robe || '#19141e';
     const robeDark = cCol.robeDark || '#0f0c13';
@@ -53,107 +120,21 @@ export function drawIgnisModel(c, charDef, state, {
     const orbGlow = cCol.orbGlow || 'rgba(243, 156, 18, 0.65)';
     const staffWood = cCol.staffWood || '#1c1417';
     const staffGold = cCol.staffGold || '#f1c40f';
-    const crystalCol = cCol.crystal || '#ff4757';
     const coronaCol = cCol.staffCorona || '#f39c12';
     const isDetailed = scale >= 1.5;
     const volcanicSilk = skinGradient(c, -12, bob, 22, 10, robeDark, '#342337', '#674050');
     const copperMetal = skinGradient(c, -6, -5+bob, 14, 9, '#542936', '#a76240', '#efb978');
 
-    // --- ULT: Pós-Imagens Térmicas, Asas Espectrais de Fênix e Jato de Fogo ---
+    // Heat compression follows the velocity in local (mirrored) model space.
     if (isDashing) {
-      c.save();
-      // Jato de plasma e esteira de fogo propulsora
-      const jetWave = Math.sin(tFrame * 0.6) * 3;
-      c.fillStyle = 'rgba(231, 76, 60, 0.45)';
-      c.beginPath();
-      c.moveTo(-6, -4 + bob);
-      c.quadraticCurveTo(-22, -8 + jetWave, -38, bob + jetWave);
-      c.quadraticCurveTo(-22, 6 + jetWave, -6, 8 + bob);
-      c.closePath();
-      c.fill();
-
-      c.fillStyle = 'rgba(241, 196, 15, 0.65)';
-      c.beginPath();
-      c.moveTo(-5, -2 + bob);
-      c.quadraticCurveTo(-16, -4 + jetWave * 0.7, -26, bob + jetWave * 0.5);
-      c.quadraticCurveTo(-16, 4 + jetWave * 0.7, -5, 5 + bob);
-      c.closePath();
-      c.fill();
-
-      // Fantasmas térmicos com decaimento cromático e labaredas
-      const ghostColors = [
-        'rgba(255, 255, 255, 0.55)',
-        'rgba(241, 196, 15, 0.45)',
-        'rgba(230, 126, 34, 0.32)',
-        'rgba(179, 57, 57, 0.18)'
-      ];
-      for (let g = 0; g < ghostColors.length; g++) {
-        const gDist = (g + 1) * 9;
-        c.fillStyle = ghostColors[g];
-        c.beginPath();
-        c.ellipse(-gDist, bob, 11 - g * 1.5, 15 - g * 1.8, 0, 0, Math.PI * 2);
-        c.fill();
-
-        // Faíscas desprendidas de cada fantasma térmico
-        const gSparkY = bob + Math.sin(tFrame * 0.4 + g * 2) * 8;
-        c.fillStyle = g % 2 === 0 ? '#ffffff' : '#f1c40f';
-        c.fillRect(-gDist - 4, gSparkY, 1.4, 1.4);
-      }
-
-      // Anéis de solo em brasa viva sob os pés
-      c.strokeStyle = 'rgba(241, 196, 15, 0.9)';
-      c.lineWidth = 2.2;
-      c.beginPath();
-      c.ellipse(0, 14 + bob, 22, 7, 0, 0, Math.PI * 2);
-      c.stroke();
-
-      // Asas Espectrais da Fênix de Plasma
-      const wingFlap = Math.sin(tFrame * 0.55) * 6;
-      c.fillStyle = 'rgba(241, 196, 15, 0.55)';
-      c.strokeStyle = '#ffffff';
-      c.lineWidth = 2.2;
-
-      // Asa Posterior
-      c.beginPath();
-      c.moveTo(-4, -8 + bob);
-      c.quadraticCurveTo(-18, -26 + wingFlap, -38, -16 + wingFlap);
-      c.lineTo(-24, -6 + wingFlap * 0.5);
-      c.lineTo(-32, 5 + wingFlap);
-      c.lineTo(-12, 4 + bob);
-      c.closePath();
-      c.fill();
-      c.stroke();
-
-      // Penas de labareda na Asa Posterior
-      c.strokeStyle = '#e74c3c';
-      c.lineWidth = 1.2;
-      c.beginPath();
-      c.moveTo(-16, -14 + wingFlap * 0.6); c.lineTo(-28, -12 + wingFlap);
-      c.moveTo(-12, -4 + wingFlap * 0.4); c.lineTo(-22, 1 + wingFlap * 0.8);
-      c.stroke();
-
-      // Asa Anterior
-      c.strokeStyle = '#ffffff';
-      c.lineWidth = 2.2;
-      c.beginPath();
-      c.moveTo(3, -8 + bob);
-      c.quadraticCurveTo(16, -28 + wingFlap, 36, -20 + wingFlap);
-      c.lineTo(25, -7 + wingFlap * 0.5);
-      c.lineTo(31, 3 + wingFlap);
-      c.lineTo(10, 3 + bob);
-      c.closePath();
-      c.fill();
-      c.stroke();
-
-      // Penas de labareda na Asa Anterior
-      c.strokeStyle = '#e74c3c';
-      c.lineWidth = 1.2;
-      c.beginPath();
-      c.moveTo(14, -15 + wingFlap * 0.6); c.lineTo(26, -15 + wingFlap);
-      c.moveTo(12, -4 + wingFlap * 0.4); c.lineTo(22, 0 + wingFlap * 0.8);
-      c.stroke();
-
-      c.restore();
+      const vx = (state.ignisDashVx ?? 15.5) * (state.facing || 1);
+      const vy = state.ignisDashVy || 0;
+      c.save(); c.translate(0, bob); c.rotate(Math.atan2(vy, vx));
+      c.fillStyle = '#ff6b2f33'; c.beginPath();
+      c.moveTo(10, -8); c.quadraticCurveTo(-8, -11, -28, 0);
+      c.quadraticCurveTo(-8, 10, 10, 8); c.quadraticCurveTo(17, 0, 10, -8); c.fill();
+      c.strokeStyle = '#ffd399aa'; c.lineWidth = .8; c.beginPath();
+      c.ellipse(6, 0, 7, 13, 0, -1.2, 1.2); c.stroke(); c.restore();
     }
 
     // 0. ORBE DE PLASMA SOLAR POSTERIOR (PYROSPHERE ESQUERDA) COM RASTRO DE FOGO
@@ -232,6 +213,8 @@ export function drawIgnisModel(c, charDef, state, {
     c.closePath();
     c.fill();
 
+    drawVolcanicCloth(c, -15 - Math.abs(capeWave), -3 + bob, 19 + Math.abs(capeWave), 21, -Math.abs(capeWave), isDetailed);
+
     // Sombreamento de dobras na capa
     c.strokeStyle = robeDark;
     c.lineWidth = 1.2;
@@ -309,32 +292,7 @@ export function drawIgnisModel(c, charDef, state, {
       c.lineWidth = 0.8;
       c.stroke();
 
-      // MICRO-SOL FLUTUANTE NO NÚCLEO DO CAJADO
-      const sunPulse = Math.sin(tFrame * 0.2) * 0.6;
-      // Corona de calor externa
-      c.fillStyle = coronaCol;
-      c.beginPath();
-      c.arc(0, -19.5, 4.8 + sunPulse, 0, Math.PI * 2);
-      c.fill();
-
-      // Núcleo rubi solar
-      c.fillStyle = crystalCol;
-      c.beginPath();
-      c.arc(0, -19.5, 3.2, 0, Math.PI * 2);
-      c.fill();
-
-      // Ponto de fusão solar branca no núcleo
-      c.fillStyle = '#ffffff';
-      c.beginPath();
-      c.arc(-0.8, -20.3, 1.4, 0, Math.PI * 2);
-      c.fill();
-
-      // Anel orbital dourado inclinado
-      c.strokeStyle = goldLight;
-      c.lineWidth = 0.9;
-      c.beginPath();
-      c.ellipse(0, -19.5, 6.0, 1.8, -0.4, 0, Math.PI * 2);
-      c.stroke();
+      drawStormCore(c, -19.5, tFrame, false, coronaCol, orbCore);
 
       c.restore();
     }
@@ -376,6 +334,8 @@ export function drawIgnisModel(c, charDef, state, {
     c.lineTo(-5.5, 8 + bob);
     c.closePath();
     c.fill();
+
+    drawVolcanicCloth(c, -7.5, -5 + bob, 15, 13, capeWave * .15, isDetailed);
 
     // Sombra de drapeado lateral
     c.fillStyle = robeDark;
@@ -447,6 +407,7 @@ export function drawIgnisModel(c, charDef, state, {
     for (const side of [-1,1]) {
       const sway = capeWave*.18;
       skinPolygon(c, [[side*2.4,5+bob],[side*5.6,5+bob],[side*7+sway,12+bob],[side*4.2+sway,15+bob],[side*2.7,10+bob]], volcanicSilk, '#b27a51', .5);
+      drawVolcanicCloth(c, side < 0 ? -8+sway : 2, 5+bob, 6, 10, sway, isDetailed);
       skinSprig(c, side*4.7+sway, 12+bob, 5, side*.2, '#d6a16a', isDetailed);
     }
 
@@ -765,6 +726,20 @@ export function drawIgnisModel(c, charDef, state, {
       }
     }
 
+    // Fixed analytical ember orbits: subtle, no particle creation in the draw loop.
+    if (!state.isDying) {
+      c.save();
+      const baseAlpha = c.globalAlpha;
+      for (let i = 0; i < 7; i++) {
+        const p = ((tFrame + i * 13.7) % 96) / 96;
+        c.globalAlpha = baseAlpha * Math.sin(p * Math.PI) * .65;
+        c.fillStyle = i % 3 === 0 ? '#ffe7b0' : '#f88b4b';
+        const ex = Math.sin(i * 2.4 + tFrame * .018) * (17 + i % 3 * 3);
+        c.fillRect(ex + Math.sin(p * 7 + i) * 2, 17 + bob - p * 49, .7 + i % 2 * .3, 1.3);
+      }
+      c.restore();
+    }
+
     // 12. PARTÍCULAS E BRASAS ELEMENTAIS TRASEIRAS
     const fSparkY2 = 9 + bob - (((tFrame + 10) * 0.35) % 8);
     c.fillStyle = flameTip;
@@ -852,30 +827,8 @@ export function drawIgnisModel(c, charDef, state, {
       c.fillStyle = staffGold;
       c.fillRect(-2.4, -18, 4.8, 5.0);
 
-      // Micro-Sol energizado com halo de plasma em expansão
-      const cPulse = Math.sin(tFrame * 0.3) * 1.5;
-      c.fillStyle = 'rgba(243, 156, 18, 0.45)';
-      c.beginPath();
-      c.arc(0, -22, 9.0 + cPulse, 0, Math.PI * 2);
-      c.fill();
-
-      // Corona de calor
-      c.fillStyle = coronaCol;
-      c.beginPath();
-      c.arc(0, -22, 5.5 + cPulse * 0.5, 0, Math.PI * 2);
-      c.fill();
-
-      // Cristal solar central
-      c.fillStyle = crystalCol;
-      c.beginPath();
-      c.arc(0, -22, 3.6, 0, Math.PI * 2);
-      c.fill();
-
-      // Núcleo solar branco
-      c.fillStyle = '#ffffff';
-      c.beginPath();
-      c.arc(-1.0, -23, 1.6, 0, Math.PI * 2);
-      c.fill();
+      const cPulse = Math.sin(tFrame * .23) * .8;
+      drawStormCore(c, -22, tFrame, true, coronaCol, orbCore);
 
       // Anéis de ignição térmica arremessados à frente
       c.strokeStyle = 'rgba(255, 234, 167, 0.85)';

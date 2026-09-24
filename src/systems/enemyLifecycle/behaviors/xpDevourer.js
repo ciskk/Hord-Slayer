@@ -46,8 +46,8 @@ export function xpDevourerBehavior(e, dt, angle, curSpeed, ctx) {
         gems.splice(gIdx, 1);
         e.targetGem = null;
         e.eatenGemsCount = (e.eatenGemsCount || 0) + 1;
-        e.maxHp += 45;
-        e.hp += 45;
+        e.maxHp += 22;
+        e.hp += 22;
         e.radius = Math.min(24, e.radius + 0.8);
         createHitParticles(e.x, e.y, '#00d2d3', 4);
         playSfx('hit');

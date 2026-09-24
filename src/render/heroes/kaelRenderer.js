@@ -19,6 +19,7 @@
  */
 
 import { skinGradient, skinPolygon, skinLine, skinGem } from './skinMaterials.js';
+import { getKaelPhaseProgress } from '../../config/kaelUlt.js';
 
 // A split-diamond maker's mark links mask and scabbards.
 function drawVoidSeal(c, x, y, size, color) {
@@ -45,7 +46,31 @@ function drawRoundedRect(c, x, y, w, h, r) {
   }
 }
 
-export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame, isPhasing, isAttacking) {
+export function drawKaelModel(c, charDef, state, optionsOrBob = 0, legSwingArg = 0, capeWaveArg = 0, tFrameArg = 0, isPhasingArg = false, isAttackingArg = false) {
+  let bob = 0;
+  let legSwing = legSwingArg;
+  let capeWave = capeWaveArg;
+  let tFrame = tFrameArg;
+  let isPhasing = isPhasingArg;
+  let isAttacking = isAttackingArg;
+  let invisTimer = 0;
+
+  if (typeof optionsOrBob === 'object' && optionsOrBob !== null) {
+    bob = optionsOrBob.bob ?? 0;
+    legSwing = optionsOrBob.legSwing ?? 0;
+    capeWave = optionsOrBob.capeWave ?? 0;
+    tFrame = optionsOrBob.tFrame ?? 0;
+    isPhasing = optionsOrBob.isPhasing ?? false;
+    isAttacking = optionsOrBob.isAttacking ?? false;
+    invisTimer = optionsOrBob.invisTimer ?? 0;
+  } else {
+    bob = optionsOrBob || 0;
+  }
+
+  const effectiveInvis = invisTimer || (state && state.invisTimer) || (isPhasing ? 180 : 0);
+  const phase = getKaelPhaseProgress(effectiveInvis);
+  const isPhaseActive = isPhasing || phase.active;
+
   const cCol = (charDef && charDef.color) || {};
   const isDetailed = (state.scale ?? 1) >= 1.5;
 
@@ -61,11 +86,11 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   const maskSilver = cCol.maskSilver || '#cbd5e1';
   const maskSilverBright = cCol.maskSilverBright || '#f8fafc';
 
-  const eyeGlow = isPhasing ? '#f3e8ff' : (cCol.eyeGlowCyan || '#38bdf8');
-  const eyeGlowCyan = isPhasing ? '#bae6fd' : (cCol.eyeGlowCyan || '#38bdf8');
+  const eyeGlow = isPhaseActive ? '#f3e8ff' : (cCol.eyeGlowCyan || '#38bdf8');
+  const eyeGlowCyan = isPhaseActive ? '#bae6fd' : (cCol.eyeGlowCyan || '#38bdf8');
   const eyeCore = '#ffffff';
-  const eyeMist = isPhasing ? 'rgba(243, 232, 255, 0.75)' : (cCol.eyeMist || 'rgba(168, 85, 247, 0.45)');
-  const eyeMistCyan = isPhasing ? 'rgba(186, 230, 253, 0.65)' : (cCol.eyeMistCyan || 'rgba(56, 189, 248, 0.40)');
+  const eyeMist = isPhaseActive ? 'rgba(243, 232, 255, 0.90)' : (cCol.eyeMist || 'rgba(168, 85, 247, 0.45)');
+  const eyeMistCyan = isPhaseActive ? 'rgba(186, 230, 253, 0.85)' : (cCol.eyeMistCyan || 'rgba(56, 189, 248, 0.40)');
 
   const leatherDark = cCol.leatherDark || '#0c0f17';
   const leatherMid = cCol.leatherMid || '#1a1e29';
@@ -96,7 +121,7 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
 
   const bladeSteel = cCol.bladeSteel || '#475569';
   const bladeSteelLight = cCol.bladeSteelLight || '#94a3b8';
-  const bladeEdgeGlow = isPhasing ? '#f3e8ff' : (cCol.bladeEdgeGlow || '#c084fc');
+  const bladeEdgeGlow = isPhaseActive ? '#f3e8ff' : (cCol.bladeEdgeGlow || '#c084fc');
   const bladeGlint = '#ffffff';
 
   const pantsCol = cCol.pants || '#1c182b';
@@ -106,61 +131,72 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   const capeBase = cCol.capeBase || '#141021';
   const capeInner = cCol.capeInner || '#080a12';
   const capeEthereal = cCol.capeEthereal || '#6b21a8';
-  const capeGlow = isPhasing ? 'rgba(243, 232, 255, 0.75)' : (cCol.capeGlow || 'rgba(168, 85, 247, 0.45)');
+  const capeGlow = isPhaseActive ? 'rgba(243, 232, 255, 0.85)' : (cCol.capeGlow || 'rgba(168, 85, 247, 0.45)');
 
   // =========================================================================
-  // 0. FENÔMENOS DE VÁCUO & HABILIDADE PHASING (EFEITO ULTRA-POLIDO)
+  // 0. FENÔMENOS DE VÁCUO & TRAVESSIA ESPECTRAL (FENDA ESTÁVEL E BRASAS)
   // =========================================================================
-  if (isPhasing) {
+  if (isPhaseActive) {
     c.save();
-    // Clones de sombra espectral residuais
-    for (let g = 1; g <= 3; g++) {
-      const gDist = g * 9.0;
-      const gAlpha = 0.36 / g;
-      c.fillStyle = `rgba(88, 28, 135, ${gAlpha * 0.75})`;
+    const intensity = phase.phaseIntensity;
+
+    // Fenda rúnica dimensional no solo: ANCORADA no cenário (sem somar o 'bob' vertical)
+    const runePulse = Math.sin(tFrame * 0.2) * 2.0 * intensity;
+    const riftRx = (17.0 + runePulse) * intensity;
+    const riftRy = (4.5 + runePulse * 0.25) * intensity;
+
+    if (riftRx > 0.5) {
+      // Brilho abissal do solo
+      const groundGlow = c.createRadialGradient(0, 15.0, 1, 0, 15.0, riftRx + 6);
+      groundGlow.addColorStop(0, '#0d0b16dd');
+      groundGlow.addColorStop(0.6, '#3b126388');
+      groundGlow.addColorStop(0.9, '#38bdf833');
+      groundGlow.addColorStop(1, '#00000000');
+      c.fillStyle = groundGlow;
       c.beginPath();
-      c.ellipse(-gDist, bob, 9.5, 15, -0.05, 0, Math.PI * 2);
+      c.ellipse(0, 15.0, riftRx + 6, riftRy + 3, 0, 0, Math.PI * 2);
       c.fill();
 
-      c.fillStyle = `rgba(13, 11, 20, ${gAlpha * 0.9})`;
+      // Contorno da fenda elíptica
+      c.strokeStyle = vacuumCyan;
+      c.lineWidth = 1.3;
       c.beginPath();
-      c.ellipse(-gDist * 0.75, bob, 7.5, 13, -0.03, 0, Math.PI * 2);
-      c.fill();
+      c.ellipse(0, 15.0, riftRx, riftRy, 0, 0, Math.PI * 2);
+      c.stroke();
+
+      // Anel tracejado rúnico interno
+      c.strokeStyle = gemPurpleBright;
+      c.lineWidth = 0.8;
+      c.save();
+      c.setLineDash([3, 5]);
+      c.beginPath();
+      c.ellipse(0, 15.0, riftRx * 0.75, riftRy * 0.75, tFrame * 0.04, 0, Math.PI * 2);
+      c.stroke();
+      c.restore();
+
+      // Selo do vácuo em losango partido ancorado no solo
+      drawVoidSeal(c, 0, 15.0, 3.2 * intensity, '#f3e8ff');
     }
 
-    // Fenda rúnica do vácuo no solo
-    const runePulse = Math.sin(tFrame * 0.2) * 2.5;
-    c.strokeStyle = vacuumCyan;
-    c.lineWidth = 1.2;
-    c.beginPath();
-    c.ellipse(0, 15.0 + bob, 18.0 + runePulse, 5.0 + runePulse * 0.28, 0, 0, Math.PI * 2);
-    c.stroke();
-
-    c.strokeStyle = 'rgba(168, 85, 247, 0.6)';
-    c.lineWidth = 0.8;
-    c.save();
-    c.setLineDash([4, 6]);
-    c.beginPath();
-    c.ellipse(0, 15.0 + bob, 13.5, 3.8, tFrame * 0.04, 0, Math.PI * 2);
-    c.stroke();
-    c.restore();
-
-    // Brasas de vácuo ascendentes
-    for (let p = 0; p < 4; p++) {
-      const pPhase = (tFrame * 0.08 + p * 1.5) % 4;
-      const px = -8 + (p * 5) + Math.sin(tFrame * 0.1 + p) * 3;
-      const py = 12 + bob - pPhase * 7;
-      c.fillStyle = p % 2 === 0 ? vacuumCyan : gemPurpleBright;
+    // Brasas astrais ascendentes do vácuo
+    for (let p = 0; p < 5; p++) {
+      const pPhase = (tFrame * 0.08 + p * 1.3) % 4;
+      const px = -9 + (p * 4.5) + Math.sin(tFrame * 0.12 + p) * 3;
+      const py = 14 - pPhase * 7.5;
+      c.fillStyle = p % 2 === 0 ? vacuumCyanBright : gemPurpleBright;
       c.fillRect(px, py, 1.2, 1.2);
     }
     c.restore();
   }
 
   // =========================================================================
-  // 1. CAPA ESPECTRAL RASGADA COM FORRO DUPLO, RIM LIGHT E BRASAS
+  // 1. CAPA ESPECTRAL RASGADA (DESMATERIALIZAÇÃO EM FARRAPOS NA ULT)
   // =========================================================================
   c.save();
   const cWave = Math.abs(capeWave * 0.85);
+  // Na ULT, os farrapos se alongam e flutuam com a deriva do vácuo
+  const fragmentStretch = isPhaseActive ? phase.phaseIntensity * 7.5 : 0;
+  const fragmentDrift = isPhaseActive ? Math.sin(tFrame * 0.18) * 3 * phase.phaseIntensity : 0;
 
   // 1A. Forro interno escuro profundo (profundidade 2.5D)
   c.fillStyle = capeInner;
@@ -169,19 +205,19 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   c.lineTo(1.0, -2.5 + bob);
   c.lineTo(-2.0, 7.0 + bob);
   c.lineTo(-4.5, 13.0 + bob);
-  c.lineTo(-8.0 - cWave * 0.5, 19.0 + bob);
-  c.lineTo(-12.0 - cWave * 0.9, 18.0 + bob);
-  c.lineTo(-15.5 - cWave * 1.2, 13.0 + bob);
+  c.lineTo(-8.0 - cWave * 0.5 - fragmentDrift * 0.5, 19.0 + bob + fragmentStretch * 0.7);
+  c.lineTo(-12.0 - cWave * 0.9 - fragmentDrift * 0.8, 18.0 + bob + fragmentStretch * 0.8);
+  c.lineTo(-15.5 - cWave * 1.2 - fragmentDrift, 13.0 + bob + fragmentStretch * 0.5);
   c.lineTo(-7.0, -0.5 + bob);
   c.closePath();
   c.fill();
 
   // 1B. Camada principal com degradê abissal-ametista e pontas denteadas orgânicas
-  const capeGrad = c.createLinearGradient(-4, -3 + bob, -11, 20 + bob);
+  const capeGrad = c.createLinearGradient(-4, -3 + bob, -11, 20 + bob + fragmentStretch);
   capeGrad.addColorStop(0.0, capeBase);
   capeGrad.addColorStop(0.35, '#24163f');
   capeGrad.addColorStop(0.72, '#4a1b78');
-  capeGrad.addColorStop(1.0, capeEthereal);
+  capeGrad.addColorStop(1.0, isPhaseActive ? '#9333ea' : capeEthereal);
 
   c.fillStyle = capeGrad;
   c.beginPath();
@@ -189,28 +225,37 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   c.lineTo(0.5, -2.5 + bob);
   c.lineTo(-1.5, 6.5 + bob);
   c.lineTo(-3.8, 11.5 + bob);
-  c.lineTo(-5.5 - cWave * 0.35, 17.5 + bob); // Ponta 4 (frontal)
+  c.lineTo(-5.5 - cWave * 0.35 - fragmentDrift * 0.4, 17.5 + bob + fragmentStretch * 0.7); // Ponta 4 (frontal)
   c.lineTo(-4.8, 13.5 + bob);
-  c.lineTo(-8.8 - cWave * 0.6, 19.8 + bob);  // Ponta 3 (longa central)
+  c.lineTo(-8.8 - cWave * 0.6 - fragmentDrift * 0.7, 19.8 + bob + fragmentStretch * 1.0);  // Ponta 3 (longa central)
   c.lineTo(-7.8, 12.8 + bob);
-  c.lineTo(-12.8 - cWave * 0.85, 18.2 + bob); // Ponta 2
+  c.lineTo(-12.8 - cWave * 0.85 - fragmentDrift * 0.9, 18.2 + bob + fragmentStretch * 0.85); // Ponta 2
   c.lineTo(-11.0, 10.0 + bob);
-  c.lineTo(-15.5 - cWave * 1.15, 14.5 + bob); // Ponta 1 (externa)
+  c.lineTo(-15.5 - cWave * 1.15 - fragmentDrift * 1.1, 14.5 + bob + fragmentStretch * 0.6); // Ponta 1 (externa)
   c.lineTo(-6.8, -0.5 + bob);
   c.closePath();
   c.fill();
 
   // Borda de costura e rim-light na capa
   c.strokeStyle = capeGlow;
-  c.lineWidth = 1.0;
+  c.lineWidth = isPhaseActive ? 1.4 : 1.0;
   c.stroke();
 
+  // Farrapos astrais desprendidos flutuando próximos às pontas
+  if (isPhaseActive && phase.phaseIntensity > 0.2) {
+    const fAlpha = phase.phaseIntensity * 0.75;
+    c.fillStyle = `rgba(168, 85, 247, ${fAlpha})`;
+    c.fillRect(-10.5 - cWave * 0.7 - fragmentDrift, 22.0 + bob + fragmentStretch * 0.8, 1.8, 3.2);
+    c.fillStyle = `rgba(56, 189, 248, ${fAlpha * 0.9})`;
+    c.fillRect(-14.5 - cWave * 1.0 - fragmentDrift * 1.2, 17.0 + bob + fragmentStretch * 0.6, 1.4, 2.6);
+  }
+
   // Micro-partículas de cinza e brasas do vácuo subindo da borda
-  const ashY1 = 18.0 + bob - ((tFrame * 0.4) % 10);
-  const ashY2 = 15.0 + bob - ((tFrame * 0.35 + 4) % 9);
-  c.fillStyle = isPhasing ? vacuumCyanBright : 'rgba(216, 180, 254, 0.85)';
+  const ashY1 = 18.0 + bob + fragmentStretch * 0.5 - ((tFrame * 0.4) % 10);
+  const ashY2 = 15.0 + bob + fragmentStretch * 0.4 - ((tFrame * 0.35 + 4) % 9);
+  c.fillStyle = isPhaseActive ? vacuumCyanBright : 'rgba(216, 180, 254, 0.85)';
   c.fillRect(-9.5 - cWave * 0.6, ashY1, 1.2, 1.2);
-  c.fillStyle = isPhasing ? vacuumCyan : 'rgba(56, 189, 248, 0.75)';
+  c.fillStyle = isPhaseActive ? vacuumCyan : 'rgba(56, 189, 248, 0.75)';
   c.fillRect(-13.5 - cWave * 0.9, ashY2, 1.0, 1.0);
   c.restore();
 
@@ -302,6 +347,13 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
     });
   }
   c.restore();
+
+  // Salva o contexto para aplicar opacidade translúcida espectral ao corpo,
+  // mantendo máscara e olhos em opacidade independente de alto contraste.
+  c.save();
+  if (isPhaseActive) {
+    c.globalAlpha *= phase.bodyAlpha;
+  }
 
   // =========================================================================
   // 3. PERNAS ANATÔMICAS, AMARRAS EM 'X' & BOTAS TABI SHINOBI
@@ -626,16 +678,16 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
     c.closePath();
     c.fill();
 
-    // Duplo Rastro Cinético de Corte em Arco (Efeito Vácuo)
+    // Duplo Rastro Cinético de Corte em Arco (Efeito Vácuo Espectral)
     const slashPulse = Math.sin(tFrame * 0.4) * 1.5;
-    c.strokeStyle = isPhasing ? 'rgba(233, 213, 255, 0.9)' : 'rgba(168, 85, 247, 0.85)';
-    c.lineWidth = 2.6;
+    c.strokeStyle = isPhaseActive ? '#f3e8ff' : (isPhasing ? 'rgba(233, 213, 255, 0.9)' : 'rgba(168, 85, 247, 0.85)');
+    c.lineWidth = isPhaseActive ? 3.4 : 2.6;
     c.beginPath();
     c.arc(7, 0, 13.5 + slashPulse, -Math.PI * 0.38, Math.PI * 0.38);
     c.stroke();
 
-    c.strokeStyle = '#ffffff';
-    c.lineWidth = 1.0;
+    c.strokeStyle = isPhaseActive ? '#38bdf8' : '#ffffff';
+    c.lineWidth = isPhaseActive ? 1.4 : 1.0;
     c.beginPath();
     c.arc(7, 0, 13.5 + slashPulse, -Math.PI * 0.22, Math.PI * 0.22);
     c.stroke();
@@ -780,10 +832,16 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   c.quadraticCurveTo(4.8, -5.0 + bob, 5.6, -8.5 + bob);
   c.closePath();
   c.fill();
+  c.restore(); // Restaura contexto de opacidade do corpo
 
   // =========================================================================
-  // 9. MÁSCARA FANTASMA DE OBSIDIANA (MEIA-MÁSCARA FACETADA EM PERFIL 3/4)
+  // 9. MÁSCARA FANTASMA DE OBSIDIANA (OPACIDADE ALTA INDEPENDENTE NA ULT)
   // =========================================================================
+  c.save();
+  if (isPhaseActive) {
+    c.globalAlpha = Math.max(0.86, 1.0 - phase.phaseIntensity * 0.14);
+  }
+
   // 9A. Faceta Superior / Frontal (recebe a luz do éter e projeta o nariz em 3/4)
   c.fillStyle = skinGradient(c, -1, -9+bob, 6, 4, '#202233', maskFacetLight, '#687c91');
   c.beginPath();
@@ -831,10 +889,15 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   c.fillStyle = maskSilverBright;
   c.fillRect(4.5, -7.2 + bob, 0.7, 0.7);
   c.fillRect(3.4, -4.2 + bob, 0.8, 0.8);
+  c.restore(); // Restaura contexto da máscara
 
   // =========================================================================
-  // 10. OLHOS DE BRASA ESPECTRAL (PERSPECTIVA 3/4, DUAL-TONE & FUMAÇA CINÉTICA)
+  // 10. OLHOS DE BRASA ESPECTRAL (OPACIDADE MÁXIMA DE 100% PARA LEITURA VISUAL)
   // =========================================================================
+  c.save();
+  if (isPhaseActive) {
+    c.globalAlpha = 1.0; // Preserva a localização do jogador e direção do olhar
+  }
   // 10A. Olho Traseiro em Penumbra 3/4 (Profundidade Anatômica Sutil)
   // Quase totalmente engolido pela sombra da cavidade esquerda
   c.fillStyle = eyeMist;
@@ -924,6 +987,7 @@ export function drawKaelModel(c, charDef, state, bob, legSwing, capeWave, tFrame
   const spkY = -11.5 + bob - spkProg * 4.5 + Math.sin(tFrame * 0.2) * 1.2;
   c.fillStyle = spkProg < 0.5 ? vacuumCyanBright : gemPurpleBright;
   c.fillRect(spkX, spkY, 1.1, 1.1);
+  c.restore(); // Restaura contexto de opacidade dos olhos
 
   // =========================================================================
   // 11. RESPIRAÇÃO GELADA DO VÁCUO (PROJETADA À FRENTE EM ÂNGULO 3/4)

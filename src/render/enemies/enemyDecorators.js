@@ -9,8 +9,190 @@
  */
 import { ctx, frameCount } from '../../state/gameState.js';
 import { STALKER_DASH } from '../../config/stalkerDash.js';
+import { KRAGDOR_ULT } from '../../config/kragdorUlt.js';
+import { drawKragdorAffliction } from '../kragdorUlt.js';
 import { player } from '../../entities/player.js';
 
+
+/**
+ * Renderiza o ícone de Caveira Roxa para envenenamento (veneno roxo da Valéria).
+ */
+export function drawPurpleSkullIcon(ctx, x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Fundo circular escuro com anel roxo radiante
+  ctx.beginPath();
+  ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(18, 10, 28, 0.92)';
+  ctx.fill();
+  ctx.strokeStyle = '#c084fc';
+  ctx.lineWidth = 1.3;
+  ctx.stroke();
+
+  // Caixa craniana da caveira em roxo vívido
+  ctx.fillStyle = '#a855f7';
+  ctx.beginPath();
+  ctx.arc(0, -1.2, 4.2, Math.PI * 0.95, Math.PI * 0.05, false);
+  ctx.lineTo(2.2, 2.2);
+  ctx.lineTo(1.6, 4.0);
+  ctx.lineTo(-1.6, 4.0);
+  ctx.lineTo(-2.2, 2.2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Brilho na testa
+  ctx.fillStyle = '#e9d5ff';
+  ctx.beginPath();
+  ctx.arc(-1.2, -3.0, 1.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cavidades oculares escuras
+  ctx.fillStyle = '#1e0538';
+  ctx.beginPath();
+  ctx.ellipse(-1.5, -0.6, 1.1, 1.4, -0.15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(1.5, -0.6, 1.1, 1.4, 0.15, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Fossa nasal
+  ctx.beginPath();
+  ctx.moveTo(0, 1.2);
+  ctx.lineTo(-0.6, 2.0);
+  ctx.lineTo(0.6, 2.0);
+  ctx.closePath();
+  ctx.fill();
+
+  // Dentes da mandíbula
+  ctx.strokeStyle = '#1e0538';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(-0.7, 2.8); ctx.lineTo(-0.7, 4.0);
+  ctx.moveTo(0.7, 2.8); ctx.lineTo(0.7, 4.0);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * Renderiza o ícone de Fogo para queimadura ígnea contínua.
+ */
+export function drawFireIcon(ctx, x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Fundo circular escuro com anel de fogo alaranjado
+  ctx.beginPath();
+  ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(28, 12, 6, 0.92)';
+  ctx.fill();
+  ctx.strokeStyle = '#ff793f';
+  ctx.lineWidth = 1.3;
+  ctx.stroke();
+
+  const flameFlicker = Math.sin(frameCount * 0.35 + x) * 0.7;
+
+  // Chama externa (Vermelho-Alaranjada)
+  ctx.fillStyle = '#ff4757';
+  ctx.beginPath();
+  ctx.moveTo(0, 4.8);
+  ctx.bezierCurveTo(-4.2, 4.2, -4.6, 0.5, -2.5, -1.8);
+  ctx.bezierCurveTo(-2.8, -0.2, -2.0, 0.4, -1.2, -0.5);
+  ctx.bezierCurveTo(-1.8, -2.6, -0.5, -4.5, flameFlicker, -5.5);
+  ctx.bezierCurveTo(0.6, -4.0, 1.8, -2.4, 1.5, -0.4);
+  ctx.bezierCurveTo(2.4, 0.6, 3.2, -0.2, 2.8, -1.6);
+  ctx.bezierCurveTo(4.6, 0.5, 4.2, 4.2, 0, 4.8);
+  ctx.closePath();
+  ctx.fill();
+
+  // Chama intermediária (Laranja Dourado)
+  ctx.fillStyle = '#ffa502';
+  ctx.beginPath();
+  ctx.moveTo(0, 4.2);
+  ctx.bezierCurveTo(-2.8, 3.8, -3.0, 1.2, -1.5, -0.5);
+  ctx.bezierCurveTo(-0.8, -2.0, 0.2, -3.2, flameFlicker * 0.6, -4.0);
+  ctx.bezierCurveTo(0.8, -2.6, 1.8, -1.2, 1.5, -0.5);
+  ctx.bezierCurveTo(3.0, 1.2, 2.8, 3.8, 0, 4.2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Núcleo interno incandescente (Amarelo / Branco)
+  ctx.fillStyle = '#ffeaa7';
+  ctx.beginPath();
+  ctx.moveTo(0, 3.6);
+  ctx.bezierCurveTo(-1.6, 3.4, -1.8, 1.6, -0.6, 0.2);
+  ctx.bezierCurveTo(0, -1.0, 0.3, -1.8, flameFlicker * 0.3, -2.2);
+  ctx.bezierCurveTo(0.5, -1.4, 1.2, 0.2, 0.6, 0.2);
+  ctx.bezierCurveTo(1.8, 1.6, 1.6, 3.4, 0, 3.6);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
+ * Renderiza o ícone de Floco de Neve para congelamento (Golpe Criogênico).
+ */
+export function drawSnowflakeIcon(ctx, x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Fundo circular escuro com anel azul gelo
+  ctx.beginPath();
+  ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(6, 18, 30, 0.92)';
+  ctx.fill();
+  ctx.strokeStyle = '#74b9ff';
+  ctx.lineWidth = 1.3;
+  ctx.stroke();
+
+  // Floco de neve radial de 6 pontas
+  const armLen = 4.6;
+  const barbLen = 1.6;
+  const barbPos = 2.6;
+
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#e3f4ff';
+  ctx.lineWidth = 1.2;
+
+  ctx.beginPath();
+  for (let k = 0; k < 6; k++) {
+    const ang = (k * Math.PI) / 3;
+    const cos = Math.cos(ang);
+    const sin = Math.sin(ang);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(cos * armLen, sin * armLen);
+
+    const bx = cos * barbPos;
+    const by = sin * barbPos;
+    const barbAng1 = ang + Math.PI * 0.25;
+    const barbAng2 = ang - Math.PI * 0.25;
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx + Math.cos(barbAng1) * barbLen, by + Math.sin(barbAng1) * barbLen);
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx + Math.cos(barbAng2) * barbLen, by + Math.sin(barbAng2) * barbLen);
+  }
+  ctx.stroke();
+
+  // Cristal de diamante central
+  ctx.fillStyle = '#74b9ff';
+  ctx.beginPath();
+  ctx.moveTo(0, -1.8);
+  ctx.lineTo(1.8, 0);
+  ctx.lineTo(0, 1.8);
+  ctx.lineTo(-1.8, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // Ponto brilhante central branco
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(0, 0, 0.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
 
 /**
  * Renderiza overlays de status sobre a criatura (Stun, Slow, Elite Auras & Crown).
@@ -18,8 +200,10 @@ import { player } from '../../entities/player.js';
  */
 export function drawEnemyStatusOverlays(e) {
   ctx.save();
+  const hasRoarMark = e.roarMarkTimer > 0 && e.isVulnerable && e.vulnerableTimer > 0;
+  if (hasRoarMark) drawKragdorAffliction(ctx, e, frameCount);
   // Status marks occupy separate regions; the creature silhouette stays clear.
-  if (e.stunTimer > 0) {
+  if (e.stunTimer > 0 && !hasRoarMark) {
     ctx.fillStyle = '#ead07d';
     const y = -e.radius * 1.35 - 7;
     for (let i = 0; i < 2; i++) {
@@ -28,7 +212,7 @@ export function drawEnemyStatusOverlays(e) {
       ctx.fill();
     }
   }
-  if (e.isVulnerable && e.vulnerableTimer > 0) {
+  if (e.isVulnerable && e.vulnerableTimer > 0 && !hasRoarMark) {
     ctx.strokeStyle = '#ed8476'; ctx.lineWidth = 1.8;
     const r = e.radius + 4;
     ctx.beginPath();
@@ -37,13 +221,6 @@ export function drawEnemyStatusOverlays(e) {
       ctx.lineTo(side * r, 4); ctx.lineTo(side * (r - 2), 4);
     }
     ctx.stroke();
-  }
-  if (e.slowTimer > 0) {
-    ctx.strokeStyle = '#95d4e8'; ctx.lineWidth = 1.7;
-    const y = e.radius * 0.95;
-    ctx.beginPath();ctx.moveTo(-6,y);ctx.lineTo(6,y);
-    ctx.moveTo(-3,y-3);ctx.lineTo(3,y+3);
-    ctx.moveTo(-3,y+3);ctx.lineTo(3,y-3);ctx.stroke();
   }
   if (e.isElite) {
     const color = e.eliteMod === 'HASTE' ? '#ead07d' : e.eliteMod === 'TOXIC' ? '#85c980' : e.eliteMod === 'FROST' ? '#95d4e8' : '#80c8bf';
@@ -54,7 +231,7 @@ export function drawEnemyStatusOverlays(e) {
     ctx.lineTo(7,y-3);ctx.lineTo(6,y+3);ctx.closePath();ctx.fill();ctx.stroke();
   }
   // Alerta suspenso vermelho que carrega visualmente durante a preparação do golpe
-  if (e.combatState === 'WINDUP' || e.lanceState === 'aim' || e.flameState === 'aim' || e.dashState === 'aim') {
+  if (!(e.stunTimer > 0) && (e.combatState === 'WINDUP' || e.lanceState === 'aim' || e.flameState === 'aim' || e.dashState === 'aim')) {
     let prog = 0;
     if (e.combatState === 'WINDUP') {
       const maxF = (e.attackWindupFrames && e.attackWindupFrames > 0) ? e.attackWindupFrames : 20;
@@ -88,6 +265,52 @@ export function drawEnemyStatusOverlays(e) {
     const fillH = 7.5 * prog;
     ctx.fillStyle = prog > 0.85 ? '#ffffff' : '#ff4757';
     ctx.fillRect(-2, y + 0.2 - fillH, 4, fillH);
+    ctx.restore();
+  }
+
+  // --- Ícones de Status sobre a Cabeça do Monstro ---
+  const activeStatusIcons = [];
+  if ((e.acidBurnTimer > 0) || ((e.acidStacks || 0) > 0 && (e.acidStackTimer || 0) > 0)) {
+    activeStatusIcons.push('poison');
+  }
+  if ((e.fireBurnTimer || 0) > 0) {
+    activeStatusIcons.push('fire');
+  }
+  if ((e.freezeTimer || 0) > 0) {
+    activeStatusIcons.push('freeze');
+  }
+
+  if (activeStatusIcons.length > 0) {
+    ctx.save();
+    // Anula o espelhamento do corpo para manter os glifos orientados corretamente
+    ctx.scale(e.facing || 1, 1);
+
+    const r = Number.isFinite(e.radius) && e.radius > 0 ? e.radius : 12;
+    let iconY = -r * 1.35 - 11;
+
+    const isAiming = !(e.stunTimer > 0) && (e.combatState === 'WINDUP' || e.lanceState === 'aim' || e.flameState === 'aim' || e.dashState === 'aim');
+    if (isAiming) iconY -= 14;
+    if (e.isElite) iconY -= 11;
+    if (e.stunTimer > 0) iconY -= 9;
+    if (e.isMiniBoss) iconY = -r * 1.5 - 28;
+
+    const gap = 17;
+    const totalW = (activeStatusIcons.length - 1) * gap;
+    const startX = -totalW / 2;
+
+    for (let i = 0; i < activeStatusIcons.length; i++) {
+      const iconX = startX + i * gap;
+      const bob = Math.sin(frameCount * 0.12 + i * 1.5) * 1.5;
+      const type = activeStatusIcons[i];
+      if (type === 'poison') {
+        drawPurpleSkullIcon(ctx, iconX, iconY + bob);
+      } else if (type === 'fire') {
+        drawFireIcon(ctx, iconX, iconY + bob);
+      } else if (type === 'freeze') {
+        drawSnowflakeIcon(ctx, iconX, iconY + bob);
+      }
+    }
+
     ctx.restore();
   }
   ctx.restore();
@@ -382,6 +605,12 @@ export function drawCommonEnemyGroundDecorations(e) {
  * @param {Object} e Entidade do monstro comum
  */
 export function applyKinematicDeformations(e) {
+  if (e.roarMarkTimer > KRAGDOR_ULT.vulnerableDuration - 18) {
+    const age = KRAGDOR_ULT.vulnerableDuration - e.roarMarkTimer;
+    const recoil = Math.sin(age * 0.85) * (1 - age / 18);
+    ctx.translate(recoil * 1.8, 0);
+    ctx.rotate(recoil * 0.065);
+  }
   if (e.jumpZ > 0) {
     ctx.translate(0, -e.jumpZ);
     ctx.scale(1.28, 0.78);

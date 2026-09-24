@@ -10,7 +10,9 @@ import { stick } from '../core/input.js';
 import { renderEnvironment, ARENA_PALETTES } from './environment.js';
 import { drawEnemyShape, drawDyingEnemyShape } from './enemiesRenderer.js';
 import { drawPlayerCharacter, drawPlayerEquipment } from './playerRenderer.js';
-import { generateGroundCracks, drawDetailedGroundCracks, drawGroundCraters } from './groundCracks.js';
+import { generateGroundCracks, drawDetailedGroundCracks, drawGroundCraters, drawIgnisStepGround } from './groundCracks.js';
+import { drawIgnisStepAir } from './ignisUlt.js';
+import { drawKaelPhaseGround, drawKaelPhaseAir } from './kaelUlt.js';
 import { drawBossVictoryOverlay } from '../entities/bosses/abyssSovereign/render.js';
 import { getHudBottom, layoutMetrics } from '../core/responsive.js';
 import { player, selectedHeroKey } from '../entities/player.js';
@@ -254,6 +256,8 @@ export function render() {
   // 1. Renderização das poças ativas no solo (Ácido / Alquimia / Fogo) - no chão, abaixo das orbes de XP
 
   renderAcidPuddles(ctx, acidPuddles, bounds, frameCount);
+  drawIgnisStepGround(ctx, viewLeft, viewRight, viewTop, viewBottom);
+  drawKaelPhaseGround(ctx, viewLeft, viewRight, viewTop, viewBottom);
   renderGems(ctx, gems, bounds, frameCount, player);
 
   // Renderiza auras, bíblias protetoras e machados giratórios do jogador
@@ -590,11 +594,12 @@ export function render() {
     }
 
     if (b.type === 'SWORD') {
+      const isSpectral = b.isSpectral || (player && player.invisTimer > 0);
       if (b.trail) {
         for (let t = 0; t < b.trail.length; t++) {
           const pt = b.trail[t];
-          const tAlpha = (1 - t / b.trail.length) * 0.42;
-          ctx.fillStyle = b.isEvolved ? `rgba(241, 196, 15, ${tAlpha})` : `rgba(168, 85, 247, ${tAlpha})`;
+          const tAlpha = (1 - t / b.trail.length) * (isSpectral ? 0.65 : 0.42);
+          ctx.fillStyle = isSpectral ? `rgba(186, 230, 253, ${tAlpha})` : (b.isEvolved ? `rgba(241, 196, 15, ${tAlpha})` : `rgba(168, 85, 247, ${tAlpha})`);
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, b.radius * (1 - t / b.trail.length * 0.5), 0, Math.PI * 2);
           ctx.fill();
@@ -605,7 +610,7 @@ export function render() {
       ctx.rotate(b.angle || 0);
 
       // Halo translúcido espectral
-      ctx.fillStyle = b.isEvolved ? 'rgba(241, 196, 15, 0.35)' : 'rgba(168, 85, 247, 0.35)';
+      ctx.fillStyle = isSpectral ? 'rgba(192, 132, 252, 0.45)' : (b.isEvolved ? 'rgba(241, 196, 15, 0.35)' : 'rgba(168, 85, 247, 0.35)');
       ctx.beginPath();
       if (b.isEvolved) {
         ctx.moveTo(18, 0);
@@ -622,7 +627,7 @@ export function render() {
       ctx.fill();
 
       // Corpo da Lâmina Espiritual
-      ctx.fillStyle = b.isEvolved ? '#f1c40f' : '#7c3aed';
+      ctx.fillStyle = isSpectral ? '#c084fc' : (b.isEvolved ? '#f1c40f' : '#7c3aed');
       ctx.beginPath();
       if (b.isEvolved) {
         ctx.moveTo(16, 0);
@@ -637,6 +642,17 @@ export function render() {
       }
       ctx.closePath();
       ctx.fill();
+      if (isSpectral) {
+        ctx.strokeStyle = '#f3e8ff';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 0.6;
+        ctx.beginPath();
+        ctx.moveTo(b.isEvolved ? 18 : 14, 0);
+        ctx.lineTo(b.isEvolved ? -10 : -8, -2);
+        ctx.stroke();
+      }
 
       // Núcleo incandescente branco
       ctx.fillStyle = '#ffffff';
@@ -1318,6 +1334,8 @@ export function render() {
   }
 
   drawPlayerCharacter();
+  drawIgnisStepAir(ctx, viewLeft, viewRight, viewTop, viewBottom);
+  drawKaelPhaseAir(ctx, viewLeft, viewRight, viewTop, viewBottom);
   renderDeathSequenceWorld(ctx);
   drawPlayerChestArrows(ctx, chests, player, frameCount);
 

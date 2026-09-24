@@ -1,3 +1,5 @@
+import { AXE_EVOLVED_COUNT } from './axes.js';
+
 /**
  * src/config/items.js
  * Registro Unificado de Itens, Armas, Passivas e Matriz de Sinergias (ItemRegistry).
@@ -201,7 +203,7 @@ export const SYNERGIES = [
     id: 'evolved_axe',
     name: "Tempestade de Aço",
     fullName: "Tempestade de Aço",
-    desc: "Fusão: Machado Giratório + Poder Bruto! 6 machados velozes transladam em anel triturando a arena.",
+    desc: "Fusão: Machado Giratório + Poder Bruto! 4 machados velozes transladam em anel triturando a arena.",
     reqText: "Machado Nv 3 + Poder",
     weaponId: 'AXE',
     weaponUpgradeIds: ['axe_extra', 'axe_speed', 'axe_radius'],
@@ -212,7 +214,7 @@ export const SYNERGIES = [
     isEvolved: (player) => !!player.evolvedAxe,
     apply: (player) => {
       player.evolvedAxe = true;
-      player.axeCount = 6;
+      player.axeCount = AXE_EVOLVED_COUNT;
       player.axeSpinSpeed = (player.axeSpinSpeed || 0.085) + 0.05;
     }
   },

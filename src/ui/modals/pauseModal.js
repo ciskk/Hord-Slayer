@@ -432,6 +432,12 @@ export function closePause() {
     // garantindo que a partida ainda está ativa
     if (gameState.isInMatch) {
       gameState.isPaused = false;
+      // Inicia o temporizador de slow motion pós-telas (30 frames ~= 500ms real)
+      import('../../main.js').then(module => {
+        if (module.setPostScreenSlowMoTimer) {
+          module.setPostScreenSlowMoTimer(18); // 300ms = 18 frames at 60fps
+        }
+      });
     }
     isTransitioning = false;
   }, 200);

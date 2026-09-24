@@ -164,6 +164,11 @@ function closeLevelUpModal() {
     gameState.isPaused = false;
     setLastTime(performance.now());
     restoreKeyboardMovement();
+    import('../../main.js').then(module => {
+      if (module.setPostScreenSlowMoTimer) {
+        module.setPostScreenSlowMoTimer(18); // 300ms = 18 frames
+      }
+    });
   }, 200);
 }
 

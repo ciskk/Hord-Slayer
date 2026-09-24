@@ -9,7 +9,7 @@ import { CHARACTERS } from '../config/characters.js';
 import { ARENA_PALETTES } from '../render/environment.js';
 import { player, getPersistentGold, selectedHeroKey, triggerHeroSkill } from '../entities/player.js';
 import { waveAnnouncement, frameCount, matchIntro, deathSequence } from '../state/gameState.js';
-import { getTimeUntilNextWave, getEffectiveHordeSeconds } from '../systems/waves.js';
+import { getTimeUntilNextWave, getEffectiveHordeSeconds, nextBossSpawnTime, currentBossIndex, BOSS_QUEUE } from '../systems/waves.js';
 
 let _cachedSkillContainer = null;
 let _cachedSkillMask = null;
@@ -146,6 +146,8 @@ export function ensureHudElementsCached() {
     hudDom.bossHpRaw = document.getElementById('boss-hp-raw');
     hudDom.bossPipNotches = document.querySelectorAll('#boss-hud .boss-pip-notch');
     hudDom.timerVal = document.getElementById('timer-val');
+    hudDom.bossTimerVal = document.getElementById('boss-timer-val');
+    hudDom.bossTimerBadge = document.querySelector('.boss-timer-badge');
     hudDom.hudHeroCrest = document.getElementById('hud-hero-crest');
     hudDom.hudHeroEmblem = document.getElementById('hud-hero-emblem');
     hudDom.hudHeroTitle = document.getElementById('hud-hero-title');
@@ -602,5 +604,24 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
   if (currentTimerStr !== _lastTimerStr) {
     _lastTimerStr = currentTimerStr;
     if (hudDom.timerVal) hudDom.timerVal.innerText = currentTimerStr;
+  }
+
+  if (hudDom.bossTimerVal && hudDom.bossTimerBadge) {
+    if (activeBoss || currentBossIndex >= BOSS_QUEUE.length) {
+      if (hudDom.bossTimerBadge.style.display !== 'none') hudDom.bossTimerBadge.style.display = 'none';
+    } else {
+      if (hudDom.bossTimerBadge.style.display === 'none') hudDom.bossTimerBadge.style.display = 'flex';
+      const timeRemaining = Math.max(0, nextBossSpawnTime - seconds);
+      const bm = String(Math.floor(timeRemaining / 60)).padStart(2, '0');
+      const bs = String(timeRemaining % 60).padStart(2, '0');
+      hudDom.bossTimerVal.innerText = `${bm}:${bs}`;
+      
+      // Efeito de pulso quando faltar pouco tempo (10 segundos)
+      if (timeRemaining <= 10 && timeRemaining > 0) {
+        hudDom.bossTimerBadge.classList.add('urgent-pulse');
+      } else {
+        hudDom.bossTimerBadge.classList.remove('urgent-pulse');
+      }
+    }
   }
 }

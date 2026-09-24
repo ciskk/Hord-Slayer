@@ -74,7 +74,141 @@ if (typeof window !== 'undefined') {
   });
 }
 
+export function closeLockedHeroModal() {
+  const modal = document.getElementById('locked-hero-modal');
+  if (!modal || modal.style.display === 'none' || modal.classList.contains('modal-hidden')) return;
+  modal.classList.add('closing');
+  try { playSfx('card_hover'); } catch (e) {}
+  setTimeout(() => {
+    modal.classList.add('modal-hidden');
+    modal.classList.remove('closing');
+    modal.style.setProperty('display', 'none', 'important');
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+  }, 200);
+}
+
+export function openLockedHeroModal(heroKey) {
+  const modal = document.getElementById('locked-hero-modal');
+  if (!modal) return;
+
+  const key = heroKey || activeShowcaseHeroKey || 'MAGE';
+  const char = CHARACTERS[key] || CHARACTERS.MAGE;
+  const profile = CHARACTER_PROFILES[key] || CHARACTER_PROFILES.MAGE;
+  const achId = HERO_UNLOCK_MAP[key];
+  const status = achId ? getAchievementStatus(achId) : null;
+
+  // 1. Atualizar Brasão Heráldico Vetorial e Cores
+  const emblemDisc = document.getElementById('locked-hero-emblem-disc');
+  if (emblemDisc) {
+    emblemDisc.innerHTML = profile.emblemSvg || '';
+    emblemDisc.style.setProperty('--disc-accent', profile.themeColor || '#ff7675');
+  }
+
+  // 2. Atualizar Nomes e Arquétipo
+  const archetypeEl = document.getElementById('locked-hero-archetype');
+  if (archetypeEl) {
+    archetypeEl.innerText = (char.title || 'CAMPEÃO ARCANO').toUpperCase();
+    archetypeEl.style.color = profile.themeColor || '#ffd166';
+  }
+
+  const nameEl = document.getElementById('locked-hero-name');
+  if (nameEl) {
+    nameEl.innerText = char.name || 'Herói Selado';
+  }
+
+  // 3. Atualizar Seção da Conquista / Requisito
+  const achTitleEl = document.getElementById('locked-achievement-title');
+  if (achTitleEl) {
+    achTitleEl.innerText = (status?.title || 'SELO PRIMORDIAL').toUpperCase();
+  }
+
+  const achDescEl = document.getElementById('locked-achievement-desc');
+  if (achDescEl) {
+    achDescEl.innerText = status?.desc || 'Cumpra a provação correspondente no Códice de Conquistas para despertar este arquétipo.';
+  }
+
+  // 4. Barra de Progresso Cósmico
+  const progValEl = document.getElementById('locked-progress-val');
+  const progFillEl = document.getElementById('locked-progress-fill');
+  if (status) {
+    const cur = status.current ?? 0;
+    const tgt = status.target ?? 1;
+    const pct = status.pct ?? 0;
+    if (progValEl) {
+      progValEl.innerHTML = `<span class="prog-cur-tgt">${cur.toLocaleString('pt-BR')} / ${tgt.toLocaleString('pt-BR')}</span> <span class="prog-pct-pill">${pct}%</span>`;
+    }
+    if (progFillEl) {
+      progFillEl.style.width = `${pct}%`;
+    }
+  } else {
+    if (progValEl) {
+      progValEl.innerHTML = `<span class="prog-cur-tgt">0 / 1</span> <span class="prog-pct-pill">0%</span>`;
+    }
+    if (progFillEl) progFillEl.style.width = '0%';
+  }
+
+  // 5. Fiação dos Botões de Ação
+  const okBtn = document.getElementById('locked-hero-ok-btn');
+  if (okBtn) {
+    okBtn.onclick = (e) => {
+      e.stopPropagation();
+      closeLockedHeroModal();
+    };
+  }
+
+  const closeBtn = document.getElementById('locked-hero-close-btn');
+  if (closeBtn) {
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      closeLockedHeroModal();
+    };
+  }
+
+  const backdrop = document.getElementById('locked-hero-backdrop');
+  if (backdrop) {
+    backdrop.onclick = (e) => {
+      e.stopPropagation();
+      closeLockedHeroModal();
+    };
+  }
+
+  const codexBtn = document.getElementById('locked-view-codex-btn');
+  if (codexBtn) {
+    codexBtn.onclick = (e) => {
+      e.stopPropagation();
+      closeLockedHeroModal();
+      import('./achievementsModal.js').then(m => {
+        if (m.openAchievementsModal) {
+          m.openAchievementsModal('hero', achId);
+        }
+      }).catch(err => {
+        console.error('Erro ao abrir Grimório de Conquistas:', err);
+      });
+    };
+  }
+
+  // 6. Exibição, Animação e Auto-Fit
+  modal.classList.remove('modal-hidden', 'closing');
+  modal.style.removeProperty('display');
+  modal.style.display = 'flex';
+  modal.setAttribute('aria-hidden', 'false');
+
+  // Dispara o cálculo inteligente de auto-fit para acomodar o card perfeitamente sem scrollbars
+  try {
+    updateAllAutoFit(modal);
+  } catch (err) {
+    console.warn('Erro ao atualizar auto-fit do modal de herói bloqueado:', err);
+  }
+
+  try {
+    playSfx('forcefield');
+  } catch (e) {}
+  triggerHaptic('medium');
+}
+
 export function closeCharSelectModal() {
+  closeLockedHeroModal();
   if (charSelectKeydownHandler) {
     window.removeEventListener('keydown', charSelectKeydownHandler);
     charSelectKeydownHandler = null;
@@ -248,6 +382,7 @@ export function openCharacterSelect() {
     const profile = CHARACTER_PROFILES[heroKey] || CHARACTER_PROFILES.KNIGHT;
     const unlocked = isHeroUnlocked(heroKey);
     const achId = HERO_UNLOCK_MAP[heroKey];
+    const status = achId ? getAchievementStatus(achId) : null;
     const heroRecord = getHeroRecord(heroKey) || {
       heroKey,
       unlocked,
@@ -284,9 +419,18 @@ export function openCharacterSelect() {
     const badge = document.getElementById('stage-archetype-badge');
     if (badge) {
       badge.innerHTML = `${char.title.toUpperCase()} ${!unlocked ? renderIcon('lock', { size: 10, color: '#ff7675', style: 'margin-left:4px; vertical-align:middle; display:inline-block;' }) : ''}`;
-      badge.style.color = unlocked ? profile.themeColor : '#747d8c';
-      badge.style.borderColor = unlocked ? `${profile.themeColor}aa` : '#4b5563';
-      badge.style.boxShadow = unlocked ? `0 0 18px ${profile.themeColor}66` : 'none';
+      badge.style.color = unlocked ? profile.themeColor : '#ff9f9f';
+      badge.style.borderColor = unlocked ? `${profile.themeColor}aa` : 'rgba(255, 118, 117, 0.45)';
+      badge.style.boxShadow = unlocked ? `0 0 18px ${profile.themeColor}66` : '0 0 14px rgba(255, 118, 117, 0.25)';
+      if (!unlocked) {
+        badge.style.cursor = 'pointer';
+        badge.setAttribute('title', 'Clique para ver requisitos de desbloqueio');
+        badge.onclick = () => openLockedHeroModal(heroKey);
+      } else {
+        badge.style.cursor = 'default';
+        badge.removeAttribute('title');
+        badge.onclick = null;
+      }
     }
 
     showcaseContainer.style.setProperty('--showcase-color', unlocked ? profile.themeColor : '#747d8c');
@@ -487,7 +631,7 @@ export function openCharacterSelect() {
               </div>
 
               ${!unlocked && status ? `
-                <div class="primordial-seal-banner">
+                <div class="primordial-seal-banner" id="showcase-seal-banner" style="cursor: pointer;" title="Clique para ver instruções detalhadas de desbloqueio">
                   <div class="seal-header">
                     <span class="seal-icon">${renderIcon('lock', { size: 14, color: '#ff7675' })}</span>
                     <div class="seal-titles">
@@ -540,11 +684,13 @@ export function openCharacterSelect() {
             <span class="btn-hotkey-hint">ESPAÇO</span>
           </button>
         ` : `
-          <button class="btn-ignition-catalyst" id="confirm-hero-btn" disabled type="button" aria-label="Herói Bloqueado">
+          <button class="btn-ignition-catalyst is-locked" id="confirm-hero-btn" type="button" aria-label="Herói Bloqueado • Instruções do Selo Primordial">
+            <div class="btn-shimmer-sweep"></div>
             <span class="btn-catalyst-content">
               ${renderIcon('lock', { size: 14, color: '#ff7675', style: 'margin-right:8px; vertical-align:middle;' })}
               SELO PRIMORDIAL ATIVO
             </span>
+            <span class="btn-hotkey-hint">REQUISITOS</span>
           </button>
         `}
       </div>
@@ -655,8 +801,17 @@ export function openCharacterSelect() {
           try { playSfx('warp'); } catch(e) {}
         };
       } else {
-        confirmBtn.onclick = null;
+        confirmBtn.onclick = () => {
+          openLockedHeroModal(heroKey);
+        };
       }
+    }
+
+    const sealBanner = showcaseContainer.querySelector('#showcase-seal-banner');
+    if (sealBanner) {
+      sealBanner.onclick = () => {
+        openLockedHeroModal(heroKey);
+      };
     }
 
     // Atualiza classes ativas nos nós de sigilo
@@ -723,8 +878,12 @@ export function openCharacterSelect() {
     sigil.onclick = () => {
       try { playSfx('card_hover'); } catch(e) {}
       triggerHaptic('light');
-      renderShowcase(key);
-      scrollPedestalToCenter(sigil);
+      if (key === activeShowcaseHeroKey && !unlocked) {
+        openLockedHeroModal(key);
+      } else {
+        renderShowcase(key);
+        scrollPedestalToCenter(sigil);
+      }
     };
 
     sigilTargetParent.appendChild(sigil);
@@ -829,6 +988,16 @@ export function openCharacterSelect() {
   charSelectKeydownHandler = (e) => {
     if (!charModal || charModal.style.display === 'none' || charModal.classList.contains('modal-hidden')) return;
 
+    // Se o pop-up de herói bloqueado estiver aberto, teclas ESC, Espaço e Enter fecham o pop-up
+    const lockedHeroModal = document.getElementById('locked-hero-modal');
+    if (lockedHeroModal && lockedHeroModal.style.display !== 'none' && !lockedHeroModal.classList.contains('modal-hidden')) {
+      if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        closeLockedHeroModal();
+      }
+      return;
+    }
+
     // Não interceptar se outro modal estiver ativo sobreposto
     const talentsModal = document.getElementById('talents-modal');
     const bestiaryModal = document.getElementById('bestiary-modal');
@@ -849,12 +1018,14 @@ export function openCharacterSelect() {
       e.preventDefault();
       selectAdjacentHero(1);
     } else if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
       if (isHeroUnlocked(activeShowcaseHeroKey)) {
-        e.preventDefault();
         const confirmBtn = document.getElementById('confirm-hero-btn');
         if (confirmBtn && !confirmBtn.disabled) {
           confirmBtn.click();
         }
+      } else {
+        openLockedHeroModal(activeShowcaseHeroKey);
       }
     }
   };

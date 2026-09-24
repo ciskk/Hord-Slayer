@@ -351,7 +351,7 @@ export const BESTIARY_ENTRIES = [
     category: 'HORDE',
     threat: 3,
     color: '#00d2d3',
-    hp: 190,
+    hp: 95,
     damage: 18,
     speed: 'Frenético / Ágil (2.30)',
     role: 'Interrupção de Economia & Pinhata de XP',

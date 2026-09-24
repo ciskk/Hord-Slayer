@@ -68,7 +68,7 @@ Ao elevar uma arma ao nível de requisito necessário e possuir a passiva corres
 | Evolução Lendária | Receita (Arma + Passiva) | Efeito de Combate |
 |---|---|---|
 | **★ Lâmina Dimensional** | Lâminas Espirituais (Nv 4) + Asas do Vento | Espadas astrais colossais com perfuração quádrupla e velocidade extrema. |
-| **★ Tempestade de Aço** | Machado Giratório (Nv 3) + Poder Bruto | 6 machados orbitais acelerados que trituram toda a arena ao redor. |
+| **★ Tempestade de Aço** | Machado Giratório (Nv 3) + Poder Bruto | 4 machados orbitais acelerados que trituram toda a arena ao redor. |
 | **★ Dilúvio Biológico** | Frascos Cáusticos (Nv 3) + Golpe Criogênico | Salva de 5 frascos tóxicos criando uma mega-zona corrosiva com congelamento. |
 | **★ Cataclismo Solar** | Cajado da Tormenta (Nv 3) + Poder Bruto | Supernovas de plasma penetrantes que cobrem o chão de magma radiante. |
 | **★ Martelo dos Titãs** | Martelo Sagrado (Nv 3) + Armadura Rúnica | Terremoto titânico de 360° com fendas incandescentes no solo. |

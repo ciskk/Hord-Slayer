@@ -22,6 +22,7 @@ import { recordRunStats } from '../../config/achievements.js';
 import { transitionToArenaTheme } from '../../render/environment.js';
 import { getHordeArenaTheme } from '../../systems/waves.js';
 import { onAltarChestCollected } from '../../systems/worldEvents.js';
+import { updateAllAutoFit } from '../../core/responsive.js';
 
 let chestKeydownHandler = null;
 
@@ -279,6 +280,11 @@ export function openChestModal(tier = 'BOSS') {
       gameState.isPaused = false;
       setLastTime(performance.now());
       restoreKeyboardMovement();
+      import('../../main.js').then(module => {
+        if (module.setPostScreenSlowMoTimer) {
+          module.setPostScreenSlowMoTimer(18); // 300ms = 18 frames
+        }
+      });
 
       if (!activeBoss) {
         transitionToArenaTheme(getHordeArenaTheme(), 90);
@@ -371,6 +377,7 @@ export function openChestModal(tier = 'BOSS') {
   }
 
   modal.style.display = 'flex';
+  updateAllAutoFit(modal);
 
   // 7. Sequência cadenciada de Unboxing
   unboxingTimeout = setTimeout(() => {

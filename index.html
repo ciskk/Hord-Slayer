@@ -82,13 +82,19 @@
 
       <!-- Cluster de Tempo & Selo de Pausa -->
       <div class="hud-top-cluster-right">
+        <div class="hud-badge boss-timer-badge" title="Próximo Chefe" style="color: #ff3838; margin-right: 8px;">
+          <span class="hud-icon">
+            <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color:#ff3838;"><path class="skull-horns" fill="currentColor" d="M3 4c1 4 4 6 6 6-1-3-1-5-6-6zm18 0c-1 4-4 6-6 6 1-3 1-5 6-6z"/><path class="skull-head" fill="#f1f2f6" d="M12 3c-4.4 0-8 3.6-8 8 0 2.8 1.4 5.3 3.6 6.8V21h8.8v-3.2c2.2-1.5 3.6-4 3.6-6.8 0-4.4-3.6-8-8-8z"/><circle class="skull-eye left" cx="9.2" cy="11.5" r="1.6" fill="#ff1744"/><circle class="skull-eye right" cx="14.8" cy="11.5" r="1.6" fill="#ff1744"/><polygon points="12,13.5 11,15.5 13,15.5" fill="#1e272e"/><rect x="9.5" y="18" width="1.6" height="3" fill="#1e272e"/><rect x="11.2" y="18" width="1.6" height="3" fill="#1e272e"/><rect x="12.9" y="18" width="1.6" height="3" fill="#1e272e"/></svg>
+          </span>
+          <span id="boss-timer-val" class="hud-timer">--:--</span>
+        </div>
+
         <div class="hud-badge timer-badge" title="Tempo de Sobrevivência">
           <span class="hud-icon">
             <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color:#ffeaa7;"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 15 14" fill="none" stroke="currentColor" stroke-width="2"/></svg>
           </span>
           <span id="timer-val" class="hud-timer">00:00</span>
         </div>
-
         <button id="pause-btn" class="hud-btn pause-hud-btn" aria-label="Pausar Batalha" title="Pausar Batalha [Esc]">
           <svg class="medallion-spikes-svg" viewBox="0 0 40 40">
             <polygon points="20.0,1.0 23.9,5.5 29.5,3.5 30.6,9.4 36.5,10.5 34.5,16.1 39.0,20.0 34.5,23.9 36.5,29.5 30.6,30.6 29.5,36.5 23.9,34.5 20.0,39.0 16.1,34.5 10.5,36.5 9.4,30.6 3.5,29.5 5.5,23.9 1.0,20.0 5.5,16.1 3.5,10.5 9.4,9.4 10.5,3.5 16.1,5.5" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="1.2"/>
@@ -428,6 +434,116 @@
         <div id="char-showcase" class="char-hologram-dossier"></div>
       </aside>
     </main>
+  </div>
+</div>
+
+<!-- Modal Pop-up de Instruções do Selo Primordial (Personagem Bloqueado) -->
+<div id="locked-hero-modal" class="modal-overlay locked-hero-overlay modal-hidden" style="display: none;" aria-hidden="true" role="dialog" aria-modal="true" data-autofit="true" data-autofit-target="#locked-hero-card" data-autofit-min-scale="0.65" data-autofit-direction="both" data-autofit-overflow="scale">
+  <!-- Véu de Fundo Clicável -->
+  <div class="locked-hero-backdrop" id="locked-hero-backdrop"></div>
+
+  <!-- Card do Selo Monolítico com Auto-Fit Inteligente -->
+  <div class="locked-hero-card" id="locked-hero-card">
+    <div class="locked-card-shimmer"></div>
+    <div class="locked-card-glow-mesh"></div>
+
+    <!-- Botão Fechar Rápido (X) no Canto Superior Direito -->
+    <button class="locked-close-btn" id="locked-hero-close-btn" type="button" aria-label="Fechar Janela" title="Fechar Janela [ESC]">
+      <svg viewBox="0 0 24 24" class="locked-close-icon">
+        <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <div class="locked-hero-content">
+      <!-- Topo Rúnico do Modal: Brasão Heráldico & Identidade -->
+      <div class="locked-hero-header">
+        <div class="locked-eyebrow-row">
+          <span class="locked-eyebrow-line"></span>
+          <span class="locked-eyebrow-sigil">✦</span>
+          <span class="locked-eyebrow-text">SELO PRIMORDIAL • REQUISITO DE DESPERTAR</span>
+          <span class="locked-eyebrow-sigil">✦</span>
+          <span class="locked-eyebrow-line"></span>
+        </div>
+
+        <div class="locked-hero-identity-row">
+          <div class="locked-emblem-cluster">
+            <div class="locked-emblem-disc" id="locked-hero-emblem-disc">
+              <!-- Brasão SVG do herói injetado dinamicamente -->
+            </div>
+            <div class="locked-seal-lock-badge">
+              <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color:#ff7675;">
+                <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="currentColor" stroke-width="2"/>
+                <circle cx="12" cy="16" r="1.5" fill="currentColor"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="locked-hero-textual">
+            <div class="locked-hero-archetype" id="locked-hero-archetype">A PIROMANTE</div>
+            <h2 class="locked-hero-name" id="locked-hero-name">Ignis</h2>
+            <div class="locked-status-pill">
+              <span class="locked-pulse-dot"></span>
+              <span>SELO PRIMORDIAL ATIVO</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Corpo do Modal: Missão e Progresso Cósmico -->
+      <div class="locked-hero-body">
+        <div class="locked-section-card objective-section">
+          <div class="locked-section-header">
+            <span class="locked-section-icon">
+              <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color:#ffd166;">
+                <polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="currentColor" stroke-width="2"/>
+                <circle cx="12" cy="12" r="3" fill="currentColor"/>
+              </svg>
+            </span>
+            <span class="locked-section-title" id="locked-achievement-title">CHAMA DESPERTA</span>
+            <span class="locked-tier-pill">HERÓICO</span>
+          </div>
+          <div class="locked-mission-desc" id="locked-achievement-desc">
+            Derrote o Lorde Vampírico (Chefe 1) para purificar suas cinzas e despertar a Piromante Ignis.
+          </div>
+
+          <!-- Barra de Progresso Cósmico -->
+          <div class="locked-progress-container">
+            <div class="locked-progress-labels">
+              <span class="locked-prog-label">
+                <span class="locked-prog-spark">✦</span>
+                <span class="locked-prog-title">SINTONIA CÓSMICA</span>
+              </span>
+              <span class="locked-prog-val" id="locked-progress-val">
+                <span class="prog-cur-tgt">0 / 1</span>
+                <span class="prog-pct-pill">0%</span>
+              </span>
+            </div>
+            <div class="locked-progress-track">
+              <div class="locked-progress-fill" id="locked-progress-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rodapé de Ações de Comando -->
+      <div class="locked-hero-footer">
+        <button class="btn-locked-action btn-locked-codex" id="locked-view-codex-btn" type="button">
+          <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color: currentColor;">
+            <polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="2"/>
+            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+          </svg>
+          <span>VER NO GRIMÓRIO</span>
+        </button>
+
+        <button class="btn-locked-action btn-locked-confirm" id="locked-hero-ok-btn" type="button">
+          <div class="btn-shimmer-sweep"></div>
+          <span>COMPREENDIDO</span>
+          <span class="btn-hotkey-hint">[ESC]</span>
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 

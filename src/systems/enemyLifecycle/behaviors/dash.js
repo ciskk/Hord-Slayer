@@ -6,8 +6,8 @@ export function dashBehavior(e, dt, angle, curSpeed) {
   const previousTimer = e.dashTimer || 0;
   e.dashTimer = previousTimer + dt;
   if (e.dashState === 'chase') {
-    e.x += Math.cos(angle) * curSpeed * dt;
-    e.y += Math.sin(angle) * curSpeed * dt;
+    e.x += Math.cos(angle) * curSpeed * STALKER_DASH.chaseSpeedMultiplier * dt;
+    e.y += Math.sin(angle) * curSpeed * STALKER_DASH.chaseSpeedMultiplier * dt;
     if (e.dashTimer >= STALKER_DASH.chase) {
       e.dashState = 'aim';
       e.dashTimer = 0;

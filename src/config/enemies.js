@@ -27,7 +27,7 @@ export const ENEMY_TYPES = {
   MIRROR_BANSHEE:   { name: 'Banshee dos Espelhos', radius: 13, speed: 2.10, hp: 170, color: '#a29bfe', behavior: 'mirror_decoy', damage: 27, xp: 4 },
   DULLAHAN_VANGUARD:{ name: 'Cavaleiro Sem Cabeça', radius: 18, speed: 1.10, hp: 440, color: '#2c3e50', behavior: 'lance_charge', damage: 49, xp: 6 },
   SNIPER_CULTIST:   { name: 'Atirador de Éter', radius: 14, speed: 0.80, hp: 180, color: '#9c88ff', behavior: 'long_range_sniper', damage: 55, xp: 5 },
-  VOID_SCAVENGER:   { name: 'Duende Ladrão de Gemas', radius: 12, speed: 2.30, hp: 190, color: '#00d2d3', behavior: 'xp_devourer', damage: 18, xp: 3 },
+  VOID_SCAVENGER:   { name: 'Duende Ladrão de Gemas', radius: 12, speed: 2.30, hp: 95, color: '#00d2d3', behavior: 'xp_devourer', damage: 18, xp: 3 },
   GRAVE_GORGON:     { name: 'Carniçal Necrófago', radius: 17, speed: 1.10, hp: 350, color: '#535c68', behavior: 'corpse_eater', damage: 31, xp: 6 },
   CURSED_CHEST:     { name: 'Mímico de Éter', radius: 18, speed: 2.50, hp: 850, color: '#e056fd', behavior: 'mimic_trap', damage: 47, xp: 15 }
 

@@ -252,12 +252,27 @@ export function getAchievementStatus(achievementId) {
   const unlockedIds = getUnlockedAchievementIds();
   const isUnlocked = unlockedIds.includes(achievementId);
   const stats = getLifetimeStats();
-  const progress = achievement.checkProgress(stats);
+  const progress = achievement.checkProgress ? achievement.checkProgress(stats) : { current: isUnlocked ? 1 : 0, target: 1, isMet: isUnlocked };
+  const isCompleted = isUnlocked || !!progress.isMet;
+  const current = progress.current ?? (isCompleted ? (achievement.target || 1) : 0);
+  const target = progress.target ?? (achievement.target || 1);
+  const percent = isCompleted ? 100 : Math.min(100, Math.max(0, Math.round((current / (target || 1)) * 100)));
 
   return {
     achievement,
     isUnlocked,
-    progress
+    isCompleted,
+    progress,
+    percent,
+    pct: percent,
+    title: achievement.title,
+    desc: achievement.desc,
+    lore: achievement.lore,
+    tactics: achievement.tactics,
+    rewardGold: achievement.rewardGold || 0,
+    current,
+    target,
+    label: progress.label || `${current} / ${target}`
   };
 }
 
