@@ -211,8 +211,11 @@ export function drawCreatureDeath(ctx, de, progress, draw, kind = 'fall') {
     ctx.rotate(-collapse * 1.25);
     ctx.scale(1, 1 - collapse * 0.2);
   }
-  draw({ ...de, deathPose: t, hitFlash: t < 0.1 ? 1 : 0, slowTimer: 0,
-    combatState: 'DEAD', actionState: 'DEAD', isCharging: false, isFlamethrowing: false,
-    isFiring: false, summonTimer: 0, shootTimer: 0, sniperCharge: 0, castProgress: 0 });
+  de.deathPose = t;
+  de.hitFlash = t < 0.1 ? 1 : 0;
+  de.slowTimer = 0;
+  de.combatState = 'DEAD';
+  de.actionState = 'DEAD';
+  draw(de);
   ctx.restore();
 }

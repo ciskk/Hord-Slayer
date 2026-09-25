@@ -4,9 +4,9 @@ import {
 } from '../main.js';
 import { NATURAL_ARENAS, ARENA_ALIASES, resolveArenaTheme } from '../config/arenas.js';
 import { renderNaturalTerrain, clearNaturalTerrainCache, prefetchArenaTheme, terrainHash } from './environment/naturalTerrain.js';
-import { renderSurrealAbyssArena, getAbyssArenaState } from './environment/abyssArena.js';
+import { renderSurrealAbyssArena, getAbyssArenaState, resetAbyssArena } from './environment/abyssArena.js';
 
-export { renderSurrealAbyssArena, getAbyssArenaState };
+export { renderSurrealAbyssArena, getAbyssArenaState, resetAbyssArena };
 // Mantidos para consumidores antigos dos renderizadores de decoração.
 export { renderArenaProps, BIOME_PROP_RENDERERS } from './environment/biomeProps/index.js';
 export const tileHash = terrainHash;
@@ -56,6 +56,7 @@ export function resetEnvironment() {
   lastEnvironmentFrame = frameCount;
   setCurrentArenaTheme('CEMETERY');
   clearNaturalTerrainCache();
+  resetAbyssArena();
   transitionCanvas = null;
 }
 

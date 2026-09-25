@@ -38,6 +38,11 @@ export function clearRolandChargeEffects() {
   rolandShockwaves.length = 0;
 }
 
+export function clearGroundCraters() {
+  groundCraters.length = 0;
+  clearRolandChargeEffects();
+}
+
 function updateRolandChargeEffects(dt) {
   for (const effects of [consecratedTrail, rolandShockwaves]) {
     for (let i = effects.length - 1; i >= 0; i--) {

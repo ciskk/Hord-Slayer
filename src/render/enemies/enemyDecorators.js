@@ -33,173 +33,228 @@ const SNOWFLAKE_ARMS = Array.from({ length: 6 }, (_, k) => {
   };
 });
 
+// Buffers offscreen pré-renderizados para os ícones de status (Zero GC, Zero Bézier por frame)
+let skullCanvas = null;
+let fireCanvas = null;
+let snowflakeCanvas = null;
+
+function renderPurpleSkullVector(targetCtx, x, y) {
+  targetCtx.save();
+  targetCtx.translate(x, y);
+
+  // Fundo circular escuro com anel roxo radiante
+  targetCtx.beginPath();
+  targetCtx.arc(0, 0, 7.5, 0, Math.PI * 2);
+  targetCtx.fillStyle = 'rgba(18, 10, 28, 0.92)';
+  targetCtx.fill();
+  targetCtx.strokeStyle = '#c084fc';
+  targetCtx.lineWidth = 1.3;
+  targetCtx.stroke();
+
+  // Caixa craniana da caveira em roxo vívido
+  targetCtx.fillStyle = '#a855f7';
+  targetCtx.beginPath();
+  targetCtx.arc(0, -1.2, 4.2, Math.PI * 0.95, Math.PI * 0.05, false);
+  targetCtx.lineTo(2.2, 2.2);
+  targetCtx.lineTo(1.6, 4.0);
+  targetCtx.lineTo(-1.6, 4.0);
+  targetCtx.lineTo(-2.2, 2.2);
+  targetCtx.closePath();
+  targetCtx.fill();
+
+  // Brilho na testa
+  targetCtx.fillStyle = '#e9d5ff';
+  targetCtx.beginPath();
+  targetCtx.arc(-1.2, -3.0, 1.2, 0, Math.PI * 2);
+  targetCtx.fill();
+
+  // Cavidades oculares escuras
+  targetCtx.fillStyle = '#1e0538';
+  targetCtx.beginPath();
+  targetCtx.ellipse(-1.5, -0.6, 1.1, 1.4, -0.15, 0, Math.PI * 2);
+  targetCtx.fill();
+  targetCtx.beginPath();
+  targetCtx.ellipse(1.5, -0.6, 1.1, 1.4, 0.15, 0, Math.PI * 2);
+  targetCtx.fill();
+
+  // Fossa nasal
+  targetCtx.beginPath();
+  targetCtx.moveTo(0, 1.2);
+  targetCtx.lineTo(-0.6, 2.0);
+  targetCtx.lineTo(0.6, 2.0);
+  targetCtx.closePath();
+  targetCtx.fill();
+
+  // Dentes da mandíbula
+  targetCtx.strokeStyle = '#1e0538';
+  targetCtx.lineWidth = 0.8;
+  targetCtx.beginPath();
+  targetCtx.moveTo(-0.7, 2.8); targetCtx.lineTo(-0.7, 4.0);
+  targetCtx.moveTo(0.7, 2.8); targetCtx.lineTo(0.7, 4.0);
+  targetCtx.stroke();
+
+  targetCtx.restore();
+}
+
+function renderFireVector(targetCtx, x, y) {
+  targetCtx.save();
+  targetCtx.translate(x, y);
+
+  // Fundo circular escuro com anel de fogo alaranjado
+  targetCtx.beginPath();
+  targetCtx.arc(0, 0, 7.5, 0, Math.PI * 2);
+  targetCtx.fillStyle = 'rgba(28, 12, 6, 0.92)';
+  targetCtx.fill();
+  targetCtx.strokeStyle = '#ff793f';
+  targetCtx.lineWidth = 1.3;
+  targetCtx.stroke();
+
+  // Chama externa (Vermelho-Alaranjada)
+  targetCtx.fillStyle = '#ff4757';
+  targetCtx.beginPath();
+  targetCtx.moveTo(0, 4.8);
+  targetCtx.bezierCurveTo(-4.2, 4.2, -4.6, 0.5, -2.5, -1.8);
+  targetCtx.bezierCurveTo(-2.8, -0.2, -2.0, 0.4, -1.2, -0.5);
+  targetCtx.bezierCurveTo(-1.8, -2.6, -0.5, -4.5, 0, -5.5);
+  targetCtx.bezierCurveTo(0.6, -4.0, 1.8, -2.4, 1.5, -0.4);
+  targetCtx.bezierCurveTo(2.4, 0.6, 3.2, -0.2, 2.8, -1.6);
+  targetCtx.bezierCurveTo(4.6, 0.5, 4.2, 4.2, 0, 4.8);
+  targetCtx.closePath();
+  targetCtx.fill();
+
+  // Chama intermediária (Laranja Dourado)
+  targetCtx.fillStyle = '#ffa502';
+  targetCtx.beginPath();
+  targetCtx.moveTo(0, 4.2);
+  targetCtx.bezierCurveTo(-2.8, 3.8, -3.0, 1.2, -1.5, -0.5);
+  targetCtx.bezierCurveTo(-0.8, -2.0, 0.2, -3.2, 0, -4.0);
+  targetCtx.bezierCurveTo(0.8, -2.6, 1.8, -1.2, 1.5, -0.5);
+  targetCtx.bezierCurveTo(3.0, 1.2, 2.8, 3.8, 0, 4.2);
+  targetCtx.closePath();
+  targetCtx.fill();
+
+  // Núcleo interno incandescente (Amarelo / Branco)
+  targetCtx.fillStyle = '#ffeaa7';
+  targetCtx.beginPath();
+  targetCtx.moveTo(0, 3.6);
+  targetCtx.bezierCurveTo(-1.6, 3.4, -1.8, 1.6, -0.6, 0.2);
+  targetCtx.bezierCurveTo(0, -1.0, 0.3, -1.8, 0, -2.2);
+  targetCtx.bezierCurveTo(0.5, -1.4, 1.2, 0.2, 0.6, 0.2);
+  targetCtx.bezierCurveTo(1.8, 1.6, 1.6, 3.4, 0, 3.6);
+  targetCtx.closePath();
+  targetCtx.fill();
+
+  targetCtx.restore();
+}
+
+function renderSnowflakeVector(targetCtx, x, y) {
+  targetCtx.save();
+  targetCtx.translate(x, y);
+
+  // Fundo circular escuro com anel azul gelo
+  targetCtx.beginPath();
+  targetCtx.arc(0, 0, 7.5, 0, Math.PI * 2);
+  targetCtx.fillStyle = 'rgba(6, 18, 30, 0.92)';
+  targetCtx.fill();
+  targetCtx.strokeStyle = '#74b9ff';
+  targetCtx.lineWidth = 1.3;
+  targetCtx.stroke();
+
+  // Floco de neve radial de 6 pontas
+  targetCtx.lineCap = 'round';
+  targetCtx.strokeStyle = '#e3f4ff';
+  targetCtx.lineWidth = 1.2;
+
+  targetCtx.beginPath();
+  for (let k = 0; k < SNOWFLAKE_ARMS.length; k++) {
+    const arm = SNOWFLAKE_ARMS[k];
+    targetCtx.moveTo(0, 0);
+    targetCtx.lineTo(arm.x, arm.y);
+    targetCtx.moveTo(arm.bx, arm.by);
+    targetCtx.lineTo(arm.barb1X, arm.barb1Y);
+    targetCtx.moveTo(arm.bx, arm.by);
+    targetCtx.lineTo(arm.barb2X, arm.barb2Y);
+  }
+  targetCtx.stroke();
+
+  // Cristal de diamante central
+  targetCtx.fillStyle = '#74b9ff';
+  targetCtx.beginPath();
+  targetCtx.moveTo(0, -1.8);
+  targetCtx.lineTo(1.8, 0);
+  targetCtx.lineTo(0, 1.8);
+  targetCtx.lineTo(-1.8, 0);
+  targetCtx.closePath();
+  targetCtx.fill();
+
+  // Ponto brilhante central branco
+  targetCtx.fillStyle = '#ffffff';
+  targetCtx.beginPath();
+  targetCtx.arc(0, 0, 0.8, 0, Math.PI * 2);
+  targetCtx.fill();
+
+  targetCtx.restore();
+}
+
+function ensureStatusIconCanvases() {
+  if (typeof document === 'undefined') return;
+  if (!skullCanvas) {
+    skullCanvas = document.createElement('canvas');
+    skullCanvas.width = 24;
+    skullCanvas.height = 24;
+    const sCtx = skullCanvas.getContext('2d');
+    renderPurpleSkullVector(sCtx, 12, 12);
+  }
+  if (!fireCanvas) {
+    fireCanvas = document.createElement('canvas');
+    fireCanvas.width = 24;
+    fireCanvas.height = 24;
+    const fCtx = fireCanvas.getContext('2d');
+    renderFireVector(fCtx, 12, 12);
+  }
+  if (!snowflakeCanvas) {
+    snowflakeCanvas = document.createElement('canvas');
+    snowflakeCanvas.width = 24;
+    snowflakeCanvas.height = 24;
+    const sfCtx = snowflakeCanvas.getContext('2d');
+    renderSnowflakeVector(sfCtx, 12, 12);
+  }
+}
+
 /**
  * Renderiza o ícone de Caveira Roxa para envenenamento (veneno roxo da Valéria).
  */
 export function drawPurpleSkullIcon(ctx, x, y) {
-  ctx.save();
-  ctx.translate(x, y);
-
-  // Fundo circular escuro com anel roxo radiante
-  ctx.beginPath();
-  ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(18, 10, 28, 0.92)';
-  ctx.fill();
-  ctx.strokeStyle = '#c084fc';
-  ctx.lineWidth = 1.3;
-  ctx.stroke();
-
-  // Caixa craniana da caveira em roxo vívido
-  ctx.fillStyle = '#a855f7';
-  ctx.beginPath();
-  ctx.arc(0, -1.2, 4.2, Math.PI * 0.95, Math.PI * 0.05, false);
-  ctx.lineTo(2.2, 2.2);
-  ctx.lineTo(1.6, 4.0);
-  ctx.lineTo(-1.6, 4.0);
-  ctx.lineTo(-2.2, 2.2);
-  ctx.closePath();
-  ctx.fill();
-
-  // Brilho na testa
-  ctx.fillStyle = '#e9d5ff';
-  ctx.beginPath();
-  ctx.arc(-1.2, -3.0, 1.2, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Cavidades oculares escuras
-  ctx.fillStyle = '#1e0538';
-  ctx.beginPath();
-  ctx.ellipse(-1.5, -0.6, 1.1, 1.4, -0.15, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(1.5, -0.6, 1.1, 1.4, 0.15, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Fossa nasal
-  ctx.beginPath();
-  ctx.moveTo(0, 1.2);
-  ctx.lineTo(-0.6, 2.0);
-  ctx.lineTo(0.6, 2.0);
-  ctx.closePath();
-  ctx.fill();
-
-  // Dentes da mandíbula
-  ctx.strokeStyle = '#1e0538';
-  ctx.lineWidth = 0.8;
-  ctx.beginPath();
-  ctx.moveTo(-0.7, 2.8); ctx.lineTo(-0.7, 4.0);
-  ctx.moveTo(0.7, 2.8); ctx.lineTo(0.7, 4.0);
-  ctx.stroke();
-
-  ctx.restore();
+  ensureStatusIconCanvases();
+  if (skullCanvas) {
+    ctx.drawImage(skullCanvas, Math.round(x - 12), Math.round(y - 12));
+  } else {
+    renderPurpleSkullVector(ctx, x, y);
+  }
 }
 
 /**
  * Renderiza o ícone de Fogo para queimadura ígnea contínua.
  */
 export function drawFireIcon(ctx, x, y) {
-  ctx.save();
-  ctx.translate(x, y);
-
-  // Fundo circular escuro com anel de fogo alaranjado
-  ctx.beginPath();
-  ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(28, 12, 6, 0.92)';
-  ctx.fill();
-  ctx.strokeStyle = '#ff793f';
-  ctx.lineWidth = 1.3;
-  ctx.stroke();
-
-  const flameFlicker = Math.sin(frameCount * 0.35 + x) * 0.7;
-
-  // Chama externa (Vermelho-Alaranjada)
-  ctx.fillStyle = '#ff4757';
-  ctx.beginPath();
-  ctx.moveTo(0, 4.8);
-  ctx.bezierCurveTo(-4.2, 4.2, -4.6, 0.5, -2.5, -1.8);
-  ctx.bezierCurveTo(-2.8, -0.2, -2.0, 0.4, -1.2, -0.5);
-  ctx.bezierCurveTo(-1.8, -2.6, -0.5, -4.5, flameFlicker, -5.5);
-  ctx.bezierCurveTo(0.6, -4.0, 1.8, -2.4, 1.5, -0.4);
-  ctx.bezierCurveTo(2.4, 0.6, 3.2, -0.2, 2.8, -1.6);
-  ctx.bezierCurveTo(4.6, 0.5, 4.2, 4.2, 0, 4.8);
-  ctx.closePath();
-  ctx.fill();
-
-  // Chama intermediária (Laranja Dourado)
-  ctx.fillStyle = '#ffa502';
-  ctx.beginPath();
-  ctx.moveTo(0, 4.2);
-  ctx.bezierCurveTo(-2.8, 3.8, -3.0, 1.2, -1.5, -0.5);
-  ctx.bezierCurveTo(-0.8, -2.0, 0.2, -3.2, flameFlicker * 0.6, -4.0);
-  ctx.bezierCurveTo(0.8, -2.6, 1.8, -1.2, 1.5, -0.5);
-  ctx.bezierCurveTo(3.0, 1.2, 2.8, 3.8, 0, 4.2);
-  ctx.closePath();
-  ctx.fill();
-
-  // Núcleo interno incandescente (Amarelo / Branco)
-  ctx.fillStyle = '#ffeaa7';
-  ctx.beginPath();
-  ctx.moveTo(0, 3.6);
-  ctx.bezierCurveTo(-1.6, 3.4, -1.8, 1.6, -0.6, 0.2);
-  ctx.bezierCurveTo(0, -1.0, 0.3, -1.8, flameFlicker * 0.3, -2.2);
-  ctx.bezierCurveTo(0.5, -1.4, 1.2, 0.2, 0.6, 0.2);
-  ctx.bezierCurveTo(1.8, 1.6, 1.6, 3.4, 0, 3.6);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.restore();
+  ensureStatusIconCanvases();
+  if (fireCanvas) {
+    ctx.drawImage(fireCanvas, Math.round(x - 12), Math.round(y - 12));
+  } else {
+    renderFireVector(ctx, x, y);
+  }
 }
 
 /**
  * Renderiza o ícone de Floco de Neve para congelamento (Golpe Criogênico).
  */
 export function drawSnowflakeIcon(ctx, x, y) {
-  ctx.save();
-  ctx.translate(x, y);
-
-  // Fundo circular escuro com anel azul gelo
-  ctx.beginPath();
-  ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(6, 18, 30, 0.92)';
-  ctx.fill();
-  ctx.strokeStyle = '#74b9ff';
-  ctx.lineWidth = 1.3;
-  ctx.stroke();
-
-  // Floco de neve radial de 6 pontas
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = '#e3f4ff';
-  ctx.lineWidth = 1.2;
-
-  ctx.beginPath();
-  for (let k = 0; k < SNOWFLAKE_ARMS.length; k++) {
-    const arm = SNOWFLAKE_ARMS[k];
-    ctx.moveTo(0, 0);
-    ctx.lineTo(arm.x, arm.y);
-    ctx.moveTo(arm.bx, arm.by);
-    ctx.lineTo(arm.barb1X, arm.barb1Y);
-    ctx.moveTo(arm.bx, arm.by);
-    ctx.lineTo(arm.barb2X, arm.barb2Y);
+  ensureStatusIconCanvases();
+  if (snowflakeCanvas) {
+    ctx.drawImage(snowflakeCanvas, Math.round(x - 12), Math.round(y - 12));
+  } else {
+    renderSnowflakeVector(ctx, x, y);
   }
-  ctx.stroke();
-
-  // Cristal de diamante central
-  ctx.fillStyle = '#74b9ff';
-  ctx.beginPath();
-  ctx.moveTo(0, -1.8);
-  ctx.lineTo(1.8, 0);
-  ctx.lineTo(0, 1.8);
-  ctx.lineTo(-1.8, 0);
-  ctx.closePath();
-  ctx.fill();
-
-  // Ponto brilhante central branco
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(0, 0, 0.8, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
 }
 
 /**
@@ -658,6 +713,10 @@ export function applyKinematicDeformations(e) {
   }
 }
 
+let lastTelegraphFrame = -1;
+let telegraphsDrawnThisFrame = 0;
+const MAX_TELEGRAPH_RENDERS_PER_FRAME = 6;
+
 /**
  * Renderiza a telegrafia visual vermelha que carrega visualmente no solo durante o ataque do mob.
  * - Cone Direcional de Perigo: preenche dinamicamente em vermelho luminoso (0% a 100%) em direção ao alvo.
@@ -712,6 +771,17 @@ export function drawEnemyAttackTelegraph(e) {
 
   if (!isAttacking) return;
 
+  // LOD de Telegrafia: limita o teto de telegrafias simultâneas de monstros comuns para preservar FPS e legibilidade
+  if (frameCount !== lastTelegraphFrame) {
+    lastTelegraphFrame = frameCount;
+    telegraphsDrawnThisFrame = 0;
+  }
+  const isPriority = e.isBoss || e.isMiniBoss || e.isElite;
+  if (!isPriority && telegraphsDrawnThisFrame >= MAX_TELEGRAPH_RENDERS_PER_FRAME) {
+    return;
+  }
+  if (!isPriority) telegraphsDrawnThisFrame++;
+
   ctx.save();
   // Neutraliza o scale(e.facing, 1) para rotações angulares no espaço global do mundo
   if ((e.facing || 1) === -1) {
@@ -732,10 +802,9 @@ export function drawEnemyAttackTelegraph(e) {
   ctx.closePath();
   ctx.fill();
 
-  // Borda delimitadora tracejada
-  ctx.strokeStyle = 'rgba(255, 71, 87, 0.42)';
-  ctx.lineWidth = 1.4;
-  ctx.setLineDash([4, 3]);
+  // Borda delimitadora sólida com baixa opacidade (Zero pipeline flush de setLineDash)
+  ctx.strokeStyle = 'rgba(255, 71, 87, 0.38)';
+  ctx.lineWidth = 1.3;
   ctx.beginPath();
   ctx.arc(0, 0, maxR, startAng, endAng);
   ctx.stroke();
@@ -747,19 +816,13 @@ export function drawEnemyAttackTelegraph(e) {
   ctx.moveTo(0, 0);
   ctx.lineTo(Math.cos(endAng) * maxR, Math.sin(endAng) * maxR);
   ctx.stroke();
-  ctx.setLineDash([]);
 
   // B. PREENCHIMENTO VERMELHO QUE CARREGA VISUALMENTE
   const currentR = Math.max(e.radius * 0.6, maxR * Math.max(0.06, progress));
 
   if (!isStrike) {
-    // Gradiente carmesim volumétrico avançando radialmente
-    const chargeGrad = ctx.createRadialGradient(0, 0, e.radius * 0.3, 0, 0, currentR);
-    chargeGrad.addColorStop(0, 'rgba(255, 71, 87, 0.16)');
-    chargeGrad.addColorStop(0.65, `rgba(231, 76, 60, ${0.30 + progress * 0.32})`);
-    chargeGrad.addColorStop(1.0, `rgba(255, 71, 87, ${0.52 + progress * 0.44})`);
-
-    ctx.fillStyle = chargeGrad;
+    // Preenchimento carmesim volumétrico avançando radialmente (Zero alocações de gradiente por quadro)
+    ctx.fillStyle = `rgba(231, 76, 60, ${0.18 + progress * 0.36})`;
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.arc(0, 0, currentR, startAng, endAng);

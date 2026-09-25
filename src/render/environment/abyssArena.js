@@ -8,6 +8,108 @@ import { camera, cameraViewW, cameraViewH, frameCount, activeBoss } from '../../
 import { player } from '../../entities/player.js';
 import { tileHash } from '../environment.js';
 
+// --- CACHES & BUFFERS DE ALTA PERFORMANCE (FASE 2: BAKING DO VAZIO CÓSMICO) ---
+let _starfieldCanvas = null;
+let _starfieldPattern = null;
+const STARFIELD_SIZE = 1024;
+
+function getStarfieldPattern(ctx) {
+  if (_starfieldPattern) return _starfieldPattern;
+  _starfieldCanvas = document.createElement('canvas');
+  _starfieldCanvas.width = STARFIELD_SIZE;
+  _starfieldCanvas.height = STARFIELD_SIZE;
+  const sCtx = _starfieldCanvas.getContext('2d');
+
+  sCtx.fillStyle = '#040108';
+  sCtx.fillRect(0, 0, STARFIELD_SIZE, STARFIELD_SIZE);
+
+  // Pré-renderiza 48 estrelas celestes com glow uma única vez
+  for (let i = 0; i < 48; i++) {
+    const h1 = tileHash(i * 13, i * 37);
+    const h2 = tileHash(i * 71, i * 19);
+    const sx = Math.floor(h1 * 3200) % STARFIELD_SIZE;
+    const sy = Math.floor(h2 * 3200) % STARFIELD_SIZE;
+    const isCyan = i % 3 === 0;
+    const r = (i % 5 === 0 ? 2.2 : 1.2);
+
+    sCtx.fillStyle = isCyan ? 'rgba(0, 206, 201, 0.28)' : 'rgba(232, 67, 147, 0.22)';
+    sCtx.beginPath();
+    sCtx.arc(sx, sy, r * 2.2, 0, Math.PI * 2);
+    sCtx.fill();
+
+    sCtx.fillStyle = isCyan ? 'rgba(0, 206, 201, 0.85)' : 'rgba(232, 67, 147, 0.80)';
+    sCtx.beginPath();
+    sCtx.arc(sx, sy, r, 0, Math.PI * 2);
+    sCtx.fill();
+  }
+
+  _starfieldPattern = ctx.createPattern(_starfieldCanvas, 'repeat');
+  return _starfieldPattern;
+}
+
+let _cascadeCanvas = null;
+function getCascadeCanvas() {
+  if (_cascadeCanvas) return _cascadeCanvas;
+  _cascadeCanvas = document.createElement('canvas');
+  _cascadeCanvas.width = 8;
+  _cascadeCanvas.height = 64;
+  const cCtx = _cascadeCanvas.getContext('2d');
+  const grad = cCtx.createLinearGradient(0, 0, 0, 64);
+  grad.addColorStop(0, 'rgba(0, 206, 201, 0.85)');
+  grad.addColorStop(0.5, 'rgba(232, 67, 147, 0.50)');
+  grad.addColorStop(1, 'rgba(10, 3, 20, 0)');
+  cCtx.fillStyle = grad;
+  cCtx.fillRect(0, 0, 8, 64);
+  return _cascadeCanvas;
+}
+
+// Caches de Gradientes Radiais Reutilizáveis (Zero GC Spike)
+let _cachedAccGrad = null;
+let _cachedAccGradR = -1;
+function getAccretionGradient(ctx, R) {
+  if (_cachedAccGrad && _cachedAccGradR === R) return _cachedAccGrad;
+  _cachedAccGrad = ctx.createRadialGradient(0, 0, R * 0.9, 0, 0, R * 2.3);
+  _cachedAccGrad.addColorStop(0, 'rgba(108, 92, 231, 0.28)');
+  _cachedAccGrad.addColorStop(0.35, 'rgba(232, 67, 147, 0.2)');
+  _cachedAccGrad.addColorStop(0.7, 'rgba(0, 206, 201, 0.14)');
+  _cachedAccGrad.addColorStop(1, 'rgba(4, 1, 8, 0)');
+  _cachedAccGradR = R;
+  return _cachedAccGrad;
+}
+
+let _cachedFloorGrad = null;
+let _cachedFloorKey = '';
+function getFloorGradient(ctx, cx, cy, R) {
+  const key = `${cx}_${cy}_${R}`;
+  if (_cachedFloorGrad && _cachedFloorKey === key) return _cachedFloorGrad;
+  _cachedFloorGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+  _cachedFloorGrad.addColorStop(0, '#1c0c2e');
+  _cachedFloorGrad.addColorStop(0.5, '#12071f');
+  _cachedFloorGrad.addColorStop(0.85, '#0b0313');
+  _cachedFloorGrad.addColorStop(1, '#050109');
+  _cachedFloorKey = key;
+  return _cachedFloorGrad;
+}
+
+let _cachedCoreGrad = null;
+let _cachedCoreKey = '';
+function getCoreGradient(ctx, cx, cy, radius) {
+  const key = `${cx}_${cy}_${radius}`;
+  if (_cachedCoreGrad && _cachedCoreKey === key) return _cachedCoreGrad;
+  _cachedCoreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+  _cachedCoreGrad.addColorStop(0, '#ffffff');
+  _cachedCoreGrad.addColorStop(0.2, '#00cec9');
+  _cachedCoreGrad.addColorStop(0.55, '#8e44ad');
+  _cachedCoreGrad.addColorStop(0.85, '#2c0e3e');
+  _cachedCoreGrad.addColorStop(1, 'rgba(10, 2, 20, 0)');
+  _cachedCoreKey = key;
+  return _cachedCoreGrad;
+}
+
+// Buffers estáticos para as 12 cadeias de plasma dos monólitos (Zero Allocations)
+let _chainPointsX = null;
+let _chainPointsY = null;
+
 /**
  * Estado rastreado da singularidade do Altar do Fim dos Tempos (Boss Final).
  */
@@ -26,6 +128,19 @@ export function getAbyssArenaState() {
   return lastAbyssState;
 }
 
+export function resetAbyssArena() {
+  lastAbyssState.x = 0;
+  lastAbyssState.y = 0;
+  lastAbyssState.radius = 620;
+  lastAbyssState.phase = 1;
+  _cachedAccGrad = null;
+  _cachedAccGradR = -1;
+  _cachedFloorGrad = null;
+  _cachedFloorKey = '';
+  _cachedCoreGrad = null;
+  _cachedCoreKey = '';
+}
+
 /**
  * Renderiza a arena surreal do Chefe Final: O Altar da Singularidade / O Disco do Fim dos Tempos.
  */
@@ -37,36 +152,32 @@ export function renderSurrealAbyssArena(ctx) {
   const phase = arena.phase || 1;
 
   // ==========================================
-  // CAMADA 1: O VAZIO CÓSMICO PROFUNDO (BACKGROUND)
+  // CAMADA 1: O VAZIO CÓSMICO PROFUNDO (BACKGROUND COM PATTERN CACHEADO)
   // ==========================================
-  ctx.fillStyle = '#040108';
-  ctx.fillRect(camera.x, camera.y, cameraViewW, cameraViewH);
+  const starPattern = getStarfieldPattern(ctx);
+  ctx.save();
+  ctx.translate(camera.x * 0.92, camera.y * 0.92);
+  ctx.fillStyle = starPattern;
+  ctx.fillRect(camera.x * 0.08, camera.y * 0.08, cameraViewW, cameraViewH);
+  ctx.restore();
 
-  // Estrelas cósmicas no vácuo com leve paralaxe
-  for (let i = 0; i < 48; i++) {
-    const h1 = tileHash(i * 13, i * 37);
-    const h2 = tileHash(i * 71, i * 19);
-    const starX = camera.x + ((h1 * 3200 - camera.x * 0.08) % cameraViewW + cameraViewW) % cameraViewW;
-    const starY = camera.y + ((h2 * 3200 - camera.y * 0.08) % cameraViewH + cameraViewH) % cameraViewH;
-    const twinkle = Math.sin(frameCount * 0.05 + i * 2) * 0.4 + 0.6;
-    const isCyan = i % 3 === 0;
-    ctx.fillStyle = isCyan ? `rgba(0, 206, 201, ${0.7 * twinkle})` : `rgba(232, 67, 147, ${0.6 * twinkle})`;
+  // 4 Estrelas Proeminentes Vivas com pulsação estelar orgânica (Twinkle)
+  for (let i = 0; i < 4; i++) {
+    const starX = camera.x + ((tileHash(i * 43, i * 79) * 3200 - camera.x * 0.08) % cameraViewW + cameraViewW) % cameraViewW;
+    const starY = camera.y + ((tileHash(i * 61, i * 29) * 3200 - camera.y * 0.08) % cameraViewH + cameraViewH) % cameraViewH;
+    const twinkle = Math.sin(frameCount * 0.07 + i * 1.8) * 0.45 + 0.55;
+    ctx.fillStyle = i % 2 === 0 ? `rgba(0, 206, 201, ${0.85 * twinkle})` : `rgba(232, 67, 147, ${0.80 * twinkle})`;
     ctx.beginPath();
-    ctx.arc(starX, starY, (i % 5 === 0 ? 2.2 : 1.2), 0, Math.PI * 2);
+    ctx.arc(starX, starY, 2.4 * twinkle, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Disco de Acreção do Buraco Negro Supermassivo
+  // Disco de Acreção do Buraco Negro Supermassivo (Gradiente Radial em Cache)
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(-0.25);
 
-  const accGrad = ctx.createRadialGradient(0, 0, R * 0.9, 0, 0, R * 2.3);
-  accGrad.addColorStop(0, 'rgba(108, 92, 231, 0.28)');
-  accGrad.addColorStop(0.35, 'rgba(232, 67, 147, 0.2)');
-  accGrad.addColorStop(0.7, 'rgba(0, 206, 201, 0.14)');
-  accGrad.addColorStop(1, 'rgba(4, 1, 8, 0)');
-  ctx.fillStyle = accGrad;
+  ctx.fillStyle = getAccretionGradient(ctx, R);
   ctx.beginPath();
   ctx.ellipse(0, 0, R * 2.3, R * 0.88, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -141,17 +252,21 @@ export function renderSurrealAbyssArena(ctx) {
     ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+  }
 
-    // Filamento de plasma sutil conectando obeliscos vizinhos
+  // Filamento de plasma sutil conectando obeliscos vizinhos (Batched em 1 único stroke)
+  ctx.strokeStyle = phase === 3 ? 'rgba(0, 206, 201, 0.18)' : 'rgba(232, 67, 147, 0.15)';
+  ctx.lineWidth = 1.0;
+  ctx.beginPath();
+  for (let ob = 0; ob < orbitalObelisks; ob++) {
+    const obAngle = (ob * Math.PI * 2) / orbitalObelisks + frameCount * 0.0015;
+    const obDist = R + 480 + (ob % 3) * 60;
     const nextObAngle = ((ob + 1) * Math.PI * 2) / orbitalObelisks + frameCount * 0.0015;
     const nextDist = R + 480 + ((ob + 1) % 3) * 60;
-    ctx.strokeStyle = ob % 2 === 0 ? 'rgba(0, 206, 201, 0.18)' : 'rgba(232, 67, 147, 0.15)';
-    ctx.lineWidth = 1.0;
-    ctx.beginPath();
-    ctx.moveTo(obX, obY);
+    ctx.moveTo(cx + Math.cos(obAngle) * obDist, cy + Math.sin(obAngle) * obDist);
     ctx.lineTo(cx + Math.cos(nextObAngle) * nextDist, cy + Math.sin(nextObAngle) * nextDist);
-    ctx.stroke();
   }
+  ctx.stroke();
 
   // Olhos Cósmicos Colossais observando silenciosamente
   const cosmicEyes = [
@@ -226,7 +341,8 @@ export function renderSurrealAbyssArena(ctx) {
   ctx.arc(cx, cy + (cliffDepth * 0.8), R - 4, 0.3, Math.PI - 0.3);
   ctx.stroke();
 
-  // Cascatas de luz e matéria caindo no infinito
+  // Cascatas de luz e matéria caindo no infinito (Sprite Scaled Pre-rendered)
+  const cascadeSprite = getCascadeCanvas();
   const cascadeStreams = 16;
   for (let c = 0; c < cascadeStreams; c++) {
     const cAngle = (c * Math.PI * 2) / cascadeStreams + 0.1;
@@ -235,13 +351,10 @@ export function renderSurrealAbyssArena(ctx) {
     const flowLength = 42 + Math.sin(frameCount * 0.1 + c * 2) * 16;
     const streamAlpha = 0.35 + Math.sin(frameCount * 0.08 + c) * 0.2;
 
-    const cascadeGrad = ctx.createLinearGradient(lipX, lipY, lipX, lipY + flowLength);
-    cascadeGrad.addColorStop(0, `rgba(0, 206, 201, ${streamAlpha})`);
-    cascadeGrad.addColorStop(0.5, `rgba(232, 67, 147, ${streamAlpha * 0.6})`);
-    cascadeGrad.addColorStop(1, 'rgba(10, 3, 20, 0)');
-
-    ctx.fillStyle = cascadeGrad;
-    ctx.fillRect(lipX - 3, lipY, 6, flowLength);
+    ctx.save();
+    ctx.globalAlpha *= streamAlpha;
+    ctx.drawImage(cascadeSprite, lipX - 3, lipY, 6, flowLength);
+    ctx.restore();
 
     if ((frameCount + c * 3) % 4 === 0) {
       ctx.fillStyle = '#81ecec';
@@ -276,13 +389,8 @@ export function renderSurrealAbyssArena(ctx) {
   ctx.arc(cx, cy, R, 0, Math.PI * 2);
   ctx.clip();
 
-  // Fundo do espelho de obsidiana
-  const floorGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
-  floorGrad.addColorStop(0, '#1c0c2e');
-  floorGrad.addColorStop(0.5, '#12071f');
-  floorGrad.addColorStop(0.85, '#0b0313');
-  floorGrad.addColorStop(1, '#050109');
-  ctx.fillStyle = floorGrad;
+  // Fundo do espelho de obsidiana (Gradiente em Cache)
+  ctx.fillStyle = getFloorGradient(ctx, cx, cy, R);
   ctx.fillRect(cx - R - 5, cy - R - 5, (R + 5) * 2, (R + 5) * 2);
 
   // Nebulosa refletida na lâmina de obsidiana
@@ -311,35 +419,35 @@ export function renderSurrealAbyssArena(ctx) {
     ctx.stroke();
   }
 
-  // 12 Canais Rúnicos de Condução de Plasma (do Vórtice Central aos 12 Monólitos)
+  // 12 Canais Rúnicos de Condução de Plasma (do Vórtice Central aos 12 Monólitos - Batched)
   const pulseOffset = (frameCount * 1.2) % (R * 0.72);
+  const startDist = R * 0.26;
+  const endDist = R * 0.96;
+
+  // Canaletas gravadas (1 único stroke batched)
+  ctx.strokeStyle = (phase === 3) ? 'rgba(0, 206, 201, 0.22)' : 'rgba(232, 67, 147, 0.18)';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
   for (let m = 0; m < 12; m++) {
     const mAngle = (m * Math.PI * 2) / 12;
-    const startDist = R * 0.26;
-    const endDist = R * 0.96;
-    const sx = cx + Math.cos(mAngle) * startDist;
-    const sy = cy + Math.sin(mAngle) * startDist;
-    const ex = cx + Math.cos(mAngle) * endDist;
-    const ey = cy + Math.sin(mAngle) * endDist;
+    ctx.moveTo(cx + Math.cos(mAngle) * startDist, cy + Math.sin(mAngle) * startDist);
+    ctx.lineTo(cx + Math.cos(mAngle) * endDist, cy + Math.sin(mAngle) * endDist);
+  }
+  ctx.stroke();
 
-    // Canaleta gravada
-    ctx.strokeStyle = (phase === 3) ? 'rgba(0, 206, 201, 0.22)' : 'rgba(232, 67, 147, 0.18)';
-    ctx.lineWidth = 1.6;
+  // Pulso luminoso de plasma correndo ao longo dos canais (1 único fill batched)
+  const curPulseDist = startDist + pulseOffset;
+  if (curPulseDist < endDist) {
+    ctx.fillStyle = (phase === 3) ? '#00cec9' : '#e84393';
     ctx.beginPath();
-    ctx.moveTo(sx, sy);
-    ctx.lineTo(ex, ey);
-    ctx.stroke();
-
-    // Pulso luminoso de plasma correndo ao longo do canal
-    const curPulseDist = startDist + pulseOffset;
-    if (curPulseDist < endDist) {
+    for (let m = 0; m < 12; m++) {
+      const mAngle = (m * Math.PI * 2) / 12;
       const px = cx + Math.cos(mAngle) * curPulseDist;
       const py = cy + Math.sin(mAngle) * curPulseDist;
-      ctx.fillStyle = (phase === 3) ? '#00cec9' : '#e84393';
-      ctx.beginPath();
+      ctx.moveTo(px + 2.2, py);
       ctx.arc(px, py, 2.2, 0, Math.PI * 2);
-      ctx.fill();
     }
+    ctx.fill();
   }
 
   // Teias de Constelações Astrais Gravadas na Obsidiana (12 Nós Estelares)
@@ -395,19 +503,28 @@ export function renderSurrealAbyssArena(ctx) {
   ctx.arc(cx, cy, ring1R - 10, 0, Math.PI * 2);
   ctx.stroke();
 
-  for (let g = 0; g < 36; g++) {
+  // Traços Principais (Ciano, largura 2 - Batched)
+  ctx.strokeStyle = 'rgba(0, 206, 201, 0.6)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let g = 0; g < 36; g += 3) {
     const gAngle = rot1 + (g * Math.PI * 2) / 36;
-    const gx1 = cx + Math.cos(gAngle) * (ring1R - 8);
-    const gy1 = cy + Math.sin(gAngle) * (ring1R - 8);
-    const gx2 = cx + Math.cos(gAngle) * ring1R;
-    const gy2 = cy + Math.sin(gAngle) * ring1R;
-    ctx.strokeStyle = (g % 3 === 0) ? 'rgba(0, 206, 201, 0.6)' : 'rgba(217, 128, 250, 0.35)';
-    ctx.lineWidth = (g % 3 === 0) ? 2 : 1;
-    ctx.beginPath();
-    ctx.moveTo(gx1, gy1);
-    ctx.lineTo(gx2, gy2);
-    ctx.stroke();
+    ctx.moveTo(cx + Math.cos(gAngle) * (ring1R - 8), cy + Math.sin(gAngle) * (ring1R - 8));
+    ctx.lineTo(cx + Math.cos(gAngle) * ring1R, cy + Math.sin(gAngle) * ring1R);
   }
+  ctx.stroke();
+
+  // Traços Secundários (Lilás, largura 1 - Batched)
+  ctx.strokeStyle = 'rgba(217, 128, 250, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let g = 0; g < 36; g++) {
+    if (g % 3 === 0) continue;
+    const gAngle = rot1 + (g * Math.PI * 2) / 36;
+    ctx.moveTo(cx + Math.cos(gAngle) * (ring1R - 8), cy + Math.sin(gAngle) * (ring1R - 8));
+    ctx.lineTo(cx + Math.cos(gAngle) * ring1R, cy + Math.sin(gAngle) * ring1R);
+  }
+  ctx.stroke();
 
   // Anel 2: Geometria Sagrada / Estrela de 8 pontas (0.56 * R) rotacionando horário
   const ring2R = R * 0.56;
@@ -458,14 +575,8 @@ export function renderSurrealAbyssArena(ctx) {
     ctx.stroke();
   }
 
-  // Singularidade Central
-  const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, ring3R * 0.65);
-  coreGrad.addColorStop(0, '#ffffff');
-  coreGrad.addColorStop(0.2, '#00cec9');
-  coreGrad.addColorStop(0.55, '#8e44ad');
-  coreGrad.addColorStop(0.85, '#2c0e3e');
-  coreGrad.addColorStop(1, 'rgba(10, 2, 20, 0)');
-  ctx.fillStyle = coreGrad;
+  // Singularidade Central (Gradiente em Cache)
+  ctx.fillStyle = getCoreGradient(ctx, cx, cy, ring3R * 0.65);
   ctx.beginPath();
   ctx.arc(cx, cy, ring3R * 0.65, 0, Math.PI * 2);
   ctx.fill();
@@ -547,33 +658,59 @@ export function renderSurrealAbyssArena(ctx) {
   const plasmaColor = phase === 3 ? 'rgba(0, 206, 201, ' : (phase === 2 ? 'rgba(232, 67, 147, ' : 'rgba(186, 120, 255, ');
   const plasmaGlow = phase === 3 ? '#00cec9' : (phase === 2 ? '#e84393' : '#a29bfe');
 
+  const throttledFrame = Math.floor(frameCount * 0.5) * 2;
+  const arcLen = R * (Math.PI * 2 / monolithCount);
+
+  if (!_chainPointsX || _chainPointsX.length < monolithCount * 7) {
+    _chainPointsX = new Float32Array(monolithCount * 7);
+    _chainPointsY = new Float32Array(monolithCount * 7);
+  }
+
+  let ptIdx = 0;
   for (let i = 0; i < monolithCount; i++) {
     const curr = monolithPos[i];
     const next = monolithPos[(i + 1) % monolithCount];
-    const segs = 6;
+    const dx = next.x - curr.x;
+    const dy = next.y - curr.y;
+    const normX = -dy / arcLen;
+    const normY = dx / arcLen;
 
-    ctx.strokeStyle = `${plasmaColor}0.85)`;
-    ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    ctx.moveTo(curr.x, curr.y - 18);
+    _chainPointsX[ptIdx] = curr.x;
+    _chainPointsY[ptIdx] = curr.y - 18;
+    ptIdx++;
 
-    for (let s = 1; s < segs; s++) {
-      const frac = s / segs;
-      const midX = curr.x + (next.x - curr.x) * frac;
-      const midY = curr.y + (next.y - curr.y) * frac - 18;
-      const jitter = Math.sin(frameCount * 0.4 + i * 5 + s * 3) * 6;
-      const arcLen = R * (Math.PI * 2 / monolithCount);
-      const normX = -(next.y - curr.y) / arcLen;
-      const normY = (next.x - curr.x) / arcLen;
-      ctx.lineTo(midX + normX * jitter, midY + normY * jitter);
+    for (let s = 1; s < 6; s++) {
+      const frac = s / 6;
+      const midX = curr.x + dx * frac;
+      const midY = curr.y + dy * frac - 18;
+      const jitter = Math.sin(throttledFrame * 0.4 + i * 5 + s * 3) * 6;
+      _chainPointsX[ptIdx] = midX + normX * jitter;
+      _chainPointsY[ptIdx] = midY + normY * jitter;
+      ptIdx++;
     }
-    ctx.lineTo(next.x, next.y - 18);
-    ctx.stroke();
 
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
+    _chainPointsX[ptIdx] = next.x;
+    _chainPointsY[ptIdx] = next.y - 18;
+    ptIdx++;
   }
+
+  // 1. Manto Externo de Plasma (1 único stroke batched para todos os 12 arcos)
+  ctx.strokeStyle = `${plasmaColor}0.85)`;
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  for (let i = 0; i < monolithCount; i++) {
+    const start = i * 7;
+    ctx.moveTo(_chainPointsX[start], _chainPointsY[start]);
+    for (let p = 1; p < 7; p++) {
+      ctx.lineTo(_chainPointsX[start + p], _chainPointsY[start + p]);
+    }
+  }
+  ctx.stroke();
+
+  // 2. Núcleo Interno Branco Incandescente (reutiliza o mesmo path batched)
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
 
   for (let i = 0; i < monolithCount; i++) {
     const m = monolithPos[i];
