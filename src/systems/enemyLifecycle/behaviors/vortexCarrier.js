@@ -7,12 +7,13 @@ import { createHitParticles, addDamageText } from '../../combat.js';
 
 export function vortexCarrierBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, voidVortices } = ctx;
+  const isPlayerVisible = !(player.invisTimer > 0);
   e.x += Math.cos(angle) * curSpeed * 0.8 * dt;
   e.y += Math.sin(angle) * curSpeed * 0.8 * dt;
   const vdx = e.x - player.x;
   const vdy = e.y - player.y;
   const vDist = Math.hypot(vdx, vdy);
-  if (vDist < 280 && vDist > 20) {
+  if (isPlayerVisible && vDist < 280 && vDist > 20) {
     player.x += (vdx / vDist) * 0.75 * dt;
     player.y += (vdy / vDist) * 0.75 * dt;
   }

@@ -6,6 +6,7 @@ import { playSfx } from '../../../core/audio.js';
 
 export function mortarBarrageBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, bossTelegraphs } = ctx;
+  const isPlayerVisible = !(player.invisTimer > 0);
   const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
   if (distToPlayerSq < 170 * 170) {
     e.x -= Math.cos(angle) * curSpeed * dt;
@@ -15,7 +16,7 @@ export function mortarBarrageBehavior(e, dt, angle, curSpeed, ctx) {
     e.y += Math.sin(angle) * curSpeed * dt;
   }
   e.mortarTimer = (e.mortarTimer || 0) + dt;
-  if (e.mortarTimer >= 140) {
+  if (isPlayerVisible && e.mortarTimer >= 140) {
     e.mortarTimer = 0;
     playSfx('shoot');
     bossTelegraphs.push({

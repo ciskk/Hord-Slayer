@@ -9,12 +9,20 @@ import { setLastAttackerInfo } from '../../../state/events.js';
 
 export function lanceChargeBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, triggerShake, setLastAttackerName } = ctx;
+  const isPlayerVisible = !(player.invisTimer > 0);
+
+  // Se Kael ficar invisível durante a mira, cancela a investida e volta a perseguir
+  if (!isPlayerVisible && e.lanceState === 'aim') {
+    e.lanceState = 'chase';
+    e.lanceTimer = 0;
+  }
+
   if (e.lanceState === 'chase') {
     e.x += Math.cos(angle) * curSpeed * dt;
     e.y += Math.sin(angle) * curSpeed * dt;
     e.lanceTimer = (e.lanceTimer || 0) + dt;
     const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
-    if (e.lanceTimer >= 69 && distToPlayerSq <= 85 * 85) {
+    if (isPlayerVisible && e.lanceTimer >= 69 && distToPlayerSq <= 85 * 85) {
       e.lanceState = 'aim';
       e.lanceTimer = 20;
       e.lanceAngle = angle;
@@ -35,7 +43,7 @@ export function lanceChargeBehavior(e, dt, angle, curSpeed, ctx) {
     createHitParticles(e.x, e.y, '#2c3e50', 2);
     e.lanceTimer -= dt;
     const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
-    if (distToPlayerSq <= (e.radius + player.radius + 6) ** 2 && player.iFrames <= 0) {
+    if (isPlayerVisible && distToPlayerSq <= (e.radius + player.radius + 6) ** 2 && player.iFrames <= 0) {
       player.hp -= e.damage;
       player.iFrames = 22;
       setLastAttackerInfo({

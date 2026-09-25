@@ -7,10 +7,11 @@ import { createHitParticles, addDamageText } from '../../combat.js';
 
 export function mimicTrapBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, triggerShake } = ctx;
+  const isPlayerVisible = !(player.invisTimer > 0);
   const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
   if (!e.isAwakeMimic) {
     curSpeed = 0;
-    if (distToPlayerSq < 52 * 52 || e.hitFlash > 0) {
+    if ((isPlayerVisible && distToPlayerSq < 52 * 52) || e.hitFlash > 0) {
       e.isAwakeMimic = true;
       playSfx('boss');
       triggerShake(6);

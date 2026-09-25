@@ -57,9 +57,27 @@ export function updateMiniBoss(e, dt, context) {
   checkEnrage(e, context);
 
   const player = context.player;
-  const dx = player.x - e.x;
-  const dy = player.y - e.y;
-  const dist = Math.hypot(dx, dy);
+  const isPlayerVisible = !(player.invisTimer > 0);
+  context.isPlayerVisible = isPlayerVisible;
+
+  // Se Kael estiver invisível sob Manto de Fumaça, cancela preparações ativas e congela novos disparos
+  if (!isPlayerVisible) {
+    if (e.actionState === 'WINDUP') {
+      e.actionState = 'CHASE';
+      e.currentSkill = null;
+      e.actionTimer = 0;
+    }
+    if (e.skillCooldown !== undefined && e.skillCooldown <= 0) {
+      e.skillCooldown = 30;
+    }
+  }
+
+  // Se Kael estiver invisível, mira em uma direção desorientada e não detecta proximidade
+  const targetX = !isPlayerVisible ? (e.x + Math.sin((context.frameCount || 0) * 0.05 + ((e.x || 0) % 17)) * 120) : player.x;
+  const targetY = !isPlayerVisible ? (e.y + Math.cos((context.frameCount || 0) * 0.05 + ((e.y || 0) % 17)) * 120) : player.y;
+  const dx = targetX - e.x;
+  const dy = targetY - e.y;
+  const dist = !isPlayerVisible ? 99999 : Math.hypot(dx, dy);
   const angle = Math.atan2(dy, dx);
   // Inércia de rotação para miniboss com escudo pesado (Centurião): 0.5s (30 frames) para girar
   const isShieldBearer = (e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER' || e.hasFrontalShield);

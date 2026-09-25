@@ -78,7 +78,7 @@ update(e, dt, ctx, dist, angle) {
       e.y += Math.sin(e.chargeAngle) * speed * dt;
       createHitParticles(e.x, e.y, '#d35400', 3);
 
-      if (vecDist(e.x, e.y, player.x, player.y) < e.radius + player.radius && player.iFrames <= 0) {
+      if (!(player.invisTimer > 0) && vecDist(e.x, e.y, player.x, player.y) < e.radius + player.radius && player.iFrames <= 0) {
         player.hp -= Math.round(e.damage * 0.9);
         player.iFrames = 25;
         ctx.triggerShake(10);

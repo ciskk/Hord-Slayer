@@ -8,6 +8,7 @@ import { canSpawnEnemyBullet } from '../../projectiles.js';
 
 export function longRangeSniperBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, enemyBullets } = ctx;
+  const isPlayerVisible = !(player.invisTimer > 0);
   const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
   if (distToPlayerSq < 220 * 220) {
     e.x -= Math.cos(angle) * curSpeed * dt;
@@ -20,7 +21,7 @@ export function longRangeSniperBehavior(e, dt, angle, curSpeed, ctx) {
   e.sniperTimer = (e.sniperTimer || 0) + dt;
   e.sniperCharge = Math.min(1, e.sniperTimer / 108);
 
-  if (e.sniperTimer >= 108) {
+  if (isPlayerVisible && e.sniperTimer >= 108) {
     e.sniperTimer = 0;
     e.sniperCharge = 0;
     if (canSpawnEnemyBullet()) {

@@ -13,11 +13,17 @@ export function splitterMiniBehavior(e, dt, angle, curSpeed, ctx) {
   if (e.landingSplashTimer > 0) e.landingSplashTimer -= dt;
   if (e.leapCooldown > 0 && e.leapState === 'none') e.leapCooldown -= dt;
 
+  const isPlayerVisible = !(player.invisTimer > 0);
   const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
+
+  // Se Kael ficar invisível durante o windup do salto, cancela
+  if (!isPlayerVisible && e.leapState === 'windup') {
+    e.leapState = 'none';
+  }
 
   // Gatilho de início do salto em perseguição
   if (e.leapState === 'none' && (e.emergeTimer || 0) <= 0 && (e.stunTimer || 0) <= 0) {
-    if (distToPlayerSq < 155 * 155 && distToPlayerSq > 32 * 32 && (!e.leapCooldown || e.leapCooldown <= 0)) {
+    if (isPlayerVisible && distToPlayerSq < 155 * 155 && distToPlayerSq > 32 * 32 && (!e.leapCooldown || e.leapCooldown <= 0)) {
       e.leapState = 'windup';
       e.leapTimer = 0;
       e.leapDuration = 12; // 12 frames de encolhimento e mira tensa
@@ -57,7 +63,7 @@ export function splitterMiniBehavior(e, dt, angle, curSpeed, ctx) {
 
     // Colisão física direta no ar com o jogador
     const pContactDistSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
-    if (pContactDistSq <= (player.radius + e.radius + 5) ** 2 && player.iFrames <= 0) {
+    if (isPlayerVisible && pContactDistSq <= (player.radius + e.radius + 5) ** 2 && player.iFrames <= 0) {
       let pDmg = e.damage;
       if (selectedHeroKey === 'KNIGHT') pDmg *= 0.80;
       const actualDmg = Math.round(pDmg * (player.damageTakenMultiplier || 1.0));

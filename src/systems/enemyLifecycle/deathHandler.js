@@ -122,7 +122,7 @@ export function handleEnemyDeath(e, i, ctx) {
       triggerHaptic('heavy');
       createHitParticles(e.x, e.y, '#e67e22', 16);
       const pDistSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
-      if (pDistSq <= 55 * 55 && player.iFrames <= 0) {
+      if (!(player.invisTimer > 0) && pDistSq <= 55 * 55 && player.iFrames <= 0) {
         player.hp -= e.damage;
         player.iFrames = 20;
         setLastAttackerInfo({
@@ -196,7 +196,7 @@ export function handleEnemyDeath(e, i, ctx) {
       triggerHaptic('heavy');
       createHitParticles(e.x, e.y, '#e67e22', 16);
       const pDistSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
-      if (pDistSq <= 60 * 60 && player.iFrames <= 0) {
+      if (!(player.invisTimer > 0) && pDistSq <= 60 * 60 && player.iFrames <= 0) {
         player.hp -= e.damage;
         player.iFrames = 25;
         setLastAttackerInfo({

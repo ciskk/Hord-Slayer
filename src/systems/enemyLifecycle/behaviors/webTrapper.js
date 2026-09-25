@@ -8,6 +8,7 @@ import { canSpawnEnemyBullet } from '../../projectiles.js';
 
 export function webTrapperBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, enemyBullets } = ctx;
+  const isPlayerVisible = !(player.invisTimer > 0);
   const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
   if (distToPlayerSq > 160 * 160) {
     e.x += Math.cos(angle) * curSpeed * dt;
@@ -18,7 +19,7 @@ export function webTrapperBehavior(e, dt, angle, curSpeed, ctx) {
   }
   e.aimAngle = angle;
   e.webTimer = (e.webTimer || 0) + dt;
-  if (e.webTimer >= 115) {
+  if (isPlayerVisible && e.webTimer >= 115) {
     e.webTimer = 0;
     playSfx('shoot');
     createHitParticles(e.x, e.y, '#dfe4ea', 6);

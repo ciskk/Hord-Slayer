@@ -6,6 +6,7 @@ import { createHitParticles } from '../../combat.js';
 
 export function kamikazeBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, frameCount, bossTelegraphs } = ctx;
+  const isPlayerVisible = !(player.invisTimer > 0);
   const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
   if (e.fuseState === 'FUSE') {
     curSpeed = 0;
@@ -17,7 +18,7 @@ export function kamikazeBehavior(e, dt, angle, curSpeed, ctx) {
       e.explodedNaturally = true;
     }
   } else {
-    if (distToPlayerSq <= 55 * 55) {
+    if (isPlayerVisible && distToPlayerSq <= 55 * 55) {
       e.fuseState = 'FUSE';
       e.fuseTimer = 28;
       e.fuseTelegraph = {

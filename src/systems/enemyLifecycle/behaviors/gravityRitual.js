@@ -9,12 +9,13 @@ import { setLastAttackerInfo } from '../../../state/events.js';
 
 export function gravityRitualBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, triggerShake, setLastAttackerName } = ctx;
+  const isPlayerVisible = !(player.invisTimer > 0);
   e.x += Math.cos(angle) * curSpeed * 0.75 * dt;
   e.y += Math.sin(angle) * curSpeed * 0.75 * dt;
   const gdx = e.x - player.x;
   const gdy = e.y - player.y;
   const gdist = Math.sqrt(gdx * gdx + gdy * gdy);
-  if (gdist < 280 && gdist > 20) {
+  if (isPlayerVisible && gdist < 280 && gdist > 20) {
     player.x += (gdx / gdist) * 0.85 * dt;
     player.y += (gdy / gdist) * 0.85 * dt;
   }
@@ -24,7 +25,7 @@ export function gravityRitualBehavior(e, dt, angle, curSpeed, ctx) {
     triggerShake(7);
     playSfx('boss');
     createHitParticles(e.x, e.y, '#341f97', 12);
-    if (gdist < 110 && player.iFrames <= 0) {
+    if (isPlayerVisible && gdist < 110 && player.iFrames <= 0) {
       player.hp -= e.damage;
       player.iFrames = 25;
       setLastAttackerInfo({

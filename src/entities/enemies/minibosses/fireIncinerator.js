@@ -53,6 +53,14 @@ update(e, dt, ctx, dist, angle) {
     }
   } else if (e.actionState === 'STRIKE') {
     if (e.currentSkill === 'FLAMETHROWER') {
+      const isPlayerVisible = !(ctx.player?.invisTimer > 0);
+      if (!isPlayerVisible) {
+        e.isFlamethrowing = false;
+        e.flameDuration = 0;
+        e.actionState = 'CHASE';
+        e.currentSkill = null;
+        return;
+      }
       e.flameDuration -= dt;
       // Rastreamento suave do alvo durante o jato contínuo
       const dAim = Math.atan2(Math.sin(angle - e.aimAngle), Math.cos(angle - e.aimAngle));

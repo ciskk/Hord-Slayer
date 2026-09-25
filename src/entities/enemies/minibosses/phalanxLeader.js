@@ -93,7 +93,7 @@ update(e, dt, ctx, dist, angle) {
 
       // Checagem de impacto contra o jogador
       const pDist = vecDist(e.x, e.y, player.x, player.y);
-      if (pDist < e.radius + player.radius && player.iFrames <= 0) {
+      if (!(player.invisTimer > 0) && pDist < e.radius + player.radius && player.iFrames <= 0) {
         player.hp -= Math.round(e.damage * 0.85);
         player.iFrames = 24;
         ctx.triggerShake(9);

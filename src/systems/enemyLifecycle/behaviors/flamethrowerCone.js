@@ -9,11 +9,18 @@ import { setLastAttackerInfo } from '../../../state/events.js';
 
 export function flamethrowerConeBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, frameCount, triggerShake, setLastAttackerName } = ctx;
+  const isPlayerVisible = !(player.invisTimer > 0);
   const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
+
+  // Se Kael ficar invisível durante a mira, cancela e retorna para perseguição desorientada
+  if (!isPlayerVisible && e.flameState === 'aim') {
+    e.flameState = 'chase';
+  }
+
   if (e.flameState === 'chase') {
     e.x += Math.cos(angle) * curSpeed * dt;
     e.y += Math.sin(angle) * curSpeed * dt;
-    if (distToPlayerSq <= 85 * 85) {
+    if (isPlayerVisible && distToPlayerSq <= 85 * 85) {
       e.flameState = 'aim';
       e.flameTimer = 23;
       e.flameAngle = angle;
@@ -30,13 +37,15 @@ export function flamethrowerConeBehavior(e, dt, angle, curSpeed, ctx) {
   } else if (e.flameState === 'firing') {
     e.flameTimer -= dt;
 
-    // Rastreamento angular limitado durante o disparo (permite ao jogador contornar o mob)
-    const playerAng = Math.atan2(player.y - e.y, player.x - e.x);
-    let dAng = playerAng - e.flameAngle;
-    while (dAng > Math.PI) dAng -= Math.PI * 2;
-    while (dAng < -Math.PI) dAng += Math.PI * 2;
-    e.flameAngle += Math.sign(dAng) * Math.min(Math.abs(dAng), 0.038 * dt);
-    e.aimAngle = e.flameAngle;
+    if (isPlayerVisible) {
+      // Rastreamento angular limitado durante o disparo (permite ao jogador contornar o mob)
+      const playerAng = Math.atan2(player.y - e.y, player.x - e.x);
+      let dAng = playerAng - e.flameAngle;
+      while (dAng > Math.PI) dAng -= Math.PI * 2;
+      while (dAng < -Math.PI) dAng += Math.PI * 2;
+      e.flameAngle += Math.sign(dAng) * Math.min(Math.abs(dAng), 0.038 * dt);
+      e.aimAngle = e.flameAngle;
+    }
 
     if (Math.floor(frameCount) % 2 === 0) {
       const fSpread = (Math.random() - 0.5) * 0.45;
@@ -45,7 +54,7 @@ export function flamethrowerConeBehavior(e, dt, angle, curSpeed, ctx) {
       const fy = e.y + Math.sin(e.flameAngle + fSpread) * fDist;
       createHitParticles(fx, fy, Math.random() < 0.4 ? '#ffffff' : (Math.random() < 0.6 ? '#f1c40f' : '#e67e22'), 2);
     }
-    if (distToPlayerSq <= 115 * 115) {
+    if (isPlayerVisible && distToPlayerSq <= 115 * 115) {
       const playerAngleFromMob = Math.atan2(player.y - e.y, player.x - e.x);
       let angleDiff = Math.abs(playerAngleFromMob - e.flameAngle);
       if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;

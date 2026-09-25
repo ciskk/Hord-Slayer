@@ -14,7 +14,7 @@ update(e, dt, ctx, dist, angle) {
   const { player, enemyBullets, bossTelegraphs, createHitParticles } = ctx;
 
   // Recuo a jato defensivo se o jogador colar
-  if (dist < 60 && (!e.thrusterCd || e.thrusterCd <= 0)) {
+  if (!(ctx.player?.invisTimer > 0) && dist < 60 && (!e.thrusterCd || e.thrusterCd <= 0)) {
     e.thrusterCd = 140;
     e.x -= Math.cos(angle) * 75;
     e.y -= Math.sin(angle) * 75;

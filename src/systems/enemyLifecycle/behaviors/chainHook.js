@@ -7,9 +7,10 @@ import { addDamageText } from '../../combat.js';
 
 export function chainHookBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, enemyBullets, triggerShake } = ctx;
+  const isPlayerVisible = !(player.invisTimer > 0);
   const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
   e.hookTimer = (e.hookTimer || 0) - dt;
-  if (distToPlayerSq <= 140 * 140 && e.hookTimer <= 0) {
+  if (isPlayerVisible && distToPlayerSq <= 140 * 140 && e.hookTimer <= 0) {
     e.hookTimer = 123;
     e.hookThrowTimer = 22;
     e.aimAngle = angle;

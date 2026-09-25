@@ -5,11 +5,13 @@ import { createHitParticles, addDamageText } from '../../combat.js';
 
 export function boulderThrowBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, bossTelegraphs, triggerShake } = ctx;
+  const isPlayerVisible = !(player.invisTimer > 0);
 
   e.throwTimer = (e.throwTimer || 0) + dt;
-  if (e.throwTimer < 120) {
+  if (e.throwTimer < 120 || !isPlayerVisible) {
     e.x += Math.cos(angle) * curSpeed * dt;
     e.y += Math.sin(angle) * curSpeed * dt;
+    if (!isPlayerVisible && e.throwTimer > 120) e.throwTimer = 60;
   } else if (e.throwTimer >= 150) {
     e.throwTimer = 0;
     playSfx('shoot');
