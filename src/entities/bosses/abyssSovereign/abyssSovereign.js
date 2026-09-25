@@ -20,5 +20,6 @@ export {
 export { 
   prepareNextAttack, 
   startSkillCast, 
-  spawnAbyssalHomingBarrage 
+  spawnAbyssalHomingBarrage,
+  isArenaCoveringAttackActive 
 } from './attacks.js';

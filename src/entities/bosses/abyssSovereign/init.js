@@ -2,9 +2,7 @@
  * src/entities/bosses/abyssSovereign/init.js
  * Inicialização e configuração do Soberano do Abismo (Boss 4 / Chefe Final).
  */
-import { playSfx, triggerHaptic } from '../../../core/audio.js';
-import { SOVEREIGN_STATES } from './constants.js';
-import { scheduleDelayedAction } from './physics.js';
+import { SOVEREIGN_STATES, SOVEREIGN_CONFIG } from './constants.js';
 
 export function initAbyssSovereign(boss) {
   boss.phase = 1;
@@ -12,8 +10,8 @@ export function initAbyssSovereign(boss) {
   boss.hasTriggeredPhase3 = false;
   boss.actionState = SOVEREIGN_STATES.SPAWN_INTRO;
   boss.stateTimer = 0;
-  boss.introDuration = 440; // Duração na tela (~7.33 segundos a 60 FPS)
-  boss.introTimer = 440;
+  boss.introDuration = SOVEREIGN_CONFIG.INTRO_DURATION;
+  boss.introTimer = boss.introDuration;
   boss.isTargetable = false; // Bloqueia mira e auto-fire durante a animação de entrada
   boss.titleTimer = 0; // Disparado de forma cinematográfica no Ato 3 da introdução
   boss.titleMaxTimer = 220;
@@ -90,6 +88,13 @@ export function initAbyssSovereign(boss) {
   boss.idleBlend = 0;
   boss.eyeAperture = 1.0;
   boss.eyeAnimState = 'OPEN';
+  boss.pupilX = 0;
+  boss.pupilY = 0;
+  boss.saccadeTimer = 80;
+  boss.saccadeOffsetX = 0;
+  boss.saccadeOffsetY = 0;
+  boss.nictitatingTimer = 340;
+  boss.nictitatingProgress = 0;
   boss.smoothVx = 0;
   boss.smoothVy = 0;
   boss.prevX = boss.x;
@@ -105,10 +110,11 @@ export function initAbyssSovereign(boss) {
   boss.spiralBlades = [];
   boss.spiralEjectTimer = 0;
   boss.spiralBaseAngle = 0;
+  boss.spiralRotAngle = 0;
 
-  // Inicialização de física inercial dos 9 membros baseados na referência
+  // Inicialização de física inercial dos 12 membros com simetria bilateral perfeita (Fase 4)
   boss.tentaclePhysics = [];
-  for (let l = 0; l < 9; l++) {
+  for (let l = 0; l < 12; l++) {
     boss.tentaclePhysics.push([
       { angleOffset: 0, angVel: 0 },
       { angleOffset: 0, angVel: 0 },
@@ -116,6 +122,16 @@ export function initAbyssSovereign(boss) {
       { angleOffset: 0, angVel: 0 }
     ]);
   }
+  boss.tentacleRetractProg = 0;
+  boss.tentacleExtension = 1.0;
+
+  // Micro-pontos estelares internos da esfera de obsidiana com posições fixas (Fase 1: Profundidade Cósmica)
+  boss.obsidianStars = [
+    { x: -0.42, y: -0.28, r: 1.1, speed: 0.018, phase: 0 },
+    { x:  0.38, y: -0.35, r: 0.9, speed: 0.024, phase: 1.8 },
+    { x: -0.25, y:  0.45, r: 1.2, speed: 0.015, phase: 3.4 },
+    { x:  0.35, y:  0.32, r: 0.8, speed: 0.021, phase: 4.9 }
+  ];
 
   boss.facing = 1;
   boss.hoverAngle = 0;
@@ -127,8 +143,4 @@ export function initAbyssSovereign(boss) {
   boss.warpTargetX = 0;
   boss.warpTargetY = 0;
 
-  scheduleDelayedAction(boss, 10, () => {
-    playSfx('singularity');
-    triggerHaptic('heavy');
-  });
 }

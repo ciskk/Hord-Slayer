@@ -8,6 +8,7 @@ import { perfMetrics } from '../core/perfMetrics.js';
  * e despacho para os renderizadores modulares especializados.
  */
 import { stick } from '../core/input.js';
+import { drawAbyssalBolt } from './projectiles/abyssalBolt.js';
 import { drawJoystick } from './joystickRenderer.js';
 import { renderEnvironment, ARENA_PALETTES } from './environment.js';
 import { drawEnemyShape, drawDyingEnemyShape } from './enemiesRenderer.js';
@@ -836,27 +837,7 @@ export function render() {
       ctx.fillStyle = '#ff7675';
       ctx.fillRect(Math.cos(fAng) * (eb.radius + 1) - 1.5, Math.sin(fAng) * (eb.radius + 1) - 1.5, 3, 3);
     } else if (bType === 'ABYSSAL_BOLT') {
-      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
-      ctx.rotate(bAng);
-      // Rastro de Vácuo e Plasma Ciano
-      const grad = ctx.createLinearGradient(-16, 0, 8, 0);
-      grad.addColorStop(0, 'rgba(142, 68, 173, 0)');
-      grad.addColorStop(0.4, 'rgba(142, 68, 173, 0.55)');
-      grad.addColorStop(0.8, 'rgba(0, 206, 201, 0.85)');
-      grad.addColorStop(1, '#ffffff');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(-16, 0);
-      ctx.lineTo(4, -3.5);
-      ctx.lineTo(10, 0);
-      ctx.lineTo(4, 3.5);
-      ctx.closePath();
-      ctx.fill();
-      // Núcleo Incandescente
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(4, 0, 2, 0, Math.PI * 2);
-      ctx.fill();
+      drawAbyssalBolt(ctx, Math.atan2(eb.vy || 0, eb.vx || 0));
     } else if (bType === 'COSMIC_BOLT') {
       const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
       ctx.rotate(bAng);

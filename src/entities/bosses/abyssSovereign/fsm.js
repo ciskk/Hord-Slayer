@@ -28,11 +28,11 @@ import {
   updateInexorableHarvest,
   updateSpiralStream
 } from './physics.js';
-import { prepareNextAttack, startSkillCast } from './attacks.js';
+import { prepareNextAttack, startSkillCast, isArenaCoveringAttackActive } from './attacks.js';
 import { cancelArenaPattern, updateArenaPattern } from './arenaPatterns.js';
 import { applyBossPatternDamage } from '../../../systems/bossHazards.js';
 import { selectedHeroKey } from '../../player.js';
-import { playSovereignIntroCues } from './introEffects.js';
+import { playSovereignIntroCues, SOVEREIGN_INTRO_TIMING } from './introEffects.js';
 
 export function triggerStabilityBreak(boss, context) {
   cancelArenaPattern(boss);
@@ -50,6 +50,7 @@ export function triggerStabilityBreak(boss, context) {
   if (boss.thresholdBeams) boss.thresholdBeams.length = 0;
   if (boss.harvestState) boss.harvestState = null;
   if (boss.spiralBlades) boss.spiralBlades.length = 0;
+  boss.spiralRotAngle = 0;
 
   playSfx('shatter');
   triggerShake(16);
@@ -83,6 +84,7 @@ export function triggerPhaseTransition(boss, nextPhase, context) {
   if (boss.thresholdBeams) boss.thresholdBeams.length = 0;
   if (boss.harvestState) boss.harvestState = null;
   if (boss.spiralBlades) boss.spiralBlades.length = 0;
+  boss.spiralRotAngle = 0;
 
   // Limpeza imediata de projéteis ao redor para clareza visual
   const clearRadiusSq = 450 * 450;
@@ -121,6 +123,7 @@ export function updateAbyssSovereign(e, dt, context) {
     if (e.thresholdBeams) e.thresholdBeams.length = 0;
     if (e.harvestState) e.harvestState = null;
     if (e.spiralBlades) e.spiralBlades.length = 0;
+    e.spiralRotAngle = 0;
     return;
   }
 
@@ -275,6 +278,30 @@ export function updateAbyssSovereign(e, dt, context) {
   updateAnchors(e, dt, context, () => triggerStabilityBreak(e, context));
   updateEventHorizon(e, dt, context);
   updateSingularityPhysics(e, dt, context);
+
+  // Sincronização dinâmica da retração dos tentáculos no Turbilhão Abissal (ABYSSAL_CYCLONE)
+  // Recolhe os membros rapidamente com animação natural ao iniciar o ataque, poupando FPS e processamento físico.
+  const isCycloneAttack = (e.actionState === SOVEREIGN_STATES.CYCLONE_CHARGE) || 
+    (e.actionState === SOVEREIGN_STATES.WINDUP && e.currentSkill === 'ABYSSAL_CYCLONE');
+
+  if (e.tentacleRetractProg === undefined) e.tentacleRetractProg = 0.0;
+  if (e.tentacleExtension === undefined) e.tentacleExtension = 1.0;
+
+  if (isCycloneAttack) {
+    // Retração rápida e biomecânica (~16 frames / ~0.26s a 60fps)
+    e.tentacleRetractProg = Math.min(1.0, e.tentacleRetractProg + (1 / 16) * dt);
+  } else {
+    // Extensão suave e orgânica ao retornar ao combate comum (~26 frames / ~0.43s a 60fps)
+    e.tentacleRetractProg = Math.max(0.0, e.tentacleRetractProg - (1 / 26) * dt);
+  }
+
+  // Interpolação cúbica com aceleração muscular e amortecimento suave
+  const tP = e.tentacleRetractProg;
+  const easeRetract = tP < 0.5 
+    ? 4 * tP * tP * tP 
+    : 1 - Math.pow(-2 * tP + 2, 3) / 2;
+  e.tentacleExtension = Math.max(0.0, Math.min(1.0, 1.0 - easeRetract));
+
   updateTentaclePhysics(e, dt);
   updateActiveAttacks(e, dt, context);
   updateHealingZones(e, dt, context);
@@ -302,6 +329,48 @@ export function updateAbyssSovereign(e, dt, context) {
     e.eyeAnimState = 'OPEN';
     e.eyeAperture = Math.min(1.0, e.eyeAperture + 0.14 * dt);
     e.idleBlend = Math.max(0.0, e.idleBlend - 0.10 * dt);
+  }
+
+  // Rastreamento dinâmico da pupila em direção ao jogador e micro-saccades (Fase 2)
+  if (player && e.hp > 0 && e.actionState !== SOVEREIGN_STATES.SPAWN_INTRO) {
+    const dx = player.x - e.x;
+    const dy = player.y - e.y;
+    const aimAng = Math.atan2(dy, dx);
+    const maxLookX = 4.4;
+    const maxLookY = 2.4;
+    const targetX = Math.cos(aimAng) * maxLookX;
+    const targetY = Math.sin(aimAng) * maxLookY;
+
+    // Micro-saccades de foco predatório (micro-saltos a cada 65-110 frames)
+    if (e.saccadeTimer === undefined) {
+      e.saccadeTimer = 80;
+      e.saccadeOffsetX = 0;
+      e.saccadeOffsetY = 0;
+    }
+    e.saccadeTimer -= dt;
+    if (e.saccadeTimer <= 0) {
+      e.saccadeTimer = 65 + Math.random() * 45;
+      e.saccadeOffsetX = (Math.random() - 0.5) * 1.5;
+      e.saccadeOffsetY = (Math.random() - 0.5) * 0.9;
+    }
+
+    const smoothSpd = Math.min(1.0, 0.12 * dt);
+    e.pupilX = (e.pupilX || 0) + (targetX + e.saccadeOffsetX - (e.pupilX || 0)) * smoothSpd;
+    e.pupilY = (e.pupilY || 0) + (targetY + e.saccadeOffsetY - (e.pupilY || 0)) * smoothSpd;
+  } else {
+    e.pupilX = (e.pupilX || 0) * Math.max(0, 1 - 0.1 * dt);
+    e.pupilY = (e.pupilY || 0) * Math.max(0, 1 - 0.1 * dt);
+  }
+
+  // Membrana nictitante cósmica (piscar rápido e sutil a cada 5.5 a 8.5s)
+  if (e.nictitatingTimer === undefined) e.nictitatingTimer = 340;
+  e.nictitatingTimer -= dt;
+  if (e.nictitatingTimer <= 0 && e.actionState !== SOVEREIGN_STATES.SPAWN_INTRO) {
+    e.nictitatingProgress = 1.0;
+    e.nictitatingTimer = 320 + Math.random() * 180;
+  }
+  if (e.nictitatingProgress > 0) {
+    e.nictitatingProgress = Math.max(0, e.nictitatingProgress - 0.22 * dt);
   }
 
   // Decrementa o tempo de exibição do banner de tela do chefe
@@ -393,16 +462,16 @@ export function updateAbyssSovereign(e, dt, context) {
 
   switch (e.actionState) {
     case SOVEREIGN_STATES.SPAWN_INTRO: {
-      const introMax = e.introDuration || 440;
+      const introMax = e.introDuration || SOVEREIGN_CONFIG.INTRO_DURATION;
       const previousProgress = Math.min(1, Math.max(0, 1 - e.introTimer / introMax));
       e.introTimer -= dt;
       const progress = Math.min(1.0, Math.max(0, 1 - (e.introTimer / introMax)));
-      playSovereignIntroCues(previousProgress, progress, playSfx, triggerHaptic);
+      playSovereignIntroCues(previousProgress, progress, playSfx, triggerHaptic, triggerShake);
 
-      if (progress >= 0.50 && !e.hasTriggeredTitle) {
+      if (progress >= SOVEREIGN_INTRO_TIMING.title && !e.hasTriggeredTitle) {
         e.hasTriggeredTitle = true;
-        e.titleTimer = 220;
-        e.titleMaxTimer = 220;
+        e.titleTimer = Math.max(0, (SOVEREIGN_INTRO_TIMING.titleEnd - progress) * introMax);
+        e.titleMaxTimer = (SOVEREIGN_INTRO_TIMING.titleEnd - SOVEREIGN_INTRO_TIMING.title) * introMax;
       }
 
       e.isVulnerable = false;
@@ -416,48 +485,8 @@ export function updateAbyssSovereign(e, dt, context) {
       const bossHpVal = document.getElementById('boss-hp-val');
       if (bossHpVal) bossHpVal.innerText = `${hpPercent}%`;
 
-      if (progress < 0.25) {
-        if (Math.floor(frameCount) % 4 === 0) {
-          triggerShake(1.2 + progress * 6);
-          const pAngle = Math.random() * Math.PI * 2;
-          const pDist = 120 + Math.random() * 160;
-          createHitParticles(
-            e.x + Math.cos(pAngle) * pDist,
-            e.y + Math.sin(pAngle) * pDist,
-            progress > 0.12 ? '#00cec9' : '#e84393',
-            2
-          );
-        }
-      } else if (progress < 0.50) {
-        if (Math.floor(frameCount) % 3 === 0) {
-          triggerShake(2.0 + Math.sin(progress * 10) * 2);
-          const pAngle = Math.random() * Math.PI * 2;
-          const pDist = 40 + Math.random() * 80;
-          createHitParticles(e.x + Math.cos(pAngle) * pDist, e.y + Math.sin(pAngle) * pDist, '#81ecec', 2);
-          createHitParticles(e.x, e.y, '#ffffff', 1);
-        }
-      } else if (progress < 0.80) {
-        e.hoverAngle += 0.05 * dt;
-        e.y += Math.sin(e.hoverAngle) * 0.3 * dt;
-
-        if (Math.floor(frameCount) % 3 === 0) {
-          triggerShake(2.8 + Math.sin(progress * 12) * 2);
-          createHitParticles(e.x + (Math.random() - 0.5) * e.radius * 2, e.y + (Math.random() - 0.5) * e.radius * 2, '#00cec9', 2);
-          createHitParticles(e.x + (Math.random() - 0.5) * e.radius * 2, e.y + (Math.random() - 0.5) * e.radius * 2, '#e84393', 1);
-        }
-
-      } else {
-        e.hoverAngle += 0.07 * dt;
-        e.y += Math.sin(e.hoverAngle) * 0.4 * dt;
-
-        if (Math.floor(frameCount) % 2 === 0) {
-          triggerShake(4.5);
-          createHitParticles(e.x, e.y, '#ffffff', 3);
-          createHitParticles(e.x, e.y, '#00cec9', 2);
-          createHitParticles(e.x, e.y, '#e84393', 2);
-        }
-
-      }
+      // Movimento, partículas e luminosidade usam o relógio da intro no render.
+      // Tremores pontuais acompanham os marcos sonoros, sem vibração contínua.
 
       if (e.introTimer <= 0) {
         e.actionState = SOVEREIGN_STATES.IDLE;
@@ -465,9 +494,7 @@ export function updateAbyssSovereign(e, dt, context) {
         e.isTargetable = true;
         e.stateTimer = 0;
 
-        triggerShake(24);
-        triggerHaptic('heavy');
-        playSfx('singularity');
+        triggerShake(6);
         playSfx('boss');
 
         if (context.bossShockwaves) {
@@ -579,6 +606,9 @@ export function updateAbyssSovereign(e, dt, context) {
         e.actionState = SOVEREIGN_STATES.HOVER_CHASE;
         e.stateTimer = 0;
         e.attackCooldown = e.phase === 3 ? 8 : (e.phase === 2 ? 11 : 14);
+        if (isArenaCoveringAttackActive(e)) {
+          e.attackCooldown = Math.max(e.attackCooldown, e.phase === 3 ? 12 : 20);
+        }
       }
       break;
     }
@@ -611,7 +641,12 @@ export function updateAbyssSovereign(e, dt, context) {
 
       e.attackCooldown -= dt;
       if (e.attackCooldown <= 0) {
-        prepareNextAttack(e, context);
+        if (isArenaCoveringAttackActive(e)) {
+          // Bloqueia novos ataques enquanto um ataque que cobre a arena (safe-zones/ladrilhos/padrões) estiver ativo
+          e.attackCooldown = Math.max(e.attackCooldown, e.phase === 3 ? 10 : 16);
+        } else {
+          prepareNextAttack(e, context);
+        }
       }
       break;
     }
@@ -638,15 +673,20 @@ export function updateAbyssSovereign(e, dt, context) {
         }
       } else if (e.currentSkill === 'COSMIC_SUPERNOVA' && e.supernovaOrbs) {
         const ratio = 1 - (e.windupTimer / e.windupMax);
-        const curR = SOVEREIGN_CONFIG.SUPERNOVA_HEX_RADIUS * (1 - ratio);
+        const curR = (e.supernovaDangerRadius || 220) * (1 - ratio);
         for (let o = 0; o < e.supernovaOrbs.length; o++) {
           e.supernovaOrbs[o].dist = curR;
         }
         if (Math.floor(frameCount) % 3 === 0) {
           triggerShake(1.5 + ratio * 4);
         }
+        if (ratio >= 0.75 && !e.supernovaCrescendoPlayed) {
+          e.supernovaCrescendoPlayed = true;
+          playSfx('charge');
+          triggerHaptic('heavy');
+        }
       } else if (e.currentSkill === 'SINGULARITY_IMPLOSION') {
-        const elapsed = (e.windupMax || 148) - e.windupTimer;
+        const elapsed = (e.windupMax || 101) - e.windupTimer;
         e.implosionRadius = e.implosionMaxRadius || 175;
 
         // Ato 1: Gênese & Tracking suave (frames 0 a 35)
@@ -667,7 +707,7 @@ export function updateAbyssSovereign(e, dt, context) {
           triggerShake(4);
         }
 
-        // Ato 3: Ruptura da Gravidade / Soltura (a partir do frame 70 - Janela exata de 65 frames / 1,08s)
+        // Ato 3: Ruptura da Gravidade / Soltura (a partir do frame 70 - Janela de fuga reduzida em 2,5x: 31 frames / ~0,52s)
         if (elapsed >= 70) {
           if (!e.implosionReleased) {
             e.implosionReleased = true;
@@ -901,48 +941,76 @@ export function updateAbyssSovereign(e, dt, context) {
 
     case SOVEREIGN_STATES.WARP_AIM: {
       e.windupTimer -= dt;
-      if (e.windupTimer <= 0) {
+
+      // Fase de Miragem / Pré-teleporte
+      if (e.windupTimer > 0) {
+        break;
+      }
+
+      // Materialização no Destino com Janela de Reação / Windup de Impacto
+      if (!e.warpLanded) {
+        e.warpLanded = true;
         createHitParticles(e.x, e.y, '#8e44ad', 20);
         e.x = e.warpTargetX;
         e.y = e.warpTargetY;
-        createHitParticles(e.x, e.y, '#e84393', 30);
-        triggerShake(14);
-        triggerHaptic('heavy');
+        createHitParticles(e.x, e.y, '#e84393', 25);
+        triggerShake(6);
         playSfx('warp');
+        e.warpImpactTimer = 14; // 14 frames (~0.23s) de reação antes da detonação
+      }
 
-        bossShockwaves.push({
+      if (e.warpImpactTimer > 0) {
+        e.warpImpactTimer -= dt;
+        if (Math.floor(frameCount) % 3 === 0) {
+          createHitParticles(e.x + (Math.random() - 0.5) * 50, e.y + (Math.random() - 0.5) * 50, '#e84393', 2);
+        }
+        if (e.warpImpactTimer > 0) break;
+      }
+
+      // Detonação da Onda Sísmica e Estilhaços
+      e.warpLanded = false;
+      createHitParticles(e.x, e.y, '#e84393', 30);
+      createHitParticles(e.x, e.y, '#ffffff', 14);
+      triggerShake(14);
+      triggerHaptic('heavy');
+      playSfx('singularity');
+
+      const warpShockRadius = e.warpTelegraphRadius || 150;
+      bossShockwaves.push({
+        x: e.x,
+        y: e.y,
+        radius: e.radius || 40,
+        maxRadius: warpShockRadius,
+        speed: 6.2,
+        damage: Math.round(e.damage * 0.35),
+        hitPlayer: false,
+        colorRgb: '232, 67, 147',
+        attackName: 'Colapso de Teleporte',
+        sourceSkill: 'VOID_WARP',
+        spawnGrace: 3
+      });
+
+      const aimToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
+      const shardCount = e.phase === 3 ? 12 : 8;
+      for (let s = 0; s < shardCount; s++) {
+        if (!canSpawnEnemyBullet(true)) break;
+        const sAng = aimToPlayer + (s * Math.PI * 2) / shardCount;
+        enemyBullets.push({
           x: e.x,
           y: e.y,
-          radius: 10,
-          maxRadius: 175,
-          speed: 6.5,
-          damage: Math.round(e.damage * 0.35),
-          hitPlayer: false,
-          colorRgb: '232, 67, 147'
+          vx: Math.cos(sAng) * 5.5,
+          vy: Math.sin(sAng) * 5.5,
+          radius: 5.0,
+          damage: Math.round(e.damage * 0.20),
+          bulletType: 'ABYSSAL_BOLT',
+          life: 95,
+          isBossProjectile: true
         });
-
-        const aimToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
-        const shardCount = e.phase === 3 ? 12 : 8;
-        for (let s = 0; s < shardCount; s++) {
-          if (!canSpawnEnemyBullet(true)) break;
-          const sAng = aimToPlayer + (s * Math.PI * 2) / shardCount;
-          enemyBullets.push({
-            x: e.x,
-            y: e.y,
-            vx: Math.cos(sAng) * 5.5,
-            vy: Math.sin(sAng) * 5.5,
-            radius: 5.0,
-            damage: Math.round(e.damage * 0.20),
-            bulletType: 'ABYSSAL_BOLT',
-            life: 95,
-            isBossProjectile: true
-          });
-        }
-
-        e.actionState = SOVEREIGN_STATES.IDLE;
-        e.stateTimer = 0;
-        e.idleTimer = e.phase === 3 ? 7 : (e.phase === 2 ? 9 : 11);
       }
+
+      e.actionState = SOVEREIGN_STATES.IDLE;
+      e.stateTimer = 0;
+      e.idleTimer = e.phase === 3 ? 7 : (e.phase === 2 ? 9 : 11);
       break;
     }
 

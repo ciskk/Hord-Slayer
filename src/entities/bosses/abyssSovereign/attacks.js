@@ -78,7 +78,32 @@ export function spawnAbyssalHomingBarrage(boss, player) {
   }
 }
 
+/**
+ * Verifica se há algum ataque que cobre a arena ativo (habilidades com safe-zones e áreas de perigo indicadas).
+ * Abrange:
+ * 1. Padrões globais de arena (Coroa do Eclipse, Corredor de Paralaxe, Maré do Horizonte, Constelação de Ecos)
+ * 2. Colheita Inevitável (tabuleiro de perigo rúnico com ondas ativas e miasma)
+ */
+export function isArenaCoveringAttackActive(boss) {
+  if (!boss) return false;
+  // 1. Padrão global de arena com safe-zones ativo
+  if (boss.arenaPattern) return true;
+
+  // 2. Colheita Inevitável (ladrilhos rúnicos com perigo e safe-zones)
+  if (boss.harvestState) return true;
+
+  // 3. Canalização ou windup de habilidade de arena
+  if (boss.currentSkill && (ARENA_SKILLS[boss.currentSkill] || boss.currentSkill === 'INEXORABLE_HARVEST')) {
+    if (boss.actionState === SOVEREIGN_STATES.WINDUP || boss.actionState === SOVEREIGN_STATES.CASTING) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function prepareNextAttack(boss, context) {
+  if (isArenaCoveringAttackActive(boss)) return;
   const { player } = context;
 
   boss.currentSkill = selectSovereignSkill(boss);
@@ -136,9 +161,11 @@ export function prepareNextAttack(boss, context) {
     case 'COSMIC_SUPERNOVA': {
       boss.windupTimer = 58;
       boss.windupMax = 58;
+      boss.supernovaDangerRadius = 220; // Raio calibrado da área letal e da onda
+      boss.supernovaCrescendoPlayed = false;
       boss.supernovaOrbs = [];
       const orbCount = 6; // Fixado em 6 vértices para formar um hexágono perfeito
-      const hexTelegraphRadius = SOVEREIGN_CONFIG.SUPERNOVA_HEX_RADIUS; // Reduzido em 35% (179px)
+      const hexTelegraphRadius = boss.supernovaDangerRadius;
       for (let o = 0; o < orbCount; o++) {
         boss.supernovaOrbs.push({
           baseAngle: (o * Math.PI * 2) / orbCount,
@@ -164,6 +191,9 @@ export function prepareNextAttack(boss, context) {
       boss.windupMax = 42;
       boss.warpStartX = boss.x;
       boss.warpStartY = boss.y;
+      boss.warpTelegraphRadius = 150; // Raio real consistente com a telegrafia
+      boss.warpLanded = false;
+      boss.warpImpactTimer = 0;
 
       const leadFactor = player.isMoving ? 26 : 0;
       let targetX = player.x + (player.facing || 1) * leadFactor + (Math.random() - 0.5) * 40;
@@ -187,7 +217,7 @@ export function prepareNextAttack(boss, context) {
     }
 
     case 'SINGULARITY_IMPLOSION': {
-      boss.windupTimer = 148; // 148 frames (~2.47s: 35f tracking, 35f gravidade intensa, 78f soltura para fuga justa)
+      boss.windupTimer = 101; // 101 frames (~1.68s: 35f tracking, 35f gravidade intensa, 31f soltura para fuga rápida - reduzido 2.5x)
       boss.windupMax = boss.windupTimer;
       boss.implosionX = player.x;
       boss.implosionY = player.y;
@@ -296,16 +326,20 @@ export function startSkillCast(boss, context) {
       playSfx('boss');
       playSfx('singularity');
 
-      // Onda calibrada com o raio reduzido do hexágono (179px, -35%)
+      // Onda calibrada com a área de perigo telegrafada (220px)
+      const novaRadius = boss.supernovaDangerRadius || 220;
       bossShockwaves.push({
         x: boss.x,
         y: boss.y,
-        radius: 16,
-        maxRadius: SOVEREIGN_CONFIG.SUPERNOVA_HEX_RADIUS,
+        radius: boss.radius || 40,
+        maxRadius: novaRadius,
         speed: 5.8,
         damage: Math.round(boss.damage * 0.40),
         hitPlayer: false,
-        colorRgb: '224, 86, 253'
+        colorRgb: '224, 86, 253',
+        attackName: 'Supernova Cósmica',
+        sourceSkill: 'COSMIC_SUPERNOVA',
+        spawnGrace: 3
       });
 
       // Mira inteligente: feixe estelar primário apontado diretamente na posição do jogador
@@ -345,7 +379,7 @@ export function startSkillCast(boss, context) {
         type: 'SUPERNOVA_FLASH',
         x: boss.x,
         y: boss.y,
-        maxR: SOVEREIGN_CONFIG.SUPERNOVA_HEX_RADIUS,
+        maxR: novaRadius,
         timer: 28,
         maxTimer: 28
       });
@@ -394,7 +428,7 @@ export function startSkillCast(boss, context) {
       if (context.triggerShake) context.triggerShake(14);
       if (context.addDamageText) {
         const primaryCol = boss.phase === 3 ? '#00cec9' : (boss.phase === 2 ? '#e84393' : '#8e44ad');
-        context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 22, "TURBILHÃO DO VÁCUO!", true, primaryCol);
+        context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 22, "TURBILHÃO ABISSAL!", true, primaryCol);
       }
       break;
     }
@@ -402,6 +436,7 @@ export function startSkillCast(boss, context) {
       boss.castDuration = SOVEREIGN_CONFIG.SPIRAL_STREAM_DURATION || 180;
       boss.spiralEjectTimer = 0;
       boss.spiralBaseAngle = boss.aimAngle || 0;
+      boss.spiralRotAngle = 0;
       playSfx('boss');
       playSfx('singularity');
       triggerHaptic('heavy');
@@ -425,10 +460,10 @@ export function startSkillCast(boss, context) {
 export function spawnThresholdBeams(boss, context) {
   if (!boss.thresholdBeams) boss.thresholdBeams = [];
   const { player } = context;
-  const count = boss.phase === 3 ? 4 : (boss.phase === 2 ? 3 : 2);
+  const count = boss.phase === 3 ? 5 : (boss.phase === 2 ? 4 : 3);
   const baseAngle = boss.aimAngle !== undefined ? boss.aimAngle : Math.atan2(player.y - boss.y, player.x - boss.x);
-  const spread = count === 4 ? 0.36 : (count === 3 ? 0.28 : 0.22);
-  const speed = SOVEREIGN_CONFIG.THRESHOLD_BEAM_SPEED || 3.7;
+  const spread = count >= 5 ? 0.44 : (count === 4 ? 0.36 : 0.28);
+  const speed = SOVEREIGN_CONFIG.THRESHOLD_BEAM_SPEED || 4.625;
   const radius = SOVEREIGN_CONFIG.THRESHOLD_BEAM_RADIUS || 11;
   const damage = Math.round((boss.damage || 365) * (SOVEREIGN_CONFIG.THRESHOLD_BEAM_DAMAGE_RATIO || 0.30));
   const maxBounces = boss.phase === 3 

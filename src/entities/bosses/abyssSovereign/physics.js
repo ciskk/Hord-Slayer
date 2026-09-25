@@ -10,6 +10,9 @@ import {
   bossShockwaves 
 } from '../../../main.js';
 import { triggerDeath } from '../../../systems/ui.js';
+import { applyHazardDamage } from '../../../systems/bossHazards.js';
+import { setLastAttackerInfo } from '../../../state/events.js';
+import { selectedHeroKey } from '../../player.js';
 
 export function scheduleDelayedAction(boss, delayFrames, callback) {
   if (!boss.delayedActions) boss.delayedActions = [];
@@ -219,16 +222,35 @@ export function updateSingularityPhysics(boss, dt, context) {
   const vdy = boss.y - player.y;
   const vDist = Math.hypot(vdx, vdy) || 1;
 
-  if (vDist > boss.radius + 15 && vDist < boss.arenaRadius) {
+  // Carregamento e Telegrafia Prévia do Pulso Sísmico (48 frames ~0.8s antes do disparo)
+  const pulseWarningFrames = 48;
+  const pulseThreshold = 285;
+  const isChargingPulse = boss.singularityPulseTimer >= (pulseThreshold - pulseWarningFrames);
+  boss.isSingularityChargingPulse = isChargingPulse;
+  boss.singularityChargeRatio = isChargingPulse 
+    ? (boss.singularityPulseTimer - (pulseThreshold - pulseWarningFrames)) / pulseWarningFrames 
+    : 0;
+
+  // Durante a carga do pulso, a sucção gravitacional cessa para permitir fuga tática aos personagens melee!
+  if (!isChargingPulse && vDist > boss.radius + 15 && vDist < boss.arenaRadius) {
     const pullForce = 0.55 * dt;
     player.x += (vdx / vDist) * pullForce;
     player.y += (vdy / vDist) * pullForce;
   }
 
+  // Toca cue sonoro de carga no início do aviso
+  if (isChargingPulse && !boss.singularityPulseSfxPlayed) {
+    boss.singularityPulseSfxPlayed = true;
+    playSfx('charge');
+  }
+
   boss.singularityPulseTimer += dt;
   // Intervalo aumentado de 130 para 285 frames (~4.75s) para dar respiro e margem tática
-  if (boss.singularityPulseTimer >= 285) {
+  if (boss.singularityPulseTimer >= pulseThreshold) {
     boss.singularityPulseTimer = 0;
+    boss.isSingularityChargingPulse = false;
+    boss.singularityPulseSfxPlayed = false;
+    boss.singularityChargeRatio = 0;
     triggerShake(8);
     playSfx('singularity');
 
@@ -236,12 +258,15 @@ export function updateSingularityPhysics(boss, dt, context) {
     bossShockwaves.push({
       x: boss.x,
       y: boss.y,
-      radius: boss.radius,
+      radius: boss.radius || 40,
       maxRadius: boss.arenaRadius * 0.68,
       speed: 4.8,
       damage: Math.round(boss.damage * 0.20),
       hitPlayer: false,
-      colorRgb: '0, 206, 201'
+      colorRgb: '0, 206, 201',
+      attackName: 'Pulso de Singularidade',
+      sourceSkill: 'SINGULARITY_PULSE',
+      spawnGrace: 3
     });
   }
 
@@ -362,12 +387,25 @@ export function updateAnchors(boss, dt, context, onStabilityBreak) {
 }
 
 /**
- * Atualiza a física inercial dos 9 tentáculos via modelo spring-damper acoplado à velocidade do chefe.
+ * Atualiza a física inercial dos 12 tentáculos com simetria bilateral perfeita via modelo spring-damper.
  */
 export function updateTentaclePhysics(boss, dt) {
-  if (!boss.tentaclePhysics) {
+  if (boss.tentacleExtension !== undefined && boss.tentacleExtension <= 0.001) {
+    // Quando recolhidos para o interior do corpo (ex: Turbilhão Abissal), zera velocidades e pula o cálculo de 48 segmentos para poupar FPS
+    if (boss.tentaclePhysics) {
+      for (let l = 0; l < 12; l++) {
+        for (let s = 0; s < 4; s++) {
+          boss.tentaclePhysics[l][s].angVel = 0;
+          boss.tentaclePhysics[l][s].angleOffset *= 0.85;
+        }
+      }
+    }
+    return;
+  }
+
+  if (!boss.tentaclePhysics || boss.tentaclePhysics.length < 12) {
     boss.tentaclePhysics = [];
-    for (let l = 0; l < 9; l++) {
+    for (let l = 0; l < 12; l++) {
       boss.tentaclePhysics.push([
         { angleOffset: 0, angVel: 0 },
         { angleOffset: 0, angVel: 0 },
@@ -388,22 +426,28 @@ export function updateTentaclePhysics(boss, dt) {
   boss.smoothVx = (boss.smoothVx || 0) * 0.82 + rawVx * 0.18;
   boss.smoothVy = (boss.smoothVy || 0) * 0.82 + rawVy * 0.18;
 
+  // 12 Ângulos de repouso com distribuição de 30° e simetria bilateral rigorosa (Fase 4)
   const restBaseAngles = [
-    -Math.PI * 0.50,      // 0: Superior vertical
-    -Math.PI * 0.22,      // 1: Superior Direito
-    -0.08,                // 2: Médio Direito Horizontal
-    Math.PI * 0.16,       // 3: Inferior Direito
-    Math.PI * 0.36,       // 4: Inferior-Direita baixo
-    Math.PI * 0.50,       // 5: Inferior Vertical Central
-    Math.PI * 0.64,       // 6: Inferior-Esquerda baixo
-    Math.PI * 0.98,       // 7: Médio Esquerdo Horizontal
-    -Math.PI * 0.78       // 8: Superior Esquerdo
+    -Math.PI * 0.50,      // 0: Superior vertical central (-90°)
+    -Math.PI / 3,         // 1: Superior Direito Diagonal (-60°)
+    -Math.PI / 6,         // 2: Médio-Superior Direito (-30°)
+    0.00,                 // 3: Médio Direito Horizontal (0°)
+    Math.PI / 6,          // 4: Médio-Inferior Direito (+30°)
+    Math.PI / 3,          // 5: Inferior Direito Diagonal (+60°)
+    Math.PI * 0.50,       // 6: Inferior vertical central (+90°)
+    Math.PI * 2 / 3,      // 7: Inferior Esquerdo Diagonal (+120°)
+    Math.PI * 5 / 6,      // 8: Médio-Inferior Esquerdo (+150°)
+    Math.PI,              // 9: Médio Esquerdo Horizontal (180°)
+    -Math.PI * 5 / 6,     // 10: Médio-Superior Esquerdo (-150°)
+    -Math.PI * 2 / 3      // 11: Superior Esquerdo Diagonal (-120°)
   ];
 
-  const springK = 0.085;
-  const damping = 0.80;
+  // Calibração inercial avançada (Fase 5: Alta Inércia & Efeito Chicote)
+  const isCyclone = boss.actionState === 'CYCLONE_CHARGE';
+  const springK = isCyclone ? 0.038 : 0.048;
+  const damping = isCyclone ? 0.68 : 0.74;
 
-  for (let l = 0; l < 9; l++) {
+  for (let l = 0; l < 12; l++) {
     const baseAng = restBaseAngles[l];
     // Vetor ortogonal à linha de visada do membro
     const perpX = -Math.sin(baseAng);
@@ -413,16 +457,25 @@ export function updateTentaclePhysics(boss, dt) {
     const limbPhysics = boss.tentaclePhysics[l];
     for (let s = 0; s < 4; s++) {
       const seg = limbPhysics[s];
-      // Força inercial contrária à velocidade que cresce em direção à ponta do tentáculo
-      const dragTorque = -velPerp * (0.016 + s * 0.012);
 
-      // Equação do Oscilador Harmônico Amortecido
-      const acc = -springK * seg.angleOffset - damping * seg.angVel + dragTorque;
+      // 1. Força inercial translacional contrária à velocidade (arrasto aumentado nas pontas)
+      const dragTorque = -velPerp * (0.022 + s * 0.024);
+
+      // 2. Acoplamento de curvatura (efeito chicote biomecânico: onda propagada da raiz à ponta)
+      const parentAngle = s === 0 ? 0 : limbPhysics[s - 1].angleOffset;
+      const whipTorque = (parentAngle - seg.angleOffset) * 0.045;
+
+      // 3. Força inercial centrífuga e arrasto rotacional no Turbilhão
+      const cycloneTorque = isCyclone ? (-0.035 - s * 0.028) : 0;
+
+      // Equação do Oscilador Harmônico Amortecido com Acoplamento Inercial
+      const acc = -springK * seg.angleOffset - damping * seg.angVel + dragTorque + whipTorque + cycloneTorque;
       seg.angVel += acc * dt;
       seg.angleOffset += seg.angVel * dt;
 
-      // Soft clamp para evitar deformações anatômicas absurdas
-      seg.angleOffset = Math.max(-0.46, Math.min(0.46, seg.angleOffset));
+      // Soft clamp flexível que preserva anatomia com alta expressividade
+      const maxBend = isCyclone ? 0.72 : 0.58;
+      seg.angleOffset = Math.max(-maxBend, Math.min(maxBend, seg.angleOffset));
     }
   }
 }
@@ -478,10 +531,19 @@ export function updateActiveAttacks(boss, dt, context) {
         const distSq = pdx * pdx + pdy * pdy;
         const hitR = (atk.radius || 175) + (player.radius || 14);
         if (distSq <= hitR * hitR) {
-          const coreDmg = Math.round((boss.damage || 365) * 0.46);
-          player.hp -= coreDmg;
-          player.iFrames = 26;
-          player.bossIFrames = 26;
+          const rawCoreDmg = Math.round((boss.damage || 365) * 0.46);
+          const { finalDmg: coreDmg } = applyHazardDamage(player, rawCoreDmg, selectedHeroKey, 30);
+          player.bossIFrames = Math.max(player.bossIFrames || 0, 30);
+          player.iFrames = Math.max(player.iFrames || 0, 30);
+
+          setLastAttackerInfo({
+            name: boss.name || 'Soberano do Abismo',
+            category: 'BOSS',
+            attackName: 'Implosão do Vazio',
+            damage: coreDmg,
+            enemyType: 'BOSS_4'
+          });
+
           triggerShake(20);
           playSfx('hit');
           triggerHaptic('heavy');
@@ -489,25 +551,57 @@ export function updateActiveAttacks(boss, dt, context) {
           createHitParticles(player.x, player.y, '#8e44ad', 24);
           createHitParticles(player.x, player.y, '#00cec9', 16);
           createHitParticles(player.x, player.y, '#ffffff', 10);
+
+          if (player.hp <= 0) {
+            player.hp = 0;
+            triggerDeath();
+            return;
+          }
         }
       }
     } else if (atk.type === 'SUPERNOVA_FLASH') {
       // Dano no epicentro da supernova caso o jogador esteja próximo na detonação inicial
-      if (atk.timer > atk.maxTimer - 10 && player.iFrames <= 0) {
+      if (atk.timer > atk.maxTimer - 10 && player.iFrames <= 0 && player.bossIFrames <= 0) {
         const pdx = player.x - atk.x;
         const pdy = player.y - atk.y;
         const distSq = pdx * pdx + pdy * pdy;
-        const hitR = (atk.maxR || 275) * 0.65 + (player.radius || 14);
+        const hitR = (atk.maxR || 220) * 0.65 + (player.radius || 14);
         if (distSq <= hitR * hitR) {
-          const flashDmg = Math.round((boss.damage || 365) * 0.38);
-          player.hp -= flashDmg;
-          player.iFrames = 24;
+          const rawFlashDmg = Math.round((boss.damage || 365) * 0.38);
+          const { finalDmg: flashDmg } = applyHazardDamage(player, rawFlashDmg, selectedHeroKey, 34);
+          player.bossIFrames = Math.max(player.bossIFrames || 0, 34);
+          player.iFrames = Math.max(player.iFrames || 0, 34);
+
+          // Anula a colisão da onda de choque correspondente para não haver dano duplo acumulado
+          const waves = context.bossShockwaves || bossShockwaves;
+          if (waves) {
+            for (let w = 0; w < waves.length; w++) {
+              if (waves[w].sourceSkill === 'COSMIC_SUPERNOVA') {
+                waves[w].hitPlayer = true;
+              }
+            }
+          }
+
+          setLastAttackerInfo({
+            name: boss.name || 'Soberano do Abismo',
+            category: 'BOSS',
+            attackName: 'Supernova Cósmica',
+            damage: flashDmg,
+            enemyType: 'BOSS_4'
+          });
+
           triggerShake(18);
           playSfx('hit');
           triggerHaptic('heavy');
           addDamageText(player.x, player.y, `-${flashDmg}`, false, '#e84393');
           createHitParticles(player.x, player.y, '#e84393', 16);
           createHitParticles(player.x, player.y, '#ffffff', 8);
+
+          if (player.hp <= 0) {
+            player.hp = 0;
+            triggerDeath();
+            return;
+          }
         }
       }
     }
@@ -995,9 +1089,9 @@ export function updateInexorableHarvest(boss, dt, context) {
 
 /**
  * Atualiza a torrente orbital da Espiral dos Quatro Horizontes (Four-Coil Spiral Stream):
- * - Enquanto em CASTING, o chefe levita ao centro e ejeta projéteis SOUL_SCYTHE continuamente.
+ * - Enquanto em CASTING, o chefe levita ao centro e ejeta projéteis ABYSSAL_BOLT continuamente.
  * - Cada projétil avança em órbita espiral formando rigorosamente 4 voltas (8π radianos) do centro até a borda.
- * - Processa rotação no próprio eixo (selfSpin) e colisão precisa com o jogador.
+ * - Orienta o rastro pela direção de movimento e processa a colisão com o jogador.
  */
 export function updateSpiralStream(boss, dt, context) {
   const { player, frameCount, triggerShake, triggerHaptic, createHitParticles, addDamageText } = context;
@@ -1006,9 +1100,18 @@ export function updateSpiralStream(boss, dt, context) {
   const acy = boss.arenaCenterY !== undefined ? boss.arenaCenterY : boss.y;
   const ar = boss.arenaRadius || 620;
   const maxR = Math.max(50, ar - 18);
+  const globalRotSpeed = SOVEREIGN_CONFIG.SPIRAL_GLOBAL_ROT_SPEED || 0.012;
+
+  const isCastingSpiral = boss.actionState === SOVEREIGN_STATES.CASTING && boss.currentSkill === 'FOUR_COIL_SPIRAL';
+  const hasActiveBlades = !!(boss.spiralBlades && boss.spiralBlades.length > 0);
+
+  // Rotação orbital global contínua e monotônica (evita descontinuidade angular quando a FSM transiciona de estado)
+  if (isCastingSpiral || hasActiveBlades) {
+    boss.spiralRotAngle = (boss.spiralRotAngle || 0) + globalRotSpeed * dt;
+  }
 
   // 1. Emissão contínua a partir do centro da arena
-  if (boss.actionState === SOVEREIGN_STATES.CASTING && boss.currentSkill === 'FOUR_COIL_SPIRAL') {
+  if (isCastingSpiral) {
     // Levitação suave em direção ao centro da arena cósmica
     const bdx = acx - boss.x;
     const bdy = acy - boss.y;
@@ -1019,10 +1122,9 @@ export function updateSpiralStream(boss, dt, context) {
     const ejectInterval = SOVEREIGN_CONFIG.SPIRAL_EJECT_INTERVAL || 2;
     const travelTime = SOVEREIGN_CONFIG.SPIRAL_TRAVEL_TIME || 220;
     const totalCoils = SOVEREIGN_CONFIG.SPIRAL_TOTAL_COILS || 4;
-    const bladeRadius = SOVEREIGN_CONFIG.SPIRAL_BLADE_RADIUS || 18;
+    const bladeRadius = SOVEREIGN_CONFIG.SPIRAL_BLADE_RADIUS || 5.5;
     const bladeDamage = Math.round((boss.damage || 365) * (SOVEREIGN_CONFIG.SPIRAL_BLADE_DAMAGE_RATIO || 0.26));
     const primaryCol = boss.phase === 3 ? '#00cec9' : (boss.phase === 2 ? '#e84393' : '#8e44ad');
-    const rubyCol = '#c0392b';
 
     if (boss.stateTimer < streamDuration) {
       boss.spiralEjectTimer = (boss.spiralEjectTimer || 0) + dt;
@@ -1040,15 +1142,18 @@ export function updateSpiralStream(boss, dt, context) {
           radius: bladeRadius,
           damage: bladeDamage,
           color: primaryCol,
-          rubyColor: rubyCol,
-          selfSpin: Math.random() * Math.PI * 2,
-          x: boss.x,
-          y: boss.y,
-          type: 'SOUL_SCYTHE'
+          cx: acx,
+          cy: acy,
+          maxR: maxR,
+          x: acx,
+          y: acy,
+          vx: 0,
+          vy: 0,
+          type: 'ABYSSAL_BOLT'
         });
       }
 
-      // Efeito sonoro rítmico do bombardeio de foices astrais (intervalo regular)
+      // Efeito sonoro rítmico do bombardeio de projéteis abissais (intervalo regular)
       if (Math.floor(boss.stateTimer) % 16 === 0) {
         playSfx('shoot');
         triggerHaptic('light');
@@ -1059,21 +1164,27 @@ export function updateSpiralStream(boss, dt, context) {
   // 2. Atualização orbital, física e colisões das lâminas ativas
   if (!boss.spiralBlades || boss.spiralBlades.length === 0) return;
 
-  const globalRotSpeed = SOVEREIGN_CONFIG.SPIRAL_GLOBAL_ROT_SPEED || 0.012;
+  const globalRot = boss.spiralRotAngle || 0;
 
   for (let i = boss.spiralBlades.length - 1; i >= 0; i--) {
     const blade = boss.spiralBlades[i];
     blade.age += dt;
-    blade.selfSpin += 0.35 * dt;
 
     const progress = Math.min(1.0, blade.age / blade.maxAge);
     const coilAngle = progress * (blade.totalCoils || 4) * Math.PI * 2;
-    const globalRot = (boss.stateTimer || 0) * globalRotSpeed;
     const currentAngle = blade.baseAngle + coilAngle + globalRot;
-    const currentDist = progress * maxR;
+    const bladeMaxR = blade.maxR !== undefined ? blade.maxR : maxR;
+    const currentDist = progress * bladeMaxR;
 
-    blade.x = acx + Math.cos(currentAngle) * currentDist;
-    blade.y = acy + Math.sin(currentAngle) * currentDist;
+    const centerX = blade.cx !== undefined ? blade.cx : acx;
+    const centerY = blade.cy !== undefined ? blade.cy : acy;
+
+    const nextX = centerX + Math.cos(currentAngle) * currentDist;
+    const nextY = centerY + Math.sin(currentAngle) * currentDist;
+    blade.vx = nextX - blade.x;
+    blade.vy = nextY - blade.y;
+    blade.x = nextX;
+    blade.y = nextY;
 
     // Desintegração em poeira estelar ao concluir a 4ª volta completa na borda
     if (blade.age >= blade.maxAge) {

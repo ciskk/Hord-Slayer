@@ -17,6 +17,7 @@ export const SOVEREIGN_STATES = Object.freeze({
 });
 
 export const SOVEREIGN_CONFIG = Object.freeze({
+  INTRO_DURATION: 560, // 9,33 s a 60 Hz: dois segundos adicionais de apresentação.
   ARENA_RADIUS_PHASE_1: 620,
   ARENA_RADIUS_PHASE_2: 520,
   ARENA_RADIUS_PHASE_3: 380,
@@ -29,7 +30,7 @@ export const SOVEREIGN_CONFIG = Object.freeze({
   COLOR_GOLD_LIGHT: '#fff6a9',
 
   // Feixes do Limiar (Threshold Beams)
-  THRESHOLD_BEAM_SPEED: 3.7,
+  THRESHOLD_BEAM_SPEED: 4.625,
   THRESHOLD_BEAM_BOUNCE_MULT: 1.25,
   THRESHOLD_BEAM_MAX_BOUNCES: 4,
   THRESHOLD_BEAM_P3_MAX_BOUNCES: 5,
@@ -51,7 +52,7 @@ export const SOVEREIGN_CONFIG = Object.freeze({
   HARVEST_MIASMA_DURATION: 65,
   HARVEST_DAMAGE_RATIO: 0.32,
 
-  // Turbilhão do Vácuo (Abyssal Cyclone)
+  // Turbilhão Abissal (Abyssal Cyclone)
   CYCLONE_SPEED_P1: 5.8,
   CYCLONE_SPEED_P3: 7.2,
   CYCLONE_STEER_RATE: 0.038,
@@ -66,7 +67,7 @@ export const SOVEREIGN_CONFIG = Object.freeze({
   SPIRAL_EJECT_INTERVAL: 2,
   SPIRAL_TRAVEL_TIME: 220,
   SPIRAL_TOTAL_COILS: 4,
-  SPIRAL_BLADE_RADIUS: 18,
+  SPIRAL_BLADE_RADIUS: 5.5,
   SPIRAL_BLADE_DAMAGE_RATIO: 0.26,
   SPIRAL_GLOBAL_ROT_SPEED: 0.012
 });

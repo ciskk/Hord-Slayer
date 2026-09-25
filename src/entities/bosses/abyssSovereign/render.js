@@ -8,10 +8,11 @@ import {
   viewH,
   bannerCtx 
 } from '../../../main.js';
-import { getHudBottom } from '../../../core/responsive.js';
-import { SOVEREIGN_STATES } from './constants.js';
+import { SOVEREIGN_STATES, SOVEREIGN_CONFIG } from './constants.js';
+import { drawAbyssalBolt } from '../../../render/projectiles/abyssalBolt.js';
 import { drawArenaPattern } from './arenaPatternsRender.js';
-import { drawSovereignIntroBackdrop, drawSovereignIntroForeground, introEase } from './introEffects.js';
+import { drawSovereignIntroBackdrop, drawSovereignIntroForeground, drawSovereignIntroTitle,
+  SOVEREIGN_INTRO_TIMING, introEase } from './introEffects.js';
 
 /**
  * Renderização da Introdução Majestosa em 4 Atos do Chefe Final (Soberano do Abismo).
@@ -19,277 +20,44 @@ import { drawSovereignIntroBackdrop, drawSovereignIntroForeground, introEase } f
  * Esfera de vácuo obsidiana, domo de vidro celeste com 16 arcos góticos, 4 agulhas cristalinas,
  * 9 tentáculos com nós de contas articulados, olho observador prateado, fenda dimensional reversa e pilar primordial.
  */
-function drawMajesticSpawnIntro(ctx, e, frameCount) {
+function drawMajesticSpawnIntro(ctx, e) {
   const R = e.radius;
-  const introMax = e.introDuration || 440;
-  const progress = Math.min(1.0, Math.max(0, 1 - (e.introTimer / introMax)));
-  // Freeze every detail with the cinematic clock, including existing body parts.
-  frameCount = progress * 440;
+  const introMax = e.introDuration || SOVEREIGN_CONFIG.INTRO_DURATION;
+  const progress = Math.min(1, Math.max(0, 1 - e.introTimer / introMax));
+  const time = progress * introMax;
+  const timing = SOVEREIGN_INTRO_TIMING;
   drawSovereignIntroBackdrop(ctx, R, progress);
 
-  // Selo Abissal no Solo com geometria sagrada, runas e círculos concêntricos
-  ctx.save();
-  const groundPulse = Math.sin(frameCount * 0.12) * 6 * progress;
-  const groundRot = frameCount * 0.025;
-  const rx = Math.max(0.1, R * 1.8 * progress + groundPulse);
-  const ry = Math.max(0.1, (R * 0.6 * progress) + groundPulse * 0.35);
-
-  ctx.strokeStyle = `rgba(0, 206, 201, ${0.2 + progress * 0.6})`;
-  ctx.lineWidth = 2 + progress * 2;
-  ctx.beginPath();
-  ctx.ellipse(0, R * 0.95, rx, ry, 0, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Runas e glifos estelares orbitando o selo
-  const glyphCount = 12;
-  for (let g = 0; g < glyphCount; g++) {
-    const ga = groundRot + (g * Math.PI * 2) / glyphCount;
-    const gx = Math.cos(ga) * rx;
-    const gy = R * 0.95 + Math.sin(ga) * ry;
-    ctx.fillStyle = g % 2 === 0 ? '#00cec9' : '#e84393';
-    ctx.fillRect(gx - 2, gy - 2, 4, 4);
-  }
-  ctx.restore();
-
-  // =========================================================================
-  // ATO 1: PREPARAÇÃO - O RASGO DA REALIDADE & VÁCUO GRAVITACIONAL (0.00 <= progress < 0.25)
-  // =========================================================================
-  if (progress < 0.25) {
-    const act1Prog = progress / 0.25;
-    const riftH = 160 * introEase(act1Prog);
-    const riftW = 10 + Math.sin(frameCount * 0.3) * 6;
+  // As camadas se sobrepõem: o portal continua visível enquanto a skin se materializa.
+  const emerge = introEase((progress - timing.emerge) / 0.26);
+  if (emerge > 0) {
+    const bloom = introEase((progress - timing.limbs) / 0.29);
+    const gaze = introEase((progress - timing.gaze) / 0.14);
+    const settle = introEase((progress - timing.settle) / (1 - timing.settle));
+    const charge = introEase((progress - timing.charge) / 0.08)
+      * (1 - introEase((progress - timing.release) / 0.07));
+    const scale = (0.58 + emerge * 0.42) * (1 - charge * 0.035);
+    const floatY = Math.sin(time * 0.032) * 2 * emerge * (1 - settle);
+    const appearance = { ...e, eyeAperture: gaze, corePulse: Math.sin(time * 0.12) };
 
     ctx.save();
-    ctx.globalAlpha *= introEase(act1Prog / 0.18);
-    // Halo gravitacional profundo do rasgo
-    const riftGlow = ctx.createRadialGradient(0, 0, 4, 0, 0, Math.max(12, riftH * 0.95));
-    riftGlow.addColorStop(0, 'rgba(0, 206, 201, 0.9)');
-    riftGlow.addColorStop(0.35, 'rgba(232, 67, 147, 0.6)');
-    riftGlow.addColorStop(0.75, 'rgba(108, 92, 231, 0.3)');
-    riftGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = riftGlow;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, riftW * 5.5, riftH, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.translate(0, (1 - emerge) * R * 0.65 + floatY);
+    ctx.scale(scale, scale);
+    ctx.globalAlpha *= introEase((progress - timing.emerge) / 0.09);
 
-    // Fenda estelar em cruz (Crucifixo Primordial do Vazio)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.lineWidth = 3.5;
-    ctx.beginPath();
-    ctx.moveTo(0, -riftH * 0.9);
-    ctx.lineTo(0, riftH * 0.9);
-    ctx.moveTo(-riftW * 3.5, 0);
-    ctx.lineTo(riftW * 3.5, 0);
-    ctx.stroke();
-
-    // Núcleo hiperdenso do rasgo (horizonte de eventos negro)
-    ctx.fillStyle = '#020005';
-    ctx.beginPath();
-    ctx.ellipse(0, 0, riftW * 0.8, riftH * 0.75, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Raios de sucção gravitacional inversa espiralando para o núcleo
-    const suctionRays = 12;
-    for (let s = 0; s < suctionRays; s++) {
-      const sAngle = (s * Math.PI * 2) / suctionRays + frameCount * 0.05;
-      const rayLen = (1 - ((frameCount * 2.8 + s * 14) % 90) / 90) * 160;
-      const sx = Math.cos(sAngle) * rayLen;
-      const sy = Math.sin(sAngle) * rayLen;
-      ctx.strokeStyle = s % 2 === 0 ? 'rgba(0, 206, 201, 0.75)' : 'rgba(232, 67, 147, 0.75)';
-      ctx.lineWidth = 2.0;
-      ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.lineTo(sx * 0.12, sy * 0.12);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  // =========================================================================
-  // ATO 2: SURGIMENTO - ASCENSÃO DA ESFERA & DOMO CELESTE (0.25 <= progress < 0.50)
-  // =========================================================================
-  else if (progress < 0.50) {
-    const act2Prog = (progress - 0.25) / 0.25;
-    const emergence = introEase(act2Prog);
-    const riseY = (1 - emergence) * 32;
-    const sphereScale = 0.55 + emergence * 0.45;
-
+    // Cada membro se abre em sequência com profundidade 3D (Dorsal e Ventral)
+    drawCelestialLimbs(ctx, appearance, R, time, false, false, false, bloom, 'DORSAL');
     ctx.save();
-    // Fenda residual luminosa no fundo
-    const fendaGlow = ctx.createRadialGradient(0, riseY, 10, 0, riseY, R * 2.2);
-    fendaGlow.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
-    fendaGlow.addColorStop(0.3, 'rgba(0, 206, 201, 0.6)');
-    fendaGlow.addColorStop(0.7, 'rgba(232, 67, 147, 0.35)');
-    fendaGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = fendaGlow;
-    ctx.beginPath();
-    ctx.ellipse(0, riseY, R * 2.4, R * 1.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Anel de refração expansivo
-    const blastR = R * (0.8 + act2Prog * 0.8);
-    ctx.strokeStyle = `rgba(0, 206, 201, ${0.8 * (1 - act2Prog * 0.5)})`;
-    ctx.lineWidth = 3.0;
-    ctx.beginPath();
-    ctx.arc(0, riseY, blastR, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Relâmpagos de matéria escura rasgando as bordas
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.8;
-    for (let l = 0; l < 3; l++) {
-      const lY = riseY + (Math.sin(frameCount * 0.4 + l * 2) * R * 0.8);
-      const lW = Math.sin(frameCount * 0.5 + l * 1.5) * 45;
-      ctx.beginPath();
-      ctx.moveTo(0, lY);
-      ctx.lineTo(lW * 0.4, lY + 8);
-      ctx.lineTo(lW, lY - 5);
-      ctx.stroke();
-    }
-
-    // Posiciona e escala a esfera e o domo celeste
-    ctx.translate(0, riseY);
-    ctx.scale(sphereScale, sphereScale);
-    ctx.globalAlpha *= introEase(act2Prog / 0.20);
-
-    // 1. As 4 Agulhas Cristalinas materializando-se e descendo
-    ctx.save();
-    ctx.scale(1, introEase(act2Prog * 1.2));
-    drawDownwardCrystallineSpikes(ctx, e, R, frameCount);
+    const crystalGrowth = introEase((progress - 0.27) / 0.18);
+    ctx.scale(1, Math.max(0.001, crystalGrowth));
+    ctx.globalAlpha *= crystalGrowth;
+    drawDownwardCrystallineSpikes(ctx, appearance, R, time);
     ctx.restore();
 
-    // 2. Esfera de Vácuo Obsidiana e Domo Celeste com 16 Arcos Góticos
-    drawSacredMandalaVoidSphere(ctx, e, R, frameCount, false, false, e.phase, 0.5 + act2Prog * 0.4);
-
-    // 3. Olho central mantido 100% fechado na dormência da ascensão
-    e.eyeAperture = 0.0;
-    drawColdObserverEye(ctx, e, R, frameCount, false, false, false, e.phase, 1.0);
-
-    ctx.restore();
-  }
-
-  // =========================================================================
-  // ATO 3: APRESENTAÇÃO - DESABROCHAR DOS 9 TENTÁCULOS & OLHAR DIVINO (0.50 <= progress < 0.80)
-  // =========================================================================
-  else if (progress < 0.80) {
-    const act3Prog = (progress - 0.50) / 0.30;
-    const limbBloom = introEase(act3Prog / 0.85);
-
-    ctx.save();
-    // Leve flutuação de autoridade cósmica
-    const floatY = Math.sin(frameCount * 0.05) * 3;
-    ctx.translate(0, floatY);
-
-    // Halos celestes concêntricos reverberando
-    ctx.strokeStyle = 'rgba(0, 206, 201, 0.5)';
-    ctx.lineWidth = 2.4;
-    ctx.beginPath();
-    ctx.arc(0, 0, R * (1.1 + Math.sin(frameCount * 0.1) * 0.06), 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.strokeStyle = 'rgba(232, 67, 147, 0.4)';
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.arc(0, 0, R * (1.35 + Math.cos(frameCount * 0.08) * 0.05), 0, Math.PI * 2);
-    ctx.stroke();
-
-    // 1. Desabrochar gracioso dos 9 Tentáculos Articulados com juntas de contas
-    ctx.save();
-    ctx.scale(limbBloom, limbBloom);
-    drawCelestialLimbs(ctx, e, R, frameCount, false, false, true);
-    ctx.restore();
-
-    // 2. As 4 Agulhas Cristalinas
-    drawDownwardCrystallineSpikes(ctx, e, R, frameCount);
-
-    // 3. Esfera de Vácuo e Domo Sagrado de Arcos Góticos
-    drawSacredMandalaVoidSphere(ctx, e, R, frameCount, false, false, e.phase, 0.6 - act3Prog * 0.3);
-
-    // 4. Abertura solene do Olho Observador (aperture de 0.0 a 1.0)
-    e.eyeAperture = introEase((act3Prog - 0.15) / 0.65);
-    drawColdObserverEye(ctx, e, R, frameCount, false, false, false, e.phase, 1.0 - e.eyeAperture);
-
-    ctx.restore();
-  }
-
-  // =========================================================================
-  // ATO 4: CLÍMAX - O DESPERTAR DA SINGULARIDADE & PILAR PRIMORDIAL (0.80 <= progress <= 1.00)
-  // =========================================================================
-  else {
-    const act4Prog = (progress - 0.80) / 0.20;
-
-    ctx.save();
-    // Pulsação pré-detonação
-    const settle = 1 - introEase((act4Prog - 0.70) / 0.30);
-    const bossPulse = 1.0 + Math.sin(frameCount * 0.2) * 0.05 * Math.sin(act4Prog * Math.PI);
-    ctx.scale(bossPulse, bossPulse);
-
-    // 1. Pilar Primordial de Luz Celestial disparado verticalmente do Olho para o Cosmos
-    const beamEnvelope = introEase(act4Prog / 0.20) * settle;
-    const beamW = (18 + Math.sin(frameCount * 0.4) * 8 + act4Prog * 28) * beamEnvelope;
-    const beamH = 1000;
-    ctx.save();
-    ctx.globalAlpha *= beamEnvelope;
-    const beamGrad = ctx.createLinearGradient(0, 0, 0, -beamH);
-    beamGrad.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
-    beamGrad.addColorStop(0.25, 'rgba(0, 206, 201, 0.92)');
-    beamGrad.addColorStop(0.70, 'rgba(108, 92, 231, 0.45)');
-    beamGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = beamGrad;
-    ctx.fillRect(-beamW * 0.5, -beamH, beamW, beamH);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(-3.5 * beamEnvelope, -beamH, 7 * beamEnvelope, beamH);
-    // Fine helical filaments and ascending collars break up the solid pillar.
-    ctx.strokeStyle = 'rgba(177, 221, 240, 0.55)';
-    ctx.lineWidth = 1.1;
-    for (let strand = 0; strand < 4; strand++) {
-      ctx.beginPath();
-      for (let step = 0; step <= 32; step++) {
-        const y = -step * 16;
-        const x = Math.sin(step * 0.42 + strand * Math.PI / 2 - frameCount * 0.05) * (beamW * 0.5 + 10);
-        if (step === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
-    for (let ring = 0; ring < 5; ring++) {
-      const travel = (act4Prog * 2 + ring / 5) % 1;
-      ctx.save(); ctx.globalAlpha *= Math.sin(travel * Math.PI);
-      ctx.beginPath(); ctx.ellipse(0, -travel * 420, beamW * 0.7 + 8, 5, 0, 0, Math.PI * 2); ctx.stroke();
-      ctx.restore();
-    }
-    ctx.restore();
-
-    // 2. Ondas de Choque concêntricas em expansão antes da liberação final
-    if (act4Prog > 0.35) {
-      const ringExpand = ((act4Prog - 0.35) / 0.65) * (R * 3.4);
-      const ringAlpha = 1 - ((act4Prog - 0.35) / 0.65);
-      ctx.strokeStyle = `rgba(0, 206, 201, ${ringAlpha * 0.85})`;
-      ctx.lineWidth = 3.5;
-      ctx.beginPath();
-      ctx.arc(0, 0, ringExpand, 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.strokeStyle = `rgba(232, 67, 147, ${ringAlpha * 0.65})`;
-      ctx.lineWidth = 2.2;
-      ctx.beginPath();
-      ctx.arc(0, 0, ringExpand * 0.75, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
-    // 3. Os 9 Tentáculos com contas totalmente estendidos em postura imponente
-    drawCelestialLimbs(ctx, e, R, frameCount, false, false, true);
-
-    // 4. As 4 Agulhas Cristalinas
-    drawDownwardCrystallineSpikes(ctx, e, R, frameCount);
-
-    // 5. Esfera de Vácuo Obsidiana e Domo Sagrado em ressonância estelar
-    drawSacredMandalaVoidSphere(ctx, e, R, frameCount, false, false, e.phase, 0.2);
-
-    // 6. Olho Central completamente aberto e resplandecente
-    e.eyeAperture = 1.0;
-    drawColdObserverEye(ctx, e, R, frameCount, false, false, false, e.phase, 0.0);
-
+    const dormant = (1 - gaze) * 0.85;
+    drawSacredMandalaVoidSphere(ctx, appearance, R, time, false, false, e.phase, dormant);
+    drawCelestialLimbs(ctx, appearance, R, time, false, false, false, bloom, 'VENTRAL');
+    drawColdObserverEye(ctx, appearance, R, time, false, false, false, e.phase, dormant);
     ctx.restore();
   }
   drawSovereignIntroForeground(ctx, R, progress);
@@ -531,182 +299,17 @@ function drawMajesticDeathCollapse(ctx, e, frameCount) {
 
 
 /**
- * Renderiza o Banner Cinematográfico Apocalíptico de Entrada do Soberano do Abismo.
- * Posicionado no centro da tela, flutuando diretamente acima do herói (horizontal e vertical).
+ * Renderiza a cartela de entrada abaixo do chefe, dentro da área cinematográfica.
  * @param {CanvasRenderingContext2D} ctx
  * @param {Object} e Entidade do Soberano do Abismo
  * @param {number} frameCount
  */
-function drawCinematicScreenTitle(ctx, e, frameCount) {
-  const maxT = e.titleMaxTimer || 220;
-  const titleProgress = 1 - Math.max(0, e.titleTimer / maxT);
-
-  // Easing suave de Fade In e Fade Out (Curva Smoothstep)
-  const inRatio = Math.min(1.0, Math.max(0, titleProgress / 0.16));
-  const inEase = inRatio * inRatio * (3 - 2 * inRatio);
-
-  const outRatio = Math.min(1.0, Math.max(0, (1 - titleProgress) / 0.20));
-  const outEase = outRatio * outRatio * (3 - 2 * outRatio);
-
-  const bannerAlpha = inEase * outEase;
-  if (bannerAlpha <= 0.001) return;
-
-  const screenW = viewW || (typeof window !== 'undefined' ? window.innerWidth : 1280);
-  const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
-  const isVertical = screenH > screenW || screenW < 640;
-  const isCompactH = screenH < 520;
-  const hudBottom = getHudBottom();
-
-  const centerX = screenW / 2;
-  const contentW = isVertical 
-    ? Math.min(screenW - 24, 380) 
-    : (isCompactH ? Math.min(screenW - 48, 680) : Math.min(screenW - 64, 880));
-  const bannerH = isVertical ? 60 : (isCompactH ? 56 : 96);
-
-  // Fade estendido nas laterais: asas amplas que se estendem e dissolvem suavemente
-  const fadeWing = isVertical ? 50 : Math.max(160, screenW * 0.22);
-  const totalW = contentW + fadeWing * 2;
-  const startX = centerX - totalW / 2;
-  const endX = centerX + totalW / 2;
-
-  const calculatedY = Math.round((screenH / 2) - bannerH - (isVertical ? 45 : (isCompactH ? 20 : 65)));
-  const by = Math.max(hudBottom + 8, calculatedY);
-  const centerY = by + bannerH / 2;
-
-  // Animação de transição cinematográfica
-  const entrySlideY = (1 - inEase) * -12;
-  const exitSlideY = (1 - outEase) * -8;
-  const ambientFloat = Math.sin(frameCount * 0.04) * 1.5;
-  const animOffsetY = entrySlideY + exitSlideY + ambientFloat;
-  const animScaleX = (0.93 + 0.07 * inEase) * (1.0 + (1 - outEase) * 0.025);
-
+function drawCinematicScreenTitle(ctx, e) {
+  const duration = e.introDuration || SOVEREIGN_CONFIG.INTRO_DURATION;
+  const progress = Math.min(1, Math.max(0, 1 - e.introTimer / duration));
   ctx.save();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.globalAlpha = bannerAlpha;
-
-  // Aplica movimento com pivô central
-  ctx.translate(centerX, centerY + animOffsetY);
-  ctx.scale(animScaleX, 1.0);
-  ctx.translate(-centerX, -centerY);
-
-  // 1. Fundo Cósmico Carmesim Profundo com Fade Estendido nas Laterais
-  const bgGrad = ctx.createLinearGradient(startX, by, endX, by);
-  bgGrad.addColorStop(0, 'rgba(15, 0, 4, 0)');
-  bgGrad.addColorStop(0.12, 'rgba(22, 1, 6, 0.22)');
-  bgGrad.addColorStop(0.28, 'rgba(38, 3, 10, 0.90)');
-  bgGrad.addColorStop(0.50, 'rgba(52, 4, 14, 0.98)');
-  bgGrad.addColorStop(0.72, 'rgba(38, 3, 10, 0.90)');
-  bgGrad.addColorStop(0.88, 'rgba(22, 1, 6, 0.22)');
-  bgGrad.addColorStop(1, 'rgba(15, 0, 4, 0)');
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(startX, by, totalW, bannerH);
-
-  // 2. Frisos de Neon Vermelho Carmesim Superior e Inferior com Taper Suave nas Pontas
-  const lineStart = startX + fadeWing * 0.25;
-  const lineEnd = endX - fadeWing * 0.25;
-  const borderGrad = ctx.createLinearGradient(lineStart, by, lineEnd, by);
-  borderGrad.addColorStop(0, 'rgba(255, 23, 68, 0)');
-  borderGrad.addColorStop(0.18, 'rgba(255, 23, 68, 0.65)');
-  borderGrad.addColorStop(0.35, 'rgba(255, 23, 68, 0.95)');
-  borderGrad.addColorStop(0.50, 'rgba(255, 107, 129, 1.0)');
-  borderGrad.addColorStop(0.65, 'rgba(255, 23, 68, 0.95)');
-  borderGrad.addColorStop(0.82, 'rgba(255, 23, 68, 0.65)');
-  borderGrad.addColorStop(1, 'rgba(255, 23, 68, 0)');
-
-  ctx.strokeStyle = borderGrad;
-  ctx.lineWidth = isVertical ? 2.0 : 2.6;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(lineStart, by);
-  ctx.lineTo(lineEnd, by);
-  ctx.moveTo(lineStart, by + bannerH);
-  ctx.lineTo(lineEnd, by + bannerH);
-  ctx.stroke();
-
-  // Frisos internos com acabamento em ouro rosé e fade nas pontas
-  const innerStart = centerX - contentW * 0.44;
-  const innerEnd = centerX + contentW * 0.44;
-  const innerGrad = ctx.createLinearGradient(innerStart, by, innerEnd, by);
-  innerGrad.addColorStop(0, 'rgba(255, 150, 160, 0)');
-  innerGrad.addColorStop(0.20, 'rgba(255, 150, 160, 0.45)');
-  innerGrad.addColorStop(0.50, 'rgba(255, 210, 215, 0.75)');
-  innerGrad.addColorStop(0.80, 'rgba(255, 150, 160, 0.45)');
-  innerGrad.addColorStop(1, 'rgba(255, 150, 160, 0)');
-
-  ctx.strokeStyle = innerGrad;
-  ctx.lineWidth = 1.1;
-  const innerPadY = isVertical ? 3.5 : 4.5;
-  ctx.beginPath();
-  ctx.moveTo(innerStart, by + innerPadY);
-  ctx.lineTo(innerEnd, by + innerPadY);
-  ctx.moveTo(innerStart, by + bannerH - innerPadY);
-  ctx.lineTo(innerEnd, by + bannerH - innerPadY);
-  ctx.stroke();
-
-  // Cantoneiras em losango de rubi abissal
-  [-contentW * 0.42, contentW * 0.42].forEach(ox => {
-    ctx.fillStyle = '#ff1744';
-    ctx.beginPath();
-    ctx.moveTo(centerX + ox, by);
-    ctx.lineTo(centerX + ox + 3, by - 3);
-    ctx.lineTo(centerX + ox + 6, by);
-    ctx.lineTo(centerX + ox + 3, by + 3);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(centerX + ox, by + bannerH);
-    ctx.lineTo(centerX + ox + 3, by + bannerH - 3);
-    ctx.lineTo(centerX + ox + 6, by + bannerH);
-    ctx.lineTo(centerX + ox + 3, by + bannerH + 3);
-    ctx.closePath();
-    ctx.fill();
-  });
-
-  // 4. Textos do Banner
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  if (isVertical) {
-    // --- LAYOUT PARA TELAS VERTICAIS (Compacto & Legível) ---
-    // Tag Superior
-    ctx.font = 'bold 9px monospace';
-    ctx.fillStyle = '#ff6b81';
-    ctx.fillText("[ ALERTA DE CATACLISMA ]", centerX, by + 13);
-
-    // Título Central
-    const titleY = by + 31;
-    ctx.font = 'bold 17px "Cinzel", "Cinzel Decorative", Georgia, serif';
-    ctx.fillStyle = 'rgba(255, 23, 68, 0.5)';
-    ctx.fillText("❖ SOBERANO DO ABISMO ❖", centerX + 1, titleY + 1.5);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText("❖ SOBERANO DO ABISMO ❖", centerX, titleY);
-
-    // Subtítulo
-    ctx.font = 'italic 10px "Cinzel", Georgia, serif';
-    ctx.fillStyle = '#ffd1d1';
-    ctx.fillText("✦ SENHOR DO VÁZIO PRIMORDIAL ✦", centerX, by + 46);
-  } else {
-    // --- LAYOUT PARA TELAS HORIZONTAIS (Majestoso & Completo) ---
-    // Tag Superior
-    ctx.font = 'bold 11px monospace';
-    ctx.fillStyle = '#ff4d4d';
-    ctx.fillText("[ ALERTA DE CATACLISMA // AMEAÇA EXISTENCIAL ]", centerX, by + 20);
-
-    // Título Central
-    const titleY = by + 48;
-    ctx.font = 'bold 28px "Cinzel", "Cinzel Decorative", Georgia, serif';
-    ctx.fillStyle = 'rgba(255, 23, 68, 0.5)';
-    ctx.fillText("❖ SOBERANO DO ABISMO ❖", centerX + 1.5, titleY + 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText("❖ SOBERANO DO ABISMO ❖", centerX, titleY);
-
-    // Subtítulo
-    ctx.font = 'italic 12px "Cinzel", Georgia, serif';
-    ctx.fillStyle = '#ffd1d1';
-    ctx.fillText("✦ O DEVORADOR DAS ERAS E SENHOR DO VÁZIO PRIMORDIAL ✦", centerX, by + 74);
-  }
-
+  drawSovereignIntroTitle(ctx, viewW, viewH, progress);
   ctx.restore();
 }
 
@@ -1115,79 +718,116 @@ function drawSingularityPlasmaWings(ctx, e, R, frameCount, edgeCol, isStaggered,
 }
 
 /**
- * Renderiza o cluster de espinhos cristalinos negros apontando para baixo na base da esfera (Fiel à Referência).
+ * Renderiza o cluster de espinhos cristalinos negros apontando para baixo na base da esfera.
+ * Incorpora suspensão magnética (micro-flutuação harmônica vertical em antifase) e engastes facetados na carapaça (Fase 4).
  */
 function drawDownwardCrystallineSpikes(ctx, e, R, frameCount) {
   ctx.save();
-  // 4 agulhas cristalinas voltadas para baixo na base do orbe, emoldurando o tentáculo inferior
+  // 4 agulhas cristalinas voltadas para baixo na base do orbe, emoldurando o tentáculo central inferior
   const spikeDefs = [
-    { x: -R * 0.40, y: R * 0.70, len: 32, ang: 0.02, w: 6.5 },
-    { x: -R * 0.16, y: R * 0.80, len: 48, ang: 0.00, w: 8.5 },
-    { x:  R * 0.16, y: R * 0.80, len: 48, ang: 0.00, w: 8.5 },
-    { x:  R * 0.40, y: R * 0.70, len: 32, ang: -0.02, w: 6.5 }
+    { x: -R * 0.40, y: R * 0.70, len: 32, ang: 0.02, w: 6.5, phase: 0 },
+    { x: -R * 0.16, y: R * 0.80, len: 48, ang: 0.00, w: 8.5, phase: 1.57 },
+    { x:  R * 0.16, y: R * 0.80, len: 48, ang: 0.00, w: 8.5, phase: 3.14 },
+    { x:  R * 0.40, y: R * 0.70, len: 32, ang: -0.02, w: 6.5, phase: 4.71 }
   ];
+
+  const energyCol = (e.phase === 3 ? '#00cec9' : (e.phase === 2 ? '#ff7675' : '#a29bfe'));
 
   for (let i = 0; i < spikeDefs.length; i++) {
     const sp = spikeDefs[i];
+    // Micro-flutuação harmônica vertical em antifase (suspensão gravitacional magnética)
+    const floatY = Math.sin(frameCount * 0.065 + sp.phase) * 1.8;
+    const curY = sp.y + floatY;
+
     const tipX = sp.x + Math.sin(sp.ang) * sp.len;
-    const tipY = sp.y + Math.cos(sp.ang) * sp.len;
+    const tipY = curY + Math.cos(sp.ang) * sp.len;
     const perpX = Math.cos(sp.ang) * (sp.w * 0.5);
     const perpY = -Math.sin(sp.ang) * (sp.w * 0.5);
 
-    // Corpo metálico grafite/obsidiana
-    const spGrad = ctx.createLinearGradient(sp.x, sp.y, tipX, tipY);
+    // 1. Corpo metálico grafite/obsidiana da agulha
+    const spGrad = ctx.createLinearGradient(sp.x, curY, tipX, tipY);
     spGrad.addColorStop(0, '#1a1824');
     spGrad.addColorStop(0.5, '#0b0814');
     spGrad.addColorStop(1, '#05020a');
     ctx.fillStyle = spGrad;
     ctx.beginPath();
-    ctx.moveTo(sp.x - perpX, sp.y - perpY);
+    ctx.moveTo(sp.x - perpX, curY - perpY);
     ctx.lineTo(tipX, tipY);
-    ctx.lineTo(sp.x + perpX, sp.y + perpY);
+    ctx.lineTo(sp.x + perpX, curY + perpY);
     ctx.closePath();
     ctx.fill();
 
     // Contorno iluminado prata-ciano
     ctx.strokeStyle = '#e0f7fa';
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = 1.3;
     ctx.stroke();
 
     // Aresta central de reflexo
     ctx.strokeStyle = 'rgba(129, 236, 236, 0.75)';
     ctx.lineWidth = 0.9;
     ctx.beginPath();
-    ctx.moveTo(sp.x, sp.y);
+    ctx.moveTo(sp.x, curY);
     ctx.lineTo(tipX, tipY);
     ctx.stroke();
+
+    // 2. Engaste facetado escuro de fixação na base da carapaça (abraçadeira magnética)
+    const socketW = sp.w * 1.35;
+    const socketH = 4.2;
+    ctx.fillStyle = '#0a0912';
+    ctx.beginPath();
+    ctx.rect(sp.x - socketW * 0.5, curY - socketH * 0.5, socketW, socketH);
+    ctx.fill();
+
+    ctx.strokeStyle = '#f5f6fa';
+    ctx.lineWidth = 1.0;
+    ctx.strokeRect(sp.x - socketW * 0.5, curY - socketH * 0.5, socketW, socketH);
+
+    // Micro-núcleo de energia no centro do engaste
+    ctx.fillStyle = energyCol;
+    ctx.beginPath();
+    ctx.arc(sp.x, curY, 1.2, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   ctx.restore();
 }
 
 /**
- * Renderiza os 9 Tentáculos Articulados com Juntas de Nodos (Bead-Joints) e Física de Inércia (Fiel à Referência).
+ * Renderiza os 12 Tentáculos Articulados com Juntas de Nodos Facetados, Física de Inércia
+ * e Suporte a Camadas de Profundidade 3D (Dorsal/Ventral) com Simetria Bilateral Perfeita (Fase 4).
  */
-function drawCelestialLimbs(ctx, e, R, frameCount, isStaggered, isWindup, isCasting) {
-  // Configuração dos 9 tentáculos na silhueta icônica da imagem de referência
+function drawCelestialLimbs(ctx, e, R, frameCount, isStaggered, isWindup, isCasting, introBloom = 1, layer = 'ALL') {
+  // Se os tentáculos estiverem totalmente recolhidos para dentro do corpo (ex: Turbilhão Abissal), pula o desenho completamente para poupar FPS
+  if (e.tentacleExtension !== undefined && e.tentacleExtension <= 0.001) {
+    return;
+  }
+
+  // Configuração dos 12 tentáculos com distribuição angular de 30° e simetria bilateral perfeita
   const limbConfigs = [
-    // 0: Superior vertical (aponta para cima)
-    { baseAng: -Math.PI * 0.50, segs: [ { len: 18, ang: -0.04 }, { len: 16, ang: 0.08 }, { len: 15, ang: -0.10 }, { len: 14, ang: 0.12 } ] },
-    // 1: Superior Direito
-    { baseAng: -Math.PI * 0.22, segs: [ { len: 18, ang: 0.08 }, { len: 16, ang: -0.05 }, { len: 15, ang: 0.12 }, { len: 14, ang: -0.15 } ] },
-    // 2: Médio Direito Horizontal
-    { baseAng: -0.08, segs: [ { len: 19, ang: 0.05 }, { len: 17, ang: 0.12 }, { len: 15, ang: -0.10 }, { len: 14, ang: 0.18 } ] },
-    // 3: Inferior Direito
-    { baseAng: Math.PI * 0.16, segs: [ { len: 18, ang: 0.08 }, { len: 16, ang: -0.05 }, { len: 15, ang: 0.14 }, { len: 14, ang: -0.20 } ] },
-    // 4: Inferior-Direita baixo
-    { baseAng: Math.PI * 0.36, segs: [ { len: 18, ang: 0.05 }, { len: 16, ang: 0.12 }, { len: 15, ang: -0.08 }, { len: 14, ang: 0.16 } ] },
-    // 5: Inferior Vertical Central (desce reto entre os espinhos cristalinos)
+    // 0: Superior vertical central (aponta para cima, -90°) - Ventral
+    { baseAng: -Math.PI * 0.50, segs: [ { len: 18, ang: 0.00 }, { len: 16, ang: 0.02 }, { len: 15, ang: -0.02 }, { len: 14, ang: 0.00 } ] },
+    // 1: Superior Direito Diagonal (-60°) - Dorsal
+    { baseAng: -Math.PI / 3, segs: [ { len: 18, ang: 0.06 }, { len: 16, ang: -0.04 }, { len: 15, ang: 0.08 }, { len: 14, ang: -0.10 } ] },
+    // 2: Médio-Superior Direito (-30°) - Ventral
+    { baseAng: -Math.PI / 6, segs: [ { len: 19, ang: 0.05 }, { len: 17, ang: 0.08 }, { len: 15, ang: -0.06 }, { len: 14, ang: 0.12 } ] },
+    // 3: Médio Direito Horizontal (0°) - Dorsal
+    { baseAng: 0.00, segs: [ { len: 19, ang: 0.04 }, { len: 17, ang: 0.10 }, { len: 15, ang: -0.08 }, { len: 14, ang: 0.14 } ] },
+    // 4: Médio-Inferior Direito (+30°) - Ventral
+    { baseAng: Math.PI / 6, segs: [ { len: 18, ang: 0.06 }, { len: 16, ang: -0.04 }, { len: 15, ang: 0.10 }, { len: 14, ang: -0.16 } ] },
+    // 5: Inferior Direito Diagonal (+60°) - Dorsal
+    { baseAng: Math.PI / 3, segs: [ { len: 18, ang: 0.04 }, { len: 16, ang: 0.08 }, { len: 15, ang: -0.06 }, { len: 14, ang: 0.12 } ] },
+    // 6: Inferior vertical central (desce entre as 4 agulhas cristalinas, +90°) - Ventral
     { baseAng: Math.PI * 0.50, segs: [ { len: 20, ang: 0.00 }, { len: 18, ang: 0.02 }, { len: 16, ang: -0.02 }, { len: 15, ang: 0.00 } ] },
-    // 6: Inferior-Esquerda baixo
-    { baseAng: Math.PI * 0.64, segs: [ { len: 18, ang: -0.05 }, { len: 16, ang: -0.12 }, { len: 15, ang: 0.08 }, { len: 14, ang: -0.16 } ] },
-    // 7: Médio Esquerdo Horizontal
-    { baseAng: Math.PI * 0.98, segs: [ { len: 19, ang: -0.05 }, { len: 17, ang: -0.10 }, { len: 15, ang: 0.12 }, { len: 14, ang: -0.18 } ] },
-    // 8: Superior Esquerdo
-    { baseAng: -Math.PI * 0.78, segs: [ { len: 18, ang: -0.08 }, { len: 16, ang: 0.05 }, { len: 15, ang: -0.12 }, { len: 14, ang: 0.15 } ] }
+    // 7: Inferior Esquerdo Diagonal (+120°, espelho do 5) - Dorsal
+    { baseAng: Math.PI * 2 / 3, segs: [ { len: 18, ang: -0.04 }, { len: 16, ang: -0.08 }, { len: 15, ang: 0.06 }, { len: 14, ang: -0.12 } ] },
+    // 8: Médio-Inferior Esquerdo (+150°, espelho do 4) - Ventral
+    { baseAng: Math.PI * 5 / 6, segs: [ { len: 18, ang: -0.06 }, { len: 16, ang: 0.04 }, { len: 15, ang: -0.10 }, { len: 14, ang: 0.16 } ] },
+    // 9: Médio Esquerdo Horizontal (180°, espelho do 3) - Dorsal
+    { baseAng: Math.PI, segs: [ { len: 19, ang: -0.04 }, { len: 17, ang: -0.10 }, { len: 15, ang: 0.08 }, { len: 14, ang: -0.14 } ] },
+    // 10: Médio-Superior Esquerdo (-150°, espelho do 2) - Ventral
+    { baseAng: -Math.PI * 5 / 6, segs: [ { len: 19, ang: -0.05 }, { len: 17, ang: -0.08 }, { len: 15, ang: 0.06 }, { len: 14, ang: -0.12 } ] },
+    // 11: Superior Esquerdo Diagonal (-120°, espelho do 1) - Dorsal
+    { baseAng: -Math.PI * 2 / 3, segs: [ { len: 18, ang: -0.06 }, { len: 16, ang: 0.04 }, { len: 15, ang: -0.08 }, { len: 14, ang: 0.10 } ] }
   ];
 
   ctx.save();
@@ -1196,101 +836,289 @@ function drawCelestialLimbs(ctx, e, R, frameCount, isStaggered, isWindup, isCast
   const waveAmp = isIdle ? 0.025 : (isStaggered ? 0.02 : (isWindup ? 0.14 : 0.06));
 
   for (let l = 0; l < limbConfigs.length; l++) {
+    const isVentral = (l % 2 === 0);
+    if (layer === 'DORSAL' && isVentral) continue;
+    if (layer === 'VENTRAL' && !isVentral) continue;
+
     const limb = limbConfigs[l];
-    // Ponto de ancoragem na borda externa do anel
-    let currX = Math.cos(limb.baseAng) * (R * 1.05);
-    let currY = Math.sin(limb.baseAng) * (R * 1.05);
-    let accumAng = limb.baseAng;
+    const growth = introBloom === 1 ? 1 : introEase((introBloom - l * 0.02) / 0.8);
+    if (growth <= 0) continue;
+
+    // Extensão dinâmica individual com leve ondulação/stagger angular para aspecto natural e biológico
+    let limbExt = e.tentacleExtension !== undefined ? e.tentacleExtension : 1.0;
+    if (e.tentacleRetractProg !== undefined && e.tentacleRetractProg > 0) {
+      const limbStagger = (l % 4) * 0.035;
+      const clampedP = Math.max(0, Math.min(1.0, (e.tentacleRetractProg - limbStagger) / (1.0 - 0.105)));
+      const limbEase = clampedP < 0.5 
+        ? 4 * clampedP * clampedP * clampedP 
+        : 1 - Math.pow(-2 * clampedP + 2, 3) / 2;
+      limbExt = 1.0 - limbEase;
+    }
+
+    if (limbExt <= 0.005) continue;
+
+    ctx.save();
+    if (layer === 'DORSAL') {
+      ctx.globalAlpha *= 0.86; // profundidade atmosférica para membros de fundo
+    }
+    ctx.globalAlpha *= growth * Math.min(1.0, limbExt * 1.5);
+
+    // Ponto de ancoragem na borda externa que retrai sutilmente para dentro da carapaça
+    const anchorDist = R * (0.80 + 0.25 * limbExt);
+    let currX = Math.cos(limb.baseAng) * anchorDist;
+    let currY = Math.sin(limb.baseAng) * anchorDist;
+
+    // Curvatura helicoidal biomecânica natural conforme o membro se retrai
+    const curlDir = (l % 2 === 0 ? 1 : -1);
+    const retractCurl = (1 - limbExt) * 0.75 * curlDir;
+    let accumAng = limb.baseAng + (1 - growth) * 0.7 + retractCurl;
 
     const physLimb = e.tentaclePhysics && e.tentaclePhysics[l];
 
     for (let s = 0; s < limb.segs.length; s++) {
       const seg = limb.segs[s];
-      // Ondulação orgânica sutil de respiração
-      const wave = Math.sin(time + l * 0.8 + s * 0.6) * waveAmp;
-      // Inércia física dinamicamente simulada pelo sistema spring-damper
+      // Ondulação orgânica sutil de respiração que viaja da raiz à ponta (Fase 5)
+      const wave = Math.sin(time * 0.9 + (isVentral ? l : -l) * 0.45 - s * 0.72) * waveAmp;
+      // Inércia física dinamicamente simulada pelo sistema spring-damper com acoplamento e arrasto
       const inOffset = (physLimb && physLimb[s]) ? physLimb[s].angleOffset : 0;
-      accumAng += seg.ang + inOffset + wave;
+      // Curvatura progressiva em espiral por segmento durante a retração
+      const segCurl = (1 - limbExt) * 0.28 * curlDir * (s + 1);
+      accumAng += seg.ang + inOffset + wave + segCurl;
 
-      const nextX = currX + Math.cos(accumAng) * seg.len;
-      const nextY = currY + Math.sin(accumAng) * seg.len;
+      const effectiveGrowth = growth * limbExt;
+      const nextX = currX + Math.cos(accumAng) * seg.len * effectiveGrowth;
+      const nextY = currY + Math.sin(accumAng) * seg.len * effectiveGrowth;
 
-      // 1. Haste do Segmento (Osso/Placa Metálica)
-      const segWidth = Math.max(2.8, 6.2 - s * 0.9);
+      // 1. Haste do Segmento com Sombreamento Bicolor Metálico (Fase 3: Volume & Reflexo)
+      const segWidth = Math.max(1.4, (6.2 - s * 0.95) * (0.35 + 0.65 * limbExt));
+      const nextSegW = Math.max(1.1, (6.2 - (s + 1) * 0.95) * (0.35 + 0.65 * limbExt));
 
-      ctx.strokeStyle = '#dcdde1';
+      const segDx = nextX - currX;
+      const segDy = nextY - currY;
+      const segL = Math.hypot(segDx, segDy) || 1;
+      const nx = -segDy / segL;
+      const ny = segDx / segL;
+      // Vetor normal apontando para o hemisfério iluminado (zenital cósmico superior)
+      const lightSign = ny < 0 ? 1 : -1;
+      const lx = nx * lightSign;
+      const ly = ny * lightSign;
+
+      // Base do corpo metálico
+      ctx.strokeStyle = '#181923';
       ctx.lineWidth = segWidth;
-      ctx.lineCap = 'round';
+      ctx.lineCap = 'butt';
       ctx.beginPath();
       ctx.moveTo(currX, currY);
       ctx.lineTo(nextX, nextY);
       ctx.stroke();
 
-      // Friso interno escuro da junta
-      ctx.strokeStyle = '#2f3640';
-      ctx.lineWidth = Math.max(1.0, segWidth * 0.32);
+      // Lado Sombreado Inferior (Ambient Occlusion e sombra de carapaça)
+      ctx.strokeStyle = '#08080f';
+      ctx.lineWidth = segWidth * 0.44;
       ctx.beginPath();
-      ctx.moveTo(currX + (nextX - currX) * 0.15, currY + (nextY - currY) * 0.15);
-      ctx.lineTo(currX + (nextX - currX) * 0.85, currY + (nextY - currY) * 0.85);
+      ctx.moveTo(currX - lx * segWidth * 0.28, currY - ly * segWidth * 0.28);
+      ctx.lineTo(nextX - lx * nextSegW * 0.28, nextY - ly * nextSegW * 0.28);
       ctx.stroke();
 
-      // 2. Nó/Junta Circular de Contas (Torus Bead-Joint da Referência)
-      const beadR = Math.max(3.2, 5.8 - s * 0.7);
-
-      // Aro externo brilhante da conta com glow sutil
-      ctx.strokeStyle = 'rgba(129, 236, 236, 0.45)';
-      ctx.lineWidth = 2.4;
-      ctx.beginPath();
-      ctx.arc(currX, currY, beadR + 0.8, 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.fillStyle = '#0a0614';
-      ctx.beginPath();
-      ctx.arc(currX, currY, beadR, 0, Math.PI * 2);
-      ctx.fill();
-
+      // Lado Iluminado Superior (Reflexo prateado polido de alta presença)
       ctx.strokeStyle = '#f5f6fa';
-      ctx.lineWidth = 1.3;
+      ctx.lineWidth = segWidth * 0.44;
+      ctx.beginPath();
+      ctx.moveTo(currX + lx * segWidth * 0.28, currY + ly * segWidth * 0.28);
+      ctx.lineTo(nextX + lx * nextSegW * 0.28, nextY + ly * nextSegW * 0.28);
       ctx.stroke();
 
-      // Centro da conta (pino prateado)
-      ctx.fillStyle = 'rgba(168, 245, 255, 0.85)';
+      // Fio de destaque especular puro no topo do bisel
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = Math.max(0.6, segWidth * 0.16);
       ctx.beginPath();
-      ctx.arc(currX, currY, beadR * 0.42, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(currX + lx * segWidth * 0.36, currY + ly * segWidth * 0.36);
+      ctx.lineTo(nextX + lx * nextSegW * 0.36, nextY + ly * nextSegW * 0.36);
+      ctx.stroke();
 
-      // 3. Ponta Afilada de Agulha no último segmento
+      // Canelura central (entalhe luminescente reativo a ataques)
+      const energyCol = (e.phase === 3 ? '#00cec9' : (e.phase === 2 ? '#ff7675' : '#a29bfe'));
+      if ((isWindup || isCasting) && s < 2) {
+        const caneluraPulse = 0.5 + Math.sin(frameCount * 0.35 + l * 0.5) * 0.5;
+        ctx.save();
+        ctx.strokeStyle = energyCol;
+        ctx.lineWidth = Math.max(0.8, segWidth * 0.22);
+        ctx.globalAlpha *= caneluraPulse;
+        ctx.beginPath();
+        ctx.moveTo(currX + (nextX - currX) * 0.12, currY + (nextY - currY) * 0.12);
+        ctx.lineTo(currX + (nextX - currX) * 0.88, currY + (nextY - currY) * 0.88);
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        // Friso chanfrado escuro de divisão mecânica
+        ctx.strokeStyle = '#2f3640';
+        ctx.lineWidth = Math.max(0.7, segWidth * 0.20);
+        ctx.beginPath();
+        ctx.moveTo(currX + (nextX - currX) * 0.15, currY + (nextY - currY) * 0.15);
+        ctx.lineTo(currX + (nextX - currX) * 0.85, currY + (nextY - currY) * 0.85);
+        ctx.stroke();
+      }
+
+      // 2. Articulações das Juntas: Capas Facetadas nas Juntas Proximais (s <= 1) e Contas Biseladas (s >= 2)
+      const tanX = Math.cos(accumAng);
+      const tanY = Math.sin(accumAng);
+
+      if (s <= 1) {
+        // === CAPA FACETADA DE ARMADURA NAS ARTICULAÇÕES PRÓXIMAS AO CORPO ===
+        const capLen = (6.2 - s * 0.85);
+        const capW = (7.4 - s * 0.95);
+
+        const r0X = currX - tanX * capLen * 0.45;
+        const r0Y = currY - tanY * capLen * 0.45;
+        const l1X = currX + lx * capW;
+        const l1Y = currY + ly * capW;
+        const f2X = currX + tanX * capLen * 0.85;
+        const f2Y = currY + tanY * capLen * 0.85;
+        const s3X = currX - lx * capW * 0.88;
+        const s3Y = currY - ly * capW * 0.88;
+
+        // Faceta Superior Iluminada (Prata polida)
+        ctx.fillStyle = '#dcdde1';
+        ctx.beginPath();
+        ctx.moveTo(r0X, r0Y);
+        ctx.lineTo(l1X, l1Y);
+        ctx.lineTo(f2X, f2Y);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.0;
+        ctx.stroke();
+
+        // Faceta Inferior Sombreada (Grafite escuro / oclusão)
+        ctx.fillStyle = '#0e0d16';
+        ctx.beginPath();
+        ctx.moveTo(r0X, r0Y);
+        ctx.lineTo(s3X, s3Y);
+        ctx.lineTo(f2X, f2Y);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = '#2f3640';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        // Aresta biselada da crista central
+        ctx.strokeStyle = '#f5f6fa';
+        ctx.lineWidth = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(r0X, r0Y);
+        ctx.lineTo(f2X, f2Y);
+        ctx.stroke();
+
+        // Pino articulador central
+        ctx.fillStyle = '#0a0614';
+        ctx.beginPath();
+        ctx.arc(currX, currY, 2.0 - s * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = energyCol;
+        ctx.beginPath();
+        ctx.arc(currX, currY, 1.1 - s * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // === CONTAS CHANFRADAS BISELADAS NAS ARTICULAÇÕES DISTAIS ===
+        const beadR = Math.max(2.4, 4.4 - s * 0.6);
+
+        // Aro externo translúcido com glow sutil
+        ctx.strokeStyle = 'rgba(129, 236, 236, 0.35)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(currX, currY, beadR + 0.6, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#0a0614';
+        ctx.beginPath();
+        ctx.arc(currX, currY, beadR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Borda reflexiva superior prateada
+        ctx.strokeStyle = '#f5f6fa';
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.arc(currX, currY, beadR, Math.PI * 0.9, Math.PI * 2.1);
+        ctx.stroke();
+
+        // Centro da conta (pino prateado)
+        ctx.fillStyle = 'rgba(168, 245, 255, 0.85)';
+        ctx.beginPath();
+        ctx.arc(currX, currY, beadR * 0.42, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 3. Ponta com Acabamento Mais Fino em Estilete Afilado (Fase 3: Pontas Finas)
       if (s === limb.segs.length - 1) {
-        // Ponta final suavemente curvada
-        const tipAng = accumAng + 0.10;
-        const tipLen = 12;
+        const tipAng = accumAng + 0.08;
+        const tipLen = 14 * effectiveGrowth;
         const finalX = nextX + Math.cos(tipAng) * tipLen;
         const finalY = nextY + Math.sin(tipAng) * tipLen;
 
-        ctx.strokeStyle = '#f5f6fa';
-        ctx.lineWidth = 2.2;
+        const tipTanX = Math.cos(tipAng);
+        const tipTanY = Math.sin(tipAng);
+        const tipNx = -tipTanY;
+        const tipNy = tipTanX;
+        const tipLightSign = tipNy < 0 ? 1 : -1;
+        const tipLx = tipNx * tipLightSign;
+        const tipLy = tipNy * tipLightSign;
+        const baseHalfW = 1.4 * Math.max(0.35, limbExt);
+
+        // Faceta iluminada do estilete
+        ctx.fillStyle = '#f5f6fa';
+        ctx.beginPath();
+        ctx.moveTo(finalX, finalY);
+        ctx.lineTo(nextX + tipLx * baseHalfW, nextY + tipLy * baseHalfW);
+        ctx.lineTo(nextX, nextY);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
+
+        // Faceta sombreada do estilete
+        ctx.fillStyle = '#0f0e18';
+        ctx.beginPath();
+        ctx.moveTo(finalX, finalY);
+        ctx.lineTo(nextX - tipLx * baseHalfW, nextY - tipLy * baseHalfW);
+        ctx.lineTo(nextX, nextY);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = '#2f3640';
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+
+        // Fio central de espinha afiada
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 0.8;
         ctx.beginPath();
         ctx.moveTo(nextX, nextY);
         ctx.lineTo(finalX, finalY);
         ctx.stroke();
 
-        // Ponto luminoso na ponta do membro com transição entre combate e dormência
+        // Ponto luminoso na micro-agulha terminal
         const idleB = e.idleBlend || 0;
         const tipCol = idleB > 0.4 ? '#81ecec' : (e.phase === 2 ? '#ff7675' : (e.phase === 3 ? '#ffffff' : '#a29bfe'));
         const tipGlow = idleB > 0.4 ? '#00cec9' : (e.phase === 2 ? '#e84393' : (e.phase === 3 ? '#00cec9' : '#8e44ad'));
         ctx.fillStyle = tipGlow;
         ctx.beginPath();
-        ctx.arc(finalX, finalY, 2.4, 0, Math.PI * 2);
+        ctx.arc(finalX, finalY, 1.8, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = tipCol;
         ctx.beginPath();
-        ctx.arc(finalX, finalY, 1.4, 0, Math.PI * 2);
+        ctx.arc(finalX, finalY, 1.0, 0, Math.PI * 2);
         ctx.fill();
       }
 
       currX = nextX;
       currY = nextY;
     }
+    ctx.restore();
   }
 
   ctx.restore();
@@ -1299,9 +1127,57 @@ function drawCelestialLimbs(ctx, e, R, frameCount, isStaggered, isWindup, isCast
 /**
  * Renderiza Fissuras Visuais Progressivas de Dano de Batalha (Battle Damage) no Domo Gótico.
  * Intensifica-se conforme o HP do Soberano diminui (<75%, <50%, <30%, <15%).
+ * Inclui halo pulsante de sangramento cósmico alinhado à cor da fase ativa (Fase 1: Profundidade Cósmica).
  */
-function drawDomeFractures(ctx, R, hpRatio, frameCount) {
+function drawDomeFractures(ctx, R, hpRatio, frameCount, phase = 1) {
   ctx.save();
+  const bleedCol = phase === 3 ? '0, 206, 201' : (phase === 2 ? '232, 67, 147' : '162, 155, 254');
+  const pulse = Math.sin(frameCount * 0.12) * 0.2 + 0.8;
+
+  // 1. Halo de sangramento luminescente de energia sob as trincas
+  ctx.save();
+  ctx.strokeStyle = `rgba(${bleedCol}, ${0.35 * pulse})`;
+  ctx.lineWidth = hpRatio < 0.20 ? 4.6 : 3.0;
+
+  // Racha 1: Superior Esquerda
+  ctx.beginPath();
+  ctx.moveTo(0, -R * 0.2);
+  ctx.lineTo(-R * 0.35, -R * 0.45);
+  ctx.lineTo(-R * 0.42, -R * 0.65);
+  if (hpRatio < 0.50) {
+    ctx.lineTo(-R * 0.65, -R * 0.85);
+    ctx.moveTo(-R * 0.35, -R * 0.45);
+    ctx.lineTo(-R * 0.55, -R * 0.35);
+  }
+  ctx.stroke();
+
+  // Racha 2: Inferior Direita (< 60% HP)
+  if (hpRatio < 0.60) {
+    ctx.beginPath();
+    ctx.moveTo(R * 0.1, R * 0.1);
+    ctx.lineTo(R * 0.38, R * 0.35);
+    ctx.lineTo(R * 0.52, R * 0.55);
+    if (hpRatio < 0.35) {
+      ctx.lineTo(R * 0.72, R * 0.78);
+      ctx.moveTo(R * 0.38, R * 0.35);
+      ctx.lineTo(R * 0.60, R * 0.25);
+    }
+    ctx.stroke();
+  }
+
+  // Racha 3: Fissura de Cisalhamento Central Crítica (< 30% HP)
+  if (hpRatio < 0.30) {
+    ctx.lineWidth = 5.0;
+    ctx.beginPath();
+    ctx.moveTo(-R * 0.1, -R * 0.75);
+    ctx.lineTo(R * 0.15, -R * 0.35);
+    ctx.lineTo(-R * 0.08, R * 0.15);
+    ctx.lineTo(R * 0.22, R * 0.65);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // 2. Traço nítido principal das fissuras em branco/marfim superaquecido
   ctx.strokeStyle = hpRatio < 0.20 ? '#ffffff' : (hpRatio < 0.40 ? '#fff6a9' : 'rgba(255, 255, 255, 0.85)');
   ctx.lineWidth = hpRatio < 0.20 ? 2.2 : 1.4;
 
@@ -1448,6 +1324,25 @@ function drawSacredMandalaVoidSphere(ctx, e, R, frameCount, isHit, isStaggered, 
         const p2Y = Math.sin(a2) * (R * 1.34);
         const cpX = Math.cos(midA) * (R * 0.98);
         const cpY = Math.sin(midA) * (R * 0.98);
+
+        // Refração prismática sub-pixel sutil nos arcos superiores (Fase 1: Cristal Espesso)
+        if (Math.sin(midA) < 0.22) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(129, 236, 236, 0.24)';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(p1X - 0.5, p1Y - 0.4);
+          ctx.quadraticCurveTo(cpX - 0.5, cpY - 0.4, p2X - 0.5, p2Y - 0.4);
+          ctx.stroke();
+
+          ctx.strokeStyle = 'rgba(224, 86, 253, 0.18)';
+          ctx.beginPath();
+          ctx.moveTo(p1X + 0.5, p1Y + 0.4);
+          ctx.quadraticCurveTo(cpX + 0.5, cpY + 0.4, p2X + 0.5, p2Y + 0.4);
+          ctx.stroke();
+          ctx.restore();
+        }
+
         ctx.beginPath();
         ctx.moveTo(p1X, p1Y);
         ctx.quadraticCurveTo(cpX, cpY, p2X, p2Y);
@@ -1502,6 +1397,25 @@ function drawSacredMandalaVoidSphere(ctx, e, R, frameCount, isHit, isStaggered, 
         const p2Y = Math.sin(a2) * (R * 1.34);
         const cpX = Math.cos(midA) * (R * 0.98);
         const cpY = Math.sin(midA) * (R * 0.98);
+
+        // Refração prismática sub-pixel sutil nos arcos superiores (Fase 1: Cristal Espesso)
+        if (Math.sin(midA) < 0.22) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(129, 236, 236, 0.24)';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(p1X - 0.5, p1Y - 0.4);
+          ctx.quadraticCurveTo(cpX - 0.5, cpY - 0.4, p2X - 0.5, p2Y - 0.4);
+          ctx.stroke();
+
+          ctx.strokeStyle = 'rgba(224, 86, 253, 0.18)';
+          ctx.beginPath();
+          ctx.moveTo(p1X + 0.5, p1Y + 0.4);
+          ctx.quadraticCurveTo(cpX + 0.5, cpY + 0.4, p2X + 0.5, p2Y + 0.4);
+          ctx.stroke();
+          ctx.restore();
+        }
+
         ctx.beginPath();
         ctx.moveTo(p1X, p1Y);
         ctx.quadraticCurveTo(cpX, cpY, p2X, p2Y);
@@ -1511,7 +1425,7 @@ function drawSacredMandalaVoidSphere(ctx, e, R, frameCount, isHit, isStaggered, 
     ctx.restore();
   }
 
-  // 3. ESFERA DE VÁCUO CENTRAL OBSIDIANA (O Núcleo Escuro)
+  // 3. ESFERA DE VÁCUO CENTRAL OBSIDIANA (O Núcleo Escuro com Profundidade 3D)
   const coreGrad = ctx.createRadialGradient(0, 0, R * 0.15, 0, 0, R * 0.96);
   if (idleBlend > 0.45) {
     // Dormência da Referência: Obsidiana pura cósmica profunda
@@ -1537,20 +1451,97 @@ function drawSacredMandalaVoidSphere(ctx, e, R, frameCount, isHit, isStaggered, 
   ctx.arc(0, 0, R * 0.96, 0, Math.PI * 2);
   ctx.fill();
 
-  // Borda sutil de delimitação do núcleo escuro
+  if (!isHit) {
+    // Micro-pontos estelares internos em deriva lenta e com parallax inverso (Fase 1: Profundidade Cósmica)
+    const stars = e.obsidianStars || [
+      { x: -0.42, y: -0.28, r: 1.1, speed: 0.018, phase: 0 },
+      { x:  0.38, y: -0.35, r: 0.9, speed: 0.024, phase: 1.8 },
+      { x: -0.25, y:  0.45, r: 1.2, speed: 0.015, phase: 3.4 },
+      { x:  0.35, y:  0.32, r: 0.8, speed: 0.021, phase: 4.9 }
+    ];
+    const pOffsetX = -(e.smoothVx || 0) * 0.12;
+    const pOffsetY = -(e.smoothVy || 0) * 0.12;
+    const starRgb = idleBlend > 0.45 
+      ? '168, 245, 255' 
+      : (phase === 2 ? '253, 121, 168' : (phase === 3 ? '0, 206, 201' : '162, 155, 254'));
+
+    for (let s = 0; s < stars.length; s++) {
+      const st = stars[s];
+      const driftAng = frameCount * st.speed + st.phase;
+      const driftX = Math.cos(driftAng) * (R * 0.04);
+      const driftY = Math.sin(driftAng) * (R * 0.04);
+      const sx = st.x * R + driftX + pOffsetX;
+      const sy = st.y * R + driftY + pOffsetY;
+
+      // Brilho tênue e discreto (0.15 a 0.38) para não ofuscar o olho
+      const starAlpha = 0.16 + Math.sin(frameCount * 0.035 + st.phase) * 0.12;
+
+      ctx.fillStyle = `rgba(${starRgb}, ${starAlpha})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, st.r + 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = `rgba(255, 255, 255, ${starAlpha * 1.3})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, st.r * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Reflexo especular curvilíneo superior suave (volume 3D de domo convexo vítreo)
+    ctx.save();
+    const specY = -R * 0.46;
+    const specW = R * 0.56;
+    const specH = R * 0.16;
+    const specGrad = ctx.createLinearGradient(0, specY - specH, 0, specY + specH);
+    specGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    specGrad.addColorStop(0.35, 'rgba(255, 255, 255, 0.13)');
+    specGrad.addColorStop(0.7, 'rgba(200, 240, 255, 0.07)');
+    specGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = specGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, specY, specW, specH, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Arco sutil de especularidade no topo da calota vítrea
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.20)';
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.arc(0, -R * 0.16, R * 0.74, -Math.PI * 0.76, -Math.PI * 0.24);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Borda atenuada de delimitação do núcleo escuro
   const borderCol = idleBlend > 0.45 
-    ? 'rgba(168, 245, 255, 0.45)' 
-    : (phase === 2 ? 'rgba(253, 121, 168, 0.45)' : (phase === 3 ? 'rgba(0, 206, 201, 0.45)' : 'rgba(162, 155, 254, 0.45)'));
+    ? 'rgba(168, 245, 255, 0.22)' 
+    : (phase === 2 ? 'rgba(253, 121, 168, 0.22)' : (phase === 3 ? 'rgba(0, 206, 201, 0.22)' : 'rgba(162, 155, 254, 0.22)'));
   ctx.strokeStyle = borderCol;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.0;
   ctx.beginPath();
   ctx.arc(0, 0, R * 0.96, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Trincas de Dano de Batalha (Battle Damage) Progressivas no Domo
+  // Iluminação fina direcional (Rim Light assimétrico cobrindo a borda superior e direita)
+  const rimCol = idleBlend > 0.45
+    ? 'rgba(225, 250, 255, 0.85)'
+    : (phase === 2 ? 'rgba(255, 180, 220, 0.85)' : (phase === 3 ? 'rgba(180, 255, 255, 0.85)' : 'rgba(220, 210, 255, 0.85)'));
+  ctx.strokeStyle = rimCol;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.arc(0, 0, R * 0.96, -Math.PI * 0.75, Math.PI * 0.06);
+  ctx.stroke();
+
+  // Ponto focal de brilho especular fino na aresta superior
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.arc(0, 0, R * 0.96, -Math.PI * 0.58, -Math.PI * 0.32);
+  ctx.stroke();
+
+  // Trincas de Dano de Batalha (Battle Damage) Progressivas no Domo com Sangramento
   const hpRatio = Math.max(0, e.hp / (e.maxHp || 1));
   if (hpRatio < 0.75) {
-    drawDomeFractures(ctx, R, hpRatio, frameCount);
+    drawDomeFractures(ctx, R, hpRatio, frameCount, phase);
   }
 
   ctx.restore();
@@ -1623,30 +1614,121 @@ function drawColdObserverEye(ctx, e, R, frameCount, isStaggered, isWindup, isCas
     ctx.ellipse(0, 0, eyeW, eyeH, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    // 2.1 Anel Límbico Luminoso & Divisões Radiais (Fase 2: Presença & Intenção)
+    const limbalCol = idleBlend > 0.4
+      ? 'rgba(168, 245, 255, 0.75)'
+      : (phase === 2 ? 'rgba(253, 121, 168, 0.75)' : (phase === 3 ? 'rgba(0, 206, 201, 0.75)' : 'rgba(162, 155, 254, 0.75)'));
+    const limbalGlow = idleBlend > 0.4
+      ? 'rgba(129, 236, 236, 0.35)'
+      : (phase === 2 ? 'rgba(232, 67, 147, 0.35)' : (phase === 3 ? 'rgba(0, 206, 201, 0.35)' : 'rgba(142, 68, 173, 0.35)'));
+
+    // Halo externo do anel límbico
+    ctx.strokeStyle = limbalGlow;
+    ctx.lineWidth = 2.0;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, eyeW, eyeH, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Fio nítido do anel límbico
+    ctx.strokeStyle = limbalCol;
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, eyeW, eyeH, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Divisões radiais discretas da íris (estrias de textura alienígena)
+    ctx.save();
+    const striaCount = 12;
+    ctx.strokeStyle = limbalCol;
+    ctx.lineWidth = 0.65;
+    ctx.globalAlpha *= 0.30;
+    for (let st = 0; st < striaCount; st++) {
+      const sang = (st * Math.PI * 2) / striaCount;
+      const outerX = Math.cos(sang) * eyeW * 0.95;
+      const outerY = Math.sin(sang) * eyeH * 0.95;
+      const innerRatio = (st % 2 === 0) ? 0.38 : 0.55;
+      const innerX = Math.cos(sang) * eyeW * innerRatio;
+      const innerY = Math.sin(sang) * eyeH * innerRatio;
+      ctx.beginPath();
+      ctx.moveTo(outerX, outerY);
+      ctx.lineTo(innerX, innerY);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // 2.2 Deslocamento da Pupila acompanhando o Jogador com limites seguros
+    const maxPx = eyeW * 0.28;
+    const maxPy = eyeH * 0.28;
+    const clampedPx = Math.max(-maxPx, Math.min(maxPx, e.pupilX || 0));
+    const clampedPy = Math.max(-maxPy, Math.min(maxPy, e.pupilY || 0));
+
     // 3. Reflexo Especular Superior Branco (Crescent Glint da Referência)
     if (openRatio > 0.35) {
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.72)';
       ctx.lineWidth = 1.4;
       ctx.beginPath();
-      ctx.arc(0, -1, eyeW * 0.72, -Math.PI * 0.82, -Math.PI * 0.18);
+      ctx.arc(clampedPx * 0.25, -1 + clampedPy * 0.15, eyeW * 0.72, -Math.PI * 0.82, -Math.PI * 0.18);
       ctx.stroke();
     }
 
-    // 4. Pupila em Fenda Vertical Negra Pura (Razor Slit Pupil)
-    const pupilW = Math.max(0.5, (isStaggered ? 4.2 : (isWindup ? 1.4 : (isCasting ? 3.2 : 2.2))) * openRatio);
-    const pupilH = eyeH * 0.95;
+    // 4. Pupila em Fenda Vertical com Contração/Relaxamento Dinâmico (Fase 2)
+    // WINDUP (pré-ataque): contração intensa em fenda estreita cortante.
+    // CASTING: dilatação com pico de energia.
+    // RECOVERY_STAGGER / IDLE: relaxamento amplo.
+    let basePupilW;
+    if (isWindup) {
+      basePupilW = 0.85; // Contração afiada e ameaçadora pré-ataque
+    } else if (isCasting) {
+      basePupilW = 3.2; // Dilatação de disparo
+    } else if (isStaggered) {
+      basePupilW = 4.6; // Relaxamento completo desestabilizado
+    } else if (idleBlend > 0.3) {
+      basePupilW = 1.4; // Repouso sereno
+    } else {
+      basePupilW = 1.9; // Combate normal
+    }
+
+    const pupilW = Math.max(0.4, basePupilW * openRatio);
+    const pupilH = eyeH * (isWindup ? 0.96 : 0.90);
 
     ctx.fillStyle = '#000000';
     ctx.beginPath();
-    ctx.ellipse(0, 0, pupilW, pupilH, 0, 0, Math.PI * 2);
+    ctx.ellipse(clampedPx, clampedPy, pupilW, pupilH, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Micro reflexo de luz pontual frio
+    // Borda de foco da fenda
+    ctx.strokeStyle = isWindup ? limbalCol : 'rgba(0, 0, 0, 0.5)';
+    ctx.lineWidth = isWindup ? 0.6 : 0.4;
+    ctx.stroke();
+
+    // Micro reflexo de luz pontual frio acompanhando o foco
     if (openRatio > 0.40) {
+      const glintX = clampedPx + (clampedPx < 0 ? 1.0 : -1.5);
+      const glintY = clampedPy - 2.0;
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(-1.5, -2, 1.1, 0, Math.PI * 2);
+      ctx.arc(glintX, glintY, 1.1, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    // 5. Membrana Nictitante Cósmica (Piscar rápido e orgânico de predador)
+    if (e.nictitatingProgress > 0 && openRatio > 0.35) {
+      ctx.save();
+      const nictAlpha = Math.sin(e.nictitatingProgress * Math.PI) * 0.70;
+      ctx.fillStyle = `rgba(10, 8, 18, ${nictAlpha})`;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, eyeW, eyeH, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Borda da membrana translúcida varrendo o globo
+      const sweepX = (1 - e.nictitatingProgress * 2) * eyeW;
+      ctx.strokeStyle = `rgba(168, 245, 255, ${nictAlpha * 0.85})`;
+      ctx.lineWidth = 1.0;
+      ctx.beginPath();
+      ctx.moveTo(sweepX, -eyeH * 0.85);
+      ctx.lineTo(sweepX, eyeH * 0.85);
+      ctx.stroke();
+      ctx.restore();
     }
   }
 
@@ -2025,9 +2107,9 @@ function lerpColorHex(a, b, t) {
 function drawThresholdBeamTelegraphs(ctx, e, frameCount) {
   if (e.actionState !== SOVEREIGN_STATES.WINDUP || e.currentSkill !== 'THRESHOLD_BEAMS') return;
 
-  const count = e.phase === 3 ? 4 : (e.phase === 2 ? 3 : 2);
+  const count = e.phase === 3 ? 5 : (e.phase === 2 ? 4 : 3);
   const baseAngle = e.aimAngle || 0;
-  const spread = count === 4 ? 0.36 : (count === 3 ? 0.28 : 0.22);
+  const spread = count >= 5 ? 0.44 : (count === 4 ? 0.36 : 0.28);
   const maxTimer = e.windupMax || 44;
   const progress = Math.max(0, Math.min(1, 1 - (e.windupTimer / maxTimer)));
   const rayLen = e.arenaRadius || 620;
@@ -2316,148 +2398,144 @@ function drawInexorableHarvest(ctx, boss, frameCount) {
 }
 
 
-/**
- * Renderiza o disco de serra cósmica viva do Turbilhão do Vácuo durante o CYCLONE_CHARGE.
- */
-function drawAbyssalCycloneDisc(ctx, e, frameCount) {
-  const R = (e.radius || 40) * 1.25;
-  const spin = e.cycloneSpinAngle || 0;
-  const primaryCol = e.phase === 3 ? '#00cec9' : (e.phase === 2 ? '#e84393' : '#8e44ad');
-  const glowCol = e.phase === 3 ? '#81ecec' : (e.phase === 2 ? '#ff7675' : '#a29bfe');
-  const rgbCol = primaryCol === '#00cec9' ? '0, 206, 201' : (primaryCol === '#e84393' ? '232, 67, 147' : '142, 68, 173');
+/** Desenha a aparência completa usada tanto em combate quanto no Turbilhão com camadas de profundidade 3D (Fase 4). */
+function drawSovereignBody(ctx, e, frameCount, edgeCol, isAfterimage = false) {
+  const R = e.radius;
+  const isStaggered = e.actionState === SOVEREIGN_STATES.RECOVERY_STAGGER;
+  const isWindup = e.actionState === SOVEREIGN_STATES.WINDUP;
+  const isCasting = e.actionState === SOVEREIGN_STATES.CASTING;
+  const idleBlend = e.idleBlend || 0;
 
-  ctx.save();
-
-  // 1. Halo volumétrico de alta velocidade
-  const pulse = Math.sin(frameCount * 0.4) * 3;
-  const haloGrad = ctx.createRadialGradient(0, 0, R * 0.3, 0, 0, R * 1.5 + pulse);
-  haloGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  haloGrad.addColorStop(0.5, 'rgba(' + rgbCol + ', 0.35)');
-  haloGrad.addColorStop(0.85, 'rgba(' + rgbCol + ', 0.75)');
-  haloGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-  ctx.fillStyle = haloGrad;
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 1.5 + pulse, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 2. Dentes da Serra Cósmica em Rotação Supersônica (18 dentes curvados)
-  ctx.save();
-  ctx.rotate(spin);
-  const toothCount = 18;
-  ctx.fillStyle = primaryCol;
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1.4;
-
-  for (let t = 0; t < toothCount; t++) {
-    const tAng = (t * Math.PI * 2) / toothCount;
-    const nextAng = tAng + (Math.PI * 2 / toothCount) * 0.75;
-    const inR = R * 0.85;
-    const outR = R * 1.35;
-
-    ctx.beginPath();
-    ctx.moveTo(Math.cos(tAng) * inR, Math.sin(tAng) * inR);
-    ctx.quadraticCurveTo(
-      Math.cos(tAng + 0.15) * (outR * 1.05),
-      Math.sin(tAng + 0.15) * (outR * 1.05),
-      Math.cos(nextAng) * outR,
-      Math.sin(nextAng) * outR
-    );
-    ctx.lineTo(Math.cos(nextAng) * inR, Math.sin(nextAng) * inR);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+  if (e.phase === 3 && !isAfterimage) {
+    drawSingularityPlasmaWings(ctx, e, R, frameCount, edgeCol, isStaggered, idleBlend);
   }
-  ctx.restore();
-
-  // 3. Disco de Acreção Intermediário
-  ctx.save();
-  ctx.rotate(-spin * 0.6);
-  ctx.strokeStyle = glowCol;
-  ctx.lineWidth = 3.5;
-  ctx.setLineDash([14, 8]);
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 0.95, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
-
-  // 4. Núcleo de Vácuo Hiperdenso
-  ctx.fillStyle = '#090810';
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 0.7, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 2.0;
-  ctx.stroke();
-
-  // 5. Olho Central Focado na Direção da Investida
-  const aimAng = e.cycloneAngle || 0;
-  const eyeOffsetX = Math.cos(aimAng) * (R * 0.25);
-  const eyeOffsetY = Math.sin(aimAng) * (R * 0.25);
-
-  ctx.save();
-  ctx.translate(eyeOffsetX, eyeOffsetY);
-  ctx.rotate(aimAng);
-
-  // Fenda ocular horizontal prateada brilhante
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 14, 6, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Pupila vertical ameaçadora
-  ctx.fillStyle = primaryCol;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 4, 7, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // 6. Faíscas de atrito e arco elétrico contínuo
-  const sparkCount = 6;
-  for (let s = 0; s < sparkCount; s++) {
-    const sAng = Math.random() * Math.PI * 2;
-    const sDist = R * (0.9 + Math.random() * 0.45);
-    ctx.fillStyle = Math.random() < 0.5 ? '#ffffff' : glowCol;
-    ctx.fillRect(Math.cos(sAng) * sDist - 1.5, Math.sin(sAng) * sDist - 1.5, 3, 3);
+  // 1. Membros Dorsais (Camada de Fundo - Profundidade 3D)
+  if (!isAfterimage) {
+    drawCelestialLimbs(ctx, e, R, frameCount, isStaggered, isWindup, isCasting, 1, 'DORSAL');
   }
+  // 2. Agulhas Cristalinas com Suspensão Magnética e Engastes
+  drawDownwardCrystallineSpikes(ctx, e, R, frameCount);
+  // 3. Domo Celeste e Esfera de Obsidiana
+  drawSacredMandalaVoidSphere(ctx, e, R, frameCount, e.hitFlash > 0, isStaggered, e.phase, idleBlend);
+  // 4. Membros Ventrais (Camada da Frente - Sobreposição e Presença)
+  if (!isAfterimage) {
+    drawCelestialLimbs(ctx, e, R, frameCount, isStaggered, isWindup, isCasting, 1, 'VENTRAL');
+  }
+  // 5. Olho Observador
+  drawColdObserverEye(ctx, e, R, frameCount, isStaggered, isWindup, isCasting, e.phase, idleBlend);
+}
 
-  ctx.restore();
+/** Duas cópias tênues da própria skin acompanham a rotação e a trajetória. */
+function drawCycloneAfterimages(ctx, e, frameCount, edgeCol) {
+  const images = e.cycloneAfterimages;
+  if (!images?.length) return;
+
+  // Limita o custo e mantém a silhueta principal legível sem sobrecarregar o canvas com membros duplicados.
+  for (let i = Math.max(0, images.length - 6); i < images.length; i += 3) {
+    const img = images[i];
+    if (!(img.alpha > 0)) continue;
+    ctx.save();
+    ctx.translate(img.x - e.x, img.y - e.y);
+    ctx.rotate(img.spin || 0);
+    ctx.globalAlpha *= img.alpha * 0.25;
+    drawSovereignBody(ctx, e, frameCount, edgeCol, true);
+    ctx.restore();
+  }
 }
 
 /**
- * Renderiza as sombras espectrais translúcidas deixadas pela investida (Afterimages).
+ * Renderizador padronizado de Telegrafia de Área de Efeito (AoE Decal) de alta precisão
+ * inspirado em padrões Soulslike/Roguelike (Hades, FFXIV).
+ * Oferece leitura instantânea para combatentes corpo a corpo:
+ * 1. Borda externa delimitadora estrita com marcações cardinais e runas.
+ * 2. Preenchimento volumétrico progressivo (0% a 100%) indicando o segundo exato do impacto.
+ * 3. Crista frontal luminosa em alta intensidade.
+ * 4. Alerta crítico estroboscópico de evacuação imediata (ratio >= 0.78).
  */
-function drawCycloneAfterimages(ctx, e) {
-  if (!e.cycloneAfterimages || e.cycloneAfterimages.length === 0) return;
+function drawSoulslikeAoETelegraph(ctx, cx, cy, maxRadius, ratio, colorRgb, frameCount, options = {}) {
+  const r = Math.max(0, Math.min(1, ratio));
+  const currentR = maxRadius * r;
+  const isImminent = r >= 0.78;
+  const pulse = Math.sin((frameCount || 0) * (isImminent ? 0.45 : 0.18));
 
   ctx.save();
-  ctx.translate(-e.x, -e.y);
+  ctx.translate(cx, cy);
 
-  for (let i = 0; i < e.cycloneAfterimages.length; i++) {
-    const img = e.cycloneAfterimages[i];
-    const r = (img.radius || 40) * 1.15;
+  // 1. Limite Externo Máximo (Avisador de Fronteira Segura)
+  ctx.strokeStyle = `rgba(${colorRgb}, ${0.55 + pulse * 0.25})`;
+  ctx.lineWidth = isImminent ? 2.8 : 2.0;
+  ctx.setLineDash([8, 6]);
+  ctx.lineDashOffset = -(frameCount || 0) * 0.8;
+  ctx.beginPath();
+  ctx.arc(0, 0, maxRadius, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
 
-    ctx.save();
-    ctx.translate(img.x, img.y);
-    ctx.rotate(img.spin || 0);
-    ctx.globalAlpha = Math.max(0, img.alpha || 0);
-
-    ctx.strokeStyle = img.color || '#00cec9';
-    ctx.lineWidth = 2.0;
+  // 2. Ticks e Notches Geométricos no Perímetro (Marcadores de Distância de Evasão)
+  const tickCount = options.tickCount || 16;
+  ctx.strokeStyle = `rgba(${colorRgb}, ${0.7 + pulse * 0.2})`;
+  ctx.lineWidth = 1.6;
+  for (let i = 0; i < tickCount; i++) {
+    const ang = (i * Math.PI * 2) / tickCount;
+    const isCardinal = (i % (tickCount / 4) === 0);
+    const tickLen = isCardinal ? 10 : 5;
+    const x1 = Math.cos(ang) * (maxRadius - tickLen);
+    const y1 = Math.sin(ang) * (maxRadius - tickLen);
+    const x2 = Math.cos(ang) * (maxRadius + 2);
+    const y2 = Math.sin(ang) * (maxRadius + 2);
     ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
     ctx.stroke();
+  }
 
-    // Dentes fantasmagóricos
-    const toothCount = 12;
-    for (let t = 0; t < toothCount; t++) {
-      const a = (t * Math.PI * 2) / toothCount;
-      ctx.beginPath();
-      ctx.moveTo(Math.cos(a) * (r * 0.8), Math.sin(a) * (r * 0.8));
-      ctx.lineTo(Math.cos(a + 0.2) * (r * 1.25), Math.sin(a + 0.2) * (r * 1.25));
-      ctx.stroke();
-    }
+  // 3. Disco de Preenchimento Volumétrico Translúcido (Área Perigosa em Expansão)
+  const grad = ctx.createRadialGradient(0, 0, 8, 0, 0, maxRadius);
+  const coreAlpha = isImminent ? 0.42 : 0.26;
+  const edgeAlpha = isImminent ? 0.28 : 0.16;
+  grad.addColorStop(0, `rgba(${colorRgb}, ${coreAlpha + pulse * 0.08})`);
+  grad.addColorStop(0.75, `rgba(${colorRgb}, ${edgeAlpha})`);
+  grad.addColorStop(1, `rgba(${colorRgb}, 0.04)`);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, currentR, 0, Math.PI * 2);
+  ctx.fill();
 
+  // 4. Crista Frontal Luminosa (Marcação da Onda de Choque que está crescendo)
+  ctx.strokeStyle = isImminent ? '#ffffff' : `rgba(${colorRgb}, 0.95)`;
+  ctx.lineWidth = isImminent ? 3.0 : 2.2;
+  ctx.beginPath();
+  ctx.arc(0, 0, currentR, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 5. Alerta Crítico Estroboscópico de Evacuação Imediata (ratio >= 0.78)
+  if (isImminent) {
+    // Flash estroboscópico suave na área total
+    const strobeAlpha = (Math.floor((frameCount || 0) / 4) % 2 === 0) ? 0.32 : 0.06;
+    ctx.fillStyle = `rgba(255, 255, 255, ${strobeAlpha})`;
+    ctx.beginPath();
+    ctx.arc(0, 0, maxRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ondas secundárias concêntricas indicando detonação
+    const rippleR = maxRadius * (0.75 + (((frameCount || 0) * 0.06) % 0.25));
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, rippleR, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // 6. Rótulo tático opcional com brilho
+  if (options.label && r > 0.15) {
+    ctx.save();
+    ctx.font = 'bold 9px "Cinzel", "Times New Roman", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = isImminent ? '#ffffff' : `rgba(${colorRgb}, 0.9)`;
+    ctx.shadowColor = `rgba(${colorRgb}, 0.9)`;
+    ctx.shadowBlur = 6;
+    ctx.fillText(options.label, 0, -maxRadius - 12);
     ctx.restore();
   }
 
@@ -2505,216 +2583,6 @@ function drawCycloneTelegraph(ctx, e, frameCount) {
   ctx.fill();
 
   ctx.restore();
-}
-
-/**
- * Cache de texturas pré-renderizadas de alta performance para a Foice Giratória (SOUL_SCYTHE).
- * Replica com fidelidade de 100% o modelo de foice curvada, rubis facetados e gume polido.
- */
-const _scytheCanvasCache = {};
-
-function getSoulScytheCanvas(r, primaryCol, rubyCol) {
-  const key = `${r}_${primaryCol}_${rubyCol}`;
-  if (_scytheCanvasCache[key]) return _scytheCanvasCache[key];
-
-  const size = Math.ceil(r * 4.8);
-  const half = size / 2;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const hctx = canvas.getContext('2d');
-
-  hctx.translate(half, half);
-
-  // 1. Rastro Espectral Circular / Desfoque de Giro (Motion Blur Whirl)
-  const whirlGrad = hctx.createRadialGradient(0, 0, r * 0.3, 0, 0, r * 1.45);
-  whirlGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  whirlGrad.addColorStop(0.65, primaryCol === '#00cec9' ? 'rgba(0, 206, 201, 0.24)' : (primaryCol === '#e84393' ? 'rgba(232, 67, 147, 0.24)' : 'rgba(142, 68, 173, 0.24)'));
-  whirlGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  hctx.fillStyle = whirlGrad;
-  hctx.beginPath();
-  hctx.arc(0, 0, r * 1.45, 0, Math.PI * 2);
-  hctx.fill();
-
-  // 2. Haste Reto e Manivela Serrilhada com Orbe
-  const tealCol = primaryCol;
-
-  // Haste reta
-  hctx.fillStyle = '#141a1f';
-  hctx.fillRect(-1.5, -r * 0.95, 3, r * 1.75);
-
-  // Braçadeiras
-  hctx.fillStyle = '#222d36';
-  hctx.strokeStyle = tealCol;
-  hctx.lineWidth = 0.9;
-  hctx.strokeRect(-2.8, -r * 0.45, 5.6, 3);
-  hctx.strokeRect(-2.8, r * 0.25, 5.6, 3);
-
-  // Manivela serrilhada e orbe inferior
-  hctx.strokeStyle = tealCol;
-  hctx.lineWidth = 1.0;
-  hctx.beginPath();
-  hctx.moveTo(0, r * 0.8);
-  hctx.lineTo(-r * 0.25, r * 1.0);
-  hctx.lineTo(-r * 0.25, r * 1.35);
-  hctx.lineTo(-r * 0.45, r * 1.45);
-  hctx.stroke();
-
-  // Dentes de serra na manivela
-  hctx.fillStyle = '#222d36';
-  for (let s = 0; s < 3; s++) {
-    const sy = r * (1.05 + s * 0.1);
-    hctx.beginPath();
-    hctx.moveTo(-r * 0.25, sy);
-    hctx.lineTo(-r * 0.08, sy + r * 0.04);
-    hctx.lineTo(-r * 0.25, sy + r * 0.08);
-    hctx.closePath();
-    hctx.fill();
-    hctx.stroke();
-  }
-
-  // Orbe no pomo
-  hctx.fillStyle = tealCol;
-  hctx.beginPath();
-  hctx.arc(-r * 0.45, r * 1.45, 2.5, 0, Math.PI * 2);
-  hctx.fill();
-
-  // Escala reduzida de 50% para a lâmina e contra-lâmina
-  hctx.save();
-  hctx.translate(0, -r * 0.95);
-  hctx.scale(0.5, 0.5);
-  hctx.translate(0, r * 0.95);
-
-  // 3. Cabeçote e Contra-Lâmina Traseira com Rubi (Formato Curvo em Garra)
-  hctx.fillStyle = '#1e2b36';
-  hctx.beginPath();
-  hctx.moveTo(r * 0.1, -r * 1.0);
-  hctx.bezierCurveTo(r * 0.35, -r * 1.1, r * 0.55, -r * 0.88, r * 0.65, -r * 0.35);
-  hctx.bezierCurveTo(r * 0.48, -r * 0.55, r * 0.28, -r * 0.75, r * 0.1, -r * 0.86);
-  hctx.closePath();
-  hctx.fill();
-  hctx.strokeStyle = tealCol;
-  hctx.lineWidth = 1.8;
-  hctx.stroke();
-
-  // Rubi na contra-lâmina
-  hctx.fillStyle = rubyCol;
-  hctx.beginPath();
-  hctx.moveTo(r * 0.18, -r * 0.95);
-  hctx.lineTo(r * 0.36, -r * 1.0);
-  hctx.lineTo(r * 0.52, -r * 0.80);
-  hctx.lineTo(r * 0.32, -r * 0.82);
-  hctx.closePath();
-  hctx.fill();
-
-  // Gume prateado traseiro
-  hctx.strokeStyle = '#ffffff';
-  hctx.lineWidth = 1.8;
-  hctx.beginPath();
-  hctx.moveTo(r * 0.65, -r * 0.35);
-  hctx.bezierCurveTo(r * 0.48, -r * 0.55, r * 0.28, -r * 0.75, r * 0.1, -r * 0.86);
-  hctx.stroke();
-
-  // 4. Lâmina Principal (Cúpula, 3 espigões inclinados e curvatura monumental)
-  // A. Estalactites de cristal sob a junção
-  hctx.fillStyle = rubyCol;
-  const stalsProj = [
-    [[-r * 0.35, -r * 0.74], [-r * 0.42, -r * 0.46], [-r * 0.48, -r * 0.74]],
-    [[-r * 0.48, -r * 0.74], [-r * 0.53, -r * 0.58], [-r * 0.58, -r * 0.74]]
-  ];
-  for (let st of stalsProj) {
-    hctx.beginPath();
-    hctx.moveTo(st[0][0], st[0][1]);
-    hctx.lineTo(st[1][0], st[1][1]);
-    hctx.lineTo(st[2][0], st[2][1]);
-    hctx.closePath();
-    hctx.fill();
-  }
-
-  // B. Corpo da Lâmina
-  hctx.fillStyle = '#1e2b36';
-  hctx.beginPath();
-  hctx.moveTo(-r * 0.1, -r * 1.0);
-  hctx.quadraticCurveTo(-r * 0.2, -r * 1.16, -r * 0.32, -r * 1.24);
-  hctx.quadraticCurveTo(-r * 0.42, -r * 1.20, -r * 0.5, -r * 1.14);
-  hctx.quadraticCurveTo(-r * 0.54, -r * 1.25, -r * 0.58, -r * 1.26);
-  hctx.lineTo(-r * 0.64, -r * 1.16);
-  hctx.lineTo(-r * 0.7, -r * 1.12);
-  hctx.quadraticCurveTo(-r * 0.74, -r * 1.22, -r * 0.8, -r * 1.22);
-  hctx.lineTo(-r * 0.86, -r * 1.12);
-  hctx.lineTo(-r * 0.92, -r * 1.06);
-  hctx.quadraticCurveTo(-r * 0.96, -r * 1.14, -r * 1.02, -r * 1.14);
-  hctx.lineTo(-r * 1.08, -r * 1.04);
-  hctx.lineTo(-r * 1.15, -r * 0.96);
-  hctx.bezierCurveTo(-r * 1.45, -r * 0.86, -r * 1.72, -r * 0.55, -r * 1.86, -r * 0.14);
-  hctx.bezierCurveTo(-r * 1.96, r * 0.20, -r * 1.94, r * 0.44, -r * 1.86, r * 0.58);
-  hctx.bezierCurveTo(-r * 1.82, r * 0.36, -r * 1.74, r * 0.14, -r * 1.64, -r * 0.08);
-  hctx.bezierCurveTo(-r * 1.48, -r * 0.38, -r * 1.18, -r * 0.62, -r * 0.6, -r * 0.74);
-  hctx.lineTo(-r * 0.25, -r * 0.70);
-  hctx.lineTo(-r * 0.16, -r * 0.60);
-  hctx.lineTo(-r * 0.1, -r * 0.86);
-  hctx.closePath();
-  hctx.fill();
-  hctx.strokeStyle = '#0e1419';
-  hctx.lineWidth = 2.4;
-  hctx.stroke();
-
-  // C. Canal de Cristais de Rubi Facetados
-  hctx.fillStyle = rubyCol;
-  hctx.beginPath();
-  hctx.moveTo(-r * 0.25, -r * 0.95);
-  hctx.lineTo(-r * 0.65, -r * 0.95);
-  hctx.lineTo(-r * 1.15, -r * 0.78);
-  hctx.lineTo(-r * 1.55, -r * 0.40);
-  hctx.lineTo(-r * 1.78, r * 0.15);
-  hctx.lineTo(-r * 1.70, r * 0.25);
-  hctx.lineTo(-r * 1.50, -r * 0.20);
-  hctx.lineTo(-r * 1.10, -r * 0.52);
-  hctx.lineTo(-r * 0.60, -r * 0.74);
-  hctx.closePath();
-  hctx.fill();
-
-  // Facetas internas do rubi
-  hctx.strokeStyle = '#ff4d61';
-  hctx.lineWidth = 1.4;
-  hctx.beginPath();
-  hctx.moveTo(-r * 0.65, -r * 0.95);
-  hctx.lineTo(-r * 0.60, -r * 0.74);
-  hctx.moveTo(-r * 1.15, -r * 0.78);
-  hctx.lineTo(-r * 1.10, -r * 0.52);
-  hctx.moveTo(-r * 1.55, -r * 0.40);
-  hctx.lineTo(-r * 1.50, -r * 0.20);
-  hctx.stroke();
-
-  // D. Gume Chanfrado em Aço Prateado Polido
-  const bladeGrad = hctx.createLinearGradient(-r * 0.6, -r * 0.74, -r * 1.86, r * 0.58);
-  bladeGrad.addColorStop(0.0, '#74b9ff');
-  bladeGrad.addColorStop(0.4, '#c7ecee');
-  bladeGrad.addColorStop(0.8, '#dff9fb');
-  bladeGrad.addColorStop(1.0, '#ffffff');
-
-  hctx.strokeStyle = bladeGrad;
-  hctx.lineWidth = 3.6;
-  hctx.lineCap = 'round';
-  hctx.beginPath();
-  hctx.moveTo(-r * 1.86, r * 0.58);
-  hctx.bezierCurveTo(-r * 1.82, r * 0.36, -r * 1.74, r * 0.14, -r * 1.64, -r * 0.08);
-  hctx.bezierCurveTo(-r * 1.48, -r * 0.38, -r * 1.18, -r * 0.62, -r * 0.6, -r * 0.74);
-  hctx.stroke();
-
-  // Fio incandescente puro
-  hctx.strokeStyle = '#ffffff';
-  hctx.lineWidth = 1.8;
-  hctx.stroke();
-
-  // Ponto especular na ponta da foice
-  hctx.fillStyle = '#ffffff';
-  hctx.fillRect(-r * 1.86 - 2, r * 0.58 - 2, 4, 4);
-
-  hctx.restore(); // Restaura escala de 50%
-
-  _scytheCanvasCache[key] = { canvas, half };
-  return _scytheCanvasCache[key];
 }
 
 /**
@@ -2784,50 +2652,19 @@ function drawSpiralStreamTelegraph(ctx, boss, frameCount) {
   ctx.restore();
 }
 
-/**
- * Renderiza a torrente orbital de Foices Giratórias da Espiral dos Quatro Horizontes.
- */
-function drawSpiralBlades(ctx, boss, frameCount) {
-  if (!boss.spiralBlades || boss.spiralBlades.length === 0) return;
+/** Renderiza a espiral com os mesmos projéteis do Disparo Relativístico. */
+function drawSpiralProjectiles(ctx, boss) {
+  if (!boss.spiralBlades?.length) return;
 
   ctx.save();
   ctx.translate(-boss.x, -boss.y);
-
-  // 1. Filamento cósmico translúcido interligando a fita espiral
-  if (boss.spiralBlades.length > 2) {
+  for (const projectile of boss.spiralBlades) {
     ctx.save();
-    ctx.beginPath();
-    for (let i = 0; i < boss.spiralBlades.length; i++) {
-      const b = boss.spiralBlades[i];
-      if (i === 0) ctx.moveTo(b.x, b.y);
-      else ctx.lineTo(b.x, b.y);
-    }
-    const sampleBlade = boss.spiralBlades[0];
-    const primaryCol = sampleBlade.color || '#00cec9';
-    const rgbCol = primaryCol === '#00cec9' ? '0, 206, 201' : (primaryCol === '#e84393' ? '232, 67, 147' : '142, 68, 173');
-    ctx.strokeStyle = 'rgba(' + rgbCol + ', 0.16)';
-    ctx.lineWidth = 10;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
-    ctx.lineWidth = 2.0;
-    ctx.stroke();
+    ctx.translate(projectile.x, projectile.y);
+    drawAbyssalBolt(ctx, Math.atan2(projectile.vy || 0, projectile.vx || 0),
+      projectile.radius || SOVEREIGN_CONFIG.SPIRAL_BLADE_RADIUS);
     ctx.restore();
   }
-
-  // 2. Renderização de cada Foice Giratória individual rodando em seu eixo
-  for (let i = 0; i < boss.spiralBlades.length; i++) {
-    const blade = boss.spiralBlades[i];
-    const r = blade.radius || 18;
-    const cached = getSoulScytheCanvas(r, blade.color || '#00cec9', blade.rubyColor || '#c0392b');
-
-    ctx.save();
-    ctx.translate(blade.x, blade.y);
-    ctx.rotate(blade.selfSpin || 0);
-    ctx.drawImage(cached.canvas, -cached.half, -cached.half);
-    ctx.restore();
-  }
-
   ctx.restore();
 }
 
@@ -2839,17 +2676,14 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
   drawInexorableHarvest(ctx, e, frameCount);
   drawThresholdBeams(ctx, e, frameCount);
   drawThresholdBeamTelegraphs(ctx, e, frameCount);
-  drawCycloneAfterimages(ctx, e);
   drawCycloneTelegraph(ctx, e, frameCount);
-  drawSpiralBlades(ctx, e, frameCount);
+  drawSpiralProjectiles(ctx, e);
   drawSpiralStreamTelegraph(ctx, e, frameCount);
 
   if (e.actionState === SOVEREIGN_STATES.SPAWN_INTRO) {
     drawMajesticSpawnIntro(ctx, e, frameCount);
   } else if (e.actionState === SOVEREIGN_STATES.DEATH_COLLAPSE) {
     drawMajesticDeathCollapse(ctx, e, frameCount);
-  } else if (e.actionState === SOVEREIGN_STATES.CYCLONE_CHARGE) {
-    drawAbyssalCycloneDisc(ctx, e, frameCount);
   } else {
   const R = e.radius;
   const isTransition = e.actionState === SOVEREIGN_STATES.PHASE_TRANSITION;
@@ -2873,7 +2707,6 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
   const isStaggered = e.actionState === SOVEREIGN_STATES.RECOVERY_STAGGER;
   const isWindup = e.actionState === SOVEREIGN_STATES.WINDUP;
   const isCasting = e.actionState === SOVEREIGN_STATES.CASTING;
-  const isHit = e.hitFlash > 0;
 
   const morph = e.phaseCinematic ? (e.phaseCinematic.morphProgress || 0) : (e.transformationProgress || 0);
   const targetPhase = e.phaseCinematic ? e.phaseCinematic.phase : (e.phase || 1);
@@ -3036,6 +2869,16 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
       ctx.stroke();
     }
     ctx.restore();
+  }
+
+  // 3.1 Telegrafia Prévia do Pulso Sísmico de Singularidade (Fase 3: Alerta Vital para Melee)
+  if (e.phase === 3 && e.isSingularityChargingPulse) {
+    const pulseRatio = Math.max(0, Math.min(1, e.singularityChargeRatio || 0));
+    const maxPulseR = (e.arenaRadius || 380) * 0.68;
+    drawSoulslikeAoETelegraph(ctx, 0, 0, maxPulseR, pulseRatio, '0, 206, 201', frameCount, {
+      label: 'PULSO DE SINGULARIDADE',
+      tickCount: 16
+    });
   }
 
   // 4. Telegrafia do Crucifixo (Convergência de Luz e Alinhamento de Perigo)
@@ -3392,7 +3235,7 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     const relX = e.implosionX - e.x;
     const relY = e.implosionY - e.y;
     const R = e.implosionMaxRadius || 175;
-    const elapsed = (e.windupMax || 148) - e.windupTimer;
+    const elapsed = (e.windupMax || 101) - e.windupTimer;
     const isReleased = e.implosionReleased;
     const isLocked = e.implosionLocked;
 
@@ -3568,25 +3411,28 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     ctx.restore();
   }
 
-  // 7. Passo Interdimensional
+  // 7. Passo Interdimensional (Telegrafia de Alta Legibilidade Melee)
   if (e.actionState === SOVEREIGN_STATES.WARP_AIM) {
     const relX = e.warpTargetX - e.x;
     const relY = e.warpTargetY - e.y;
-    const ratio = 1 - (e.windupTimer / e.windupMax);
+    const ratio = Math.max(0, Math.min(1, 1 - (e.windupTimer / (e.windupMax || 42))));
+    const warpR = e.warpTelegraphRadius || 150;
 
-    ctx.save();
-    ctx.strokeStyle = '#e84393';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.arc(relX, relY, 55, 0, Math.PI * 2);
-    ctx.stroke();
+    drawSoulslikeAoETelegraph(ctx, relX, relY, warpR, ratio, '232, 67, 147', frameCount, {
+      label: 'COLAPSO DE TELEPORTE',
+      tickCount: 16
+    });
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.arc(relX, relY, 55 * ratio, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
+    // 7.4 Se já aterrissou e está no micro-windup de impacto, flash de aviso iminente
+    if (e.warpLanded && e.warpImpactTimer > 0) {
+      const impactRatio = e.warpImpactTimer / 14;
+      ctx.save();
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.40 * impactRatio})`;
+      ctx.beginPath();
+      ctx.arc(relX, relY, warpR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
   // 7.1 Telegrafia e Efeito de Disparo Relativístico (RELATIVISTIC_SALVO)
@@ -3913,33 +3759,33 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     }
   }
 
-  // 9. Asas de Plasma Celestial (Exclusivo Fase 3 / Despertar da Singularidade)
-  if (e.phase === 3) {
-    drawSingularityPlasmaWings(ctx, e, R, frameCount, edgeCol, isStaggered, e.idleBlend || 0);
-  }
-
-  // 10. Membros Articulados Brancos com Juntas e Olhos (Fiel à Referência)
-  drawCelestialLimbs(ctx, e, R, frameCount, isStaggered, isWindup, isCasting);
-
-  // 11. Espinhos Cristalinos apontando para baixo na base da esfera
-  drawDownwardCrystallineSpikes(ctx, e, R, frameCount);
-
-  // 12. Esfera de Vácuo Central com Contorno Branco e Mandala Sagrada
-  drawSacredMandalaVoidSphere(ctx, e, R, frameCount, isHit, isStaggered, e.phase, e.idleBlend || 0);
-
-  // 13. Olho Observador Prateado Horizontal (Fiel à Referência)
-  drawColdObserverEye(ctx, e, R, frameCount, isStaggered, isWindup, isCasting, e.phase, e.idleBlend || 0);
+  // Gira somente a skin completa; arena, santuários e ataques mantêm coordenadas de mundo.
+  const isCyclone = e.actionState === SOVEREIGN_STATES.CYCLONE_CHARGE;
+  if (isCyclone) drawCycloneAfterimages(ctx, e, frameCount, edgeCol);
+  ctx.save();
+  if (isCyclone) ctx.rotate(e.cycloneSpinAngle || 0);
+  drawSovereignBody(ctx, e, frameCount, edgeCol);
+  ctx.restore();
 
   // 14. Efeitos Visuais Ativos de Ataques em Execução (Cortes, Meteoros, Implosões, Supernovas)
   drawActiveSovereignAttacks(ctx, e, frameCount);
 
 
-  // Orbes e Constelações da Supernova da Entropia
+  // Orbes e Constelações da Supernova da Entropia (Com Telegrafia no Chão para Melee)
   if (e.supernovaOrbs && e.supernovaOrbs.length > 0) {
+    const dangerR = e.supernovaDangerRadius || 220;
+    const ratio = Math.max(0, Math.min(1, 1 - (e.windupTimer / (e.windupMax || 58))));
+
+    drawSoulslikeAoETelegraph(ctx, 0, 0, dangerR, ratio, '224, 86, 253', frameCount, {
+      label: 'SUPERNOVA CÓSMICA',
+      tickCount: 18
+    });
+
     ctx.save();
     const orbCount = e.supernovaOrbs.length;
     const orbRot = frameCount * 0.03;
     const orbPts = [];
+
     for (let o = 0; o < orbCount; o++) {
       const oDef = e.supernovaOrbs[o];
       const oAng = oDef.baseAngle + orbRot;
@@ -3949,8 +3795,8 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     }
 
     // Linhas de constelação estelar
-    ctx.strokeStyle = 'rgba(224, 86, 253, 0.45)';
-    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = 'rgba(224, 86, 253, 0.55)';
+    ctx.lineWidth = 1.8;
     ctx.beginPath();
     for (let o = 0; o < orbCount; o++) {
       const p1 = orbPts[o];
@@ -3961,8 +3807,8 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     ctx.stroke();
 
     // Linhas radiais ao núcleo do Soberano
-    ctx.strokeStyle = 'rgba(0, 206, 201, 0.25)';
-    ctx.lineWidth = 1.0;
+    ctx.strokeStyle = 'rgba(0, 206, 201, 0.35)';
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
     for (let o = 0; o < orbCount; o++) {
       ctx.moveTo(0, 0);
