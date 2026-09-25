@@ -25,14 +25,20 @@ export const upgradesPool = [
     rarity: "card-legendary",
     badge: "Machado",
     desc: "Adiciona +1 machado ao anel orbital que translada ao redor do bárbaro",
-    getStat: () => `+1 Machado no Anel (${Math.min(AXE_MAX_COUNT, (player.axeCount || 1) + 1)}/${AXE_MAX_COUNT})`,
+    getStat: () => {
+      const cur = player.axeCount || 1;
+      const next = Math.min(AXE_MAX_COUNT, cur + 1);
+      return next >= AXE_MAX_COUNT
+        ? `+1 Machado no Anel • ${cur} → ${AXE_MAX_COUNT}/${AXE_MAX_COUNT} (MÁX)`
+        : `+1 Machado no Anel • ${cur} → ${next}/${AXE_MAX_COUNT}`;
+    },
     stat: `+1 Machado no Anel (Máx: ${AXE_MAX_COUNT})`,
     apply: () => {
-      if (player.evolvedAxe || player.axeCount <= 0) return;
-      player.axeCount = Math.min(AXE_MAX_COUNT, player.axeCount + 1);
+      if (player.evolvedAxe || (player.axeCount || 0) <= 0) return;
+      player.axeCount = Math.min(AXE_MAX_COUNT, (player.axeCount || 1) + 1);
       registerWeaponInInventory('AXE', player.axeCount);
     },
-    isAvailable: () => !player.evolvedAxe && player.axeCount > 0 && player.axeCount < AXE_MAX_COUNT
+    isAvailable: () => !player.evolvedAxe && (player.axeCount || 0) > 0 && (player.axeCount || 0) < AXE_MAX_COUNT
   },
   {
     id: 'axe_radius',
@@ -59,17 +65,27 @@ export const upgradesPool = [
     rarity: "card-legendary",
     badge: "Poção",
     desc: "Arremessa +1 frasco cáustico extra rigorosamente no mesmo epicentro da poça gigante",
-    getStat: () => `+1 Frasco Concentrado (${(player.weapons.find(wp => wp.type === 'POTION')?.count || 1) + 1}/4)`,
+    getStat: () => {
+      const w = player.weapons.find(wp => wp.type === 'POTION');
+      const cur = w ? (w.count || 1) : 1;
+      const next = Math.min(4, cur + 1);
+      return next >= 4
+        ? `+1 Frasco Concentrado • ${cur} → 4/4 (MÁX)`
+        : `+1 Frasco Concentrado • ${cur} → ${next}/4`;
+    },
     stat: "+1 Frasco Concentrado (Máx: 4)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'POTION');
       if (w) {
-        w.count += 1;
+        w.count = Math.min(4, (w.count || 1) + 1);
+        player.projectiles = w.count;
+        registerWeaponInInventory('POTION', w.count);
       }
-      player.projectiles = (w ? w.count : 1);
-      registerWeaponInInventory('POTION', w ? w.count : 1);
     },
-    isAvailable: () => !player.evolvedPotion && player.weapons.some(w => w.type === 'POTION') && (player.weapons.find(wp => wp.type === 'POTION')?.count || 1) < 4
+    isAvailable: () => {
+      const w = player.weapons.find(wp => wp.type === 'POTION');
+      return !player.evolvedPotion && !!w && (w.count || 1) < 4;
+    }
   },
   {
     id: 'potion_potency',
@@ -97,16 +113,26 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Cajado",
     desc: "+1 Esfera mágica concentrada canalizada contra os alvos avistados",
-    getStat: () => `+1 Orbe Místico (${(player.weapons.find(wp => wp.type === 'STAFF')?.count || 1) + 1}/5)`,
+    getStat: () => {
+      const w = player.weapons.find(wp => wp.type === 'STAFF');
+      const cur = w ? (w.count || 1) : 1;
+      const next = Math.min(5, cur + 1);
+      return next >= 5
+        ? `+1 Orbe Místico • ${cur} → 5/5 (MÁX)`
+        : `+1 Orbe Místico • ${cur} → ${next}/5`;
+    },
     stat: "+1 Orbe Místico (Máx: 5)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'STAFF');
       if (w) {
-        w.count += 1;
+        w.count = Math.min(5, (w.count || 1) + 1);
+        registerWeaponInInventory('STAFF', w.count);
       }
-      registerWeaponInInventory('STAFF', w ? w.count : 1);
     },
-    isAvailable: () => !player.evolvedStaff && player.weapons.some(w => w.type === 'STAFF') && (player.weapons.find(wp => wp.type === 'STAFF')?.count || 1) < 5
+    isAvailable: () => {
+      const w = player.weapons.find(wp => wp.type === 'STAFF');
+      return !player.evolvedStaff && !!w && (w.count || 1) < 5;
+    }
   },
   {
     id: 'staff_pierce',
@@ -114,10 +140,16 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Cajado",
     desc: "As esferas do cajado perfuram +1 inimigo e ampliam o rastro de queimadura",
-    getStat: () => `+1 Perfuração Arcana (${(player.staffPierceBonus || 0) + 1}/3)`,
+    getStat: () => {
+      const cur = player.staffPierceBonus || 0;
+      const next = Math.min(3, cur + 1);
+      return next >= 3
+        ? `+1 Perfuração Arcana • Nv. ${cur} → 3/3 (MÁX)`
+        : `+1 Perfuração Arcana • Nv. ${cur} → ${next}/3`;
+    },
     stat: "+1 Perfuração Arcana (Máx: 3)",
     apply: () => {
-      player.staffPierceBonus = (player.staffPierceBonus || 0) + 1;
+      player.staffPierceBonus = Math.min(3, (player.staffPierceBonus || 0) + 1);
       const w = player.weapons.find(wp => wp.type === 'STAFF');
       if (w) w.damageMult += 0.08;
     },
@@ -131,17 +163,27 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Lâminas",
     desc: "+1 Espada espectral adicional arremessada contra oponentes avistados",
-    getStat: () => `+1 Lâmina Espectral (${(player.weapons.find(wp => wp.type === 'SWORD')?.count || 1) + 1}/5)`,
+    getStat: () => {
+      const w = player.weapons.find(wp => wp.type === 'SWORD');
+      const cur = w ? (w.count || 1) : 1;
+      const next = Math.min(5, cur + 1);
+      return next >= 5
+        ? `+1 Lâmina Espectral • ${cur} → 5/5 (MÁX)`
+        : `+1 Lâmina Espectral • ${cur} → ${next}/5`;
+    },
     stat: "+1 Lâmina Espectral (Máx: 5)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'SWORD');
       if (w) {
-        w.count += 1;
+        w.count = Math.min(5, (w.count || 1) + 1);
+        player.projectiles = w.count;
+        registerWeaponInInventory('SWORD', w.count);
       }
-      player.projectiles = (w ? w.count : 1);
-      registerWeaponInInventory('SWORD', w ? w.count : 1);
     },
-    isAvailable: () => !player.evolvedSword && player.weapons.some(w => w.type === 'SWORD') && (player.weapons.find(wp => wp.type === 'SWORD')?.count || 1) < 5
+    isAvailable: () => {
+      const w = player.weapons.find(wp => wp.type === 'SWORD');
+      return !player.evolvedSword && !!w && (w.count || 1) < 5;
+    }
   },
   {
     id: 'sword_speed',
@@ -169,17 +211,27 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Martelo",
     desc: "Propaga as fissuras +48px mais longe no solo, intensifica o esmagamento na base e amplia o dano",
-    getStat: () => `+48px Alcance da Fenda (${(player.weapons.find(wp => wp.type === 'HAMMER')?.count || 1) + 1}/4)`,
+    getStat: () => {
+      const w = player.weapons.find(wp => wp.type === 'HAMMER');
+      const cur = w ? (w.count || 1) : 1;
+      const next = Math.min(4, cur + 1);
+      return next >= 4
+        ? `+48px Alcance da Fenda • ${cur} → 4/4 (MÁX)`
+        : `+48px Alcance da Fenda • ${cur} → ${next}/4`;
+    },
     stat: "+48px Alcance da Fenda (Máx: 4)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'HAMMER');
       if (w) {
-        w.count += 1;
+        w.count = Math.min(4, (w.count || 1) + 1);
         w.damageMult += 0.30;
+        registerWeaponInInventory('HAMMER', w.count);
       }
-      registerWeaponInInventory('HAMMER', w ? w.count : 1);
     },
-    isAvailable: () => !player.evolvedHammer && player.weapons.some(w => w.type === 'HAMMER') && (player.weapons.find(wp => wp.type === 'HAMMER')?.count || 1) < 4
+    isAvailable: () => {
+      const w = player.weapons.find(wp => wp.type === 'HAMMER');
+      return !player.evolvedHammer && !!w && (w.count || 1) < 4;
+    }
   },
   {
     id: 'hammer_impact',
@@ -206,7 +258,12 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Passiva",
     desc: "Aumenta a chance e a duração do congelamento que desacelera monstros atingidos",
-    getStat: () => `+6% Lentidão / +0.25s • Nv. ${((player.frostCardCount || 0) + 1)}`,
+    getStat: () => {
+      const isMaxSlow = (player.slowChance || 0) >= 0.75;
+      return isMaxSlow
+        ? `Lentidão 75% (TETO) / +0.25s Duração • Nv. ${((player.frostCardCount || 0) + 1)}`
+        : `+6% Lentidão / +0.25s • Nv. ${((player.frostCardCount || 0) + 1)}`;
+    },
     stat: "+6% Lentidão / +0.25s",
     apply: () => {
       player.frostCardCount = (player.frostCardCount || 0) + 1;
@@ -296,7 +353,12 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Passiva",
     desc: "Aumenta as chances e o multiplicador de dano dos acertos críticos",
-    getStat: () => `+4% Chance / +0.10 Mult • Nv. ${((player.critCardCount || 0) + 1)}`,
+    getStat: () => {
+      const isMaxCrit = (player.critChance || 0) >= 0.85;
+      return isMaxCrit
+        ? `Crítico 85% (TETO) / +0.10 Mult • Nv. ${((player.critCardCount || 0) + 1)}`
+        : `+4% Chance / +0.10 Mult • Nv. ${((player.critCardCount || 0) + 1)}`;
+    },
     stat: "+4% Chance / +0.10 Mult",
     apply: () => { 
       player.critCardCount = (player.critCardCount || 0) + 1;
@@ -327,13 +389,19 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Passiva",
     desc: "Campo sagrado de dano constante ao redor do herói",
-    getStat: () => `+1 Nível de Aura (${player.auraLvl + 1}/5)`,
+    getStat: () => {
+      const cur = player.auraLvl || 0;
+      const next = Math.min(5, cur + 1);
+      if (cur === 0) return `Desbloquear Aura • Nv. 1/5`;
+      if (next >= 5) return `+1 Nível de Aura • Nv. ${cur} → 5/5 (MÁX)`;
+      return `+1 Nível de Aura • Nv. ${cur} → ${next}/5`;
+    },
     stat: "+1 Nível de Aura (Máx: 5)",
     apply: () => {
-      player.auraLvl += 1;
+      player.auraLvl = Math.min(5, (player.auraLvl || 0) + 1);
       registerWeaponInInventory('aura', player.auraLvl);
     },
-    isAvailable: () => player.auraLvl < 5 && !player.evolvedAura
+    isAvailable: () => (player.auraLvl || 0) < 5 && !player.evolvedAura
   },
   {
     id: 'orbitals',
@@ -341,13 +409,19 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Passiva",
     desc: "Tomos celestiais giram em órbita protetora repelindo oponentes com impacto suave",
-    getStat: () => `+1 Tomo Orbital (${player.orbitals + 1}/3)`,
+    getStat: () => {
+      const cur = player.orbitals || 0;
+      const next = Math.min(3, cur + 1);
+      if (cur === 0) return `Desbloquear Tomos • 1/3 Tomos`;
+      if (next >= 3) return `+1 Tomo Orbital • ${cur} → 3/3 Tomos (MÁX)`;
+      return `+1 Tomo Orbital • ${cur} → ${next}/3 Tomos`;
+    },
     stat: "+1 Tomo Orbital (Máx: 3)",
     apply: () => {
-      player.orbitals += 1;
+      player.orbitals = Math.min(3, (player.orbitals || 0) + 1);
       registerWeaponInInventory('orbitals', player.orbitals);
     },
-    isAvailable: () => player.orbitals < 3 && !player.evolvedOrbitals
+    isAvailable: () => (player.orbitals || 0) < 3 && !player.evolvedOrbitals
   },
   {
     id: 'armor',

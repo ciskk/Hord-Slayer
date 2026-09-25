@@ -180,10 +180,12 @@ export function renderPauseInventory() {
       passives.push({ icon: 'frost', label: 'Golpe Criogênico', val: `${Math.round(player.slowChance * 100)}% Lento (Nv. ${player.frostCardCount || 1})`, color: '#74b9ff' });
     }
     if (player.orbitals > 0) {
-      passives.push({ icon: 'orbitals', label: 'Bíblias Protetoras', val: `${player.orbitals}/3 Tomos ${player.evolvedOrbitals ? '(Vórtice)' : ''}`, color: '#9b59b6' });
+      const isMax = player.orbitals >= 3;
+      passives.push({ icon: 'orbitals', label: 'Bíblias Protetoras', val: `${player.orbitals}/3 Tomos${isMax ? ' (MÁX)' : ''} ${player.evolvedOrbitals ? '(Vórtice)' : ''}`.trim(), color: '#9b59b6' });
     }
     if (player.auraLvl > 0) {
-      passives.push({ icon: 'aura', label: 'Aura Sagrada', val: `Nv ${player.auraLvl}/5 ${player.evolvedAura ? '(Santuário)' : ''}`, color: '#f1c40f' });
+      const isMax = player.auraLvl >= 5;
+      passives.push({ icon: 'aura', label: 'Aura Sagrada', val: `Nv ${player.auraLvl}/5${isMax ? ' (MÁX)' : ''} ${player.evolvedAura ? '(Santuário)' : ''}`.trim(), color: '#f1c40f' });
     }
     if (player.critCardCount || player.critChance > 0.05) {
       passives.push({ icon: 'crit', label: 'Foco Letal', val: `${Math.round(player.critChance * 100)}% Crítico (Nv. ${player.critCardCount || 1})`, color: '#f39c12' });
