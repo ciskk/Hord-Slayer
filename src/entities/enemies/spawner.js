@@ -152,62 +152,62 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     color = eliteMod === 'FROST' ? '#74b9ff' : '#9b59b6';
   }
 
-  let attackRange = 24;
+  let attackRange = 7;
   let attackWindupFrames = 20;
   let attackStrikeFrames = 4;
   let attackRecoveryFrames = 29;
   let attackCooldownMax = 23;
 
   if (typeKey === 'BAT') {
-    attackRange = 20;
+    attackRange = 4;
     attackWindupFrames = 16;
     attackStrikeFrames = 4;
     attackRecoveryFrames = 23;
     attackCooldownMax = 15;
   } else if (typeKey === 'GOLEM') {
-    attackRange = 34;
+    attackRange = 10;
     attackWindupFrames = 24;
     attackStrikeFrames = 6;
     attackRecoveryFrames = 37;
     attackCooldownMax = 28;
   } else if (typeKey === 'STALKER') {
-    attackRange = 24;
+    attackRange = 6;
     attackWindupFrames = 18;
     attackStrikeFrames = 4;
     attackRecoveryFrames = 25;
     attackCooldownMax = 19;
   } else if (typeKey === 'SHIELDED') {
-    attackRange = 32;
+    attackRange = 8;
     attackWindupFrames = 22;
     attackStrikeFrames = 5;
     attackRecoveryFrames = 28;
     attackCooldownMax = 25;
   } else if (typeKey === 'CHAIN_FLAYER') {
-    attackRange = 65;
+    attackRange = 10;
     attackWindupFrames = 24;
     attackStrikeFrames = 6;
     attackRecoveryFrames = 32;
     attackCooldownMax = 31;
   } else if (typeKey === 'DULLAHAN_VANGUARD') {
-    attackRange = 38;
+    attackRange = 10;
     attackWindupFrames = 20;
     attackStrikeFrames = 5;
     attackRecoveryFrames = 26;
     attackCooldownMax = 22;
   } else if (typeKey === 'MAIDEN_THORNS') {
-    attackRange = 30;
+    attackRange = 8;
     attackWindupFrames = 20;
     attackStrikeFrames = 5;
     attackRecoveryFrames = 28;
     attackCooldownMax = 23;
   } else if (typeKey === 'GRAVE_GORGON') {
-    attackRange = 34;
+    attackRange = 9;
     attackWindupFrames = 22;
     attackStrikeFrames = 6;
     attackRecoveryFrames = 31;
     attackCooldownMax = 25;
   } else {
-    attackRange = Math.max(22, Math.round(radius * 1.5));
+    attackRange = Math.max(5, Math.min(9, Math.round(radius * 0.4)));
   }
 
   return {

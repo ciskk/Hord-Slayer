@@ -1,12 +1,15 @@
 import { NATURAL_ARENAS, resolveArenaTheme } from '../../config/arenas.js';
+import { perfMetrics } from '../../core/perfMetrics.js';
 
 // Chunks são apenas cache: relevo, caminhos e objetos usam coordenadas mundiais.
 // ~36 MiB em telas comuns. Em telas grandes, comporta duas vistas completas
 // para que o crossfade não descarte e regenere os mesmos chunks a cada frame.
 const CHUNK = 384;
 const GUTTER = 2;
-const CACHE_LIMIT = 64;
+const CACHE_LIMIT = 128; // Ampliado para comportar anel de prefetch e crossfade de arenas
 const sceneryCache = new Map();
+const prefetchQueue = [];
+const prefetchQueuedKeys = new Set();
 const TAU = Math.PI * 2;
 const SOIL_SAMPLE = 4;
 const SOIL_BORDER = 1;
@@ -551,6 +554,7 @@ function scenery(ctx, ox, oy, theme, p) {
 }
 
 function buildChunk(theme, cx, cy) {
+  perfMetrics.countTerrainChunk();
   const p = NATURAL_ARENAS[theme];
   const canvas = document.createElement('canvas'); canvas.width = canvas.height = CHUNK + GUTTER * 2;
   const ctx = canvas.getContext('2d', { alpha: false });
@@ -568,23 +572,109 @@ function buildChunk(theme, cx, cy) {
 function getChunk(theme, cx, cy, limit) {
   const key = `${theme}:${cx}:${cy}`;
   let canvas = sceneryCache.get(key);
-  if (canvas) sceneryCache.delete(key);
-  else canvas = buildChunk(theme, cx, cy);
+  if (canvas) {
+    sceneryCache.delete(key);
+  } else {
+    canvas = buildChunk(theme, cx, cy);
+  }
   sceneryCache.set(key, canvas);
-  while (sceneryCache.size > limit) sceneryCache.delete(sceneryCache.keys().next().value);
+  while (sceneryCache.size > limit) {
+    sceneryCache.delete(sceneryCache.keys().next().value);
+  }
   return canvas;
 }
 
-export function clearNaturalTerrainCache() { sceneryCache.clear(); }
+export function clearNaturalTerrainCache() {
+  sceneryCache.clear();
+  prefetchQueue.length = 0;
+  prefetchQueuedKeys.clear();
+}
+
+/**
+ * Enfileira e constrói preventivamente chunks vizinhos ao redor da câmera
+ * com orçamento rigoroso de no máximo 1 chunk construído por quadro (time-slicing).
+ */
+function updateTerrainPrefetch(theme, camera, width, height, limit) {
+  const left = Math.floor(camera.x / CHUNK);
+  const top = Math.floor(camera.y / CHUNK);
+  const right = Math.floor((camera.x + width) / CHUNK);
+  const bottom = Math.floor((camera.y + height) / CHUNK);
+
+  const camCenterX = (left + right) / 2;
+  const camCenterY = (top + bottom) / 2;
+
+  // Anel preventivo de 1 chunk de margem ao redor da viewport visível
+  const margin = 1;
+  for (let y = top - margin; y <= bottom + margin; y++) {
+    for (let x = left - margin; x <= right + margin; x++) {
+      // Pula os que já estão visíveis no quadro
+      if (x >= left && x <= right && y >= top && y <= bottom) continue;
+
+      const key = `${theme}:${x}:${y}`;
+      if (!sceneryCache.has(key) && !prefetchQueuedKeys.has(key)) {
+        const distSq = (x - camCenterX) ** 2 + (y - camCenterY) ** 2;
+        prefetchQueue.push({ theme, cx: x, cy: y, distSq });
+        prefetchQueuedKeys.add(key);
+      }
+    }
+  }
+
+  // Limita o tamanho máximo da fila descartando os mais distantes
+  if (prefetchQueue.length > 20) {
+    prefetchQueue.sort((a, b) => a.distSq - b.distSq);
+    while (prefetchQueue.length > 12) {
+      const removed = prefetchQueue.pop();
+      prefetchQueuedKeys.delete(`${removed.theme}:${removed.cx}:${removed.cy}`);
+    }
+  }
+
+  // Orçamento: constrói preventivamente no máximo 1 chunk por quadro
+  if (prefetchQueue.length > 0) {
+    const next = prefetchQueue.shift();
+    const key = `${next.theme}:${next.cx}:${next.cy}`;
+    prefetchQueuedKeys.delete(key);
+    if (!sceneryCache.has(key)) {
+      const canvas = buildChunk(next.theme, next.cx, next.cy);
+      sceneryCache.set(key, canvas);
+      while (sceneryCache.size > limit) {
+        sceneryCache.delete(sceneryCache.keys().next().value);
+      }
+    }
+  }
+}
+
+/**
+ * Pré-aquece chunks centrais ao preparar transição para nova arena.
+ */
+export function prefetchArenaTheme(theme, camera, width, height) {
+  const resolved = resolveArenaTheme(theme);
+  if (!NATURAL_ARENAS[resolved]) return;
+  const left = Math.floor(camera.x / CHUNK);
+  const top = Math.floor(camera.y / CHUNK);
+  const right = Math.floor((camera.x + width) / CHUNK);
+  const bottom = Math.floor((camera.y + height) / CHUNK);
+
+  for (let y = top; y <= bottom; y++) {
+    for (let x = left; x <= right; x++) {
+      const key = `${resolved}:${x}:${y}`;
+      if (!sceneryCache.has(key) && !prefetchQueuedKeys.has(key)) {
+        prefetchQueue.push({ theme: resolved, cx: x, cy: y, distSq: 0 });
+        prefetchQueuedKeys.add(key);
+      }
+    }
+  }
+}
 
 export function renderNaturalTerrain(ctx, theme, camera, width, height) {
   theme = resolveArenaTheme(theme);
   if (!NATURAL_ARENAS[theme]) theme = 'CEMETERY';
   const left = Math.floor(camera.x / CHUNK), top = Math.floor(camera.y / CHUNK);
   const right = Math.floor((camera.x + width) / CHUNK), bottom = Math.floor((camera.y + height) / CHUNK);
-  const limit = Math.max(CACHE_LIMIT, (right - left + 1) * (bottom - top + 1) * 2 + 8);
+  const limit = Math.max(CACHE_LIMIT, (right - left + 1) * (bottom - top + 1) * 2 + 16);
   for (let y = top; y <= bottom; y++) for (let x = left; x <= right; x++) {
     // Margem duplicada evita linhas de filtragem entre imagens no zoom fracionário.
     ctx.drawImage(getChunk(theme, x, y, limit), x * CHUNK - GUTTER, y * CHUNK - GUTTER);
   }
+  // Geração antecipada de vizinhos no anel externo com orçamento de 1 chunk
+  updateTerrainPrefetch(theme, camera, width, height, limit);
 }

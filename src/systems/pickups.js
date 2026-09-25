@@ -285,9 +285,11 @@ export function updatePickups(dt, {
   // 6. Compressão de Gemas Distantes (Zero GC Spike)
   compressGems(gems, player);
 
-  // 7. Atração Magnética e Coleta de Gemas
+  // 7. Atração Magnética e Coleta de Gemas (Zero Splice - Compactação Linear Estável)
   const magnetSq = player.magnet * player.magnet;
-  for (let i = gems.length - 1; i >= 0; i--) {
+  let writeGemIdx = 0;
+  const gemCount = gems.length;
+  for (let i = 0; i < gemCount; i++) {
     const g = gems[i];
     const dx = player.x - g.x;
     const dy = player.y - g.y;
@@ -303,9 +305,11 @@ export function updatePickups(dt, {
     const collectDist = player.radius + g.radius;
     if (distSq < collectDist * collectDist) {
       addXP(g.value);
-      gems.splice(i, 1);
+    } else {
+      gems[writeGemIdx++] = g;
     }
   }
+  gems.length = writeGemIdx;
 
   // 8. Despawn Seguro de Monstros Excessivamente Distantes (Cull de memória)
   const despawnDist = Math.hypot(cameraViewW / 2, cameraViewH / 2) + 500;

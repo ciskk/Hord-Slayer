@@ -1,4 +1,5 @@
 import { drawBossPhaseCinematic } from '../systems/bossPhaseCinematic.js';
+import { perfMetrics } from '../core/perfMetrics.js';
 /**
  * src/render/renderer.js
  * 
@@ -232,7 +233,9 @@ export function render() {
   const renderCamY = isContinuousCam ? (-camera.y + shakeY) : Math.round(-camera.y + shakeY);
   ctx.translate(renderCamX, renderCamY);
 
+  perfMetrics.beginMeasure('terrain');
   renderEnvironment(ctx);
+  perfMetrics.endMeasure('terrain');
 
 
 
@@ -270,14 +273,15 @@ export function render() {
     : (gameState && gameState.isDead ? 0 : 1.0);
 
   if (projAlpha > 0.001) {
+    perfMetrics.beginMeasure('effectsRender');
     if (projAlpha < 1.0) {
       ctx.save();
       ctx.globalAlpha = projAlpha;
     }
 
-    renderBossTelegraphs(ctx, bossTelegraphs, frameCount);
-    renderBossShockwaves(ctx, bossShockwaves, activeBoss, frameCount);
-    renderBossProjectiles(ctx, bossProjectiles, frameCount);
+    renderBossTelegraphs(ctx, bossTelegraphs, frameCount, bounds);
+    renderBossShockwaves(ctx, bossShockwaves, activeBoss, frameCount, bounds);
+    renderBossProjectiles(ctx, bossProjectiles, frameCount, bounds);
 
     for (let i = 0; i < bullets.length; i++) {
     const b = bullets[i];
@@ -1369,6 +1373,7 @@ export function render() {
     if (projAlpha < 1.0) {
       ctx.restore();
     }
+    perfMetrics.endMeasure('effectsRender');
   }
 
   const isBossBattle = !!(deathSequence && deathSequence.isBossBattle);
@@ -1380,6 +1385,7 @@ export function render() {
   ctx.globalAlpha = 1.0;
 
   if (mobAlpha > 0.001) {
+    perfMetrics.beginMeasure('mobsRender');
     if (mobAlpha < 1.0) {
       ctx.save();
       ctx.globalAlpha = mobAlpha;
@@ -1390,6 +1396,7 @@ export function render() {
     if (mobAlpha < 1.0) {
       ctx.restore();
     }
+    perfMetrics.endMeasure('mobsRender');
   }
 
   drawPlayerCharacter();

@@ -84,6 +84,25 @@ export const player = {
   potionThrowTimer: 0,
   isThrowingPotion: false,
   evolvedPotion: false,
+  evolvedSword: false,
+  evolvedStaff: false,
+  evolvedHammer: false,
+  hasWingsPassive: false,
+  hasPowerPassive: false,
+  hasArmorPassive: false,
+  staffPierceBonus: 0,
+  slowChance: 0,
+  slowDurationBonus: 0,
+  frostCardCount: 0,
+  damageCardCount: 0,
+  armorCardCount: 0,
+  destinyPacts: [],
+  iFramesDurationMult: 1.0,
+  damageTakenMultiplier: 1.0,
+  healingMultiplier: 1.0,
+  projectiles: 1,
+  alchemistHealTimer: 0,
+  slowTimer: 0,
   alchemistSkillTimer: 0,
   alchemistBuffTimer: 0,
   alchemistSkillDisoriented: false,
@@ -518,6 +537,25 @@ export function resetPlayer(heroKey) {
   player.potionThrowTimer = 0;
   player.isThrowingPotion = false;
   player.evolvedPotion = false;
+  player.evolvedSword = false;
+  player.evolvedStaff = false;
+  player.evolvedHammer = false;
+  player.hasWingsPassive = false;
+  player.hasPowerPassive = false;
+  player.hasArmorPassive = false;
+  player.staffPierceBonus = 0;
+  player.slowChance = 0;
+  player.slowDurationBonus = 0;
+  player.frostCardCount = 0;
+  player.damageCardCount = 0;
+  player.armorCardCount = 0;
+  player.destinyPacts = [];
+  player.iFramesDurationMult = 1.0;
+  player.damageTakenMultiplier = 1.0;
+  player.healingMultiplier = 1.0;
+  player.projectiles = 1;
+  player.alchemistHealTimer = 0;
+  player.slowTimer = 0;
   player.alchemistSkillTimer = 0;
   player.alchemistBuffTimer = 0;
   player.alchemistSkillDisoriented = false;

@@ -107,9 +107,9 @@ export function openChestModal(tier = 'BOSS') {
       });
     }
 
-    // 2. Upgrades adicionais (Cartas de Pacto nunca aparecem em baús)
-    const upgrades = getRandomChestUpgrades(2);
-    upgrades.filter(u => !u.isDestinyCard).forEach(u => {
+    // 2. Upgrades adicionais (Cartas de Pacto nunca aparecem em baús; Frasco Vital 65% proibido no Altar)
+    const upgrades = getRandomChestUpgrades(2, { excludeIds: ['heal'] });
+    upgrades.filter(u => !u.isDestinyCard && u.id !== 'heal').forEach(u => {
       pendingRewards.push({
         isLegendary: false,
         title: u.title,

@@ -1,0 +1,250 @@
+/* Combat composition. One shared vital row for XP and the boss in every viewport.
+   Kept separate from the hero/boss artwork and its combat feedback in hud.css. */
+#hud {
+  --hud-edge: rgba(203, 172, 108, .3);
+  --hud-row: 38px;
+  top: max(16px, env(safe-area-inset-top));
+  left: max(20px, env(safe-area-inset-left));
+  right: max(20px, env(safe-area-inset-right));
+  max-width: 1100px;
+  gap: 8px;
+}
+
+#hud .hud-top-row {
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+#hud .hud-top-bar { gap: 6px; }
+#hud .hud-meta-group.left,
+#hud .hud-top-cluster-right { gap: 6px; min-height: var(--hud-row); }
+#hud .hud-top-cluster-right { justify-content: flex-start; pointer-events: none; }
+
+#hud .hud-badge {
+  min-height: 30px;
+  padding: 4px 9px;
+  gap: 6px;
+  border: 0;
+  border-radius: 5px;
+  clip-path: none;
+  background: none;
+  box-shadow: none;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#hud .hud-badge .hud-icon { filter: none; }
+#hud .hud-badge .game-icon { width: 14px; height: 14px; }
+#hud .hud-num, #hud .hud-timer {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .25px;
+  text-shadow: 0 1px 3px #000, 0 0 5px #000;
+}
+
+#hud .kills-badge .hud-num { color: #f2d9d6; }
+#hud .gold-badge .hud-num { color: #ead29b; }
+#hud .hud-level-badge { border-color: #69c8d244; color: #a4e1e8; }
+#hud .boss-timer-badge { color: #e6b5ae; }
+#hud .timer-badge { order: -1; }
+.hud-stat-label {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #b9b4a8;
+  text-shadow: 0 1px 3px #000, 0 0 5px #000;
+}
+
+#hud #pause-btn {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: none;
+  pointer-events: auto;
+}
+#hud #pause-btn .medallion-spikes-svg { inset: 5px; width: 28px; height: 28px; filter: none; }
+#hud .pause-key-hint { bottom: -3px; font-family: var(--font-body); color: #c5b68e; }
+#pause-btn:focus-visible, #skill-btn-container:focus-visible {
+  outline: 2px solid #ffe3a0;
+  outline-offset: 4px;
+}
+
+#hud .hud-vitals-container { max-width: none; width: 100%; gap: 6px; }
+#hud .hud-bar-row { height: var(--hud-row); min-height: var(--hud-row); }
+#hud .bar-medallion { width: 34px; height: 34px; margin-right: 8px; }
+#hud .medallion-spikes-svg { filter: drop-shadow(0 2px 3px #0008); }
+#hud .medallion-glyph { width: 16px; height: 16px; filter: none; }
+#hud .bar-bezel {
+  height: 24px;
+  border: 1px solid #b898635c;
+  border-radius: 4px;
+  clip-path: none;
+  background: #070b11;
+  box-shadow: inset 0 1px 4px #0008;
+}
+#hud #hp-fill { background: linear-gradient(180deg, #bc555a, #7b293b); }
+#hud #xp-fill { background: linear-gradient(180deg, #438f9e, #215969); }
+#hud #hp-fill, #hud #hp-ghost-fill, #hud #xp-fill,
+#hud #boss-hp-fill, #hud #boss-hp-ghost-fill { clip-path: none; box-shadow: none; }
+#hud .bar-glass-gloss { opacity: .35; }
+#hud .bar-pips-layer:not(.boss-pips) { opacity: .35; }
+#hud .fill-spark { width: 2px; box-shadow: 0 0 5px #fffc; opacity: .65; }
+#hud .xp-shimmer-wave, #hud .boss-shimmer-wave { opacity: .25; }
+#hud .bar-readout {
+  right: 9px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  text-shadow: 0 1px 3px #000;
+}
+.hud-bar-label {
+  position: absolute;
+  left: 10px;
+  z-index: 6;
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  color: #f1eeeb;
+  text-shadow: 0 1px 3px #000;
+}
+
+/* Swap whole rows, so hidden XP cannot leave a min-height or a phantom gap. */
+#hud.boss-active .xp-bar-row,
+#hud.boss-active .hud-context-row,
+#hud:not(.boss-active) #boss-hud { display: none !important; }
+#hud.boss-active #boss-hud { display: grid !important; }
+#hud #boss-hud {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  grid-template-rows: 20px 12px;
+  align-content: center;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 3px;
+  width: 100%;
+  max-width: none;
+  height: var(--hud-row);
+  margin: 0;
+  animation: none;
+  transform: none;
+}
+#hud .boss-hud-header, #hud .boss-name-group { display: contents; }
+#hud .boss-crest-medallion { grid-column: 1; grid-row: 1 / 3; width: 34px; height: 34px; }
+#hud .boss-titles-cluster { grid-column: 2; grid-row: 1; }
+#hud .boss-title-tag, #hud .boss-bracket, #hud .boss-hud-backdrop { display: none; }
+#hud #boss-name {
+  max-width: none;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  letter-spacing: .6px;
+  line-height: 20px;
+  color: #ecd5b2;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  filter: none;
+  text-shadow: 0 1px 3px #000, 0 0 5px #000;
+}
+#hud .boss-hp-readout-group { grid-column: 3; grid-row: 1; gap: 8px; }
+#hud .boss-hp-raw { font-size: 10px; color: #bab7b5; }
+#hud .boss-pct { font-family: var(--font-body); font-size: 12px; color: #f2cec1; text-shadow: 0 1px 3px #000, 0 0 5px #000; }
+#hud .boss-bar-stage { grid-column: 2 / 4; grid-row: 2; filter: none; }
+#hud .boss-bezel { height: 12px; border-radius: 3px; }
+#hud .boss-pip-gem { width: 4px; height: 4px; box-shadow: none; }
+#hud #boss-hud.enraged #boss-name { color: #ff958a; }
+
+#hud .hud-context-row { display: flex; align-items: center; justify-content: center; gap: 12px; min-width: 0; }
+#hud .hud-context-row .boss-timer-badge { flex-shrink: 0; padding: 2px 0; min-height: 24px; }
+#hud #hud-wave-card {
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 6px;
+  clip-path: none;
+  background: none;
+  box-shadow: none;
+  pointer-events: none;
+}
+#hud #wave-banner { overflow: hidden; text-overflow: ellipsis; font-size: 10px; letter-spacing: .65px; color: #eadcbd; text-shadow: 0 1px 3px #000, 0 0 5px #000; }
+#hud .wave-icon { flex-shrink: 0; filter: none; opacity: .8; }
+#hud #blood-altar-hud { border-radius: 6px; clip-path: none; box-shadow: 0 3px 12px #0005; margin: 0 auto; }
+/* Dialogue follows the panel instead of floating over its vital bars. */
+#hud #boss-bark-container { position: absolute; top: calc(100% + 10px); width: min(100%, 560px); }
+#hud .boss-bark-box { border-radius: 8px; box-shadow: 0 4px 16px #0006; }
+
+body #skill-btn-container {
+  right: max(28px, env(safe-area-inset-right));
+  bottom: max(32px, env(safe-area-inset-bottom));
+}
+body #skill-btn-container.ready { animation: none; }
+body #skill-btn-container.ready .skill-halo-pulse { opacity: .4; }
+
+@media (max-width: 760px), (orientation: portrait) {
+  #hud { top: max(8px, env(safe-area-inset-top)); left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); max-width: 540px; gap: 6px; }
+  #hud .hud-top-row { grid-template-columns: minmax(0, 1fr); padding: 0; gap: 3px; }
+  #hud .hud-top-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px; }
+  #hud .hud-meta-group.left { gap: 4px; min-width: 0; }
+  #hud .hud-top-cluster-right { display: contents; }
+  #hud .hud-badge { min-height: 28px; padding: 3px 6px; gap: 4px; }
+  #hud .hud-meta-group .hud-stat-label:not(.hud-level-badge .hud-stat-label) { display: none; }
+  #hud .hud-num, #hud .hud-timer { font-size: 12px; }
+  #hud .timer-badge { grid-column: 2; grid-row: 1; align-self: center; margin-right: 46px; }
+  #hud #pause-btn { grid-column: 2; grid-row: 1; justify-self: end; width: 44px; height: 44px; }
+  #hud #pause-btn .medallion-spikes-svg { inset: 8px; }
+  #hud .pause-key-hint { display: none; }
+  #hud .hud-context-row { gap: 6px; }
+  #hud .boss-timer-badge .hud-stat-label { display: none; }
+  #hud .boss-timer-badge .game-icon { width: 11px; height: 11px; }
+  #hud .boss-timer-badge .hud-timer { font-size: 11px; }
+  #hud .hud-vitals-container { gap: 3px; }
+  #hud .boss-hp-raw { display: none; }
+  #hud #boss-name { font-size: 10px; }
+  #hud #hud-wave-card { padding: 4px 9px; }
+  #hud #wave-banner { font-size: 9px; }
+  #hud .boss-bark-box { padding: 8px 10px; }
+  #hud .boss-bark-speaker { font-size: 9px; letter-spacing: .5px; }
+  #hud .boss-bark-text { font-size: 12px; }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  body #skill-btn-container { width: 80px !important; height: 80px !important; right: max(18px, env(safe-area-inset-right)) !important; bottom: max(24px, env(safe-area-inset-bottom), 12dvh) !important; touch-action: none; }
+  body .skill-key-badge { display: none; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  #hud { --hud-row: 32px; top: max(6px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); max-width: 920px; gap: 4px; }
+  #hud .hud-top-row { grid-template-columns: 226px minmax(0, 1fr); padding: 0; gap: 12px; }
+  #hud .hud-top-bar { display: flex; gap: 2px; }
+  #hud .hud-top-cluster-right { display: flex; }
+  #hud .hud-badge { min-height: 26px; padding: 3px 6px; gap: 4px; }
+  #hud .hud-stat-label { font-size: 8px; }
+  #hud .kills-badge .hud-stat-label, #hud .gold-badge .hud-stat-label { display: none; }
+  #hud .hud-num, #hud .hud-timer { font-size: 12px; }
+  #hud .timer-badge { margin: 0; }
+  #hud .boss-timer-badge { min-height: 26px; }
+  #hud #pause-btn { width: 44px; height: 44px; }
+  #hud .pause-key-hint { display: none; }
+  #hud .bar-medallion, #hud .boss-crest-medallion { width: 28px; height: 28px; }
+  #hud .bar-bezel { height: 22px; }
+  #hud #boss-hud { grid-template-columns: 28px minmax(0, 1fr) auto; grid-template-rows: 17px 10px; }
+  #hud .boss-bezel { height: 10px; }
+  #hud .boss-hp-raw { display: none; }
+  #hud #boss-name { font-size: 10px; }
+  #hud #hud-wave-card { padding: 3px 10px; }
+  #hud #wave-banner { font-size: 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #hud *, #skill-btn-container, #skill-btn-container * { animation: none !important; transition: none !important; }
+}

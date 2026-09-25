@@ -13,7 +13,7 @@ export function flamethrowerConeBehavior(e, dt, angle, curSpeed, ctx) {
   if (e.flameState === 'chase') {
     e.x += Math.cos(angle) * curSpeed * dt;
     e.y += Math.sin(angle) * curSpeed * dt;
-    if (distToPlayerSq <= 125 * 125) {
+    if (distToPlayerSq <= 85 * 85) {
       e.flameState = 'aim';
       e.flameTimer = 23;
       e.flameAngle = angle;

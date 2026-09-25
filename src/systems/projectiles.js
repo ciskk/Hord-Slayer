@@ -8,7 +8,7 @@ import { triggerShake } from '../state/gameState.js';
 import { setLastAttackerInfo } from '../state/events.js';
 import { addDamageText, createHitParticles, applyFireBurn, applyFreeze } from './combat.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
-import { getNeighborIndices } from '../core/spatialGrid.js';
+import { forEachNeighborIndex } from '../core/spatialGrid.js';
 import { addGroundCrater, updateGroundCraters } from '../render/groundCracks.js';
 import { addKaelHitFissure } from '../render/kaelUlt.js';
 import { triggerDeath } from './ui.js';
@@ -16,15 +16,13 @@ import { getBossPhaseDefeatDamage } from './devtools.js';
 
 export { bullets, enemyBullets, acidPuddles, MAX_CONCURRENT_ENEMY_BULLETS, canSpawnEnemyBullet };
 
-const _potionCandidates = [];
-const _bulletCandidates = [];
-
 /**
  * Atualiza projéteis do jogador e dos inimigos, aplicando regras de adrenalina melee (+25% se <= 130px).
  */
 export function updateProjectiles(dt) {
   // 1. Projéteis do Jogador
-  for (let i = bullets.length - 1; i >= 0; i--) {
+  let bulletWriteIdx = 0;
+  for (let i = 0; i < bullets.length; i++) {
     const b = bullets[i];
     b.life -= dt;
 
@@ -66,12 +64,11 @@ export function updateProjectiles(dt) {
         const puddleLife = b.puddleDuration || Math.round(340 / 1.5);
 
         // Impacto do ataque ao atingir o solo (dano de impacto 40% menor já calculado em b.damage)
-        const candidates = getNeighborIndices(b.x, b.y, puddleRadius + 45, _potionCandidates);
-        for (let j = 0; j < candidates.length; j++) {
-          const e = enemies[candidates[j]];
-          if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
-          if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
-          if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
+        forEachNeighborIndex(b.x, b.y, puddleRadius + 45, (candIdx) => {
+          const e = enemies[candIdx];
+          if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) return;
+          if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) return;
+          if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) return;
           const dx = e.x - b.x;
           const dy = e.y - b.y;
           if (dx * dx + dy * dy <= (puddleRadius + e.radius) ** 2) {
@@ -108,7 +105,7 @@ export function updateProjectiles(dt) {
             e.acidBurnTimer = Math.max(e.acidBurnTimer || 0, 180);
             if (b.isEvolved) e.acidBurnEvolved = true;
           }
-        }
+        });
 
         acidPuddles.push({
           x: b.x,
@@ -124,18 +121,21 @@ export function updateProjectiles(dt) {
         createHitParticles(b.x, b.y, b.isEvolved ? '#d6a2e8' : '#9b59b6', 6);
         triggerShake(3);
       }
-      bullets.splice(i, 1);
       continue;
     }
 
     // Poções viajam em arco balístico aéreo e não colidem com inimigos no trajeto
-    if (b.type === 'POTION') continue;
+    if (b.type === 'POTION') {
+      bullets[bulletWriteIdx++] = b;
+      continue;
+    }
 
     // Martelo Sagrado de Sir Roland: sincronização de windup e impacto sísmico
     if (b.type === 'HAMMER_SLAM') {
       const slamProgress = 1 - (b.life / b.maxLife);
       // Durante o windup (frames 0 a 8), o martelo ainda está no ar sendo erguido
       if (slamProgress < 0.32) {
+        bullets[bulletWriteIdx++] = b;
         continue;
       }
 
@@ -155,15 +155,15 @@ export function updateProjectiles(dt) {
 
         // Cumprimento da Lore: Anulação Real de Projéteis Inimigos no Raio Sísmico 360°
         const cancelRadiusSq = (b.radius + 15) * (b.radius + 15);
-        for (let k = enemyBullets.length - 1; k >= 0; k--) {
+        for (let k = 0; k < enemyBullets.length; k++) {
           const eb = enemyBullets[k];
-          if (eb.isBossProjectile) continue; // Tiros de chefe são resilientes
+          if (eb.isBossProjectile || eb._destroyed) continue; // Tiros de chefe são resilientes
           const edx = eb.x - b.x;
           const edy = eb.y - b.y;
           if (edx * edx + edy * edy <= cancelRadiusSq) {
             createHitParticles(eb.x, eb.y, '#111111', 3);
             createHitParticles(eb.x, eb.y, '#ffffff', 2);
-            enemyBullets.splice(k, 1);
+            eb._destroyed = true;
           }
         }
 
@@ -179,13 +179,15 @@ export function updateProjectiles(dt) {
     const isHammerSlam = (b.type === 'HAMMER_SLAM');
     const hammerReach = isHammerSlam ? (b.isEvolved ? 128 : (78 + ((b.count || 1) - 1) * 12)) : 0;
     const bRadius = isHammerSlam ? Math.max(b.radius || 50, hammerReach) : (b.radius || 6);
-    const candidates = getNeighborIndices(b.x, b.y, bRadius + 45, _bulletCandidates);
+    const slamCosA = (isHammerSlam && hammerReach > 0) ? Math.cos(b.angle || 0) : 0;
+    const slamSinA = (isHammerSlam && hammerReach > 0) ? Math.sin(b.angle || 0) : 0;
 
-    for (let j = 0; j < candidates.length; j++) {
-      const e = enemies[candidates[j]];
-      if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
-      if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
-      if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
+    let bulletDead = false;
+    forEachNeighborIndex(b.x, b.y, bRadius + 45, (candIdx) => {
+      const e = enemies[candIdx];
+      if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) return;
+      if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) return;
+      if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) return;
 
       const dx = e.x - b.x;
       const dy = e.y - b.y;
@@ -200,13 +202,11 @@ export function updateProjectiles(dt) {
         if (dx * dx + dy * dy < rSum * rSum) {
           isHit = true;
         }
-        // 2. Checagem ao longo do leque aberto de fissuras direcionais
+        // 2. Checagem ao longo do leque aberto de fissuras direcionais (constantes trigonométricas pré-calculadas)
         if (!isHit && hammerReach > 0) {
-          const cosA = Math.cos(b.angle || 0);
-          const sinA = Math.sin(b.angle || 0);
-          const proj = dx * cosA + dy * sinA;
+          const proj = dx * slamCosA + dy * slamSinA;
           if (proj > 0 && proj <= hammerReach + eRadius) {
-            const perp = Math.abs(-dx * sinA + dy * cosA);
+            const perp = Math.abs(-dx * slamSinA + dy * slamCosA);
             const maxPerp = Math.max(30, 20 + proj * 0.95) + eRadius;
             if (perp <= maxPerp) {
               isHit = true;
@@ -224,7 +224,7 @@ export function updateProjectiles(dt) {
 
       if (isHit) {
         if (!b.hitEnemies) b.hitEnemies = new Set();
-        if (b.hitEnemies.has(e)) continue;
+        if (b.hitEnemies.has(e)) return;
         b.hitEnemies.add(e);
 
         const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
@@ -381,17 +381,26 @@ export function updateProjectiles(dt) {
         if (b.type !== 'HAMMER_SLAM') {
           b.piercing = (b.piercing || 1) - 1;
           if (b.piercing <= 0) {
-            bullets.splice(i, 1);
-            break;
+            bulletDead = true;
+            return false;
           }
         }
       }
+    });
+
+    if (!bulletDead) {
+      bullets[bulletWriteIdx++] = b;
     }
   }
+  bullets.length = bulletWriteIdx;
 
   // 2. Projéteis Inimigos
-  for (let i = enemyBullets.length - 1; i >= 0; i--) {
+  let ebWriteIdx = 0;
+  for (let i = 0; i < enemyBullets.length; i++) {
     const eb = enemyBullets[i];
+    if (eb._destroyed) {
+      continue;
+    }
     eb.life -= dt;
 
     // Rastreamento Suave para SHADOW_ORB (Cultista)
@@ -443,7 +452,6 @@ export function updateProjectiles(dt) {
         createHitParticles(eb.x, eb.y, '#d35400', 16);
         createHitParticles(eb.x, eb.y, '#f1c40f', 8);
       }
-      enemyBullets.splice(i, 1);
       continue;
     }
 
@@ -514,15 +522,22 @@ export function updateProjectiles(dt) {
         createHitParticles(player.x, player.y, '#b2bec3', 10);
       }
 
-      enemyBullets.splice(i, 1);
-
       if (player.hp <= 0) {
         player.hp = 0;
         triggerDeath();
+        for (let r = i + 1; r < enemyBullets.length; r++) {
+          if (!enemyBullets[r]._destroyed) enemyBullets[ebWriteIdx++] = enemyBullets[r];
+        }
+        enemyBullets.length = ebWriteIdx;
         return;
       }
+
+      continue;
     }
+
+    enemyBullets[ebWriteIdx++] = eb;
   }
+  enemyBullets.length = ebWriteIdx;
 }
 
 // Estruturas Zero-Alloc estáticas para consolidação de dano de poças
@@ -538,23 +553,21 @@ export function updateAcidPuddles(dt) {
   let playerInAlchemistPuddle = false;
   let alchemistPuddleEvolved = false;
 
-  for (let i = acidPuddles.length - 1; i >= 0; i--) {
+  let puddleWriteIdx = 0;
+  for (let i = 0; i < acidPuddles.length; i++) {
     const p = acidPuddles[i];
     p.life -= dt;
 
     if (p.life <= 0) {
-      acidPuddles.splice(i, 1);
       continue;
     }
 
     if (p.isFire || p.isAlchemist) {
-      const candidates = getNeighborIndices(p.x, p.y, p.radius + 35);
-      const candLen = candidates.length;
-      for (let j = 0; j < candLen; j++) {
-        const e = enemies[candidates[j]];
-        if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
-        if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
-        if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
+      forEachNeighborIndex(p.x, p.y, p.radius + 35, (candIdx) => {
+        const e = enemies[candIdx];
+        if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) return;
+        if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) return;
+        if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) return;
         const dx = e.x - p.x;
         const dy = e.y - p.y;
         if (dx * dx + dy * dy < (p.radius + e.radius) ** 2) {
@@ -579,7 +592,7 @@ export function updateAcidPuddles(dt) {
             if (p.isFire) e._puddleFire = true;
           }
         }
-      }
+      });
     }
 
     // Detecção de permanência da Valéria sobre o miasma aliado (sem empilhar cura por poça)
@@ -620,13 +633,20 @@ export function updateAcidPuddles(dt) {
             if (player.hp <= 0) {
               player.hp = 0;
               triggerDeath();
+              for (let r = i + 1; r < acidPuddles.length; r++) {
+                acidPuddles[puddleWriteIdx++] = acidPuddles[r];
+              }
+              acidPuddles.length = puddleWriteIdx;
               return;
             }
           }
         }
       }
     }
+
+    acidPuddles[puddleWriteIdx++] = p;
   }
+  acidPuddles.length = puddleWriteIdx;
 
   // Aplicação consolidada de dano com Anti-Stacking e Passiva de Corrosão (Zero-Alloc)
   const affectedCount = _affectedEnemies.length;

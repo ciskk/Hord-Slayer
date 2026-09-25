@@ -21,6 +21,7 @@ import { generateGroundCracks, drawDetailedGroundCracks } from './groundCracks.j
 import { CHARACTERS } from '../config/characters.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { layoutMetrics } from '../core/responsive.js';
+import { drawDesktopStageBackground, drawDesktopDais, drawDesktopGroundMist } from './desktopHeroStage.js';
 
 let previewCanvas = null;
 let previewCtx = null;
@@ -43,6 +44,8 @@ let attackTimer = 0;
 let previewAxeAngle = 0;
 let previewSkillAge = 0;
 let lastPreviewFrameTime = null;
+let atmosphereTime = 0;
+const reducedMotion = typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 const ATTACK_CYCLE_FRAMES = 74;
 let previewKnightCrackData = null;
 
@@ -381,10 +384,16 @@ export function stopPreview() {
  */
 function renderLoop(timestamp) {
   if (!isRunning || !previewCanvas || !previewCtx) return;
+  if (document.hidden) {
+    lastPreviewFrameTime = null;
+    animFrameId = requestAnimationFrame(renderLoop);
+    return;
+  }
 
   const dt = timestamp !== undefined && lastPreviewFrameTime !== null
     ? Math.min(3, (timestamp - lastPreviewFrameTime) / (1000 / 60)) : 1;
   lastPreviewFrameTime = timestamp ?? null;
+  if (!reducedMotion?.matches) atmosphereTime += dt / 60;
   if (currentHeroKey === 'BARBARIAN' && currentPose === 'skill') {
     previewSkillAge = (previewSkillAge + dt) % (KRAGDOR_ULT.duration + 36);
   }
@@ -453,8 +462,12 @@ function syncCanvasDimensions() {
   };
 }
 
+function isDesktopStage() {
+  return layoutMetrics.isLandscape && layoutMetrics.viewH > 520 && layoutMetrics.viewW > 850;
+}
+
 /**
- * Calcula a escala duplicada do herói e adapta suavemente para não transbordar em janelas menores.
+ * Amplia o conjunto herói/pedestal em 25% no desktop, respeitando o espaço do canvas.
  */
 function computeHeroScale(width, height) {
   const isCompact = height < 250 || width < 250;
@@ -467,7 +480,14 @@ function computeHeroScale(width, height) {
   const maxSafeScaleH = (height * 0.72) / 44;
   const maxSafeScaleW = (width * 0.82) / 70;
   const safeScale = Math.min(targetScale, Math.max(3.2, Math.min(maxSafeScaleH, maxSafeScaleW)));
-  return { heroScale: safeScale, isCompact, isTall };
+
+  const isDesktop = isDesktopStage();
+  // O degrau inferior mede 2 * 24.2 * 1.45 por unidade de escala.
+  // Reserva uma margem nas janelas estreitas sem alterar o enquadramento mobile.
+  const heroScale = isDesktop
+    ? Math.min(safeScale * 1.25, (width * 0.96) / (2 * 24.2 * 1.45), (height * 0.88) / 44)
+    : safeScale;
+  return { heroScale, isCompact, isTall };
 }
 
 /**
@@ -483,18 +503,24 @@ function renderStage() {
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.scale(dpr, dpr);
 
-  const { heroScale, isCompact, isTall } = computeHeroScale(width, height);
+  const desktop = isDesktopStage();
+  // O cenário passa por trás do console; mantém a área anterior para enquadrar o herói.
+  const heroHeight = desktop ? Math.max(180, height - 76) : height;
+  const { heroScale, isCompact, isTall } = computeHeroScale(width, heroHeight);
   const centerX = width / 2;
-  const centerY = isCompact ? height * 0.52 : (isTall ? height * 0.46 : height * 0.48);
+  const centerY = (desktop ? 32 : 0) + (isCompact ? heroHeight * 0.52 : (isTall ? heroHeight * 0.46 : heroHeight * 0.48));
   const footY = centerY + Math.round(13.2 * heroScale);
 
   const colors = THEME_COLORS[currentHeroKey] || THEME_COLORS.KNIGHT;
 
   // 1. Limpeza do Canvas
   c.clearRect(0, 0, width, height);
+  if (desktop) drawDesktopStageBackground(c, width, height, colors, atmosphereTime, dpr);
 
   // 2. Pedestal de pedra estilizado com runas arcanas (escala dobrada)
-  drawHeroPedestal(c, centerX, footY, colors, isCompact, width, heroScale);
+  drawHeroPedestal(c, centerX, footY, colors, isCompact, width, heroScale,
+    desktop ? { height, dpr, time: atmosphereTime * 60 } : null);
+  if (desktop) drawDesktopGroundMist(c, width, height, footY, colors, atmosphereTime);
 
   // 3. Ondas de choque cinéticas sobre o pedestal
   drawShockwaves(c, centerX, footY, colors);
@@ -541,7 +567,9 @@ function renderStage() {
   drawHeroInstance(c, centerX, centerY, colors, heroScale);
 
   // 6. Partículas atmosféricas elementais
-  drawAtmosphericParticles(c, centerX, centerY + Math.round(10 * heroScale), colors);
+  if (!desktop || !reducedMotion?.matches) {
+    drawAtmosphericParticles(c, centerX, centerY + Math.round(10 * heroScale), colors, desktop ? 10 : particles.length);
+  }
 
   // 7. Efeitos Visuais Cinéticos de Ataque e Empunhadura de Armas Reais
   if (currentHeroKey === 'BARBARIAN' && currentPose !== 'idle') {
@@ -738,17 +766,21 @@ function drawTieredDais(c, x, y, rx, ry, stoneH, colors, isCompact, t) {
 /**
  * Desenha o Altar dos Condenados: Dais escalonado em 3 degraus, névoa abissal rasteira e anel rúnico.
  */
-function drawHeroPedestal(c, x, y, colors, isCompact, width, heroScale = 6.6) {
+function drawHeroPedestal(c, x, y, colors, isCompact, width, heroScale = 6.6, desktopStage = null) {
   const rx = Math.round(heroScale * 24.2);
   const ry = Math.round(rx * 0.275);
   const stoneH = Math.round(rx * 0.165);
-  const t = previewTime;
+  const t = desktopStage ? desktopStage.time : previewTime;
 
   // 1. Névoa abissal rasteira sutil ao nível do piso
-  drawSubtleGroundMist(c, x, y, rx, ry, stoneH, t);
+  if (!desktopStage) drawSubtleGroundMist(c, x, y, rx, ry, stoneH, t);
 
   // 2. Três degraus monumentais de cantaria gótica
-  drawTieredDais(c, x, y, rx, ry, stoneH, colors, isCompact, t);
+  if (desktopStage) {
+    drawDesktopDais(c, width, desktopStage.height, x, y, rx, ry, colors, desktopStage.dpr);
+  } else {
+    drawTieredDais(c, x, y, rx, ry, stoneH, colors, isCompact, t);
+  }
 
   c.save();
 
@@ -853,7 +885,7 @@ function drawShockwaves(c, x, y, colors) {
   }
 }
 
-function drawAtmosphericParticles(c, x, y, colors) {
+function drawAtmosphericParticles(c, x, y, colors, ambientLimit = particles.length) {
   for (let i = 0; i < particles.length; i++) {
     const p = particles[i];
     p.y -= p.vy;
@@ -874,6 +906,7 @@ function drawAtmosphericParticles(c, x, y, colors) {
       p.maxLife = undefined;
     }
 
+    if (i >= ambientLimit && !p.maxLife) continue;
     const pColor = p.color || (i % 2 === 0 ? colors.primary : colors.secondary);
     c.fillStyle = pColor;
     c.globalAlpha = Math.max(0, p.alpha * 0.8);

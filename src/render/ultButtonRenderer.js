@@ -27,6 +27,8 @@ let ultCtx = null;
 let currentHeroKey = 'KNIGHT';
 let lastProgress = 0;
 let lastIsReady = false;
+let _lastRenderFrame = -1;
+let activeParticleCount = 0;
 
 // Configuração do Canvas (Espaço de desenho 160x160 com centro em 80, 80)
 const CANVAS_SIZE = 160;
@@ -80,6 +82,7 @@ function spawnParticle(x, y, vx, vy, size, life, color, type = 'spark', extra = 
     const p = particlePool[i];
     if (!p.active) {
       p.active = true;
+      activeParticleCount++;
       p.x = x;
       p.y = y;
       p.vx = vx;
@@ -101,33 +104,36 @@ function spawnParticle(x, y, vx, vy, size, life, color, type = 'spark', extra = 
  * Atualiza partículas ativas
  */
 function updateParticles(dtFactor = 1.0) {
-  for (let i = 0; i < MAX_PARTICLES; i++) {
-    const p = particlePool[i];
-    if (!p.active) continue;
+  if (activeParticleCount > 0) {
+    for (let i = 0; i < MAX_PARTICLES; i++) {
+      const p = particlePool[i];
+      if (!p.active) continue;
 
-    p.x += p.vx * dtFactor;
-    p.y += p.vy * dtFactor;
-    p.life -= 0.025 * dtFactor;
+      p.x += p.vx * dtFactor;
+      p.y += p.vy * dtFactor;
+      p.life -= 0.025 * dtFactor;
 
-    if (p.type === 'bubble') {
-      p.vx += Math.sin(p.life * 12) * 0.1;
-      p.vy *= 0.98;
-    } else if (p.type === 'steam') {
-      p.size += 0.15;
-      p.vx *= 0.94;
-      p.vy *= 0.94;
-    } else if (p.type === 'ember') {
-      p.vx += (Math.random() - 0.5) * 0.15;
-      p.vy -= 0.04; // Flutua para cima
-    } else {
-      p.vx *= 0.95;
-      p.vy *= 0.95;
-    }
+      if (p.type === 'bubble') {
+        p.vx += Math.sin(p.life * 12) * 0.1;
+        p.vy *= 0.98;
+      } else if (p.type === 'steam') {
+        p.size += 0.15;
+        p.vx *= 0.94;
+        p.vy *= 0.94;
+      } else if (p.type === 'ember') {
+        p.vx += (Math.random() - 0.5) * 0.15;
+        p.vy -= 0.04; // Flutua para cima
+      } else {
+        p.vx *= 0.95;
+        p.vy *= 0.95;
+      }
 
-    p.alpha = Math.max(0, p.life / p.maxLife);
+      p.alpha = Math.max(0, p.life / p.maxLife);
 
-    if (p.life <= 0) {
-      p.active = false;
+      if (p.life <= 0) {
+        p.active = false;
+        activeParticleCount = Math.max(0, activeParticleCount - 1);
+      }
     }
   }
 
@@ -167,6 +173,7 @@ export function setUltHero(heroKey) {
   for (let i = 0; i < MAX_PARTICLES; i++) {
     particlePool[i].active = false;
   }
+  activeParticleCount = 0;
   smoothGaugeAngle = 0;
   triggerFlare.active = false;
 }
@@ -239,6 +246,14 @@ export function renderUltButton(player, frameCount) {
     } else {
       return;
     }
+  }
+
+  // Dirty checking / Culling de visibilidade e descarte de quadros duplicados
+  if (frameCount === _lastRenderFrame) return;
+  _lastRenderFrame = frameCount;
+
+  if (document.hidden || ultCanvas.offsetParent === null || !ultCanvas.isConnected) {
+    return;
   }
 
   ultCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -664,13 +679,13 @@ function drawCausticCrucible(ctx, progress, isReady, frameCount) {
  * Desenha todas as partículas ativas da pool
  */
 function drawActiveParticles(ctx) {
+  if (activeParticleCount <= 0) return;
+
   for (let i = 0; i < MAX_PARTICLES; i++) {
     const p = particlePool[i];
     if (!p.active) continue;
 
-    ctx.save();
     ctx.globalAlpha = p.alpha;
-    ctx.fillStyle = p.color;
 
     if (p.type === 'bubble') {
       ctx.strokeStyle = p.color;
@@ -684,16 +699,12 @@ function drawActiveParticles(ctx) {
       ctx.beginPath();
       ctx.arc(p.x - p.size * 0.3, p.y - p.size * 0.3, p.size * 0.35, 0, Math.PI * 2);
       ctx.fill();
-    } else if (p.type === 'steam') {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
     } else {
+      ctx.fillStyle = p.color;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
     }
-
-    ctx.restore();
   }
+  ctx.globalAlpha = 1.0;
 }

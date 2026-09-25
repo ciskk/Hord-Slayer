@@ -4,6 +4,7 @@
  */
 import { getNeighborCells, getNeighborIndices } from '../core/spatialGrid.js';
 import { inputX, inputY } from '../core/input.js';
+import { perfMetrics } from '../core/perfMetrics.js';
 
 /**
  * Resolve as interpenetrações físicas no mundo de jogo:
@@ -46,6 +47,7 @@ export function resolveWorldPhysics(player, enemies, dt) {
     for (let c = 0; c < cells.length; c++) {
       const neighbors = cells[c];
       const nLen = neighbors.length;
+      perfMetrics.countCollisionCandidate(nLen);
 
       for (let k = 0; k < nLen; k++) {
         const j = neighbors[k];
@@ -98,6 +100,7 @@ export function resolveWorldPhysics(player, enemies, dt) {
   // Consulta apenas as células espaciais ao redor do jogador (raio de 95px)
   const playerNeighbors = getNeighborIndices(player.x, player.y, 95);
   const pnCount = playerNeighbors.length;
+  perfMetrics.countCollisionCandidate(pnCount);
 
   for (let k = 0; k < pnCount; k++) {
     const e = enemies[playerNeighbors[k]];

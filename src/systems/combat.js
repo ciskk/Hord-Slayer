@@ -190,7 +190,8 @@ export function updateCombatVisuals(dt) {
 const NON_MELEE_BEHAVIORS_SET = new Set([
   'shooter', 'kamikaze', 'kamikaze_spread', 'boulder_throw', 
   'mortar_barrage', 'summoner', 'protect_aura', 'gravity_ritual', 
-  'bat_spawner', 'vortex_carrier', 'anchor'
+  'bat_spawner', 'vortex_carrier', 'anchor',
+  'long_range_sniper', 'web_trapper', 'haste_chanter', 'horde_mender', 'barrier_linker'
 ]);
 
 /**
@@ -234,7 +235,7 @@ export function processEnemyMeleeAttacks(player, enemies, dt, freezeTimer = 0) {
     if (!e.combatState) e.combatState = 'CHASE';
     if (e.attackTimer === undefined) e.attackTimer = 0;
     if (e.attackCooldown === undefined) e.attackCooldown = 0;
-    if (e.attackRange === undefined) e.attackRange = 28;
+    if (e.attackRange === undefined) e.attackRange = 7;
     if (e.attackWindupFrames === undefined) e.attackWindupFrames = 20;
     if (e.attackStrikeFrames === undefined) e.attackStrikeFrames = 4;
     if (e.attackRecoveryFrames === undefined) e.attackRecoveryFrames = 40;
@@ -317,7 +318,7 @@ export function processEnemyMeleeAttacks(player, enemies, dt, freezeTimer = 0) {
 
         if (!e.hasHitInStrike && !isKaelIntangible && player.iFrames <= 0) {
           const currentDistSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
-          if (currentDistSq <= strikeLimit * strikeLimit) {
+          if (currentDistSq <= (strikeLimit + 8) ** 2) {
             const angleToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
             let angleDiff = Math.abs(angleToPlayer - e.attackAngle);
             if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;

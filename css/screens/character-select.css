@@ -2402,3 +2402,50 @@
   }
 }
 
+/* O altar do PC ocupa toda a altura; os controles flutuam sobre os últimos degraus. */
+@media (min-width: 851px) and (min-height: 521px) and (orientation: landscape) {
+  .char-scene-container {
+    padding-bottom: 0;
+  }
+
+  .char-panoramic-stage {
+    padding-bottom: 0;
+  }
+
+  .char-roster-wing,
+  .char-dossier-wing {
+    margin-bottom: 14px;
+  }
+
+  .char-stage-wing {
+    padding-bottom: 0;
+    border-radius: 0;
+    isolation: isolate;
+  }
+
+  .char-stage-viewport {
+    position: absolute;
+    inset: 0;
+    width: auto;
+  }
+
+  #char-preview-canvas {
+    position: absolute;
+    inset: 0;
+    filter: none;
+  }
+
+  .char-archetype-beacon {
+    position: relative;
+  }
+
+  .char-pedestal-console {
+    position: relative;
+    margin-top: auto;
+    margin-bottom: max(env(safe-area-inset-bottom, 18px), 18px);
+    background: rgba(6, 10, 22, .92);
+    border-color: rgba(178, 195, 215, .24);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .04);
+  }
+}
+

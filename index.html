@@ -61,34 +61,30 @@
     </defs>
   </svg>
 
-  <!-- Container de Topo: Controles à Esquerda e Barras de HP/XP no Lado Direito (PC) -->
+  <!-- Painel de combate: estatísticas e vitais; XP e chefe compartilham a segunda linha. -->
   <div class="hud-top-row">
     <!-- 1. Linha de Topo: Badges de Combate + Banner de Onda e Selo de Pausa -->
     <div class="hud-top-bar">
       <div class="hud-meta-group left">
+        <div class="hud-badge hud-level-badge" title="Nível atual"><span class="hud-stat-label">NV</span><b id="lvl-val" class="hud-num">1</b></div>
         <div class="hud-badge kills-badge" title="Inimigos abatidos">
           <span class="hud-icon">
             <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color:#ff3838;"><path fill="currentColor" d="M12 2C7.6 2 4 5.6 4 10c0 2.8 1.4 5.3 3.6 6.8V20h8.8v-3.2c2.2-1.5 3.6-4 3.6-6.8 0-4.4-3.6-8-8-8zm-3 10a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zm6 0a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6z"/><line x1="10" y1="18" x2="10" y2="20" stroke="#121622" stroke-width="1.5"/><line x1="14" y1="18" x2="14" y2="20" stroke="#121622" stroke-width="1.5"/></svg>
           </span>
+          <span class="hud-stat-label">ABATES</span>
           <span class="hud-num" id="kills-val">0</span>
         </div>
         <div class="hud-badge gold-badge" title="Ouro acumulado">
           <span class="hud-icon">
             <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color:#f1c40f;"><polygon points="12,1 17,6 17,18 12,23 7,18 7,6" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="12,5 15,8 15,16 12,19 9,16 9,8" fill="currentColor"/></svg>
           </span>
+          <span class="hud-stat-label">OURO</span>
           <span class="hud-num" id="gold-val">0</span>
         </div>
       </div>
 
       <!-- Cluster de Tempo & Selo de Pausa -->
       <div class="hud-top-cluster-right">
-        <div class="hud-badge boss-timer-badge" title="Próximo Chefe" style="color: #ff3838; margin-right: 8px;">
-          <span class="hud-icon">
-            <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color:#ff3838;"><path class="skull-horns" fill="currentColor" d="M3 4c1 4 4 6 6 6-1-3-1-5-6-6zm18 0c-1 4-4 6-6 6 1-3 1-5 6-6z"/><path class="skull-head" fill="#f1f2f6" d="M12 3c-4.4 0-8 3.6-8 8 0 2.8 1.4 5.3 3.6 6.8V21h8.8v-3.2c2.2-1.5 3.6-4 3.6-6.8 0-4.4-3.6-8-8-8z"/><circle class="skull-eye left" cx="9.2" cy="11.5" r="1.6" fill="#ff1744"/><circle class="skull-eye right" cx="14.8" cy="11.5" r="1.6" fill="#ff1744"/><polygon points="12,13.5 11,15.5 13,15.5" fill="#1e272e"/><rect x="9.5" y="18" width="1.6" height="3" fill="#1e272e"/><rect x="11.2" y="18" width="1.6" height="3" fill="#1e272e"/><rect x="12.9" y="18" width="1.6" height="3" fill="#1e272e"/></svg>
-          </span>
-          <span id="boss-timer-val" class="hud-timer">--:--</span>
-        </div>
-
         <div class="hud-badge timer-badge" title="Tempo de Sobrevivência">
           <span class="hud-icon">
             <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color:#ffeaa7;"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 15 14" fill="none" stroke="currentColor" stroke-width="2"/></svg>
@@ -134,6 +130,7 @@
             <span class="pip"></span><span class="pip"></span><span class="pip"></span>
             <span class="pip"></span><span class="pip"></span><span class="pip"></span>
           </div>
+          <span class="hud-bar-label">VIDA</span>
           <div class="bar-readout hp-readout">
             <span id="hp-val">120</span> / <span id="hp-max-val">120</span>
             <span id="hp-pct-val" class="vial-pct" style="display:none;">100%</span>
@@ -164,20 +161,108 @@
             <span class="pip"></span><span class="pip"></span><span class="pip"></span>
             <span class="pip"></span><span class="pip"></span><span class="pip"></span>
           </div>
-          <div class="xp-level-badge" title="Nível Atual">
-            <span class="xp-lvl-prefix">NV</span>
-            <b id="lvl-val" class="xp-lvl-num">1</b>
-          </div>
+          <span class="hud-bar-label">EXPERIÊNCIA</span>
           <div class="bar-readout xp-readout">
             <span id="xp-val">0</span> / <span id="xp-next-val">20</span>
             <span id="xp-pct-val" class="vial-pct xp-pct" style="display:none;">0%</span>
           </div>
         </div>
       </div>
+
+      <!-- HUD do Chefe (Ativado em Batalha de Boss) -->
+      <div id="boss-hud" class="boss-hud-monumental">
+        <!-- Efeito de aura atmosférica de fundo -->
+        <div class="boss-hud-backdrop"></div>
+
+        <!-- Header Superior com Brasão, Nome, Subtítulo e Leitura Numérica de Vida -->
+        <div class="boss-hud-header">
+          <div class="boss-name-group">
+            <!-- Medalhão de Crânio Coroado / Chifres Demoníacos -->
+            <div class="boss-crest-medallion" title="Arquichefe">
+              <svg class="boss-crest-spikes-svg" viewBox="0 0 44 44">
+                <polygon points="22.0,1.0 26.2,6.0 32.4,3.8 33.6,10.3 40.1,11.5 37.9,17.7 42.9,22.0 37.9,26.3 40.1,32.5 33.6,33.7 32.4,40.2 26.2,38.0 22.0,43.0 17.8,38.0 11.6,40.2 10.4,33.7 3.9,32.5 6.1,26.3 1.1,22.0 6.1,17.7 3.9,11.5 10.4,10.3 11.6,3.8 17.8,6.0" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="1.2"/>
+                <circle cx="22" cy="22" r="15.5" fill="#080a10" stroke="url(#gothic-bronze-rim)" stroke-width="1.8"/>
+                <circle cx="22" cy="22" r="12.5" fill="#140718"/>
+              </svg>
+              <span class="boss-skull-icon">
+                <svg class="boss-skull-svg" viewBox="0 0 24 24">
+                  <path class="skull-horns" fill="#c0392b" d="M3 4c1 4 4 6 6 6-1-3-1-5-6-6zm18 0c-1 4-4 6-6 6 1-3 1-5 6-6z"/>
+                  <path class="skull-head" fill="#f1f2f6" d="M12 3c-4.4 0-8 3.6-8 8 0 2.8 1.4 5.3 3.6 6.8V21h8.8v-3.2c2.2-1.5 3.6-4 3.6-6.8 0-4.4-3.6-8-8-8z"/>
+                  <circle class="skull-eye left" cx="9.2" cy="11.5" r="1.6" fill="#ff1744"/>
+                  <circle class="skull-eye right" cx="14.8" cy="11.5" r="1.6" fill="#ff1744"/>
+                  <polygon points="12,13.5 11,15.5 13,15.5" fill="#1e272e"/>
+                  <rect x="9.5" y="18" width="1.6" height="3" fill="#1e272e"/>
+                  <rect x="11.2" y="18" width="1.6" height="3" fill="#1e272e"/>
+                  <rect x="12.9" y="18" width="1.6" height="3" fill="#1e272e"/>
+                </svg>
+              </span>
+            </div>
+            <div class="boss-titles-cluster">
+              <span class="boss-title-tag">✦ ARQUICHEFE SUPREMO ✦</span>
+              <span id="boss-name">CHEFE</span>
+            </div>
+          </div>
+          <div class="boss-hp-readout-group">
+            <span id="boss-hp-raw" class="boss-hp-raw"></span>
+            <span id="boss-hp-val" class="boss-pct">100%</span>
+          </div>
+        </div>
+
+        <!-- Moldura Monumental da Barra de Vida com Asas/Suportes Metálicos -->
+        <div class="boss-bar-stage">
+          <div class="boss-bracket boss-bracket-left" aria-hidden="true">
+            <svg viewBox="0 0 16 32" class="bracket-svg">
+              <polygon points="16,0 4,6 0,16 4,26 16,32 12,24 8,16 12,8" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="0.8"/>
+              <polygon points="14,4 6,9 2,16 6,23 14,28" fill="#d49a1d" opacity="0.6"/>
+            </svg>
+          </div>
+
+          <div class="bar-bezel boss-bezel bar-bg">
+            <!-- Efeito de pulso de impacto (flash de dano) -->
+            <div class="boss-hit-flash-overlay"></div>
+
+            <!-- Barra Fantasma Incandescente (Rastro de Dano) -->
+            <div id="boss-hp-ghost-fill"></div>
+
+            <!-- Barra de Vida Ativa com Textura e Fogo -->
+            <div id="boss-hp-fill">
+              <div class="boss-fill-pattern"></div>
+              <div class="boss-shimmer-wave"></div>
+              <div class="fill-spark boss-spark"></div>
+            </div>
+
+            <!-- Brilho de Vidro Especular 3D -->
+            <div class="bar-glass-gloss boss-gloss"></div>
+
+            <!-- Camada de Gemas de Fase (Pips Rúnicos) -->
+            <div class="bar-pips-layer boss-pips">
+              <div class="boss-pip-notch" data-phase-pct="25"><div class="boss-pip-gem"></div></div>
+              <div class="boss-pip-notch" data-phase-pct="50"><div class="boss-pip-gem"></div></div>
+              <div class="boss-pip-notch" data-phase-pct="75"><div class="boss-pip-gem"></div></div>
+            </div>
+          </div>
+
+          <div class="boss-bracket boss-bracket-right" aria-hidden="true">
+            <svg viewBox="0 0 16 32" class="bracket-svg flipped">
+              <polygon points="16,0 4,6 0,16 4,26 16,32 12,24 8,16 12,8" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="0.8"/>
+              <polygon points="14,4 6,9 2,16 6,23 14,28" fill="#d49a1d" opacity="0.6"/>
+            </svg>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- 3. Card do Nome da Horda / Onda (No mobile: substitui o cartouche do herói abaixo das barras com largura estendida; no PC: centralizado no topo) -->
+  <!-- Contexto da arena, separado dos vitais e controles. -->
+  <div class="hud-context-row">
+    <div class="hud-badge boss-timer-badge" title="Tempo até o próximo chefe">
+          <span class="hud-icon">
+            <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color:#ff3838;"><path class="skull-horns" fill="currentColor" d="M3 4c1 4 4 6 6 6-1-3-1-5-6-6zm18 0c-1 4-4 6-6 6 1-3 1-5 6-6z"/><path class="skull-head" fill="#f1f2f6" d="M12 3c-4.4 0-8 3.6-8 8 0 2.8 1.4 5.3 3.6 6.8V21h8.8v-3.2c2.2-1.5 3.6-4 3.6-6.8 0-4.4-3.6-8-8-8z"/><circle class="skull-eye left" cx="9.2" cy="11.5" r="1.6" fill="#ff1744"/><circle class="skull-eye right" cx="14.8" cy="11.5" r="1.6" fill="#ff1744"/><polygon points="12,13.5 11,15.5 13,15.5" fill="#1e272e"/><rect x="9.5" y="18" width="1.6" height="3" fill="#1e272e"/><rect x="11.2" y="18" width="1.6" height="3" fill="#1e272e"/><rect x="12.9" y="18" width="1.6" height="3" fill="#1e272e"/></svg>
+          </span>
+          <span class="hud-stat-label">CHEFE</span>
+          <span id="boss-timer-val" class="hud-timer">--:--</span>
+        </div>
+    <!-- 3. Card do Nome da Horda / Onda (No mobile: substitui o cartouche do herói abaixo das barras com largura estendida; no PC: centralizado no topo) -->
   <div id="hud-wave-card" class="hud-wave-card hud-wave-pill" title="Horda em andamento">
     <span class="wave-icon">
       <!-- Espadas cruzadas da referência de arte -->
@@ -185,87 +270,6 @@
     </span>
     <span id="wave-banner">ONDA 1: RECONHECIMENTO</span>
   </div>
-
-  <!-- HUD do Chefe (Ativado em Batalha de Boss) -->
-  <div id="boss-hud" class="boss-hud-monumental">
-    <!-- Efeito de aura atmosférica de fundo -->
-    <div class="boss-hud-backdrop"></div>
-    
-    <!-- Header Superior com Brasão, Nome, Subtítulo e Leitura Numérica de Vida -->
-    <div class="boss-hud-header">
-      <div class="boss-name-group">
-        <!-- Medalhão de Crânio Coroado / Chifres Demoníacos -->
-        <div class="boss-crest-medallion" title="Arquichefe">
-          <svg class="boss-crest-spikes-svg" viewBox="0 0 44 44">
-            <polygon points="22.0,1.0 26.2,6.0 32.4,3.8 33.6,10.3 40.1,11.5 37.9,17.7 42.9,22.0 37.9,26.3 40.1,32.5 33.6,33.7 32.4,40.2 26.2,38.0 22.0,43.0 17.8,38.0 11.6,40.2 10.4,33.7 3.9,32.5 6.1,26.3 1.1,22.0 6.1,17.7 3.9,11.5 10.4,10.3 11.6,3.8 17.8,6.0" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="1.2"/>
-            <circle cx="22" cy="22" r="15.5" fill="#080a10" stroke="url(#gothic-bronze-rim)" stroke-width="1.8"/>
-            <circle cx="22" cy="22" r="12.5" fill="#140718"/>
-          </svg>
-          <span class="boss-skull-icon">
-            <svg class="boss-skull-svg" viewBox="0 0 24 24">
-              <path class="skull-horns" fill="#c0392b" d="M3 4c1 4 4 6 6 6-1-3-1-5-6-6zm18 0c-1 4-4 6-6 6 1-3 1-5 6-6z"/>
-              <path class="skull-head" fill="#f1f2f6" d="M12 3c-4.4 0-8 3.6-8 8 0 2.8 1.4 5.3 3.6 6.8V21h8.8v-3.2c2.2-1.5 3.6-4 3.6-6.8 0-4.4-3.6-8-8-8z"/>
-              <circle class="skull-eye left" cx="9.2" cy="11.5" r="1.6" fill="#ff1744"/>
-              <circle class="skull-eye right" cx="14.8" cy="11.5" r="1.6" fill="#ff1744"/>
-              <polygon points="12,13.5 11,15.5 13,15.5" fill="#1e272e"/>
-              <rect x="9.5" y="18" width="1.6" height="3" fill="#1e272e"/>
-              <rect x="11.2" y="18" width="1.6" height="3" fill="#1e272e"/>
-              <rect x="12.9" y="18" width="1.6" height="3" fill="#1e272e"/>
-            </svg>
-          </span>
-        </div>
-        <div class="boss-titles-cluster">
-          <span class="boss-title-tag">✦ ARQUICHEFE SUPREMO ✦</span>
-          <span id="boss-name">CHEFE</span>
-        </div>
-      </div>
-      <div class="boss-hp-readout-group">
-        <span id="boss-hp-raw" class="boss-hp-raw"></span>
-        <span id="boss-hp-val" class="boss-pct">100%</span>
-      </div>
-    </div>
-
-    <!-- Moldura Monumental da Barra de Vida com Asas/Suportes Metálicos -->
-    <div class="boss-bar-stage">
-      <div class="boss-bracket boss-bracket-left" aria-hidden="true">
-        <svg viewBox="0 0 16 32" class="bracket-svg">
-          <polygon points="16,0 4,6 0,16 4,26 16,32 12,24 8,16 12,8" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="0.8"/>
-          <polygon points="14,4 6,9 2,16 6,23 14,28" fill="#d49a1d" opacity="0.6"/>
-        </svg>
-      </div>
-
-      <div class="bar-bezel boss-bezel bar-bg">
-        <!-- Efeito de pulso de impacto (flash de dano) -->
-        <div class="boss-hit-flash-overlay"></div>
-        
-        <!-- Barra Fantasma Incandescente (Rastro de Dano) -->
-        <div id="boss-hp-ghost-fill"></div>
-        
-        <!-- Barra de Vida Ativa com Textura e Fogo -->
-        <div id="boss-hp-fill">
-          <div class="boss-fill-pattern"></div>
-          <div class="boss-shimmer-wave"></div>
-          <div class="fill-spark boss-spark"></div>
-        </div>
-
-        <!-- Brilho de Vidro Especular 3D -->
-        <div class="bar-glass-gloss boss-gloss"></div>
-
-        <!-- Camada de Gemas de Fase (Pips Rúnicos) -->
-        <div class="bar-pips-layer boss-pips">
-          <div class="boss-pip-notch" data-phase-pct="25"><div class="boss-pip-gem"></div></div>
-          <div class="boss-pip-notch" data-phase-pct="50"><div class="boss-pip-gem"></div></div>
-          <div class="boss-pip-notch" data-phase-pct="75"><div class="boss-pip-gem"></div></div>
-        </div>
-      </div>
-
-      <div class="boss-bracket boss-bracket-right" aria-hidden="true">
-        <svg viewBox="0 0 16 32" class="bracket-svg flipped">
-          <polygon points="16,0 4,6 0,16 4,26 16,32 12,24 8,16 12,8" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="0.8"/>
-          <polygon points="14,4 6,9 2,16 6,23 14,28" fill="#d49a1d" opacity="0.6"/>
-        </svg>
-      </div>
-    </div>
   </div>
   <!-- Banner de Citação Cinemática dos Chefes (Boss Barks) -->
   <div id="boss-bark-container" class="boss-bark-container" style="display: none;">

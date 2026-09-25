@@ -5,7 +5,7 @@
  * - Bíblias Protetoras (Orbitais, Bloqueio de Tiros e Colisão Suave com Knockback Amortecido)
  * - Miasma Cáustico da Alquimista (Dissolução de Projéteis, Super-Slow 70%, Acid Shred e Vapor Estimulante)
  */
-import { getNeighborIndices } from '../core/spatialGrid.js';
+import { getNeighborIndices, forEachNeighborIndex } from '../core/spatialGrid.js';
 import { playSfx } from '../core/audio.js';
 import { addDamageText, createHitParticles, applyFreeze } from './combat.js';
 import { getBossPhaseDefeatDamage } from './devtools.js';
@@ -38,13 +38,11 @@ export function updateFieldEffects(dt, {
         addDamageText(player.x, player.y, "+2", false, '#2ecc71');
       }
 
-      const auraNeighbors = getNeighborIndices(player.x, player.y, auraRadius);
-      const aLen = auraNeighbors.length;
-      for (let k = 0; k < aLen; k++) {
-        const e = enemies[auraNeighbors[k]];
-        if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
-        if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
-        if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
+      forEachNeighborIndex(player.x, player.y, auraRadius, idx => {
+        const e = enemies[idx];
+        if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) return;
+        if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) return;
+        if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) return;
 
         const dx = e.x - player.x;
         const dy = e.y - player.y;
@@ -90,7 +88,7 @@ export function updateFieldEffects(dt, {
             addDamageText(e.x, e.y, "EM FÚRIA!", true, '#e74c3c');
           }
         }
-      }
+      });
     }
   }
 
@@ -105,14 +103,11 @@ export function updateFieldEffects(dt, {
       const ox = player.x + Math.cos(angle) * orbDist;
       const oy = player.y + Math.sin(angle) * orbDist;
 
-      const orbNeighbors = getNeighborIndices(ox, oy, bookRadius + 45);
-      const oLen = orbNeighbors.length;
-
-      for (let k = 0; k < oLen; k++) {
-        const e = enemies[orbNeighbors[k]];
-        if (!e || e.hp <= 0 || e.orbitalHitCd > 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
-        if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
-        if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
+      forEachNeighborIndex(ox, oy, bookRadius + 45, idx => {
+        const e = enemies[idx];
+        if (!e || e.hp <= 0 || e.orbitalHitCd > 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) return;
+        if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) return;
+        if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) return;
         const dx = e.x - ox;
         const dy = e.y - oy;
         const rSum = e.radius + bookRadius;
@@ -172,33 +167,33 @@ export function updateFieldEffects(dt, {
             addDamageText(e.x, e.y, "EM FÚRIA!", true, '#e74c3c');
           }
         }
-      }
+      });
     }
   }
 
   // 3. Mecânicas do Miasma da Valéria: Dissolução de Tiros, Super Slow (70%), Acid Shred e Vapor Móvel
+  let bulletsDissolved = false;
   for (let pIdx = 0; pIdx < acidPuddles.length; pIdx++) {
     const p = acidPuddles[pIdx];
     if (!p.isAlchemist) continue;
 
-    // Dissolução de projéteis inimigos comuns que entrarem no vapor
-    for (let bIdx = enemyBullets.length - 1; bIdx >= 0; bIdx--) {
+    // Dissolução de projéteis inimigos comuns que entrarem no vapor (Zero Splice)
+    for (let bIdx = 0; bIdx < enemyBullets.length; bIdx++) {
       const eb = enemyBullets[bIdx];
-      if (eb.isBossProjectile) continue;
+      if (eb._dissolved || eb.isBossProjectile) continue;
       const edx = eb.x - p.x;
       const edy = eb.y - p.y;
       if (edx * edx + edy * edy < (p.radius + (eb.radius || 5)) ** 2) {
         createHitParticles(eb.x, eb.y, p.isEvolved ? '#81ecec' : '#a55eea', 4);
-        enemyBullets.splice(bIdx, 1);
+        eb._dissolved = true;
+        bulletsDissolved = true;
       }
     }
 
-    // Super slow de 70%, quebra de dashes e stacks de corrosão em inimigos (Via Spatial Grid)
-    const puddleNeighbors = getNeighborIndices(p.x, p.y, p.radius + 35);
-    const pnLen = puddleNeighbors.length;
-    for (let k = 0; k < pnLen; k++) {
-      const e = enemies[puddleNeighbors[k]];
-      if (!e || e.hp <= 0 || e.isTargetable === false) continue;
+    // Super slow de 70%, quebra de dashes e stacks de corrosão em inimigos (Acesso Direto à Spatial Grid)
+    forEachNeighborIndex(p.x, p.y, p.radius + 35, idx => {
+      const e = enemies[idx];
+      if (!e || e.hp <= 0 || e.isTargetable === false) return;
       const edx = e.x - p.x;
       const edy = e.y - p.y;
       if (edx * edx + edy * edy < (p.radius + e.radius) ** 2) {
@@ -216,7 +211,7 @@ export function updateFieldEffects(dt, {
         e.acidBurnTimer = Math.max(e.acidBurnTimer || 0, 160);
         if (p.isEvolved) e.acidBurnEvolved = true;
       }
-    }
+    });
 
     // Concessão e renovação do buff portátil de Vapor Estimulante ao cruzar o miasma
     const pdx = player.x - p.x;
@@ -224,5 +219,17 @@ export function updateFieldEffects(dt, {
     if (pdx * pdx + pdy * pdy < (p.radius + player.radius) ** 2) {
       player.alchemistBuffTimer = 180;
     }
+  }
+
+  // Compactação estável de projéteis inimigos caso algum tenha sido dissolvido
+  if (bulletsDissolved) {
+    let writeIdx = 0;
+    for (let i = 0; i < enemyBullets.length; i++) {
+      const eb = enemyBullets[i];
+      if (!eb._dissolved) {
+        enemyBullets[writeIdx++] = eb;
+      }
+    }
+    enemyBullets.length = writeIdx;
   }
 }

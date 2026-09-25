@@ -574,8 +574,11 @@ export function getRandomUpgrades(count, options = true) {
   const allowDestiny = typeof options === 'boolean'
     ? options
     : (options?.allowDestiny !== undefined ? Boolean(options.allowDestiny) : true);
+  const excludeIds = (typeof options === 'object' && options !== null && Array.isArray(options.excludeIds))
+    ? options.excludeIds
+    : [];
 
-  const availableRegular = upgradesPool.filter(opt => opt.isAvailable());
+  const availableRegular = upgradesPool.filter(opt => opt.isAvailable() && !excludeIds.includes(opt.id));
 
   for (let i = availableRegular.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -620,8 +623,9 @@ export function getRandomUpgrades(count, options = true) {
  * @param {number} count Quantidade de upgrades a sortear.
  * @returns {Array} Lista de upgrades elegíveis para baús.
  */
-export function getRandomChestUpgrades(count) {
-  return getRandomUpgrades(count, { allowDestiny: false });
+export function getRandomChestUpgrades(count, options = {}) {
+  const opts = typeof options === 'object' && options !== null ? options : {};
+  return getRandomUpgrades(count, { allowDestiny: false, ...opts });
 }
 
 export function checkSynergies() {

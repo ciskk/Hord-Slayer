@@ -93,3 +93,55 @@ export function getNeighborCells(x, y, radius) {
   }
   return neighborCellsBuffer;
 }
+
+/**
+ * Itera diretamente pelos índices de vizinhos sem achatar ou copiar para arrays intermediários.
+ * Mantém exatamente a mesma ordem de travessia das células e dos índices.
+ * @param {number} x - Coordenada X central
+ * @param {number} y - Coordenada Y central
+ * @param {number} radius - Raio de busca
+ * @param {Function} callback - Função invocada com o índice (index). Se retornar false, interrompe a busca.
+ */
+export function forEachNeighborIndex(x, y, radius, callback) {
+  const minCx = Math.floor((x - radius) / SPATIAL_CELL_SIZE);
+  const maxCx = Math.floor((x + radius) / SPATIAL_CELL_SIZE);
+  const minCy = Math.floor((y - radius) / SPATIAL_CELL_SIZE);
+  const maxCy = Math.floor((y + radius) / SPATIAL_CELL_SIZE);
+
+  for (let cx = minCx; cx <= maxCx; cx++) {
+    const colOffset = (cx + 16384) * 32768;
+    for (let cy = minCy; cy <= maxCy; cy++) {
+      const list = spatialGrid.get(colOffset + (cy + 16384));
+      if (list) {
+        const len = list.length;
+        for (let i = 0; i < len; i++) {
+          if (callback(list[i]) === false) return;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Itera diretamente sobre as listas de células vizinhas sem cópias.
+ * @param {number} x - Coordenada X central
+ * @param {number} y - Coordenada Y central
+ * @param {number} radius - Raio de busca
+ * @param {Function} callback - Invocada com a lista da célula. Se retornar false, interrompe.
+ */
+export function forEachNeighborCell(x, y, radius, callback) {
+  const minCx = Math.floor((x - radius) / SPATIAL_CELL_SIZE);
+  const maxCx = Math.floor((x + radius) / SPATIAL_CELL_SIZE);
+  const minCy = Math.floor((y - radius) / SPATIAL_CELL_SIZE);
+  const maxCy = Math.floor((y + radius) / SPATIAL_CELL_SIZE);
+
+  for (let cx = minCx; cx <= maxCx; cx++) {
+    const colOffset = (cx + 16384) * 32768;
+    for (let cy = minCy; cy <= maxCy; cy++) {
+      const list = spatialGrid.get(colOffset + (cy + 16384));
+      if (list && list.length > 0) {
+        if (callback(list) === false) return;
+      }
+    }
+  }
+}

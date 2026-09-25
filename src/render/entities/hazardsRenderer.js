@@ -234,9 +234,27 @@ export function renderAcidPuddles(ctx, acidPuddles, bounds, frameCount) {
   ctx.globalAlpha = 1.0;
 }
 
-export function renderBossTelegraphs(ctx, bossTelegraphs, frameCount) {
+export function renderBossTelegraphs(ctx, bossTelegraphs, frameCount, bounds = null) {
   for (let i = 0; i < bossTelegraphs.length; i++) {
     const t = bossTelegraphs[i];
+
+    if (bounds) {
+      const extent = (t.type === 'DIMENSIONAL_CLEAVE') ? ((t.length || 1300) * 0.5 + 50)
+        : (t.type === 'MIST_DASH_LANE') ? ((t.length || 320) + 50)
+        : (t.type === 'FALLING_ROCK') ? ((t.radius || 60) * 2.5 + 30)
+        : (t.type === 'FISSURE_NODE') ? (Math.max(t.radius || 40, (t.originX !== undefined ? Math.hypot(t.originX - t.x, t.originY - t.y) : 0)) + 30)
+        : ((t.radius || 80) + 40);
+
+      if (
+        t.x + extent < bounds.viewLeft ||
+        t.x - extent > bounds.viewRight ||
+        t.y + extent < bounds.viewTop ||
+        t.y - extent > bounds.viewBottom
+      ) {
+        continue;
+      }
+    }
+
     const maxT = (t.maxTimer && t.maxTimer > 0) ? t.maxTimer : (t.timer || 1);
     const rawProgress = 1 - (t.timer / maxT);
     const progress = isNaN(rawProgress) ? 1 : Math.max(0, Math.min(1, rawProgress));
@@ -627,9 +645,22 @@ export function renderBossTelegraphs(ctx, bossTelegraphs, frameCount) {
   }
 }
 
-export function renderBossShockwaves(ctx, bossShockwaves, activeBoss, frameCount) {
+export function renderBossShockwaves(ctx, bossShockwaves, activeBoss, frameCount, bounds = null) {
   for (let i = 0; i < bossShockwaves.length; i++) {
     const sw = bossShockwaves[i];
+
+    if (bounds) {
+      const maxR = (sw.radius || 0) + 30;
+      if (
+        sw.x + maxR < bounds.viewLeft ||
+        sw.x - maxR > bounds.viewRight ||
+        sw.y + maxR < bounds.viewTop ||
+        sw.y - maxR > bounds.viewBottom
+      ) {
+        continue;
+      }
+    }
+
     const alpha = Math.max(0, 1 - sw.radius / sw.maxRadius);
     if (alpha <= 0.01) continue;
 
@@ -761,9 +792,22 @@ export function renderBossShockwaves(ctx, bossShockwaves, activeBoss, frameCount
   }
 }
 
-export function renderBossProjectiles(ctx, bossProjectiles, frameCount) {
+export function renderBossProjectiles(ctx, bossProjectiles, frameCount, bounds = null) {
   for (let i = 0; i < bossProjectiles.length; i++) {
     const bp = bossProjectiles[i];
+
+    if (bounds) {
+      const extent = (bp.radius || 20) * 2.5 + 30;
+      if (
+        bp.x + extent < bounds.viewLeft ||
+        bp.x - extent > bounds.viewRight ||
+        bp.y + extent < bounds.viewTop ||
+        bp.y - extent > bounds.viewBottom
+      ) {
+        continue;
+      }
+    }
+
     ctx.save();
     ctx.translate(bp.x, bp.y);
     ctx.rotate(bp.angle);

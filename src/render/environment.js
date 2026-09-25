@@ -3,7 +3,7 @@ import {
   bloodSplats, frameCount
 } from '../main.js';
 import { NATURAL_ARENAS, ARENA_ALIASES, resolveArenaTheme } from '../config/arenas.js';
-import { renderNaturalTerrain, clearNaturalTerrainCache, terrainHash } from './environment/naturalTerrain.js';
+import { renderNaturalTerrain, clearNaturalTerrainCache, prefetchArenaTheme, terrainHash } from './environment/naturalTerrain.js';
 import { renderSurrealAbyssArena, getAbyssArenaState } from './environment/abyssArena.js';
 
 export { renderSurrealAbyssArena, getAbyssArenaState };
@@ -46,6 +46,7 @@ export function transitionToArenaTheme(newTheme, duration = 150) {
   transitionProgress = 0;
   transitionDuration = Math.max(30, duration);
   lastEnvironmentFrame = frameCount;
+  prefetchArenaTheme(newTheme, camera, cameraViewW, cameraViewH);
 }
 
 export function resetEnvironment() {

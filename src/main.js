@@ -1,4 +1,5 @@
 import { updateBossPhaseCinematic } from './systems/bossPhaseCinematic.js';
+import { perfMetrics } from './core/perfMetrics.js';
 /**
  * src/main.js
  * Loop Principal, Pipeline de Física/Combate e Sincronização Grim Cyber-Gothic.
@@ -320,26 +321,8 @@ export function resize() {
   // Invalida e sincroniza o atlas de monstros com a nova resolução/DPR
   clearSpriteCache();
 
-  // Layout responsivo do boss timer
-  const bossTimerBadge = document.querySelector('.boss-timer-badge');
-  if (bossTimerBadge) {
-    if (window.innerWidth <= 768) {
-      const leftGroup = document.querySelector('.hud-meta-group.left');
-      if (leftGroup && bossTimerBadge.parentNode !== leftGroup) {
-        leftGroup.appendChild(bossTimerBadge);
-        bossTimerBadge.style.marginRight = '0';
-        bossTimerBadge.style.marginLeft = '8px';
-      }
-    } else {
-      const rightGroup = document.querySelector('.hud-top-cluster-right');
-      const timerBadge = document.querySelector('.timer-badge');
-      if (rightGroup && bossTimerBadge.parentNode !== rightGroup) {
-        rightGroup.insertBefore(bossTimerBadge, timerBadge);
-        bossTimerBadge.style.marginRight = '8px';
-        bossTimerBadge.style.marginLeft = '0';
-      }
-    }
-  }
+  // O layout do HUD é resolvido em CSS, sem reparentear elementos ao girar a tela.
+
 }
 
 initResponsive(() => {
@@ -1506,6 +1489,7 @@ function update(dt) {
   }
 
   // 2. Reconstrução Única da Spatial Grid por quadro (alimenta armas, auras e física)
+  perfMetrics.beginMeasure('weapons');
   if (!matchIntro.active) {
     player.weapons.forEach(w => { w.timer += dt; });
     rebuildSpatialGrid(enemies);
@@ -1516,8 +1500,10 @@ function update(dt) {
     player.weapons.forEach(w => { w.timer = Math.max(w.timer, (w.cooldown || 60) * 0.9); });
     rebuildSpatialGrid(enemies);
   }
+  perfMetrics.endMeasure('weapons');
 
   // 3. Efeitos de Campo (Aura Sagrada, Bíblias Orbitais e Miasma)
+  perfMetrics.beginMeasure('fieldEffects');
   updateFieldEffects(dt, {
     player,
     enemies,
@@ -1527,12 +1513,19 @@ function update(dt) {
     selectedHeroKey,
     triggerShake
   });
+  perfMetrics.endMeasure('fieldEffects');
 
+  perfMetrics.beginMeasure('physics');
   resolveWorldPhysics(player, enemies, dt);
+  perfMetrics.endMeasure('physics');
+
+  perfMetrics.beginMeasure('projectiles');
   updateProjectiles(dt);
   updateAcidPuddles(dt);
+  perfMetrics.endMeasure('projectiles');
 
   // 3. Perigos de Arena e Chefes
+  perfMetrics.beginMeasure('hazards');
   const bossResult = updateBossHazards(dt, {
     player,
     bossShockwaves,
@@ -1544,9 +1537,11 @@ function update(dt) {
     triggerShake,
     setLastAttackerName
   });
+  perfMetrics.endMeasure('hazards');
   if (bossResult && bossResult.playerDied) return;
 
   // 4. Ciclo de Vida e IA dos Monstros
+  perfMetrics.beginMeasure('enemies');
   const enemyResult = updateEnemies(dt, {
     player,
     enemies,
@@ -1570,9 +1565,11 @@ function update(dt) {
     resetBossGhostHp,
     setIsWavePaused
   });
+  perfMetrics.endMeasure('enemies');
   if (enemyResult && enemyResult.playerDied) return;
 
   // 5. Coletáveis, Baús e Drops
+  perfMetrics.beginMeasure('pickups');
   const pickupsResult = updatePickups(dt, {
     player,
     enemies,
@@ -1590,6 +1587,7 @@ function update(dt) {
     resetSpawnTimer,
     setLastAttackerName
   });
+  perfMetrics.endMeasure('pickups');
   if (pickupsResult && pickupsResult.playerDied) return;
 
   // 6. Subsistema Modular de Eventos Dinâmicos (Altar de Sangue)
@@ -1607,6 +1605,7 @@ function update(dt) {
   updateCombatVisuals(dt);
 
   // 6. Atualização do HUD e Decaimento Fantasma
+  perfMetrics.beginMeasure('hud');
   updateHUD(dt, {
     gameState,
     activeBoss,
@@ -1614,10 +1613,12 @@ function update(dt) {
     seconds,
     currentWave
   });
+  perfMetrics.endMeasure('hud');
 }
 
 function loop(now) {
   if (!now) now = performance.now();
+  perfMetrics.beginFrame(now);
   const rawDt = (now - lastTime) / (1000 / 60);
   setLastTime(now);
   const speed = (typeof devCheats !== 'undefined' && devCheats.gameSpeed) ? devCheats.gameSpeed : 1.0;
@@ -1637,6 +1638,7 @@ function loop(now) {
       }
       if (!gameState.isPaused && !gameState.isWon) {
         if (deathSequence && deathSequence.active) {
+          perfMetrics.beginMeasure('update');
           updateDeathSequence(dt);
           const deathSeconds = Math.floor(frameCount / 60);
           updateHUD(dt, {
@@ -1646,9 +1648,13 @@ function loop(now) {
             seconds: deathSeconds,
             currentWave: getCurrentWave(getEffectiveHordeSeconds(deathSeconds))
           });
+          perfMetrics.endMeasure('update');
         } else if (!gameState.isDead) {
+          perfMetrics.beginMeasure('update');
           update(dt);
+          perfMetrics.endMeasure('update');
         } else if (gameState.isDead && isGhostHpDraining()) {
+          perfMetrics.beginMeasure('update');
           const deathSeconds = Math.floor(frameCount / 60);
           updateHUD(dt, {
             gameState,
@@ -1657,12 +1663,17 @@ function loop(now) {
             seconds: deathSeconds,
             currentWave: getCurrentWave(getEffectiveHordeSeconds(deathSeconds))
           });
+          perfMetrics.endMeasure('update');
         }
       }
+      perfMetrics.beginMeasure('render');
       render();
+      perfMetrics.endMeasure('render');
     }
   } catch (err) {
     console.error('Erro crítico no loop de jogo:', err);
+  } finally {
+    perfMetrics.endFrame(performance.now());
   }
   requestAnimationFrame(loop);
 }

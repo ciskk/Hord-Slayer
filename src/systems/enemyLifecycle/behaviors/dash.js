@@ -1,14 +1,16 @@
 import { STALKER_DASH } from '../../../config/stalkerDash.js';
 
 /** Bote do verme: preparação visível, trajetória comprometida e recuperação parada. */
-export function dashBehavior(e, dt, angle, curSpeed) {
+export function dashBehavior(e, dt, angle, curSpeed, ctx) {
   if (!(dt > 0)) return;
   const previousTimer = e.dashTimer || 0;
   e.dashTimer = previousTimer + dt;
   if (e.dashState === 'chase') {
     e.x += Math.cos(angle) * curSpeed * STALKER_DASH.chaseSpeedMultiplier * dt;
     e.y += Math.sin(angle) * curSpeed * STALKER_DASH.chaseSpeedMultiplier * dt;
-    if (e.dashTimer >= STALKER_DASH.chase) {
+    const player = ctx?.player;
+    const distSq = player ? ((player.x - e.x) ** 2 + (player.y - e.y) ** 2) : 0;
+    if (e.dashTimer >= STALKER_DASH.chase && (!player || distSq <= 120 * 120)) {
       e.dashState = 'aim';
       e.dashTimer = 0;
       // Lock before the dust warning: no teleport or retarget during the lunge.

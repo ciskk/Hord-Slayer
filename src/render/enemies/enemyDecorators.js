@@ -679,24 +679,25 @@ export function drawEnemyAttackTelegraph(e) {
     const maxFrames = (e.attackWindupFrames && e.attackWindupFrames > 0) ? e.attackWindupFrames : 20;
     const curTimer = Math.max(0, e.attackTimer !== undefined ? e.attackTimer : 0);
     progress = Math.min(1, Math.max(0, 1 - (curTimer / maxFrames)));
-    attackAngle = e.attackAngle !== undefined ? e.attackAngle : (player ? Math.atan2(player.y - e.y, player.x - e.x) : (e.facing === -1 ? Math.PI : 0));
-    attackRange = (player && player.radius ? player.radius : 12) + e.radius + (e.attackRange || 24);
+    const reach = e.attackRange !== undefined ? e.attackRange : 7;
+    attackRange = (player && player.radius ? player.radius : 14) + e.radius + reach;
   } else if (e.combatState === 'STRIKE') {
     isAttacking = true;
     isStrike = true;
     progress = 1.0;
     attackAngle = e.attackAngle !== undefined ? e.attackAngle : (player ? Math.atan2(player.y - e.y, player.x - e.x) : (e.facing === -1 ? Math.PI : 0));
-    attackRange = (player && player.radius ? player.radius : 12) + e.radius + (e.attackRange || 24);
+    const reach = e.attackRange !== undefined ? e.attackRange : 7;
+    attackRange = (player && player.radius ? player.radius : 14) + e.radius + reach;
   } else if (e.lanceState === 'aim') {
     isAttacking = true;
     progress = Math.min(1, Math.max(0, 1 - ((e.lanceTimer || 0) / 20)));
     attackAngle = e.lanceAngle !== undefined ? e.lanceAngle : (player ? Math.atan2(player.y - e.y, player.x - e.x) : 0);
-    attackRange = 135;
+    attackRange = 85;
   } else if (e.flameState === 'aim') {
     isAttacking = true;
     progress = Math.min(1, Math.max(0, 1 - ((e.flameTimer || 0) / 23)));
     attackAngle = e.flameAngle !== undefined ? e.flameAngle : (player ? Math.atan2(player.y - e.y, player.x - e.x) : 0);
-    attackRange = 115;
+    attackRange = 85;
   } else if (e.dashState === 'aim') {
     isAttacking = true;
     progress = Math.min(1, Math.max(0, (e.dashTimer || 0) / STALKER_DASH.windup));

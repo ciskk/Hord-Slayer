@@ -1,13 +1,16 @@
 /**
  * src/systems/progression.js
+ * 
  * Subsistema Unificado de Meta-Progressão, Estatísticas, Conquistas e Bestiário.
- * Centraliza toda a persistência (localStorage) e regras de progressão permanente.
+ * Centraliza a progressão permanente e utiliza In-Memory State Store com Flush Assíncrono
+ * (Fase 2) para eliminar 100% dos travamentos de I/O síncrono durante as partidas.
  */
 
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { META_TALENTS } from '../config/talents.js';
 import { ACHIEVEMENTS, HERO_UNLOCK_MAP } from '../config/achievements.js';
 import { BESTIARY_ENTRIES } from '../config/bestiary.js';
+import { perfMetrics } from '../core/perfMetrics.js';
 
 // Chaves de Persistência no LocalStorage
 const GOLD_KEY = 'hord_persistent_gold_v1';
@@ -19,51 +22,162 @@ export const HERO_RECORDS_STORAGE_KEY = 'hord_hero_records_v2';
 const BESTIARY_STORAGE_KEY = 'hord_bestiary_v1';
 
 // ============================================================================
+// STORE REATIVO EM MEMÓRIA & PERSISTÊNCIA ASSÍNCRONA EM LOTE (FASE 2)
+// ============================================================================
+
+const store = {
+  initialized: false,
+  gold: 0,
+  metaLevels: {},
+  lifetimeStats: null,
+  achievementIds: [],
+  bestRun: null,
+  heroRecords: {},
+  bestiary: {},
+  dirty: new Set()
+};
+
+let _flushTimer = null;
+
+function ensureStoreInitialized() {
+  if (store.initialized) return;
+  store.initialized = true;
+
+  perfMetrics.countPersistenceRead();
+  try {
+    store.gold = parseInt(localStorage.getItem(GOLD_KEY) || '0', 10);
+  } catch (e) { store.gold = 0; }
+
+  perfMetrics.countPersistenceRead();
+  try {
+    const rawMeta = localStorage.getItem(META_KEY);
+    const parsedMeta = rawMeta ? JSON.parse(rawMeta) : {};
+    META_TALENTS.forEach(t => {
+      store.metaLevels[t.id] = (typeof parsedMeta[t.id] === 'number') ? parsedMeta[t.id] : 0;
+    });
+  } catch (e) {
+    META_TALENTS.forEach(t => { store.metaLevels[t.id] = 0; });
+  }
+
+  perfMetrics.countPersistenceRead();
+  try {
+    const rawAch = localStorage.getItem(ACHIEVEMENTS_STORAGE_KEY);
+    store.achievementIds = rawAch ? (JSON.parse(rawAch) || []) : [];
+  } catch (e) { store.achievementIds = []; }
+
+  perfMetrics.countPersistenceRead();
+  try {
+    const rawStats = localStorage.getItem(STATS_STORAGE_KEY);
+    store.lifetimeStats = rawStats ? JSON.parse(rawStats) : null;
+  } catch (e) { store.lifetimeStats = null; }
+
+  perfMetrics.countPersistenceRead();
+  try {
+    const rawBestRun = localStorage.getItem(BEST_RUN_STORAGE_KEY);
+    store.bestRun = rawBestRun ? JSON.parse(rawBestRun) : null;
+  } catch (e) { store.bestRun = null; }
+
+  perfMetrics.countPersistenceRead();
+  try {
+    const rawRecords = localStorage.getItem(HERO_RECORDS_STORAGE_KEY) || localStorage.getItem('hord_hero_records_v1');
+    store.heroRecords = rawRecords ? (JSON.parse(rawRecords) || {}) : {};
+  } catch (e) { store.heroRecords = {}; }
+
+  perfMetrics.countPersistenceRead();
+  try {
+    const rawBestiary = localStorage.getItem(BESTIARY_STORAGE_KEY);
+    store.bestiary = rawBestiary ? (JSON.parse(rawBestiary) || {}) : {};
+  } catch (e) { store.bestiary = {}; }
+}
+
+/**
+ * Salva no localStorage em lote apenas as chaves alteradas.
+ * Zero impacto no frame-rate durante rajadas de abates e coleta.
+ */
+export function flushProgression() {
+  if (_flushTimer) {
+    clearTimeout(_flushTimer);
+    _flushTimer = null;
+  }
+  if (!store.initialized || store.dirty.size === 0) return;
+
+  perfMetrics.countPersistenceWrite();
+  try {
+    if (store.dirty.has(GOLD_KEY)) {
+      localStorage.setItem(GOLD_KEY, store.gold.toString());
+    }
+    if (store.dirty.has(META_KEY)) {
+      localStorage.setItem(META_KEY, JSON.stringify(store.metaLevels));
+    }
+    if (store.dirty.has(STATS_STORAGE_KEY) && store.lifetimeStats) {
+      localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(store.lifetimeStats));
+    }
+    if (store.dirty.has(ACHIEVEMENTS_STORAGE_KEY)) {
+      localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(store.achievementIds));
+    }
+    if (store.dirty.has(BEST_RUN_STORAGE_KEY) && store.bestRun) {
+      localStorage.setItem(BEST_RUN_STORAGE_KEY, JSON.stringify(store.bestRun));
+    }
+    if (store.dirty.has(HERO_RECORDS_STORAGE_KEY)) {
+      localStorage.setItem(HERO_RECORDS_STORAGE_KEY, JSON.stringify(store.heroRecords));
+    }
+    if (store.dirty.has(BESTIARY_STORAGE_KEY)) {
+      localStorage.setItem(BESTIARY_STORAGE_KEY, JSON.stringify(store.bestiary));
+    }
+    store.dirty.clear();
+  } catch (e) {
+    console.error('Erro ao salvar persistência em lote:', e);
+  }
+}
+
+function markDirty(key) {
+  store.dirty.add(key);
+  if (!_flushTimer) {
+    _flushTimer = setTimeout(() => {
+      _flushTimer = null;
+      flushProgression();
+    }, 1500); // Debounce de 1.5s (Zero I/O no meio do combate)
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', flushProgression);
+}
+
+// ============================================================================
 // 1. OURO E META-TALENTOS PERMANENTES
 // ============================================================================
 
 export function getPersistentGold() {
-  try {
-    return parseInt(localStorage.getItem(GOLD_KEY) || '0', 10);
-  } catch (e) {
-    return 0;
-  }
+  ensureStoreInitialized();
+  return store.gold;
 }
 
 export function addPersistentGold(amount) {
-  const current = getPersistentGold();
+  ensureStoreInitialized();
   let finalAmount = amount;
   // Bônus do multiplicador de ouro se player estiver ativo
   if (amount > 0 && typeof window !== 'undefined' && window.player && window.player.goldMultiplier) {
     finalAmount = Math.round(amount * window.player.goldMultiplier);
   }
-  const next = Math.max(0, current + finalAmount);
-  try {
-    localStorage.setItem(GOLD_KEY, next.toString());
-  } catch (e) {}
-  return next;
+  store.gold = Math.max(0, store.gold + finalAmount);
+  markDirty(GOLD_KEY);
+  return store.gold;
 }
 
 export function getMetaLevels() {
-  try {
-    const raw = localStorage.getItem(META_KEY);
-    const parsed = raw ? JSON.parse(raw) : {};
-    const result = {};
-    META_TALENTS.forEach(t => {
-      result[t.id] = (typeof parsed[t.id] === 'number') ? parsed[t.id] : 0;
-    });
-    return result;
-  } catch (e) {
-    const result = {};
-    META_TALENTS.forEach(t => { result[t.id] = 0; });
-    return result;
-  }
+  ensureStoreInitialized();
+  const result = {};
+  META_TALENTS.forEach(t => {
+    result[t.id] = (typeof store.metaLevels[t.id] === 'number') ? store.metaLevels[t.id] : 0;
+  });
+  return result;
 }
 
 export function saveMetaLevels(levels) {
-  try {
-    localStorage.setItem(META_KEY, JSON.stringify(levels));
-  } catch (e) {}
+  ensureStoreInitialized();
+  Object.assign(store.metaLevels, levels);
+  markDirty(META_KEY);
 }
 
 export function getMetaUpgradeCost(talentId, currentLevel) {
@@ -73,6 +187,7 @@ export function getMetaUpgradeCost(talentId, currentLevel) {
 }
 
 export function buyMetaUpgrade(talentId) {
+  ensureStoreInitialized();
   const levels = getMetaLevels();
   const talent = META_TALENTS.find(t => t.id === talentId);
   const currentLvl = levels[talentId] || 0;
@@ -92,6 +207,7 @@ export function buyMetaUpgrade(talentId) {
 }
 
 export function resetMetaTree() {
+  ensureStoreInitialized();
   const levels = getMetaLevels();
   let refund = 0;
   META_TALENTS.forEach(t => {
@@ -100,8 +216,9 @@ export function resetMetaTree() {
       refund += Math.floor(t.costBase * Math.pow(t.costScale, l));
     }
     levels[t.id] = 0;
+    store.metaLevels[t.id] = 0;
   });
-  saveMetaLevels(levels);
+  markDirty(META_KEY);
   addPersistentGold(refund);
   return refund;
 }
@@ -134,76 +251,43 @@ export function getMetaBonuses() {
 
 export const pendingAchievementNotifications = [];
 
-export function getLifetimeStats() {
-  const defaultStats = {
-    totalKills: 0,
-    highestWave: 1,
-    bossesDefeated: [],
-    totalEvolutions: 0,
-    runsPlayed: 0,
-    totalChestsOpened: 0,
-    maxSurvivalSeconds: 0,
-    highestLevel: 1,
-    highestScore: 0,
-    singleRunMaxKills: 0,
-    maxEvolvedWeaponsInRun: 0
-  };
+const DEFAULT_LIFETIME_STATS = {
+  totalKills: 0,
+  highestWave: 1,
+  bossesDefeated: [],
+  totalEvolutions: 0,
+  runsPlayed: 0,
+  totalChestsOpened: 0,
+  maxSurvivalSeconds: 0,
+  highestLevel: 1,
+  highestScore: 0,
+  singleRunMaxKills: 0,
+  maxEvolvedWeaponsInRun: 0
+};
 
-  try {
-    let raw = localStorage.getItem(STATS_STORAGE_KEY);
-    if (!raw) {
-      const v1 = localStorage.getItem('hord_stats_v1');
-      if (v1) {
-        try {
-          const parsedV1 = JSON.parse(v1);
-          return {
-            ...defaultStats,
-            totalKills: parsedV1.totalKills || 0,
-            highestWave: parsedV1.highestWave || 1,
-            bossesDefeated: Array.isArray(parsedV1.bossesDefeated) ? parsedV1.bossesDefeated : [],
-            totalEvolutions: parsedV1.totalEvolutions || 0,
-            runsPlayed: parsedV1.runsPlayed || 0
-          };
-        } catch (err) {}
-      }
-      return defaultStats;
-    }
-    const parsed = JSON.parse(raw);
-    return {
-      ...defaultStats,
-      ...parsed,
-      bossesDefeated: Array.isArray(parsed.bossesDefeated) ? parsed.bossesDefeated : []
-    };
-  } catch (e) {
-    return defaultStats;
+export function getLifetimeStats() {
+  ensureStoreInitialized();
+  if (!store.lifetimeStats) {
+    store.lifetimeStats = { ...DEFAULT_LIFETIME_STATS };
   }
+  return store.lifetimeStats;
 }
 
 export function saveLifetimeStats(stats) {
-  try {
-    localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(stats));
-  } catch (e) {
-    console.error('Erro ao salvar estatísticas:', e);
-  }
+  ensureStoreInitialized();
+  store.lifetimeStats = stats;
+  markDirty(STATS_STORAGE_KEY);
 }
 
 export function getUnlockedAchievementIds() {
-  try {
-    const raw = localStorage.getItem(ACHIEVEMENTS_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    return [];
-  }
+  ensureStoreInitialized();
+  return store.achievementIds;
 }
 
 export function saveUnlockedAchievementIds(ids) {
-  try {
-    localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(ids));
-  } catch (e) {
-    console.error('Erro ao salvar conquistas:', e);
-  }
+  ensureStoreInitialized();
+  store.achievementIds = ids;
+  markDirty(ACHIEVEMENTS_STORAGE_KEY);
 }
 
 export function isHeroUnlocked(heroKey) {
@@ -309,6 +393,8 @@ export function recordRunStats(delta = {}) {
 
   if (delta.runCompleted || delta.runFinished) {
     stats.runsPlayed = (stats.runsPlayed || 0) + 1;
+    // Força gravação imediata ao término da partida
+    flushProgression();
   }
 
   saveLifetimeStats(stats);
@@ -318,8 +404,6 @@ export function recordRunStats(delta = {}) {
 let isEvaluatingAchievements = false;
 
 export function evaluateAchievements(stats = getLifetimeStats()) {
-  // A conquista de todos os heróis consulta isHeroUnlocked, que também faz
-  // avaliação retroativa. A passagem externa já registra todas as recompensas.
   if (isEvaluatingAchievements) return [];
   isEvaluatingAchievements = true;
   try {
@@ -385,20 +469,12 @@ export function unlockAllAchievements() {
 
 export function resetAchievements() {
   saveUnlockedAchievementIds([]);
-  const freshStats = {
-    totalKills: 0,
-    highestWave: 1,
-    bossesDefeated: [],
-    totalEvolutions: 0,
-    runsPlayed: 0,
-    totalChestsOpened: 0,
-    maxSurvivalSeconds: 0,
-    highestLevel: 1,
-    highestScore: 0,
-    singleRunMaxKills: 0,
-    maxEvolvedWeaponsInRun: 0
-  };
+  const freshStats = { ...DEFAULT_LIFETIME_STATS };
   saveLifetimeStats(freshStats);
+  store.bestRun = null;
+  store.heroRecords = {};
+  markDirty(BEST_RUN_STORAGE_KEY);
+  markDirty(HERO_RECORDS_STORAGE_KEY);
   try {
     localStorage.removeItem(BEST_RUN_STORAGE_KEY);
     localStorage.removeItem(HERO_RECORDS_STORAGE_KEY);
@@ -424,20 +500,14 @@ export function calculateRunScore(runData = {}) {
 }
 
 export function getBestRun() {
-  try {
-    const raw = localStorage.getItem(BEST_RUN_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    return null;
-  }
+  ensureStoreInitialized();
+  return store.bestRun;
 }
 
 export function saveBestRun(runData) {
-  try {
-    localStorage.setItem(BEST_RUN_STORAGE_KEY, JSON.stringify(runData));
-  } catch (e) {
-    console.error('Erro ao salvar melhor campanha:', e);
-  }
+  ensureStoreInitialized();
+  store.bestRun = runData;
+  markDirty(BEST_RUN_STORAGE_KEY);
 }
 
 export function checkAndRecordBestRun(runData = {}) {
@@ -467,14 +537,8 @@ export function checkAndRecordBestRun(runData = {}) {
 }
 
 export function getAllHeroRecords() {
-  try {
-    const raw = localStorage.getItem(HERO_RECORDS_STORAGE_KEY) || localStorage.getItem('hord_hero_records_v1');
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return (parsed && typeof parsed === 'object') ? parsed : {};
-  } catch (e) {
-    return {};
-  }
+  ensureStoreInitialized();
+  return store.heroRecords;
 }
 
 export function getHeroRecord(heroKey) {
@@ -487,7 +551,6 @@ export function getHeroRecord(heroKey) {
   const kills = Number(raw.maxKills) || 0;
   const bestSeconds = Number(raw.bestSeconds) || Number(raw.maxSurvivalSeconds) || 0;
 
-  // Formatação consistente do tempo de sobrevivência (MM:SS)
   let timeStr = '00:00';
   if (bestSeconds > 0) {
     const m = Math.floor(bestSeconds / 60).toString().padStart(2, '0');
@@ -499,7 +562,6 @@ export function getHeroRecord(heroKey) {
 
   const unlocked = isHeroUnlocked(heroKey);
 
-  // Status de Honra Dinâmico calculado para este campeão específico
   let statusLabel = 'DESPERTO';
   let statusClass = 'status-awake';
 
@@ -566,46 +628,43 @@ export function recordHeroRunStats(heroKey, { seconds = 0, timeStr = '00:00', ki
     if (wave > (current.highestWave || 1)) current.highestWave = wave;
 
     all[heroKey] = current;
-    localStorage.setItem(HERO_RECORDS_STORAGE_KEY, JSON.stringify(all));
+    markDirty(HERO_RECORDS_STORAGE_KEY);
   } catch (e) {
     console.error('Erro ao gravar estatísticas individuais do herói:', e);
   }
 }
 
 // ============================================================================
-// 3. BESTIÁRIO E REGISTRO DE ABATES
+// 3. BESTIÁRIO E REGISTRO DE ABATES (ZERO I/O NO HOT PATH)
 // ============================================================================
 
 export function getBestiaryStats() {
-  try {
-    const raw = localStorage.getItem(BESTIARY_STORAGE_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw) || {};
-  } catch (e) {
-    return {};
-  }
+  ensureStoreInitialized();
+  return store.bestiary;
 }
 
 export function saveBestiaryStats(stats) {
-  try {
-    localStorage.setItem(BESTIARY_STORAGE_KEY, JSON.stringify(stats));
-  } catch (e) {
-    console.error('Erro ao salvar bestiário:', e);
-  }
+  ensureStoreInitialized();
+  store.bestiary = stats;
+  markDirty(BESTIARY_STORAGE_KEY);
 }
 
+/**
+ * Incrementa o abate de criatura no In-Memory Store.
+ * Elimina 100% de JSON.parse / JSON.stringify / localStorage a cada monstro morto!
+ */
 export function recordCreatureKill(creatureId) {
   if (!creatureId) return;
-  const stats = getBestiaryStats();
-  const prevCount = stats[creatureId] || 0;
-  stats[creatureId] = prevCount + 1;
-  saveBestiaryStats(stats);
-  return stats[creatureId];
+  ensureStoreInitialized();
+  const prevCount = store.bestiary[creatureId] || 0;
+  store.bestiary[creatureId] = prevCount + 1;
+  markDirty(BESTIARY_STORAGE_KEY);
+  return store.bestiary[creatureId];
 }
 
 export function getCreatureKills(creatureId) {
-  const stats = getBestiaryStats();
-  return stats[creatureId] || 0;
+  ensureStoreInitialized();
+  return store.bestiary[creatureId] || 0;
 }
 
 export function isCreatureDiscovered(creatureId) {
@@ -620,11 +679,11 @@ export function isLoreUnlocked(creature) {
 }
 
 export function unlockAllBestiary() {
-  const stats = {};
+  ensureStoreInitialized();
   BESTIARY_ENTRIES.forEach(entry => {
-    stats[entry.id] = 100;
+    store.bestiary[entry.id] = 100;
   });
-  saveBestiaryStats(stats);
+  markDirty(BESTIARY_STORAGE_KEY);
   try {
     playSfx('chest_rare');
     triggerHaptic('heavy');
@@ -633,7 +692,9 @@ export function unlockAllBestiary() {
 }
 
 export function resetBestiary() {
-  saveBestiaryStats({});
+  ensureStoreInitialized();
+  store.bestiary = {};
+  markDirty(BESTIARY_STORAGE_KEY);
   try {
     localStorage.removeItem(BESTIARY_STORAGE_KEY);
     playSfx('hit');

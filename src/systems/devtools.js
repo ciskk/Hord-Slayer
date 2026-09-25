@@ -37,6 +37,7 @@ import {
   warpToWaveTime 
 } from '../main.js';
 import { spawnBloodAltar } from './worldEvents.js';
+import { perfMetrics } from '../core/perfMetrics.js';
 
 export const devCheats = {
   godMode: false,
@@ -470,6 +471,9 @@ function renderTabsNav() {
     <button class="dev-tab-btn ${devCheats.activeTab === 'waves' ? 'active' : ''}" data-tab="waves">
       🌐 MUNDO & SAVES
     </button>
+    <button class="dev-tab-btn ${devCheats.activeTab === 'perf' ? 'active' : ''}" data-tab="perf">
+      📈 TELEMETRIA & BENCHMARK
+    </button>
   `;
 
   tabsContainer.querySelectorAll('.dev-tab-btn').forEach(btn => {
@@ -494,6 +498,8 @@ function renderActiveTab() {
     renderCheatsTab(content);
   } else if (devCheats.activeTab === 'waves') {
     renderWavesTab(content);
+  } else if (devCheats.activeTab === 'perf') {
+    renderPerfTab(content);
   }
 }
 
@@ -1445,4 +1451,161 @@ function updateGameSpeedUI() {
     const spd = parseFloat(btn.getAttribute('data-speed'));
     btn.classList.toggle('active', Math.abs(spd - devCheats.gameSpeed) < 0.05);
   });
+}
+
+/**
+ * ========================================================
+ * ABA 5: TELEMETRIA & BENCHMARKING DE PERFORMANCE (FASE 1)
+ * ========================================================
+ */
+function renderPerfTab(container) {
+  const stats = perfMetrics.getStats(300) || {
+    fps: 60,
+    fps1PctLow: 60,
+    frameTime: { avg: 16.6, p50: 16.6, p95: 16.6, p99: 16.6 },
+    updateTime: { avg: 4.0, p95: 5.0 },
+    renderTime: { avg: 5.0, p95: 6.0 },
+    subsystems: {},
+    counters: {
+      collisionsPerFrame: 0,
+      spriteHitRatePct: 100,
+      spriteBakesTotal: 0,
+      spriteBakesPerSec: 0,
+      terrainChunksTotal: 0,
+      persistenceReadsPerSec: 0,
+      persistenceWritesPerSec: 0
+    },
+    memory: { heapUsedMB: 0 }
+  };
+
+  const card = document.createElement('div');
+  card.className = 'dev-card';
+  card.innerHTML = `
+    <div class="dev-card-header">
+      <span class="dev-card-title">📊 TELEMETRIA EM TEMPO REAL & BASELINE DE DESEMPENHO</span>
+      <span class="dev-card-badge">FASE 1</span>
+    </div>
+    <div style="font-size: 12px; color: #bdc3c7; margin-bottom: 12px; line-height: 1.4;">
+      Mede tempos de quadro, percentis estatísticos (p50, p95, p99) e contadores de trabalho (atlas, terreno, colisões e I/O).
+      Pressione <b>F3</b> para alternar o overlay de diagnóstico na tela a qualquer momento.
+    </div>
+
+    <!-- Indicadores Principais -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 14px;">
+      <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 8px; text-align: center;">
+        <div style="font-size: 10px; color: #95a5a6;">FPS MÉDIO (1% LOW)</div>
+        <div style="font-size: 18px; font-weight: bold; color: ${stats.fps >= 55 ? '#2ecc71' : '#f39c12'};">${stats.fps} <span style="font-size: 12px; color: #7f8c8d;">(${stats.fps1PctLow})</span></div>
+      </div>
+      <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 8px; text-align: center;">
+        <div style="font-size: 10px; color: #95a5a6;">FRAME TIME (p50 / p95 / p99)</div>
+        <div style="font-size: 14px; font-weight: bold; color: #f1c40f;">${stats.frameTime.p50} / ${stats.frameTime.p95} / ${stats.frameTime.p99} ms</div>
+      </div>
+      <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 8px; text-align: center;">
+        <div style="font-size: 10px; color: #95a5a6;">ATLAS HIT RATE</div>
+        <div style="font-size: 16px; font-weight: bold; color: ${stats.counters.spriteHitRatePct > 90 ? '#2ecc71' : '#e67e22'};">${stats.counters.spriteHitRatePct}% <span style="font-size: 10px; color: #95a5a6;">(${stats.counters.spriteBakesPerSec} bakes/s)</span></div>
+      </div>
+      <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 8px; text-align: center;">
+        <div style="font-size: 10px; color: #95a5a6;">I/O DISCO (R/s • W/s)</div>
+        <div style="font-size: 14px; font-weight: bold; color: ${stats.counters.persistenceWritesPerSec > 5 ? '#e74c3c' : '#2ecc71'};">${stats.counters.persistenceReadsPerSec} R/s • ${stats.counters.persistenceWritesPerSec} W/s</div>
+      </div>
+    </div>
+
+    <!-- Botões de Ação de Benchmarking -->
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+      <button id="btn-perf-toggle-overlay" class="dev-action-btn primary" style="flex: 1; min-width: 140px;">
+        🖥️ ALTERNAR OVERLAY (F3)
+      </button>
+      <button id="btn-perf-bench-10s" class="dev-action-btn" style="flex: 1; min-width: 140px; background: #27ae60; color: white;">
+        ⏱️ BENCHMARK (10s)
+      </button>
+      <button id="btn-perf-bench-30s" class="dev-action-btn" style="flex: 1; min-width: 140px; background: #2980b9; color: white;">
+        📈 BENCHMARK (30s)
+      </button>
+      <button id="btn-perf-log-console" class="dev-action-btn" style="flex: 1; min-width: 140px;">
+        📋 LOG NO CONSOLE
+      </button>
+      <button id="btn-perf-export-json" class="dev-action-btn" style="flex: 1; min-width: 140px;">
+        💾 EXPORTAR JSON
+      </button>
+    </div>
+
+    <!-- Cenários de Teste Padronizados -->
+    <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; margin-top: 10px;">
+      <div style="font-weight: bold; font-size: 11px; color: #e67e22; margin-bottom: 8px;">CENÁRIOS DE ESTRESSE PADRONIZADOS</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        <button id="btn-perf-scenario-horde" class="dev-action-btn" style="flex: 1; min-width: 160px;">
+          🧟 +80 Zumbis & Rastejantes
+        </button>
+        <button id="btn-perf-scenario-magnet" class="dev-action-btn" style="flex: 1; min-width: 160px;">
+          🧲 Super Ímã (Coleta Massiva)
+        </button>
+        <button id="btn-perf-scenario-sovereign" class="dev-action-btn" style="flex: 1; min-width: 160px;">
+          👑 Boss Abyss Sovereign
+        </button>
+      </div>
+    </div>
+  `;
+
+  container.appendChild(card);
+
+  // Handlers dos botões
+  card.querySelector('#btn-perf-toggle-overlay').onclick = () => {
+    const isNowVisible = perfMetrics.toggleOverlay();
+    showDevToast(isNowVisible ? '🖥️ <b>Overlay de Telemetria Ativado</b> (F3 para alternar)' : '🖥️ <b>Overlay de Telemetria Ocultado</b>');
+  };
+
+  card.querySelector('#btn-perf-bench-10s').onclick = () => {
+    perfMetrics.startBenchmark(10, 'DEVTOOLS_10S', report => {
+      showDevToast(`✅ <b>Benchmark 10s Concluído:</b> FPS Médio: ${report.stats.fps} | p95: ${report.stats.frameTime.p95}ms | p99: ${report.stats.frameTime.p99}ms`);
+      renderActiveTab();
+    });
+    showDevToast('⏱️ <b>Benchmark de 10s iniciado...</b> Jogue normalmente durante o teste!');
+  };
+
+  card.querySelector('#btn-perf-bench-30s').onclick = () => {
+    perfMetrics.startBenchmark(30, 'DEVTOOLS_30S', report => {
+      showDevToast(`✅ <b>Benchmark 30s Concluído:</b> FPS Médio: ${report.stats.fps} | p95: ${report.stats.frameTime.p95}ms | p99: ${report.stats.frameTime.p99}ms`);
+      renderActiveTab();
+    });
+    showDevToast('📈 <b>Benchmark de 30s iniciado...</b>');
+  };
+
+  card.querySelector('#btn-perf-log-console').onclick = () => {
+    perfMetrics.logSummary();
+    showDevToast('📋 Relatório detalhado emitido no Console do Desenvolvedor (F12).');
+  };
+
+  card.querySelector('#btn-perf-export-json').onclick = () => {
+    const data = perfMetrics.getStats(600);
+    const jsonStr = JSON.stringify(data, null, 2);
+    if (navigator && navigator.clipboard) {
+      navigator.clipboard.writeText(jsonStr).then(() => {
+        showDevToast('💾 <b>JSON copiado para a Área de Transferência!</b>');
+      }).catch(() => {
+        console.log('BASELINE JSON:', jsonStr);
+        showDevToast('💾 JSON emitido no console.');
+      });
+    } else {
+      console.log('BASELINE JSON:', jsonStr);
+      showDevToast('💾 JSON emitido no console.');
+    }
+  };
+
+  card.querySelector('#btn-perf-scenario-horde').onclick = () => {
+    if (typeof window !== 'undefined' && typeof window.spawnMobCluster === 'function') {
+      window.spawnMobCluster('ZOMBIE', 40, 0);
+      window.spawnMobCluster('TRAIL_CRAWLER', 40, 0);
+    }
+    showDevToast('🧟 <b>+80 monstros convocados</b> para teste de estresse de horda!');
+  };
+
+  card.querySelector('#btn-perf-scenario-magnet').onclick = () => {
+    triggerSuperMagnet();
+    showDevToast('🧲 <b>Super Ímã ativado:</b> Coletando todas as gemas da arena!');
+  };
+
+  card.querySelector('#btn-perf-scenario-sovereign').onclick = () => {
+    launchBossTest(4, devCheats.selectedLevel);
+    showDevToast('👑 <b>Abyss Sovereign invocado</b> com ondas de choque e perigos!');
+  };
 }

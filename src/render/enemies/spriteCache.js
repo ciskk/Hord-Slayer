@@ -14,12 +14,13 @@
 import { ctx, setMainCtx, frameCount, setFrameCount } from '../../state/gameState.js';
 import { layoutMetrics } from '../../core/responsive.js';
 import { isCrawler, crawlPhase } from '../../entities/enemies/crawlerLocomotion.js';
+import { perfMetrics } from '../../core/perfMetrics.js';
 
-const BASE_CELL_SIZE = 80;
-const BASE_HALF_CELL = 40;
-const ATLAS_COLS = 8;
-const ATLAS_ROWS = 8;
-const MAX_SLOTS = ATLAS_COLS * ATLAS_ROWS; // 64 slots por textura (Ring Buffer)
+const BASE_CELL_SIZE = 92;
+const BASE_HALF_CELL = 46;
+const ATLAS_COLS = 16;
+const ATLAS_ROWS = 16;
+const MAX_SLOTS = ATLAS_COLS * ATLAS_ROWS; // 256 slots (comporta todas as animações e variantes)
 
 let atlasCanvas = null;
 let atlasCtx = null;
@@ -29,6 +30,8 @@ let halfPixelSize = BASE_HALF_CELL;
 let nextSlotIndex = 0;
 const spriteSlots = new Map();
 const slotKeys = new Array(MAX_SLOTS);
+const slotLastUsed = new Float64Array(MAX_SLOTS);
+
 // Only bodies whose pose is fully described by the atlas key can be baked.
 // Aimed weapons, support casts and defensive forms must follow the live entity.
 const CACHEABLE_TYPES = new Set([
@@ -61,6 +64,7 @@ function ensureAtlas() {
   // Reinicia slots ao reconfigurar resolução do atlas
   spriteSlots.clear();
   slotKeys.fill(null);
+  slotLastUsed.fill(0);
   nextSlotIndex = 0;
 }
 
@@ -71,6 +75,7 @@ function ensureAtlas() {
 export function clearSpriteCache() {
   spriteSlots.clear();
   slotKeys.fill(null);
+  slotLastUsed.fill(0);
   nextSlotIndex = 0;
   if (atlasCtx && atlasCanvas) {
     atlasCtx.clearRect(0, 0, atlasCanvas.width, atlasCanvas.height);
@@ -136,14 +141,29 @@ export function drawCachedEnemy(targetCtx, e, renderer) {
   let slot = spriteSlots.get(key);
 
   if (!slot) {
-    // Alocação contínua via Ring Buffer (substitui o slot mais antigo sem travar o GC)
-    const slotIdx = nextSlotIndex % MAX_SLOTS;
+    perfMetrics.countSpriteBake();
+    let slotIdx;
+    if (nextSlotIndex < MAX_SLOTS) {
+      slotIdx = nextSlotIndex++;
+    } else {
+      // Política LRU Real: substitui o slot que não é desenhado há mais tempo
+      let oldestIdx = 0;
+      let oldestTime = Infinity;
+      for (let i = 0; i < MAX_SLOTS; i++) {
+        if (slotLastUsed[i] < oldestTime) {
+          oldestTime = slotLastUsed[i];
+          oldestIdx = i;
+        }
+      }
+      slotIdx = oldestIdx;
+    }
+
     const oldKey = slotKeys[slotIdx];
     if (oldKey) {
       spriteSlots.delete(oldKey);
     }
     slotKeys[slotIdx] = key;
-    nextSlotIndex++;
+    slotLastUsed[slotIdx] = frameCount;
 
     const col = slotIdx % ATLAS_COLS;
     const row = Math.floor(slotIdx / ATLAS_COLS);
@@ -151,6 +171,7 @@ export function drawCachedEnemy(targetCtx, e, renderer) {
     const slotY = row * cellPixelSize;
 
     slot = {
+      slotIdx,
       sx: slotX,
       sy: slotY,
       pixelSize: cellPixelSize,
@@ -201,6 +222,11 @@ export function drawCachedEnemy(targetCtx, e, renderer) {
     } finally {
       setMainCtx(savedCtx);
       setFrameCount(savedFc);
+    }
+  } else {
+    perfMetrics.countSpriteHit();
+    if (slot.slotIdx !== undefined) {
+      slotLastUsed[slot.slotIdx] = frameCount;
     }
   }
 

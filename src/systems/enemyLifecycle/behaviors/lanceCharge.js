@@ -14,7 +14,7 @@ export function lanceChargeBehavior(e, dt, angle, curSpeed, ctx) {
     e.y += Math.sin(angle) * curSpeed * dt;
     e.lanceTimer = (e.lanceTimer || 0) + dt;
     const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
-    if (e.lanceTimer >= 69 && distToPlayerSq <= 240 * 240) {
+    if (e.lanceTimer >= 69 && distToPlayerSq <= 85 * 85) {
       e.lanceState = 'aim';
       e.lanceTimer = 20;
       e.lanceAngle = angle;

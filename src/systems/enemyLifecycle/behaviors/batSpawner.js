@@ -37,7 +37,7 @@ export function batSpawnerBehavior(e, dt, angle, curSpeed, ctx) {
         stunTimer: 0,
         combatState: 'CHASE',
         attackTimer: 0,
-        attackRange: 20,
+        attackRange: 4,
         attackWindupFrames: 12,
         attackStrikeFrames: 4,
         attackRecoveryFrames: 23,
