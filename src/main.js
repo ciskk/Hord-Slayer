@@ -1,3 +1,4 @@
+import { getSovereignIntroFraming } from './entities/bosses/abyssSovereign/introEffects.js';
 import { updateBossPhaseCinematic } from './systems/bossPhaseCinematic.js';
 import { perfMetrics } from './core/perfMetrics.js';
 /**
@@ -22,7 +23,7 @@ import {
   isHeroInUninterruptibleState
 } from './entities/player.js';
 import { inputX, inputY, resetInput } from './core/input.js';
-import { rebuildSpatialGrid, clearSpatialGrid } from './core/spatialGrid.js';
+import { rebuildSpatialGrid, clearSpatialGrid, spatialGrid, forEachNeighborIndex } from './core/spatialGrid.js';
 import { resolveWorldPhysics } from './systems/physics.js';
 import { 
   damageTexts, 
@@ -977,15 +978,19 @@ function update(dt) {
       addRolandShockwave(player.x, player.y + 10, 64);
     }
 
-    for (let i = 0; i < enemies.length; i++) {
-      const e = enemies[i];
-      if (!e || e.hp <= 0 || e.isTargetable === false) continue;
-      if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
-      if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
+    const rolandHitEnemy = (e) => {
+      if (!e || e.hp <= 0 || e.isTargetable === false) return;
+      if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) return;
+      if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) return;
 
       const dSq = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
-      if (dSq < (player.radius + e.radius + 20) ** 2) {
-        let impactDmg = player.damage * 1.3;
+      const reach = player.radius + e.radius + 20;
+      if (dSq < reach * reach) {
+        // Taxa de dano controlada por inimigo (hit cooldown a cada 6 frames) para evitar picos de GC e textos empilhados
+        if (frameCount - (e._rolandHitFrame || -999) < 6) return;
+        e._rolandHitFrame = frameCount;
+
+        let impactDmg = player.damage * 2.8;
         if (e.isBoss || e.isBossSubTarget) {
           impactDmg *= 1.25;
           if (e.isVulnerable) impactDmg *= 1.25;
@@ -1002,8 +1007,6 @@ function update(dt) {
 
         if (player.slowChance > 0 && Math.random() < player.slowChance) {
           applyFreeze(e);
-
-
         }
 
         if (e.isBoss && (e.hp / e.maxHp) < 0.45 && !e.isEnraged) {
@@ -1014,7 +1017,19 @@ function update(dt) {
           addDamageText(e.x, e.y, "EM FÚRIA!", true, '#e74c3c');
         }
       }
+    };
+
+    const rolandSearchRadius = player.radius + 40;
+    if (spatialGrid.size > 0) {
+      forEachNeighborIndex(player.x, player.y, rolandSearchRadius, (candIdx) => {
+        rolandHitEnemy(enemies[candIdx]);
+      });
+    } else {
+      for (let i = 0; i < enemies.length; i++) {
+        rolandHitEnemy(enemies[i]);
+      }
     }
+    if (activeBoss) rolandHitEnemy(activeBoss);
 
     if (player.dashDuration <= 0) {
       triggerShake(13);
@@ -1067,15 +1082,19 @@ function update(dt) {
       });
     }
 
-    for (let i = 0; i < enemies.length; i++) {
-      const e = enemies[i];
-      if (!e || e.hp <= 0 || e.isTargetable === false) continue;
-      if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
-      if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
+    const ignisHitEnemy = (e) => {
+      if (!e || e.hp <= 0 || e.isTargetable === false) return;
+      if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) return;
+      if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) return;
 
       const dSq = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
-      if (dSq < (player.radius + e.radius + 18) ** 2) {
-        let impactDmg = player.damage * 2.0;
+      const reach = player.radius + e.radius + 18;
+      if (dSq < reach * reach) {
+        // Taxa de dano controlada por inimigo (hit cooldown a cada 6 frames) para conter DoTs e partículas redundantes
+        if (frameCount - (e._ignisHitFrame || -999) < 6) return;
+        e._ignisHitFrame = frameCount;
+
+        let impactDmg = player.damage * 3.4;
         if (e.isBoss || e.isBossSubTarget) {
           impactDmg *= 1.25;
           if (e.isVulnerable) impactDmg *= 1.25;
@@ -1087,18 +1106,29 @@ function update(dt) {
         createHitParticles(e.x, e.y, '#f1c40f', 3);
         applyFireBurn(e, 240, (player.damage || 45) * 0.70, true);
       }
+    };
+
+    const ignisSearchRadius = player.radius + 38;
+    if (spatialGrid.size > 0) {
+      forEachNeighborIndex(player.x, player.y, ignisSearchRadius, (candIdx) => {
+        ignisHitEnemy(enemies[candIdx]);
+      });
+    } else {
+      for (let i = 0; i < enemies.length; i++) {
+        ignisHitEnemy(enemies[i]);
+      }
     }
+    if (activeBoss) ignisHitEnemy(activeBoss);
 
     if (player.ignisDashDuration <= 0) {
       triggerShake(11);
       playSfx('boss');
       triggerHaptic('heavy');
 
-      for (let i = 0; i < enemies.length; i++) {
-        const e = enemies[i];
-        if (!e || e.hp <= 0 || e.isTargetable === false) continue;
-        if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
-        if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
+      const ignisBlastHit = (e) => {
+        if (!e || e.hp <= 0 || e.isTargetable === false) return;
+        if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) return;
+        if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) return;
 
         const edx = e.x - player.x;
         const edy = e.y - player.y;
@@ -1121,7 +1151,18 @@ function update(dt) {
           createHitParticles(e.x, e.y, '#f1c40f', 5);
           applyFireBurn(e, 240, (player.damage || 45) * 0.70, true);
         }
+      };
+
+      if (spatialGrid.size > 0) {
+        forEachNeighborIndex(player.x, player.y, 90, (candIdx) => {
+          ignisBlastHit(enemies[candIdx]);
+        });
+      } else {
+        for (let i = 0; i < enemies.length; i++) {
+          ignisBlastHit(enemies[i]);
+        }
       }
+      if (activeBoss) ignisBlastHit(activeBoss);
     }
   } else {
     player.isMoving = (inputX * inputX + inputY * inputY) > 0.01;
@@ -1417,6 +1458,13 @@ function update(dt) {
   } else if (isBossSpawning) {
     focusX = activeBoss.x;
     focusY = activeBoss.y;
+    if (activeBoss.bossId === 4) {
+      const progress = 1 - activeBoss.introTimer / activeBoss.introDuration;
+      const framing = getSovereignIntroFraming(viewW, viewH, activeBoss.radius, baseCameraZoom, progress);
+      const zoomPan = 1 - Math.pow(1 - 0.06, dt);
+      setCameraZoom(CAMERA_ZOOM + (framing.zoom - CAMERA_ZOOM) * zoomPan);
+      focusY += cameraViewH * (0.5 - framing.focusY);
+    }
     cinematicCamera.returningToPlayer = true;
     player.iFrames = Math.max(player.iFrames, 12);
   }

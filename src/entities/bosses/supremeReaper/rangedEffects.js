@@ -304,7 +304,7 @@ function soul(ctx, b, color, time, warning) {
 
 function drawChoir(ctx, a, time) {
   const warning = a.elapsed < 0, charge = clamp(1 + a.elapsed / a.warning);
-  const gapHalf = Math.PI / 6;
+  const gapHalf = Math.PI / 12; // 30 graus no total (15 graus para cada lado)
   ctx.save(); ctx.translate(a.x, a.y);
   if (warning) {
     // Every ring is open at the escape sector; ornaments never close the gate.
@@ -328,7 +328,7 @@ function drawChoir(ctx, a, time) {
       glow(ctx, Math.cos(angle) * r, Math.sin(angle) * r, 5, a.color, 0.65);
     }
   }
-  const distance = warning ? 100 : 70 + a.elapsed * (a.bolts[0]?.speed || 3.33);
+  const distance = warning ? 100 : 70 + a.elapsed * (a.bolts[0]?.speed || 4.33);
   // The same fixed exit is visible during travel, not just during the windup.
   if (distance <= 1100) for (const side of [-1, 1]) {
     const angle = a.gap + side * gapHalf;

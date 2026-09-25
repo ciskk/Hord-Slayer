@@ -5,7 +5,7 @@ import { drawReaperRangedEffects } from './rangedEffects.js';
 export const REAPER_RANGED = Object.freeze({
   [SKILLS.SOUL_LANCES]: { name: 'Lanças do Sepulcro', warning: 64, duration: 174, color: '#a9ede1', damage: 0.32 },
   [SKILLS.GRAVE_CROSS]: { name: 'Cruz do Juízo', warning: 78, duration: 48, color: '#e3afef', damage: 0.46 },
-  [SKILLS.WAILING_RING]: { name: 'Coro dos Condenados', warning: 72, duration: 324, color: '#ffb579', damage: 0.36 }
+  [SKILLS.WAILING_RING]: { name: 'Coro dos Condenados', warning: 72, duration: 250, color: '#ffb579', damage: 0.36 }
 });
 
 export function beginReaperRanged(e, player, skill) {
@@ -35,12 +35,12 @@ export function beginReaperRanged(e, player, skill) {
         angle: a, length: 860, width: phase === 3 ? 42 : 34, delay: i * 22, hit: false });
     }
   } else {
-    const count = phase === 1 ? 28 : 36;
+    const count = phase === 1 ? 36 : 48;
     for (let i = 0; i < count; i++) {
       const offset = (i / count) * Math.PI * 2;
-      // A fixed 60-degree opening remains generous even in the final phase.
-      if (Math.abs(Math.atan2(Math.sin(offset), Math.cos(offset))) < Math.PI / 6) continue;
-      attack.bolts.push({ angle: attack.gap + offset, delay: 0, speed: 3.33, start: 70, radius: 11, range: 1100, hit: false });
+      // Abertura ajustada para 30 graus no total (15 graus para cada lado = Math.PI / 12).
+      if (Math.abs(Math.atan2(Math.sin(offset), Math.cos(offset))) < Math.PI / 12) continue;
+      attack.bolts.push({ angle: attack.gap + offset, delay: 0, speed: 4.33, start: 70, radius: 11, range: 1100, hit: false });
     }
   }
   e.rangedAttack = attack;

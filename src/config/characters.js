@@ -409,7 +409,7 @@ export const CHARACTERS = {
       hp: 50, 
       maxHp: 50, 
       speed: 3.65, 
-      damage: 58.05, 
+      damage: 72.56, 
       auraLvl: 0, 
       projectiles: 1, 
       orbitals: 0, 

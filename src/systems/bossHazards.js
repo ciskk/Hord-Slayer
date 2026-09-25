@@ -13,7 +13,7 @@ import { setLastAttackerInfo } from '../state/events.js';
 /**
  * Aplica dano de perigo de chefe ao jogador com mitigação passiva de classe e One-Shot Protection (OSP).
  */
-function applyHazardDamage(player, rawDamage, selectedHeroKey, defaultIFrames = 20) {
+export function applyHazardDamage(player, rawDamage, selectedHeroKey, defaultIFrames = 20) {
   let finalDmg = rawDamage || 0;
   if (selectedHeroKey === 'KNIGHT') finalDmg = Math.round(finalDmg * 0.80);
   const playerMaxHp = player.maxHp || 100;
@@ -75,6 +75,12 @@ export function updateBossHazards(dt, {
     const sw = bossShockwaves[i];
     sw.radius += sw.speed * dt;
 
+    // Carência no nascimento da onda para não punir melee com dano instantâneo no frame 0
+    if (sw.spawnGrace && sw.spawnGrace > 0) {
+      sw.spawnGrace -= dt;
+      continue;
+    }
+
     const sdx = player.x - sw.x;
     const sdy = player.y - sw.y;
     const sDist = Math.sqrt(sdx * sdx + sdy * sdy);
@@ -88,14 +94,28 @@ export function updateBossHazards(dt, {
       }
 
       if ((sw.damage || 0) > 0) {
-        const { finalDmg: finalSwDamage } = applyHazardDamage(player, sw.damage, selectedHeroKey, 20);
+        const { finalDmg: finalSwDamage } = applyHazardDamage(player, sw.damage, selectedHeroKey, 24);
         const bName = (activeBoss && activeBoss.name) ? activeBoss.name : "Chefe do Abismo";
+        const finalAttackName = sw.attackName || (activeBoss && activeBoss.isFinalBoss ? "Onda Cósmica do Soberano" : "Onda de Choque Sísmica");
+
+        let tip = sw.tacticTip || "";
+        if (!tip && activeBoss && activeBoss.isFinalBoss) {
+          if (finalAttackName === "Supernova Cósmica") {
+            tip = "A Supernova telegrafa um disco violeta de 220px no chão. Ao avistar o preenchimento, use Dash para fora da área delimitada.";
+          } else if (finalAttackName === "Colapso de Teleporte") {
+            tip = "O teleporte projeta um círculo de 150px. Quando o Soberano materializar, há 0,23s de carência para rolar para longe antes da onda expandir.";
+          } else if (finalAttackName === "Pulso de Singularidade") {
+            tip = "Na Fase 3, a sucção cessa durante os 0,8s de carga do anel ciano no chão. Aproveite essa brecha para correr para as bordas da arena.";
+          }
+        }
+
         setLastAttackerInfo({
           name: bName,
           category: "BOSS",
-          attackName: "Onda de Choque Sísmica",
+          attackName: finalAttackName,
           damage: finalSwDamage,
-          enemyType: (activeBoss && activeBoss.bossId) ? `BOSS_${activeBoss.bossId}` : null
+          enemyType: (activeBoss && activeBoss.bossId) ? `BOSS_${activeBoss.bossId}` : null,
+          tacticTip: tip
         });
         triggerShake(9);
         playSfx('hit');
@@ -117,6 +137,14 @@ export function updateBossHazards(dt, {
         createHitParticles(player.x, player.y, swColor, 4);
       }
       sw.hitPlayer = true;
+    }
+
+    if (activeBoss && (activeBoss.isFinalBoss || activeBoss.arenaCenterX !== undefined)) {
+      // Apenas ondas letais de combate são contidas na barreira; ondas cinemáticas de vitória expandem livremente
+      if ((sw.damage || 0) > 0 && sw.radius >= (activeBoss.arenaRadius || 620) + 30) {
+        bossShockwaves.splice(i, 1);
+        continue;
+      }
     }
 
     if (sw.radius >= sw.maxRadius) bossShockwaves.splice(i, 1);
@@ -535,6 +563,16 @@ export function updateBossHazards(dt, {
 
     bp.x += bp.vx * dt;
     bp.y += bp.vy * dt;
+
+    if (activeBoss && (activeBoss.isFinalBoss || activeBoss.arenaCenterX !== undefined)) {
+      const bpdx = bp.x - activeBoss.arenaCenterX;
+      const bpdy = bp.y - activeBoss.arenaCenterY;
+      const bLimit = (activeBoss.arenaRadius || 620) + 40;
+      if (bpdx * bpdx + bpdy * bpdy > bLimit * bLimit) {
+        bossProjectiles.splice(i, 1);
+        continue;
+      }
+    }
 
     const pdx = player.x - bp.x;
     const pdy = player.y - bp.y;
