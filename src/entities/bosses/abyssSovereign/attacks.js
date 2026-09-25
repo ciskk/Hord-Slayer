@@ -4,7 +4,8 @@
  */
 import { playSfx, triggerHaptic } from '../../../core/audio.js';
 import { SOVEREIGN_STATES, SOVEREIGN_CONFIG } from './constants.js';
-import { scheduleDelayedAction } from './physics.js';
+import { scheduleDelayedAction, triggerNextHarvestWave } from './physics.js';
+import { ARENA_SKILLS, beginArenaPattern, selectSovereignSkill } from './arenaPatterns.js';
 import { 
   bullets, 
   enemyBullets, 
@@ -80,17 +81,20 @@ export function spawnAbyssalHomingBarrage(boss, player) {
 export function prepareNextAttack(boss, context) {
   const { player } = context;
 
-  const skillsPhase1 = ['VOID_CRUCIFIX', 'RELATIVISTIC_SALVO', 'ABYSSAL_RIFTS', 'DIMENSIONAL_CLEAVE'];
-  const skillsPhase2 = ['VOID_CRUCIFIX', 'RELATIVISTIC_SALVO', 'ABYSSAL_RIFTS', 'DIMENSIONAL_CLEAVE', 'COSMIC_SUPERNOVA', 'VOID_WARP', 'SINGULARITY_IMPLOSION'];
-  const skillsPhase3 = ['VOID_CRUCIFIX', 'RELATIVISTIC_SALVO', 'ABYSSAL_RIFTS', 'DIMENSIONAL_CLEAVE', 'COSMIC_SUPERNOVA', 'ASTRAL_BARRAGE', 'VOID_WARP', 'SINGULARITY_IMPLOSION'];
-
-  const available = boss.phase === 1 ? skillsPhase1 : (boss.phase === 2 ? skillsPhase2 : skillsPhase3);
-  boss.currentSkill = available[boss.skillCycleIndex % available.length];
+  boss.currentSkill = selectSovereignSkill(boss);
   boss.skillCycleIndex++;
 
   boss.actionState = SOVEREIGN_STATES.WINDUP;
   boss.stateTimer = 0;
   boss.staggerGauge = 0;
+
+  if (ARENA_SKILLS[boss.currentSkill]) {
+    const pattern = beginArenaPattern(boss, player);
+    boss.windupTimer = pattern.recording ? pattern.recordInterval * pattern.steps : pattern.warning;
+    boss.windupMax = boss.windupTimer;
+    playSfx('charge');
+    return;
+  }
 
   switch (boss.currentSkill) {
     case 'VOID_CRUCIFIX': {
@@ -193,6 +197,44 @@ export function prepareNextAttack(boss, context) {
       boss.implosionReleased = false;
       boss.implosionSnapRing = 0;
       playSfx('singularity');
+      break;
+    }
+
+    case 'THRESHOLD_BEAMS': {
+      boss.windupTimer = SOVEREIGN_CONFIG.THRESHOLD_BEAM_WARNING || 44;
+      boss.windupMax = boss.windupTimer;
+      boss.aimAngle = Math.atan2(player.y - boss.y, player.x - boss.x);
+      playSfx('charge');
+      triggerHaptic('medium');
+      break;
+    }
+
+    case 'INEXORABLE_HARVEST': {
+      boss.windupTimer = 44;
+      boss.windupMax = boss.windupTimer;
+      playSfx('charge');
+      playSfx('singularity');
+      triggerHaptic('heavy');
+      break;
+    }
+
+    case 'ABYSSAL_CYCLONE': {
+      boss.windupTimer = SOVEREIGN_CONFIG.CYCLONE_WINDUP || 38;
+      boss.windupMax = boss.windupTimer;
+      boss.cycloneAngle = Math.atan2(player.y - boss.y, player.x - boss.x);
+      playSfx('charge');
+      triggerHaptic('heavy');
+      break;
+    }
+
+    case 'FOUR_COIL_SPIRAL': {
+      boss.windupTimer = 44;
+      boss.windupMax = 44;
+      boss.aimAngle = Math.atan2(player.y - boss.y, player.x - boss.x);
+      boss.spiralBaseAngle = boss.aimAngle;
+      playSfx('charge');
+      playSfx('singularity');
+      triggerHaptic('heavy');
       break;
     }
 
@@ -329,8 +371,184 @@ export function startSkillCast(boss, context) {
       });
       break;
     }
+    case 'THRESHOLD_BEAMS': {
+      boss.castDuration = 32;
+      spawnThresholdBeams(boss, context);
+      break;
+    }
+    case 'INEXORABLE_HARVEST': {
+      boss.castDuration = 45;
+      startInexorableHarvest(boss, context);
+      break;
+    }
+    case 'ABYSSAL_CYCLONE': {
+      boss.actionState = SOVEREIGN_STATES.CYCLONE_CHARGE;
+      boss.stateTimer = 0;
+      boss.cycloneTimer = SOVEREIGN_CONFIG.CYCLONE_DURATION || 130;
+      boss.cycloneMaxTimer = boss.cycloneTimer;
+      boss.cycloneAfterimages = [];
+      boss.cycloneSpinAngle = 0;
+      playSfx('boss');
+      playSfx('singularity');
+      triggerHaptic('heavy');
+      if (context.triggerShake) context.triggerShake(14);
+      if (context.addDamageText) {
+        const primaryCol = boss.phase === 3 ? '#00cec9' : (boss.phase === 2 ? '#e84393' : '#8e44ad');
+        context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 22, "TURBILHÃO DO VÁCUO!", true, primaryCol);
+      }
+      break;
+    }
+    case 'FOUR_COIL_SPIRAL': {
+      boss.castDuration = SOVEREIGN_CONFIG.SPIRAL_STREAM_DURATION || 180;
+      boss.spiralEjectTimer = 0;
+      boss.spiralBaseAngle = boss.aimAngle || 0;
+      playSfx('boss');
+      playSfx('singularity');
+      triggerHaptic('heavy');
+      if (context.triggerShake) context.triggerShake(12);
+      if (context.addDamageText) {
+        const primaryCol = boss.phase === 3 ? '#00cec9' : (boss.phase === 2 ? '#e84393' : '#8e44ad');
+        context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 22, "ESPIRAL DOS QUATRO HORIZONTES!", true, primaryCol);
+      }
+      break;
+    }
     default:
       boss.castDuration = 60;
       break;
   }
 }
+
+/**
+ * Dispara os Feixes do Limiar (Threshold Beams) em leque na direção do jogador.
+ * Os feixes aceleram 1.25x a cada ricochete na barreira da arena.
+ */
+export function spawnThresholdBeams(boss, context) {
+  if (!boss.thresholdBeams) boss.thresholdBeams = [];
+  const { player } = context;
+  const count = boss.phase === 3 ? 4 : (boss.phase === 2 ? 3 : 2);
+  const baseAngle = boss.aimAngle !== undefined ? boss.aimAngle : Math.atan2(player.y - boss.y, player.x - boss.x);
+  const spread = count === 4 ? 0.36 : (count === 3 ? 0.28 : 0.22);
+  const speed = SOVEREIGN_CONFIG.THRESHOLD_BEAM_SPEED || 3.7;
+  const radius = SOVEREIGN_CONFIG.THRESHOLD_BEAM_RADIUS || 11;
+  const damage = Math.round((boss.damage || 365) * (SOVEREIGN_CONFIG.THRESHOLD_BEAM_DAMAGE_RATIO || 0.30));
+  const maxBounces = boss.phase === 3 
+    ? (SOVEREIGN_CONFIG.THRESHOLD_BEAM_P3_MAX_BOUNCES || 5) 
+    : (SOVEREIGN_CONFIG.THRESHOLD_BEAM_MAX_BOUNCES || 4);
+
+  const primaryCol = boss.phase === 3 ? '#00cec9' : (boss.phase === 2 ? '#e84393' : '#8e44ad');
+  const glowCol = boss.phase === 3 ? '#81ecec' : (boss.phase === 2 ? '#ff7675' : '#a29bfe');
+
+  for (let i = 0; i < count; i++) {
+    const offset = count === 1 ? 0 : (i - (count - 1) / 2) * (spread * 2 / (count - 1));
+    const ang = baseAngle + offset;
+    boss.thresholdBeams.push({
+      x: boss.x + Math.cos(ang) * (boss.radius || 40),
+      y: boss.y + Math.sin(ang) * (boss.radius || 40),
+      vx: Math.cos(ang) * speed,
+      vy: Math.sin(ang) * speed,
+      speed: speed,
+      radius: radius,
+      damage: damage,
+      bounces: 0,
+      maxBounces: maxBounces,
+      trail: [],
+      life: 540,
+      color: primaryCol,
+      glowColor: glowCol,
+      phase: boss.phase
+    });
+  }
+
+  playSfx('warp');
+  playSfx('shoot');
+  triggerHaptic('heavy');
+  if (context.triggerShake) context.triggerShake(10);
+  if (context.addDamageText) {
+    context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 20, "FEIXES DO LIMIAR!", true, primaryCol);
+  }
+}
+
+/**
+ * Inicia a Colheita Inevitável (Inexorable Harvest):
+ * Particiona a arena em um tabuleiro rúnico inscrito e programa as ondas de detonação com safe-zones.
+ */
+export function startInexorableHarvest(boss, context) {
+  const { player } = context;
+  const phase = boss.phase || 1;
+  const gridSize = phase === 3 
+    ? (SOVEREIGN_CONFIG.HARVEST_GRID_P3 || 7) 
+    : (phase === 2 ? (SOVEREIGN_CONFIG.HARVEST_GRID_P2 || 6) : (SOVEREIGN_CONFIG.HARVEST_GRID_P1 || 5));
+  const totalWaves = phase === 3 
+    ? (SOVEREIGN_CONFIG.HARVEST_WAVES_P3 || 5) 
+    : (phase === 2 ? (SOVEREIGN_CONFIG.HARVEST_WAVES_P2 || 4) : (SOVEREIGN_CONFIG.HARVEST_WAVES_P1 || 3));
+  const warningDuration = phase === 3 
+    ? (SOVEREIGN_CONFIG.HARVEST_WARNING_P3 || 48) 
+    : (phase === 2 ? (SOVEREIGN_CONFIG.HARVEST_WARNING_P2 || 60) : (SOVEREIGN_CONFIG.HARVEST_WARNING_P1 || 72));
+  const activeDuration = SOVEREIGN_CONFIG.HARVEST_ACTIVE_DURATION || 20;
+  const miasmaDuration = SOVEREIGN_CONFIG.HARVEST_MIASMA_DURATION || 65;
+  const damage = Math.round((boss.damage || 365) * (SOVEREIGN_CONFIG.HARVEST_DAMAGE_RATIO || 0.32));
+
+  const acx = boss.arenaCenterX !== undefined ? boss.arenaCenterX : boss.x;
+  const acy = boss.arenaCenterY !== undefined ? boss.arenaCenterY : boss.y;
+  const ar = boss.arenaRadius || 620;
+  const totalW = ar * 2;
+  const tileSize = totalW / gridSize;
+
+  // Monta a lista de tiles válidos inscritos na arena circular
+  const tiles = [];
+  for (let gx = 0; gx < gridSize; gx++) {
+    for (let gy = 0; gy < gridSize; gy++) {
+      const left = acx - ar + gx * tileSize;
+      const top = acy - ar + gy * tileSize;
+      const cx = left + tileSize / 2;
+      const cy = top + tileSize / 2;
+
+      // O tile só é válido se seu centro estiver confortavelmente dentro do círculo da arena
+      if (Math.hypot(cx - acx, cy - acy) <= ar - 12) {
+        tiles.push({
+          id: `${gx}_${gy}`,
+          gx, gy,
+          x: left,
+          y: top,
+          cx, cy,
+          size: tileSize,
+          state: 'IDLE',
+          stateTimer: 0,
+          maxTimer: 1,
+          hitPlayer: false
+        });
+      }
+    }
+  }
+
+  const primaryCol = phase === 3 ? '#00cec9' : (phase === 2 ? '#e84393' : '#8e44ad');
+
+  boss.harvestState = {
+    gridSize,
+    tileSize,
+    totalWaves,
+    currentWave: 0,
+    warningDuration,
+    activeDuration,
+    miasmaDuration,
+    damage,
+    tiles,
+    waveDelayTimer: 0,
+    acx,
+    acy,
+    ar,
+    color: primaryCol
+  };
+
+  triggerNextHarvestWave(boss, player);
+
+  playSfx('singularity');
+  playSfx('charge');
+  triggerHaptic('heavy');
+  if (context.triggerShake) context.triggerShake(12);
+  if (context.addDamageText) {
+    context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 22, "COLHEITA INEVITÁVEL!", true, primaryCol);
+  }
+}
+
+

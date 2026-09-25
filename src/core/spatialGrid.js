@@ -7,6 +7,10 @@ const arrayPool = [];
 // Buffer estático reutilizável para consultas de vizinhos sem criar novos arrays
 export const neighborIndicesBuffer = [];
 
+// Physics consumes whole cells synchronously. Keep this separate from the
+// flattened query buffer used by weapons and effects (including nested queries).
+const neighborCellsBuffer = [];
+
 // Hash numérico inteiro único em 32-bit (elimina alocação de strings como chave de Map)
 export function getGridKey(cx, cy) {
   return (cx + 16384) * 32768 + (cy + 16384);
@@ -66,4 +70,26 @@ export function getNeighborIndices(x, y, radius, targetArray = null) {
     }
   }
   return target;
+}
+
+/**
+ * Same cell order as getNeighborIndices, without copying every enemy index.
+ * The returned buffer and its cell lists are borrowed until the next query or
+ * grid rebuild; callers must consume them synchronously without mutating them.
+ */
+export function getNeighborCells(x, y, radius) {
+  neighborCellsBuffer.length = 0;
+  const minCx = Math.floor((x - radius) / SPATIAL_CELL_SIZE);
+  const maxCx = Math.floor((x + radius) / SPATIAL_CELL_SIZE);
+  const minCy = Math.floor((y - radius) / SPATIAL_CELL_SIZE);
+  const maxCy = Math.floor((y + radius) / SPATIAL_CELL_SIZE);
+
+  for (let cx = minCx; cx <= maxCx; cx++) {
+    const colOffset = (cx + 16384) * 32768;
+    for (let cy = minCy; cy <= maxCy; cy++) {
+      const list = spatialGrid.get(colOffset + (cy + 16384));
+      if (list) neighborCellsBuffer.push(list);
+    }
+  }
+  return neighborCellsBuffer;
 }

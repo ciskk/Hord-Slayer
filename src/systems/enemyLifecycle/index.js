@@ -17,6 +17,7 @@ import { triggerBossBark } from '../barks.js';
 import { finalizeVictoryAndReturnToMenu } from '../ui.js';
 import { spawnChest as spawnChestPickup } from '../pickups.js';
 import { getWorldEventEnemySpeedMult } from '../worldEvents.js';
+import { updateCrawlerLocomotion } from '../../entities/enemies/crawlerLocomotion.js';
 
 export function updateEnemies(dt, context) {
   const {
@@ -42,17 +43,21 @@ export function updateEnemies(dt, context) {
   // Atualização dos Monstros (iteração reversa para remoções seguras)
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
+    const previousX = e.x;
+    const previousY = e.y;
 
     // 1. Decaimento de timers, knockback suave e DoTs cáusticos
     const statusSignal = !e.isBoss && !e.isBossSubTarget && e.hp <= 0 ? 'ok' : tickEnemyStatus(e, dt, player, triggerShake);
     // Abates (inclusive DoT durante stun) entram na animação antes de executar IA.
     if (!e.isBoss && !e.isBossSubTarget && e.hp <= 0) {
+      updateCrawlerLocomotion(e, previousX, previousY);
       const deathResult = handleEnemyDeath(e, i, ctx);
       if (deathResult?.playerDied) return { playerDied: true };
       if (deathResult?.earlyExit) return { playerDied: false };
       continue;
     }
     if (statusSignal === 'skip' || statusSignal === 'stunned') {
+      updateCrawlerLocomotion(e, previousX, previousY);
       continue;
     }
 
@@ -179,6 +184,8 @@ export function updateEnemies(dt, context) {
         }
       }
     }
+
+    updateCrawlerLocomotion(e, previousX, previousY);
 
     // Se for o Chefe Final em colapso dramático de derrota, ignora processamento comum
     if (e.isBoss && e.isFinalBoss && e.actionState === 'DEATH_COLLAPSE') {

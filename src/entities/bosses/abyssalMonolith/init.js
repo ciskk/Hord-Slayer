@@ -18,6 +18,8 @@ export function initAbyssalMonolith(boss) {
   boss.currentSkill = null;
   boss.lastUsedSkill = null;
   boss.skillCooldown = 50;
+  boss.chargeCooldown = 120;
+  boss.charge = null;
 
   // Intro Cinematográfica de 5 segundos (300 frames a 60 FPS)
   boss.introDuration = MONOLITH_CONFIG.INTRO_DURATION || 300;

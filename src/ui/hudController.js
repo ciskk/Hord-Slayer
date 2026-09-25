@@ -4,12 +4,14 @@
  * Responsável pelo cache do DOM (Zero Layout Thrashing), Dirty Checking,
  * Decaimento da Barra Fantasma (Ghost Bar) do jogador e do chefe, e timer de sobrevivência.
  */
-import { HERO_EMBLEMS_SVG, CHARACTER_PROFILES } from '../config/heroProfiles.js';
+import { HERO_EMBLEMS_SVG, CHARACTER_PROFILES, HERO_ULT_CHASSIS_SVG } from '../config/heroProfiles.js';
 import { CHARACTERS } from '../config/characters.js';
 import { ARENA_PALETTES } from '../render/environment.js';
 import { player, getPersistentGold, selectedHeroKey, triggerHeroSkill } from '../entities/player.js';
 import { waveAnnouncement, frameCount, matchIntro, deathSequence } from '../state/gameState.js';
 import { getTimeUntilNextWave, getEffectiveHordeSeconds, nextBossSpawnTime, currentBossIndex, BOSS_QUEUE } from '../systems/waves.js';
+import { playSfx, triggerHaptic } from '../core/audio.js';
+import { initUltButtonRenderer, renderUltButton, setUltHero, triggerUltBurst } from '../render/ultButtonRenderer.js';
 
 let _cachedSkillContainer = null;
 let _cachedSkillMask = null;
@@ -23,24 +25,34 @@ let _lastSkillTextStr = null;
 const SKILL_RING_CIRCUMFERENCE = 166.5;
 
 export function initSkillUI(onSkillTrigger = triggerHeroSkill) {
+  initUltButtonRenderer();
   const skillContainer = document.getElementById('skill-btn-container');
   if (!skillContainer) return;
 
-  skillContainer.addEventListener('touchstart', e => {
+  const handleTrigger = (e) => {
     e.stopPropagation();
-    e.preventDefault();
     if (matchIntro && matchIntro.active) return;
+    if (player && player.skillCd <= 0) {
+      triggerUltBurst(_lastHeroKey || selectedHeroKey);
+    }
     if (typeof onSkillTrigger === 'function') onSkillTrigger({ ignoreCursor: true });
+  };
+
+  skillContainer.addEventListener('touchstart', e => {
+    e.preventDefault();
+    handleTrigger(e);
   }, { passive: false });
 
   skillContainer.addEventListener('click', e => {
-    e.stopPropagation();
-    if (matchIntro && matchIntro.active) return;
-    if (typeof onSkillTrigger === 'function') onSkillTrigger({ ignoreCursor: true });
+    handleTrigger(e);
   });
 }
 
 export function updateSkillUI() {
+  if (typeof document !== 'undefined' && document.body && document.body.classList.contains('boss-defeat-cinematic')) {
+    return;
+  }
+
   if (!_cachedSkillContainer) {
     _cachedSkillContainer = document.getElementById('skill-btn-container');
     _cachedSkillMask = document.getElementById('skill-cooldown-mask');
@@ -49,6 +61,9 @@ export function updateSkillUI() {
   }
 
   if (!_cachedSkillContainer || !_cachedSkillMask || !_cachedSkillText) return;
+
+  // Renderiza os efeitos dinâmicos procedurais a 60 FPS no Micro-Canvas da ULT
+  renderUltButton(player, frameCount);
 
   const isReady = player.skillCd <= 0;
   if (isReady) {
@@ -61,6 +76,17 @@ export function updateSkillUI() {
       _cachedSkillText.innerText = '';
       if (_cachedSkillRing) _cachedSkillRing.style.strokeDashoffset = '0';
       _cachedSkillContainer.classList.add('ready');
+
+      // Feedback acústico e haptics personalizados por herói
+      const activeKey = _lastHeroKey || selectedHeroKey || 'KNIGHT';
+      const profile = (CHARACTER_PROFILES && CHARACTER_PROFILES[activeKey]) || CHARACTER_PROFILES.KNIGHT;
+      const readySfx = (profile && profile.ultProfile && profile.ultProfile.readySfx) ? profile.ultProfile.readySfx : 'holy_ready';
+      const hapticType = (profile && profile.ultProfile && profile.ultProfile.haptic) ? profile.ultProfile.haptic : 'medium';
+
+      try {
+        playSfx(readySfx);
+        triggerHaptic(hapticType);
+      } catch (_) {}
     }
   } else {
     if (_lastSkillReady !== false) {
@@ -144,7 +170,10 @@ export function ensureHudElementsCached() {
     hudDom.bossHpFill = document.getElementById('boss-hp-fill');
     hudDom.bossHpVal = document.getElementById('boss-hp-val');
     hudDom.bossHpRaw = document.getElementById('boss-hp-raw');
-    hudDom.bossPipNotches = document.querySelectorAll('#boss-hud .boss-pip-notch');
+    hudDom.bossPipNotches = Array.from(document.querySelectorAll('#boss-hud .boss-pip-notch'), element => ({
+      element,
+      threshold: Number(element.getAttribute('data-phase-pct') || 0)
+    }));
     hudDom.timerVal = document.getElementById('timer-val');
     hudDom.bossTimerVal = document.getElementById('boss-timer-val');
     hudDom.bossTimerBadge = document.querySelector('.boss-timer-badge');
@@ -175,6 +204,8 @@ let _lastWaveCardSuppressed = null;
 let _lastBossHpPct = -1;
 let _lastBossEnraged = null;
 let _lastTimerStr = '';
+let _lastTimerSeconds = null;
+let _lastBossTimerRemaining = null;
 
 let ghostHp = 120;
 let ghostHpTimer = 0;
@@ -184,6 +215,9 @@ let bossGhostHpTimer = 0;
 let _lastBossGhostHp = -1;
 let _lastBossActualHp = -1;
 let _lastBossRawHpText = '';
+let _lastBossRawHp = -1;
+let _lastBossRawMaxHp = -1;
+let _lastBossMaxHpText = '';
 let _hitShakeTimer = null;
 let _lastBossActive = false;
 
@@ -195,6 +229,9 @@ export function resetBossGhostHp() {
   _lastBossEnraged = null;
   _lastBossActualHp = -1;
   _lastBossRawHpText = '';
+  _lastBossRawHp = -1;
+  _lastBossRawMaxHp = -1;
+  _lastBossMaxHpText = '';
   _lastBossActive = false;
   if (_hitShakeTimer) {
     clearTimeout(_hitShakeTimer);
@@ -241,10 +278,31 @@ export function applyHeroVisuals(heroKey) {
   if (emblemWrap) {
     emblemWrap.innerHTML = heroEmblemSvg;
   }
+
+  // Atualização dinâmica do Chassis SVG exclusivo da ULT
+  const ultChassisSvg = heroProfile.chassisSvg || (HERO_ULT_CHASSIS_SVG && (HERO_ULT_CHASSIS_SVG[activeKey] || HERO_ULT_CHASSIS_SVG.KNIGHT));
+  const chassisSlot = document.getElementById('skill-chassis-slot');
+  if (chassisSlot && ultChassisSvg) {
+    chassisSlot.innerHTML = ultChassisSvg;
+    _cachedSkillRing = document.getElementById('skill-progress-ring');
+  }
+
   const skillBtn = hudDom.skillBtnContainer || document.getElementById('skill-btn-container');
   if (skillBtn) {
+    skillBtn.classList.remove('hero-knight', 'hero-mage', 'hero-rogue', 'hero-barbarian', 'hero-alchemist');
+    const heroCssClass = (heroProfile.ultProfile && heroProfile.ultProfile.cssClass) || ('hero-' + activeKey.toLowerCase());
+    skillBtn.classList.add(heroCssClass);
     skillBtn.style.setProperty('--skill-theme-color', heroProfile.themeColor);
   }
+
+  const keyBadge = document.getElementById('skill-key-badge');
+  if (keyBadge && heroProfile.ultProfile && heroProfile.ultProfile.keyBadge) {
+    keyBadge.innerText = heroProfile.ultProfile.keyBadge;
+  }
+
+  // Notifica o renderizador procedural de ULT sobre a troca de herói
+  setUltHero(activeKey);
+
   const hudRoot = hudDom.hudRoot || document.getElementById('hud');
   if (hudRoot) {
     hudRoot.style.setProperty('--hero-theme-color', heroProfile.themeColor);
@@ -275,6 +333,8 @@ export function resetHUD(initialHp = 120) {
   _lastBossHpPct = -1;
   _lastBossEnraged = null;
   _lastTimerStr = '';
+  _lastTimerSeconds = null;
+  _lastBossTimerRemaining = null;
   _lastHeroKey = null;
 
   if (hudDom && hudDom.waveCard) {
@@ -329,6 +389,10 @@ export function isGhostHpDraining() {
 }
 
 export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, seconds, currentWave }) {
+  if (typeof document !== 'undefined' && document.body && document.body.classList.contains('boss-defeat-cinematic')) {
+    return;
+  }
+
   // Atualização Visual do HUD de HP com Decaimento da Barra Fantasma (Ghost Bar)
   const targetHp = Math.max(0, player.hp);
   if (targetHp < ghostHp) {
@@ -532,23 +596,28 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
     if (hudDom.bossHpRaw) {
       const curHp = Math.max(0, Math.ceil(activeBoss.hp));
       const maxHp = Math.ceil(activeBoss.maxHp);
-      const rawText = `${curHp.toLocaleString('pt-BR')} / ${maxHp.toLocaleString('pt-BR')} HP`;
-      if (rawText !== _lastBossRawHpText) {
-        _lastBossRawHpText = rawText;
-        hudDom.bossHpRaw.innerText = rawText;
+      if (curHp !== _lastBossRawHp || maxHp !== _lastBossRawMaxHp) {
+        if (maxHp !== _lastBossRawMaxHp) {
+          _lastBossMaxHpText = maxHp.toLocaleString('pt-BR');
+        }
+        _lastBossRawHp = curHp;
+        _lastBossRawMaxHp = maxHp;
+        const rawText = `${curHp.toLocaleString('pt-BR')} / ${_lastBossMaxHpText} HP`;
+        if (rawText !== _lastBossRawHpText) {
+          _lastBossRawHpText = rawText;
+          hudDom.bossHpRaw.innerText = rawText;
+        }
       }
     }
 
     // Atualiza estado das gemas rúnicas de fase (25%, 50%, 75%)
     if (hudDom.bossPipNotches && hudDom.bossPipNotches.length) {
-      hudDom.bossPipNotches.forEach(notch => {
-        const threshold = Number(notch.getAttribute('data-phase-pct') || 0);
-        if (bossHpPct < threshold) {
-          notch.classList.add('extinguished');
-        } else {
-          notch.classList.remove('extinguished');
+      for (const { element, threshold } of hudDom.bossPipNotches) {
+        const extinguished = bossHpPct < threshold;
+        if (element.classList.contains('extinguished') !== extinguished) {
+          element.classList.toggle('extinguished', extinguished);
         }
-      });
+      }
     }
 
     if (activeBoss.hp < bossGhostHp) {
@@ -598,12 +667,15 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
     }
   }
 
-  const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-  const s = String(seconds % 60).padStart(2, '0');
-  const currentTimerStr = `${m}:${s}`;
-  if (currentTimerStr !== _lastTimerStr) {
-    _lastTimerStr = currentTimerStr;
-    if (hudDom.timerVal) hudDom.timerVal.innerText = currentTimerStr;
+  if (seconds !== _lastTimerSeconds) {
+    _lastTimerSeconds = seconds;
+    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const s = String(seconds % 60).padStart(2, '0');
+    const currentTimerStr = `${m}:${s}`;
+    if (currentTimerStr !== _lastTimerStr) {
+      _lastTimerStr = currentTimerStr;
+      if (hudDom.timerVal) hudDom.timerVal.innerText = currentTimerStr;
+    }
   }
 
   if (hudDom.bossTimerVal && hudDom.bossTimerBadge) {
@@ -612,15 +684,17 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
     } else {
       if (hudDom.bossTimerBadge.style.display === 'none') hudDom.bossTimerBadge.style.display = 'flex';
       const timeRemaining = Math.max(0, nextBossSpawnTime - seconds);
-      const bm = String(Math.floor(timeRemaining / 60)).padStart(2, '0');
-      const bs = String(timeRemaining % 60).padStart(2, '0');
-      hudDom.bossTimerVal.innerText = `${bm}:${bs}`;
+      if (timeRemaining !== _lastBossTimerRemaining) {
+        _lastBossTimerRemaining = timeRemaining;
+        const bm = String(Math.floor(timeRemaining / 60)).padStart(2, '0');
+        const bs = String(timeRemaining % 60).padStart(2, '0');
+        hudDom.bossTimerVal.innerText = `${bm}:${bs}`;
+      }
       
       // Efeito de pulso quando faltar pouco tempo (10 segundos)
-      if (timeRemaining <= 10 && timeRemaining > 0) {
-        hudDom.bossTimerBadge.classList.add('urgent-pulse');
-      } else {
-        hudDom.bossTimerBadge.classList.remove('urgent-pulse');
+      const isUrgent = timeRemaining <= 10 && timeRemaining > 0;
+      if (hudDom.bossTimerBadge.classList.contains('urgent-pulse') !== isUrgent) {
+        hudDom.bossTimerBadge.classList.toggle('urgent-pulse', isUrgent);
       }
     }
   }

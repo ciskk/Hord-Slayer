@@ -4,7 +4,7 @@
  */
 
 import { playSfx, triggerHaptic } from '../../../core/audio.js';
-import { setLastAttackerName, canSpawnEnemyBullet } from '../../../main.js';
+import { setLastAttackerName, setLastAttackerInfo, canSpawnEnemyBullet } from '../../../main.js';
 import { selectedHeroKey } from '../../player.js';
 import { triggerDeath } from '../../../systems/ui.js';
 import { MONOLITH_STATES, MONOLITH_SKILLS, MONOLITH_CONFIG } from './constants.js';
@@ -256,7 +256,13 @@ export function executeTectonicSlam(e, context) {
 
     player.hp -= slamDamage;
     player.bossIFrames = 24;
-    setLastAttackerName("Esmagamento Tectônico");
+    setLastAttackerInfo({
+      name: e.name || 'Monólito Abissal',
+      category: 'BOSS',
+      attackName: 'Esmagamento Tectônico',
+      damage: slamDamage,
+      enemyType: 'BOSS_2'
+    });
     playSfx('hit');
     triggerShake(12);
     addDamageText(player.x, player.y, `-${slamDamage}`, true, '#e74c3c');
@@ -307,7 +313,13 @@ export function executeEpicenterEruption(e, context) {
     if (selectedHeroKey === 'KNIGHT') epicenterDmg = Math.round(epicenterDmg * 0.80);
     player.hp -= epicenterDmg;
     player.bossIFrames = 20;
-    setLastAttackerName("Erupção do Epicentro");
+    setLastAttackerInfo({
+      name: e.name || 'Monólito Abissal',
+      category: 'BOSS',
+      attackName: 'Erupção do Epicentro',
+      damage: epicenterDmg,
+      enemyType: 'BOSS_2'
+    });
     playSfx('hit');
     addDamageText(player.x, player.y, `-${epicenterDmg}`, true, '#ff4757');
     createHitParticles(player.x, player.y, '#ff4757', 10);
@@ -354,7 +366,13 @@ export function executeOuterSurge(e, context) {
 
     player.hp -= surgeDmg;
     player.iFrames = 25;
-    setLastAttackerName("Onda de Fendas Tectônicas");
+    setLastAttackerInfo({
+      name: e.name || 'Monólito Abissal',
+      category: 'BOSS',
+      attackName: 'Onda de Fendas Tectônicas',
+      damage: surgeDmg,
+      enemyType: 'BOSS_2'
+    });
     playSfx('hit');
     addDamageText(player.x, player.y, `-${surgeDmg}`, false, '#e67e22');
     createHitParticles(player.x, player.y, '#e67e22', 8);
@@ -396,7 +414,13 @@ export function executePlateWhirl(e, context) {
     if (selectedHeroKey === 'KNIGHT') whirlDmg = Math.round(whirlDmg * 0.80);
     player.hp -= whirlDmg;
     player.bossIFrames = 22;
-    setLastAttackerName("Varredura de Placas");
+    setLastAttackerInfo({
+      name: e.name || 'Monólito Abissal',
+      category: 'BOSS',
+      attackName: 'Varredura de Placas',
+      damage: whirlDmg,
+      enemyType: 'BOSS_2'
+    });
     playSfx('hit');
     addDamageText(player.x, player.y, `-${whirlDmg}`, false, '#ff4757');
     createHitParticles(player.x, player.y, '#ff4757', 8);

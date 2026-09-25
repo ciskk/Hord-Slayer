@@ -3,11 +3,13 @@
  * Física ambiental, singularidade gravitacional, âncoras e tentáculos do Soberano do Abismo.
  */
 import { playSfx, triggerHaptic } from '../../../core/audio.js';
+import { SOVEREIGN_CONFIG, SOVEREIGN_STATES } from './constants.js';
 import { 
   enemies, 
   enemyBullets, 
   bossShockwaves 
 } from '../../../main.js';
+import { triggerDeath } from '../../../systems/ui.js';
 
 export function scheduleDelayedAction(boss, delayFrames, callback) {
   if (!boss.delayedActions) boss.delayedActions = [];
@@ -210,6 +212,8 @@ export function updateSingularityPhysics(boss, dt, context) {
   const cdy = boss.arenaCenterY - boss.y;
   boss.x += cdx * 0.08 * dt;
   boss.y += cdy * 0.08 * dt;
+
+  if (boss.arenaPattern) return;
 
   const vdx = boss.x - player.x;
   const vdy = boss.y - player.y;
@@ -694,4 +698,424 @@ export function updateHealingZones(boss, dt, context) {
     }
   }
 }
+
+/**
+ * Atualiza o movimento, colisão com o jogador e reflexão física dos Feixes do Limiar nas barreiras circulares.
+ */
+export function updateThresholdBeams(boss, dt, context) {
+  if (!boss.thresholdBeams || boss.thresholdBeams.length === 0) return;
+
+  const { player, frameCount, triggerShake, createHitParticles, addDamageText } = context;
+  const acx = boss.arenaCenterX !== undefined ? boss.arenaCenterX : boss.x;
+  const acy = boss.arenaCenterY !== undefined ? boss.arenaCenterY : boss.y;
+  const ar = boss.arenaRadius || 620;
+
+  for (let i = boss.thresholdBeams.length - 1; i >= 0; i--) {
+    const beam = boss.thresholdBeams[i];
+    beam.life -= dt;
+    if (beam.life <= 0) {
+      if (createHitParticles) createHitParticles(beam.x, beam.y, beam.color, 10);
+      boss.thresholdBeams.splice(i, 1);
+      continue;
+    }
+
+    // Histórico de posições para o rastro estelar (trail ribbon)
+    if (!beam.trail) beam.trail = [];
+    beam.trail.push({ x: beam.x, y: beam.y });
+    if (beam.trail.length > 14) {
+      beam.trail.shift();
+    }
+
+    // Deslocamento físico
+    beam.x += beam.vx * dt;
+    beam.y += beam.vy * dt;
+
+    // Partículas leves emitidas pela ponta em movimento
+    if (Math.floor(frameCount || 0) % 2 === 0 && createHitParticles) {
+      createHitParticles(beam.x, beam.y, beam.glowColor, 1);
+    }
+
+    // 1. Verificação de Reflexão Circular na Barreira da Arena
+    const dx = beam.x - acx;
+    const dy = beam.y - acy;
+    const dist = Math.hypot(dx, dy) || 1;
+    const limitR = Math.max(80, ar - beam.radius);
+
+    if (dist >= limitR) {
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const dot = beam.vx * nx + beam.vy * ny;
+
+      // Só reflete se o vetor velocidade estiver apontando para fora da arena
+      if (dot > 0) {
+        // Fórmula de reflexão especular: V' = V - 2*(V·N)*N
+        let rvx = beam.vx - 2 * dot * nx;
+        let rvy = beam.vy - 2 * dot * ny;
+
+        // Aceleração progressiva de 1.25x a cada ricochete
+        rvx *= 1.25;
+        rvy *= 1.25;
+
+        beam.vx = rvx;
+        beam.vy = rvy;
+        beam.speed = Math.hypot(rvx, rvy);
+        beam.bounces++;
+
+        // Reposiciona na borda interna para evitar aderência
+        beam.x = acx + nx * (limitR - 2);
+        beam.y = acy + ny * (limitR - 2);
+
+        // Feedback audiovisual e tátil do impacto na borda
+        playSfx('warp');
+        triggerHaptic('medium');
+        if (triggerShake) triggerShake(5 + beam.bounces * 2.5);
+
+        if (createHitParticles) {
+          createHitParticles(beam.x, beam.y, beam.color, 16);
+          createHitParticles(beam.x, beam.y, '#ffffff', 8);
+        }
+
+        // Mini onda de choque luminosa decorativa no ponto de impacto
+        if (context.bossShockwaves) {
+          context.bossShockwaves.push({
+            x: beam.x,
+            y: beam.y,
+            radius: 8,
+            maxRadius: 40 + beam.bounces * 8,
+            speed: 6.0,
+            damage: 0,
+            hitPlayer: false,
+            color: beam.color,
+            colorRgb: beam.color === '#00cec9' ? '0, 206, 201' : (beam.color === '#e84393' ? '232, 67, 147' : '142, 68, 173')
+          });
+        }
+
+        // Se atingiu o limite máximo de ricochetes, dissipa em explosão de luz
+        if (beam.bounces >= beam.maxBounces) {
+          playSfx('shatter');
+          if (triggerShake) triggerShake(8);
+          if (createHitParticles) {
+            createHitParticles(beam.x, beam.y, beam.color, 24);
+            createHitParticles(beam.x, beam.y, '#ffffff', 12);
+          }
+          boss.thresholdBeams.splice(i, 1);
+          continue;
+        }
+      }
+    }
+
+    // 2. Colisão com o Jogador
+    if (player && player.hp > 0 && (player.bossIFrames || 0) <= 0) {
+      const pdx = player.x - beam.x;
+      const pdy = player.y - beam.y;
+      const pDist = Math.hypot(pdx, pdy);
+
+      if (pDist <= beam.radius + (player.radius || 14)) {
+        player.hp -= beam.damage;
+        player.bossIFrames = 20;
+        player.iFrames = 20;
+
+        playSfx('hit');
+        triggerHaptic('heavy');
+        if (triggerShake) triggerShake(10);
+        if (addDamageText) addDamageText(player.x, player.y, `-${beam.damage}`, false, beam.color);
+        if (createHitParticles) createHitParticles(player.x, player.y, beam.color, 12);
+
+        if (player.hp <= 0) {
+          player.hp = 0;
+          try { triggerDeath(); } catch (err) {}
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Marca os tiles da próxima onda da Colheita Inevitável, assegurando zonas seguras conectadas.
+ */
+export function triggerNextHarvestWave(boss, player) {
+  const H = boss.harvestState;
+  if (!H) return false;
+
+  H.currentWave++;
+  const availableTiles = H.tiles.filter(t => t.state === 'IDLE');
+  if (availableTiles.length === 0) return false;
+
+  // Seleciona ~35-42% dos tiles disponíveis para detonação
+  const targetCount = Math.max(3, Math.floor(availableTiles.length * (H.currentWave === H.totalWaves ? 0.44 : 0.38)));
+
+  // Embaralha para seleção imprevisível
+  for (let i = availableTiles.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [availableTiles[i], availableTiles[j]] = [availableTiles[j], availableTiles[i]];
+  }
+
+  // Identifica o tile sob o jogador
+  let playerTile = null;
+  if (player) {
+    playerTile = H.tiles.find(t => 
+      player.x >= t.x && player.x <= t.x + t.size && 
+      player.y >= t.y && player.y <= t.y + t.size
+    );
+  }
+
+  let marked = 0;
+  for (const tile of availableTiles) {
+    if (marked >= targetCount) break;
+
+    // Se for o tile do jogador na primeira onda, poupa para reação justa
+    if (playerTile && tile.id === playerTile.id && H.currentWave === 1) {
+      continue;
+    }
+
+    tile.state = 'WARNING';
+    tile.stateTimer = H.warningDuration;
+    tile.maxTimer = H.warningDuration;
+    tile.hitPlayer = false;
+    marked++;
+  }
+
+  playSfx('charge');
+  return true;
+}
+
+/**
+ * Atualiza o ciclo de vida dos tiles da Colheita Inevitável (WARNING -> ACTIVE -> MIASMA -> IDLE).
+ * Processa colisão de dano de erupção e dano por tick no miasma residual.
+ */
+export function updateInexorableHarvest(boss, dt, context) {
+  const H = boss.harvestState;
+  if (!H || !H.tiles) return;
+
+  const { player, frameCount, triggerShake, triggerHaptic, createHitParticles, addDamageText } = context;
+
+  let hasActiveOrWarning = false;
+  let allIdle = true;
+
+  for (let i = 0; i < H.tiles.length; i++) {
+    const tile = H.tiles[i];
+
+    if (tile.state === 'WARNING') {
+      hasActiveOrWarning = true;
+      allIdle = false;
+      tile.stateTimer -= dt;
+
+      // Partículas ascendentes de aviso sobre o tile
+      if (Math.floor(frameCount || 0) % 4 === 0 && createHitParticles) {
+        const px = tile.x + Math.random() * tile.size;
+        const py = tile.y + Math.random() * tile.size;
+        createHitParticles(px, py, H.color, 1);
+      }
+
+      if (tile.stateTimer <= 0) {
+        tile.state = 'ACTIVE';
+        tile.stateTimer = H.activeDuration;
+        tile.maxTimer = H.activeDuration;
+        tile.hitPlayer = false;
+
+        playSfx('singularity');
+        if (triggerShake) triggerShake(5);
+        if (createHitParticles) {
+          createHitParticles(tile.cx, tile.cy, '#ffffff', 8);
+          createHitParticles(tile.cx, tile.cy, H.color, 12);
+        }
+      }
+    } else if (tile.state === 'ACTIVE') {
+      hasActiveOrWarning = true;
+      allIdle = false;
+      tile.stateTimer -= dt;
+
+      // Colisão de impacto da erupção com o jogador
+      if (!tile.hitPlayer && player && player.hp > 0 && (player.bossIFrames || 0) <= 0) {
+        const inX = player.x >= tile.x && player.x <= tile.x + tile.size;
+        const inY = player.y >= tile.y && player.y <= tile.y + tile.size;
+
+        if (inX && inY) {
+          tile.hitPlayer = true;
+          player.hp -= H.damage;
+          player.bossIFrames = 22;
+          player.iFrames = 22;
+
+          playSfx('hit');
+          triggerHaptic('heavy');
+          if (triggerShake) triggerShake(10);
+          if (addDamageText) addDamageText(player.x, player.y, `-${H.damage}`, false, H.color);
+          if (createHitParticles) createHitParticles(player.x, player.y, H.color, 14);
+
+          if (player.hp <= 0) {
+            player.hp = 0;
+            try { triggerDeath(); } catch (err) {}
+          }
+        }
+      }
+
+      if (tile.stateTimer <= 0) {
+        tile.state = 'MIASMA';
+        tile.stateTimer = H.miasmaDuration;
+        tile.maxTimer = H.miasmaDuration;
+      }
+    } else if (tile.state === 'MIASMA') {
+      allIdle = false;
+      tile.stateTimer -= dt;
+
+      // Dano leve contínuo caso o jogador permaneça sobre o miasma
+      if (player && player.hp > 0 && (player.iFrames || 0) <= 0 && Math.floor(frameCount || 0) % 25 === 0) {
+        const inX = player.x >= tile.x && player.x <= tile.x + tile.size;
+        const inY = player.y >= tile.y && player.y <= tile.y + tile.size;
+
+        if (inX && inY) {
+          player.hp -= 4;
+          player.iFrames = 15;
+          if (addDamageText) addDamageText(player.x, player.y, `-4`, false, H.color);
+          if (createHitParticles) createHitParticles(player.x, player.y, H.color, 3);
+          playSfx('hit');
+        }
+      }
+
+      if (tile.stateTimer <= 0) {
+        tile.state = 'IDLE';
+      }
+    }
+  }
+
+  // Se a onda ativa terminou (nenhum tile em WARNING ou ACTIVE), programa próxima onda
+  if (!hasActiveOrWarning) {
+    if (H.currentWave < H.totalWaves) {
+      H.waveDelayTimer = (H.waveDelayTimer || 0) + dt;
+      if (H.waveDelayTimer >= 14) {
+        H.waveDelayTimer = 0;
+        triggerNextHarvestWave(boss, player);
+      }
+    } else if (allIdle) {
+      // Todas as ondas terminaram e todos os miasmas evaporaram
+      boss.harvestState = null;
+    }
+  }
+}
+
+/**
+ * Atualiza a torrente orbital da Espiral dos Quatro Horizontes (Four-Coil Spiral Stream):
+ * - Enquanto em CASTING, o chefe levita ao centro e ejeta projéteis SOUL_SCYTHE continuamente.
+ * - Cada projétil avança em órbita espiral formando rigorosamente 4 voltas (8π radianos) do centro até a borda.
+ * - Processa rotação no próprio eixo (selfSpin) e colisão precisa com o jogador.
+ */
+export function updateSpiralStream(boss, dt, context) {
+  const { player, frameCount, triggerShake, triggerHaptic, createHitParticles, addDamageText } = context;
+
+  const acx = boss.arenaCenterX !== undefined ? boss.arenaCenterX : boss.x;
+  const acy = boss.arenaCenterY !== undefined ? boss.arenaCenterY : boss.y;
+  const ar = boss.arenaRadius || 620;
+  const maxR = Math.max(50, ar - 18);
+
+  // 1. Emissão contínua a partir do centro da arena
+  if (boss.actionState === SOVEREIGN_STATES.CASTING && boss.currentSkill === 'FOUR_COIL_SPIRAL') {
+    // Levitação suave em direção ao centro da arena cósmica
+    const bdx = acx - boss.x;
+    const bdy = acy - boss.y;
+    boss.x += bdx * 0.08 * dt;
+    boss.y += bdy * 0.08 * dt;
+
+    const streamDuration = SOVEREIGN_CONFIG.SPIRAL_STREAM_DURATION || 180;
+    const ejectInterval = SOVEREIGN_CONFIG.SPIRAL_EJECT_INTERVAL || 2;
+    const travelTime = SOVEREIGN_CONFIG.SPIRAL_TRAVEL_TIME || 220;
+    const totalCoils = SOVEREIGN_CONFIG.SPIRAL_TOTAL_COILS || 4;
+    const bladeRadius = SOVEREIGN_CONFIG.SPIRAL_BLADE_RADIUS || 18;
+    const bladeDamage = Math.round((boss.damage || 365) * (SOVEREIGN_CONFIG.SPIRAL_BLADE_DAMAGE_RATIO || 0.26));
+    const primaryCol = boss.phase === 3 ? '#00cec9' : (boss.phase === 2 ? '#e84393' : '#8e44ad');
+    const rubyCol = '#c0392b';
+
+    if (boss.stateTimer < streamDuration) {
+      boss.spiralEjectTimer = (boss.spiralEjectTimer || 0) + dt;
+
+      while (boss.spiralEjectTimer >= ejectInterval) {
+        boss.spiralEjectTimer -= ejectInterval;
+        if (!boss.spiralBlades) boss.spiralBlades = [];
+
+        const baseAngle = boss.spiralBaseAngle || 0;
+        boss.spiralBlades.push({
+          baseAngle: baseAngle,
+          age: 0,
+          maxAge: travelTime,
+          totalCoils: totalCoils,
+          radius: bladeRadius,
+          damage: bladeDamage,
+          color: primaryCol,
+          rubyColor: rubyCol,
+          selfSpin: Math.random() * Math.PI * 2,
+          x: boss.x,
+          y: boss.y,
+          type: 'SOUL_SCYTHE'
+        });
+      }
+
+      // Efeito sonoro rítmico do bombardeio de foices astrais (intervalo regular)
+      if (Math.floor(boss.stateTimer) % 16 === 0) {
+        playSfx('shoot');
+        triggerHaptic('light');
+      }
+    }
+  }
+
+  // 2. Atualização orbital, física e colisões das lâminas ativas
+  if (!boss.spiralBlades || boss.spiralBlades.length === 0) return;
+
+  const globalRotSpeed = SOVEREIGN_CONFIG.SPIRAL_GLOBAL_ROT_SPEED || 0.012;
+
+  for (let i = boss.spiralBlades.length - 1; i >= 0; i--) {
+    const blade = boss.spiralBlades[i];
+    blade.age += dt;
+    blade.selfSpin += 0.35 * dt;
+
+    const progress = Math.min(1.0, blade.age / blade.maxAge);
+    const coilAngle = progress * (blade.totalCoils || 4) * Math.PI * 2;
+    const globalRot = (boss.stateTimer || 0) * globalRotSpeed;
+    const currentAngle = blade.baseAngle + coilAngle + globalRot;
+    const currentDist = progress * maxR;
+
+    blade.x = acx + Math.cos(currentAngle) * currentDist;
+    blade.y = acy + Math.sin(currentAngle) * currentDist;
+
+    // Desintegração em poeira estelar ao concluir a 4ª volta completa na borda
+    if (blade.age >= blade.maxAge) {
+      if (createHitParticles) {
+        createHitParticles(blade.x, blade.y, blade.color, 6);
+        createHitParticles(blade.x, blade.y, '#ffffff', 3);
+      }
+      boss.spiralBlades.splice(i, 1);
+      continue;
+    }
+
+    // Colisão precisa com o Jogador
+    if (player && player.hp > 0 && (player.bossIFrames || 0) <= 0) {
+      const pdx = player.x - blade.x;
+      const pdy = player.y - blade.y;
+      const pDist = Math.hypot(pdx, pdy);
+
+      if (pDist <= blade.radius + (player.radius || 14)) {
+        player.hp -= blade.damage;
+        player.bossIFrames = 22;
+        player.iFrames = 22;
+
+        playSfx('hit');
+        triggerHaptic('heavy');
+        if (triggerShake) triggerShake(9);
+        if (addDamageText) addDamageText(player.x, player.y, `-${blade.damage}`, false, blade.color);
+        if (createHitParticles) {
+          createHitParticles(player.x, player.y, blade.color, 14);
+          createHitParticles(player.x, player.y, '#ffffff', 6);
+        }
+
+        if (player.hp <= 0) {
+          player.hp = 0;
+          try { triggerDeath(); } catch (err) {}
+        }
+
+        boss.spiralBlades.splice(i, 1);
+        continue;
+      }
+    }
+  }
+}
+
+
 

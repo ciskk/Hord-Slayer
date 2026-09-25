@@ -50,7 +50,9 @@ export function shooterBehavior(e, dt, angle, curSpeed, ctx) {
             damage: 16,
             life: 95,
             bulletType: 'TECH',
-            color: '#ff4757'
+            color: '#ff4757',
+            sourceName: e.name || 'Autômato Artilheiro',
+            enemyType: e.baseType || 'SHOOTER'
           });
           playSfx('shoot');
           // Clarão de boca de fogo volumétrico

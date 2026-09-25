@@ -5,6 +5,7 @@
 import { playSfx } from '../../../core/audio.js';
 import { createHitParticles, addDamageText } from '../../combat.js';
 import { triggerDeath } from '../../ui.js';
+import { setLastAttackerInfo } from '../../../state/events.js';
 
 export function gravityRitualBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, triggerShake, setLastAttackerName } = ctx;
@@ -26,7 +27,13 @@ export function gravityRitualBehavior(e, dt, angle, curSpeed, ctx) {
     if (gdist < 110 && player.iFrames <= 0) {
       player.hp -= e.damage;
       player.iFrames = 25;
-      if (setLastAttackerName) setLastAttackerName("Ritual Gravitacional");
+      setLastAttackerInfo({
+        name: e.name || 'Alto Sacerdote',
+        category: 'MINIBOSS',
+        attackName: 'Ritual Gravitacional',
+        damage: Math.round(e.damage),
+        enemyType: e.baseType || 'HIGH_OCCULTIST'
+      });
       triggerShake(8);
       playSfx('hit');
       addDamageText(player.x, player.y, `-${Math.round(e.damage)}`, false, '#341f97');

@@ -1,4 +1,4 @@
-﻿/* ======================================================== */
+/* ======================================================== */
 /* CONSOLE SECRETO DE DESENVOLVEDOR (W + 5) - DEVTOOLS      */
 /* ======================================================== */
 
@@ -74,6 +74,188 @@
   color: #ffffff;
 }
 
+/* Barra de Telemetria e Status Rápido do Herói (Hero Quick-HUD) */
+.dev-hero-status-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: rgba(13, 16, 26, 0.95);
+  border-bottom: 1px solid rgba(168, 85, 247, 0.25);
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dev-strip-hero-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dev-strip-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1.5px solid #a855f7;
+  color: #fff;
+  font-family: 'Cinzel', serif;
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+}
+
+.dev-strip-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dev-strip-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dev-strip-name {
+  font-family: 'Cinzel', serif;
+  font-weight: 800;
+  font-size: 12px;
+  color: #f8fafc;
+}
+
+.dev-strip-lvl-badge {
+  background: rgba(168, 85, 247, 0.25);
+  border: 1px solid #c084fc;
+  color: #e9d5ff;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.dev-strip-mode-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.dev-strip-mode-badge.auto {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+  color: #6ee7b7;
+}
+
+.dev-strip-mode-badge.manual {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+  color: #fcd34d;
+}
+
+.dev-strip-hp-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dev-strip-hp-bar {
+  width: 75px;
+  height: 5px;
+  background: #1e2436;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid #334155;
+}
+
+.dev-strip-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444, #22c55e);
+  transition: width 0.2s ease;
+}
+
+.dev-strip-hp-val {
+  font-size: 9.5px;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.dev-strip-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dev-strip-weapons-list {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.dev-strip-wpn-pill {
+  background: #171c2b;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.dev-strip-wpn-pill b {
+  color: #ffd166;
+}
+
+.dev-strip-wpn-none {
+  font-size: 9.5px;
+  color: #64748b;
+  font-style: italic;
+}
+
+.dev-strip-cheats-list {
+  display: flex;
+  gap: 4px;
+}
+
+.dev-strip-cheat-badge {
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.dev-strip-cheat-badge.god {
+  background: #10b981;
+  color: #000;
+}
+
+.dev-strip-cheat-badge.cd {
+  background: #38bdf8;
+  color: #000;
+}
+
+.dev-strip-cheat-badge.hit {
+  background: #f1c40f;
+  color: #000;
+}
+
+.dev-strip-cheat-badge.spd {
+  background: #ec4899;
+  color: #fff;
+}
+
+.dev-strip-no-cheats {
+  font-size: 9px;
+  color: #475569;
+  font-weight: 600;
+}
+
 /* Navegação por Abas */
 .dev-tabs-container {
   display: flex;
@@ -134,9 +316,150 @@
   background: #a855f7;
 }
 
-/* Slider de Seleção de Níveis */
+/* Faixa de Resumo de Boost dos Encontros */
+.dev-boost-summary-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dev-boost-summary-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dev-boost-icon {
+  font-size: 16px;
+}
+
+.dev-boost-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dev-boost-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #cbd5e1;
+  font-family: 'Cinzel', serif;
+}
+
+.dev-boost-val {
+  font-size: 11px;
+  color: #ffd166;
+}
+
+.dev-boost-mode-tag {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid;
+}
+
+.dev-boost-mode-tag.auto {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #6ee7b7;
+}
+
+.dev-boost-mode-tag.manual {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+  color: #fcd34d;
+}
+
+.dev-btn-adjust-levels {
+  background: #242b3d;
+  border: 1px solid #475569;
+  color: #cbd5e1;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.dev-btn-adjust-levels:hover {
+  background: #343e57;
+  color: #fff;
+  border-color: #a855f7;
+}
+
+/* 1. Alternador de Modo de Atribuição (Segmented Switch) */
+.dev-mode-section {
+  margin-bottom: 12px;
+}
+
+.dev-mode-segmented-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.dev-mode-pill {
+  background: #141826;
+  border: 1.5px solid #28324a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+}
+
+.dev-mode-pill:hover {
+  background: #1c2236;
+  border-color: #475569;
+}
+
+.dev-mode-pill.active {
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.35), rgba(126, 34, 206, 0.25));
+  border-color: #c084fc;
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.3);
+}
+
+.dev-pill-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.dev-pill-content {
+  flex: 1;
+}
+
+.dev-pill-title {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #ffffff;
+  font-family: 'Cinzel', serif;
+}
+
+.dev-pill-desc {
+  font-size: 9.5px;
+  color: #94a3b8;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+/* 2. Slider e Stepper de Seleção de Níveis */
 .dev-slider-section {
-  background: rgba(22, 26, 38, 0.85);
+  background: rgba(20, 24, 36, 0.85);
   border: 1px solid #2f3852;
   border-radius: 10px;
   padding: 12px;
@@ -173,15 +496,77 @@
   font-family: 'Cinzel', serif;
 }
 
-.dev-slider-readout {
-  font-size: 13px;
-  font-weight: 900;
-  color: #c084fc;
-  text-shadow: 0 0 10px rgba(192, 132, 252, 0.7);
+.dev-level-projection-chip {
+  font-size: 11px;
+  font-weight: 700;
+  color: #cbd5e1;
   background: rgba(168, 85, 247, 0.15);
   border: 1px solid #a855f7;
-  padding: 2px 9px;
+  padding: 3px 10px;
   border-radius: 6px;
+}
+
+/* Stepper de Ajuste Fino */
+.dev-stepper-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 10px 0 6px 0;
+  flex-wrap: wrap;
+}
+
+.dev-stepper-btn {
+  background: #1e2438;
+  border: 1px solid #374363;
+  color: #cbd5e1;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 6px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dev-stepper-btn:hover {
+  background: #2e3855;
+  border-color: #a855f7;
+  color: #fff;
+}
+
+.dev-stepper-display {
+  display: flex;
+  align-items: center;
+  background: #0f1320;
+  border: 1.5px solid #a855f7;
+  border-radius: 6px;
+  padding: 4px 10px;
+  gap: 4px;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.25);
+}
+
+.dev-stepper-prefix {
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffd166;
+}
+
+.dev-stepper-input {
+  width: 44px;
+  background: transparent;
+  border: none;
+  color: #ffd166;
+  font-size: 15px;
+  font-weight: 900;
+  text-align: center;
+  outline: none;
+  font-family: inherit;
+}
+
+.dev-stepper-suffix {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #94a3b8;
 }
 
 .dev-slider-track-wrap {
@@ -250,26 +635,173 @@
   color: #ffffff;
 }
 
-.dev-btn-apply-hero {
+.dev-level-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.dev-btn-apply-hero-main {
+  flex: 1;
+  min-width: 220px;
+  padding: 9px 16px;
+  font-size: 11.5px;
+  font-weight: 800;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.5px;
+  transition: all 0.18s ease;
+}
+
+.dev-btn-apply-hero-main.auto {
   background: linear-gradient(135deg, #059669, #10b981);
   color: #ffffff;
   border: 1px solid #34d399;
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 10.5px;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
-  transition: all 0.15s ease;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
 }
 
-.dev-btn-apply-hero:hover {
+.dev-btn-apply-hero-main.auto:hover {
   filter: brightness(1.15);
   transform: translateY(-1px);
 }
 
-.dev-btn-apply-hero:active {
-  transform: scale(0.96);
+.dev-btn-apply-hero-main.manual {
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  color: #000000;
+  border: 1px solid #fcd34d;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.4);
+}
+
+.dev-btn-apply-hero-main.manual:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+.dev-btn-reset-hero-lvl {
+  padding: 9px 14px;
+  background: #252836;
+  border: 1px solid #4a5068;
+  color: #ff7675;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dev-btn-reset-hero-lvl:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+/* 3. Forja Rápida de Arsenal & Sinergias */
+.dev-armory-section {
+  background: rgba(18, 22, 34, 0.7);
+  border: 1px solid #2b334a;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.dev-armory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dev-armory-card {
+  background: #141826;
+  border: 1px solid #29334d;
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.dev-armory-card:hover {
+  background: #1c2236;
+  border-color: #4b587a;
+}
+
+.dev-armory-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.dev-armory-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dev-armory-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.dev-armory-desc {
+  font-size: 9px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+.dev-armory-btn {
+  padding: 5px 10px;
+  font-size: 10px;
+  font-weight: 800;
+  background: #252e42;
+  border: 1px solid #3c4a6b;
+  color: #38bdf8;
+  border-radius: 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.dev-armory-btn:hover {
+  background: #343e57;
+  color: #ffffff;
+}
+
+.dev-armory-btn.btn-gold {
+  background: rgba(241, 196, 15, 0.15);
+  border-color: #f1c40f;
+  color: #ffd166;
+}
+
+.dev-armory-btn.btn-gold:hover {
+  background: #f1c40f;
+  color: #000;
+}
+
+/* Botão Auto-Completar no Tarô Arcano */
+.levelup-auto-skip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.35));
+  border: 1px solid #f59e0b;
+  color: #ffd166;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+  transition: all 0.15s ease;
+}
+
+.levelup-auto-skip-btn:hover {
+  background: #f59e0b;
+  color: #000;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.5);
+  transform: translateY(-1px);
 }
 
 /* Títulos de Seção */

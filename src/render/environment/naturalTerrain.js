@@ -8,6 +8,58 @@ const GUTTER = 2;
 const CACHE_LIMIT = 64;
 const sceneryCache = new Map();
 const TAU = Math.PI * 2;
+const SOIL_SAMPLE = 4;
+const SOIL_BORDER = 1;
+const SOIL_SIZE = CHUNK / SOIL_SAMPLE + SOIL_BORDER * 2;
+
+// Chunk generation is synchronous. Reuse its scratch surface and exact double
+// precision samples; drawImage copies the result before the next chunk uses it.
+let soilCanvas = null;
+let soilContext = null;
+let soilPixels = null;
+const soilX = new Float64Array(SOIL_SIZE);
+const soilTrailA = new Float64Array(SOIL_SIZE);
+const soilTrailB = new Float64Array(SOIL_SIZE);
+const soilSandWave = new Float64Array(SOIL_SIZE);
+
+function soilNoiseRows() {
+  return {
+    columns: new Float64Array(SOIL_SIZE), weights: new Float64Array(SOIL_SIZE),
+    top: new Float64Array(SOIL_SIZE), bottom: new Float64Array(SOIL_SIZE),
+    row: NaN, weight: 0
+  };
+}
+
+const broadSoilNoise = soilNoiseRows();
+const fineSoilNoise = soilNoiseRows();
+
+function prepareSoilNoise(rows, scale) {
+  rows.row = NaN;
+  for (let i = 0; i < SOIL_SIZE; i++) {
+    const gx = Math.floor(soilX[i] / scale);
+    let u = soilX[i] / scale - gx;
+    u *= u * (3 - 2 * u);
+    rows.columns[i] = gx;
+    rows.weights[i] = u;
+  }
+}
+
+function updateSoilNoiseRow(rows, y, scale, seed) {
+  const gy = Math.floor(y / scale);
+  let v = y / scale - gy;
+  v *= v * (3 - 2 * v);
+  rows.weight = v;
+  if (gy === rows.row) return;
+  rows.row = gy;
+  for (let i = 0; i < SOIL_SIZE; i++) {
+    const gx = rows.columns[i], u = rows.weights[i];
+    const a = terrainHash(gx, gy, seed), b = terrainHash(gx + 1, gy, seed);
+    const c = terrainHash(gx, gy + 1, seed), d = terrainHash(gx + 1, gy + 1, seed);
+    // Same expression/order as noise(), retained without Float32 rounding.
+    rows.top[i] = a + (b - a) * u;
+    rows.bottom[i] = c + (d - c) * u;
+  }
+}
 
 export function terrainHash(x, y, seed = 0) {
   let n = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(seed, 144269);
@@ -308,32 +360,58 @@ function landmark(ctx, x, y, theme, p, variant) {
 
 // Textura contínua de baixa frequência com granulação fina.
 function paintSoil(ctx, ox, oy, p) {
-  const sample = 4, border = 1, size = CHUNK / sample + border * 2;
-  const canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
-  const small = canvas.getContext('2d'); const pixels = small.createImageData(size, size);
-  for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) {
-    const x = ox + (i - border) * sample, y = oy + (j - border) * sample;
-    const broad = noise(x, y, 280, p.seed), fine = noise(x, y, 61, p.seed + 1);
-    let mix = broad * 0.7 + fine * 0.3;
-    if (p.material === 'sand') mix += Math.sin(y / 69 + Math.sin(x / 310) * 2) * 0.19;
-    const distance = pathDistance(x, y);
-    let trail = Math.max(0, Math.min(1, (49 + fine * 25 - distance) / 26));
-    if (p.material === 'sand' || p.material === 'basalt') trail *= 0.16;
-    if (p.material === 'paving' || p.material === 'ruins') {
-      // Terra e musgo aparecem sob os trechos mais erodidos do calçamento.
-      trail = Math.max(0, (fine - 0.48) * 1.7);
-    }
-    const grain = (terrainHash(Math.floor(x), Math.floor(y), p.seed + 2) - 0.5) * 7;
-    const offset = (j * size + i) * 4;
-    for (let k = 0; k < 3; k++) {
-      const natural = p.low[k] + (p.high[k] - p.low[k]) * mix;
-      pixels.data[offset + k] = natural * (1 - trail * 0.78) + p.soil[k] * trail * 0.78 + grain;
-    }
-    pixels.data[offset + 3] = 255;
+  const sample = SOIL_SAMPLE, size = SOIL_SIZE;
+  if (!soilCanvas) {
+    soilCanvas = document.createElement('canvas');
+    soilCanvas.width = soilCanvas.height = size;
+    soilContext = soilCanvas.getContext('2d');
+    soilPixels = soilContext.createImageData(size, size);
   }
-  small.putImageData(pixels, 0, 0);
+  const pixels = soilPixels;
+  const sand = p.material === 'sand';
+  for (let i = 0; i < size; i++) {
+    const x = ox + (i - SOIL_BORDER) * sample;
+    soilX[i] = x;
+    soilTrailA[i] = Math.sin(x / 390) * 86;
+    soilTrailB[i] = Math.sin(x / 970) * 75;
+    if (sand) soilSandWave[i] = Math.sin(x / 310) * 2;
+  }
+  prepareSoilNoise(broadSoilNoise, 280);
+  prepareSoilNoise(fineSoilNoise, 61);
+  for (let j = 0; j < size; j++) {
+    const y = oy + (j - SOIL_BORDER) * sample;
+    const branchWave = Math.sin(y / 490) * 115;
+    updateSoilNoiseRow(broadSoilNoise, y, 280, p.seed);
+    updateSoilNoiseRow(fineSoilNoise, y, 61, p.seed + 1);
+    const bv = broadSoilNoise.weight, fv = fineSoilNoise.weight;
+    for (let i = 0; i < size; i++) {
+      const x = soilX[i];
+      const broad = broadSoilNoise.top[i] * (1 - bv) + broadSoilNoise.bottom[i] * bv;
+      const fine = fineSoilNoise.top[i] * (1 - fv) + fineSoilNoise.bottom[i] * fv;
+      let mix = broad * 0.7 + fine * 0.3;
+      if (sand) mix += Math.sin(y / 69 + soilSandWave[i]) * 0.19;
+      const trailY = y - soilTrailA[i] - soilTrailB[i];
+      const branchX = x - 220 - branchWave;
+      const distance = Math.min(Math.abs(mod(trailY + 600, 1200) - 600),
+        Math.abs(mod(branchX + 850, 1700) - 850) * 1.3);
+      let trail = Math.max(0, Math.min(1, (49 + fine * 25 - distance) / 26));
+      if (p.material === 'sand' || p.material === 'basalt') trail *= 0.16;
+      if (p.material === 'paving' || p.material === 'ruins') {
+        // Terra e musgo aparecem sob os trechos mais erodidos do calçamento.
+        trail = Math.max(0, (fine - 0.48) * 1.7);
+      }
+      const grain = (terrainHash(Math.floor(x), Math.floor(y), p.seed + 2) - 0.5) * 7;
+      const offset = (j * size + i) * 4;
+      for (let k = 0; k < 3; k++) {
+        const natural = p.low[k] + (p.high[k] - p.low[k]) * mix;
+        pixels.data[offset + k] = natural * (1 - trail * 0.78) + p.soil[k] * trail * 0.78 + grain;
+      }
+      pixels.data[offset + 3] = 255;
+    }
+  }
+  soilContext.putImageData(pixels, 0, 0);
   ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(canvas, -sample, -sample, size * sample, size * sample);
+  ctx.drawImage(soilCanvas, -sample, -sample, size * sample, size * sample);
 }
 
 function paving(ctx, ox, oy, p) {

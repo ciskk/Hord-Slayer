@@ -49,8 +49,8 @@ import {
 import { resetMetaTree } from '../systems/progression.js';
 import { playSfx, setGameVolume, audioCtx } from '../core/audio.js';
 import { gameState } from '../state/gameState.js';
-import { activeBoss } from '../state/collections.js';
-import { terminateMatch } from '../main.js';
+import { closeVictoryModal } from './modals/gameOverModal.js';
+import { terminateMatch, resetGame } from '../main.js';
 import { onLayoutChange, updateHudBottomMetric, updateAllAutoFit, setGraphicsQuality, GRAPHICS_QUALITY } from '../core/responsive.js';
 import { resizePreviewCanvas } from '../render/characterPreview.js';
 import { setJoystickMode, JOYSTICK_MODES } from '../core/input.js';
@@ -186,6 +186,17 @@ export function initUI() {
     openCharacterSelect();
   });
   bindClick('restart-victory-btn', () => {
+    closeVictoryModal();
+    terminateMatch();
+    resetGame();
+  });
+  bindClick('talents-victory-btn', () => {
+    closeVictoryModal();
+    terminateMatch();
+    openTalentsModal();
+  });
+  bindClick('menu-victory-btn', () => {
+    closeVictoryModal();
     terminateMatch();
     openCharacterSelect();
   });

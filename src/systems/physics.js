@@ -2,7 +2,7 @@
  * src/systems/physics.js
  * Módulo de Simulação Física e Resolução de Colisões Espaciais (Fases 1.1 e 2.1)
  */
-import { clearSpatialGrid, insertIntoGrid, getNeighborIndices } from '../core/spatialGrid.js';
+import { getNeighborCells, getNeighborIndices } from '../core/spatialGrid.js';
 import { inputX, inputY } from '../core/input.js';
 
 /**
@@ -39,39 +39,45 @@ export function resolveWorldPhysics(player, enemies, dt) {
     const pDistSq1 = (e1.x - player.x) * (e1.x - player.x) + (e1.y - player.y) * (e1.y - player.y);
     if (pDistSq1 > maxSimDistSq && !e1.isBoss && !e1.isMiniBoss) continue;
 
-    const neighbors = getNeighborIndices(e1.x, e1.y, e1.radius * 2);
-    const nLen = neighbors.length;
+    // Snapshot the same cells before resolving any overlap. Iterating their
+    // lists directly preserves pair order and avoids flattening the crowd for
+    // every enemy. Positions still use the original once-per-frame grid.
+    const cells = getNeighborCells(e1.x, e1.y, e1.radius * 2);
+    for (let c = 0; c < cells.length; c++) {
+      const neighbors = cells[c];
+      const nLen = neighbors.length;
 
-    for (let k = 0; k < nLen; k++) {
-      const j = neighbors[k];
-      if (j <= i) continue;
+      for (let k = 0; k < nLen; k++) {
+        const j = neighbors[k];
+        if (j <= i) continue;
 
-      const e2 = enemies[j];
-      if (
-        !e2 || 
-        e2.hp <= 0 || 
-        e2.isBossSubTarget || 
-        e2.baseType === 'BAT' || 
-        (e2.isBoss && (e2.mistState === 'DASHING' || e2.actionState === 'TELEPORTING'))
-      ) {
-        continue;
-      }
+        const e2 = enemies[j];
+        if (
+          !e2 || 
+          e2.hp <= 0 || 
+          e2.isBossSubTarget || 
+          e2.baseType === 'BAT' || 
+          (e2.isBoss && (e2.mistState === 'DASHING' || e2.actionState === 'TELEPORTING'))
+        ) {
+          continue;
+        }
 
-      const dx = e2.x - e1.x;
-      const dy = e2.y - e1.y;
-      const distSq = dx * dx + dy * dy;
-      const minDist = e1.radius + e2.radius;
+        const dx = e2.x - e1.x;
+        const dy = e2.y - e1.y;
+        const distSq = dx * dx + dy * dy;
+        const minDist = e1.radius + e2.radius;
 
-      if (distSq < minDist * minDist && distSq > 0.0001) {
-        const dist = Math.sqrt(distSq);
-        const overlap = (minDist - dist) * 0.50;
-        const nx = dx / dist;
-        const ny = dy / dist;
+        if (distSq < minDist * minDist && distSq > 0.0001) {
+          const dist = Math.sqrt(distSq);
+          const overlap = (minDist - dist) * 0.50;
+          const nx = dx / dist;
+          const ny = dy / dist;
 
-        e1.x -= nx * overlap;
-        e1.y -= ny * overlap;
-        e2.x += nx * overlap;
-        e2.y += ny * overlap;
+          e1.x -= nx * overlap;
+          e1.y -= ny * overlap;
+          e2.x += nx * overlap;
+          e2.y += ny * overlap;
+        }
       }
     }
   }

@@ -5,6 +5,7 @@
 import { playSfx } from '../../../core/audio.js';
 import { createHitParticles, addDamageText } from '../../combat.js';
 import { triggerDeath } from '../../ui.js';
+import { setLastAttackerInfo } from '../../../state/events.js';
 
 export function flamethrowerConeBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, frameCount, triggerShake, setLastAttackerName } = ctx;
@@ -53,7 +54,13 @@ export function flamethrowerConeBehavior(e, dt, angle, curSpeed, ctx) {
         player.iFrames = 11;
         triggerShake(2);
         playSfx('hit');
-        if (setLastAttackerName) setLastAttackerName("Lança-Chamas da Forja");
+        setLastAttackerInfo({
+          name: e.name || 'Lança-Chamas da Forja',
+          category: 'HORDE',
+          attackName: 'Cone de Chamas',
+          damage: 7,
+          enemyType: e.baseType || 'FORGE_PYREGUARD'
+        });
         addDamageText(player.x, player.y, "-7", false, '#e67e22');
         createHitParticles(player.x, player.y, '#e67e22', 3);
         if (player.hp <= 0) {

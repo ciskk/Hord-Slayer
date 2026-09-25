@@ -53,12 +53,16 @@ export function initAbyssSovereign(boss) {
   boss.healingZoneSpawnTimer = 0;
   boss.hasStartedHealingCycle = false;
 
-  boss.attackCooldown = 35; // Primeiro ataque ocorre mais rápido após a introdução
+  boss.attackCooldown = 18; // Primeiro ataque ocorre mais rápido após a introdução
   boss.windupTimer = 0;
   boss.windupMax = 0;
   boss.castDuration = 0;
   boss.currentSkill = null;
   boss.skillCycleIndex = 0;
+  boss.attackDeck = [];
+  boss.attackDeckPhase = 0;
+  boss.lastUsedSkill = null;
+  boss.arenaPattern = null;
 
   boss.beamAngle = 0;
   boss.beamRotSpeed = 0.014;
@@ -82,7 +86,7 @@ export function initAbyssSovereign(boss) {
   }
 
   boss.idleTimer = 0;
-  boss.idleDuration = 20;
+  boss.idleDuration = 10;
   boss.idleBlend = 0;
   boss.eyeAperture = 1.0;
   boss.eyeAnimState = 'OPEN';
@@ -92,6 +96,15 @@ export function initAbyssSovereign(boss) {
   boss.prevY = boss.y;
 
   boss.activeAttacks = [];
+  boss.thresholdBeams = [];
+  boss.harvestState = null;
+  boss.cycloneAngle = 0;
+  boss.cycloneTimer = 0;
+  boss.cycloneAfterimages = [];
+  boss.cycloneSpinAngle = 0;
+  boss.spiralBlades = [];
+  boss.spiralEjectTimer = 0;
+  boss.spiralBaseAngle = 0;
 
   // Inicialização de física inercial dos 9 membros baseados na referência
   boss.tentaclePhysics = [];

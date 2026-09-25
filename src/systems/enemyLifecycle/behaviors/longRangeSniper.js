@@ -34,7 +34,9 @@ export function longRangeSniperBehavior(e, dt, angle, curSpeed, ctx) {
         damage: e.damage,
         life: 110,
         bulletType: 'SNIPER_ARROW',
-        color: '#9c88ff'
+        color: '#9c88ff',
+        sourceName: e.name || 'Arqueiro de Éter',
+        enemyType: e.baseType || 'SNIPER_CULTIST'
       });
       createHitParticles(e.x, e.y, '#9c88ff', 6);
       addDamageText(e.x, e.y, "TIRO PRECISO!", false, '#9c88ff');

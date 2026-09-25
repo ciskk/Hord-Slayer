@@ -9,10 +9,29 @@
  */
 import { ctx, frameCount } from '../../state/gameState.js';
 import { STALKER_DASH } from '../../config/stalkerDash.js';
+import { isCrawler, orientCrawler } from '../../entities/enemies/crawlerLocomotion.js';
 import { KRAGDOR_ULT } from '../../config/kragdorUlt.js';
 import { drawKragdorAffliction } from '../kragdorUlt.js';
 import { player } from '../../entities/player.js';
 
+// The icon order is fixed. Reuse its eight possible combinations instead of
+// allocating an array for every visible creature, including unaffected mobs.
+const STATUS_ICON_COMBINATIONS = [
+  [], ['poison'], ['fire'], ['poison', 'fire'],
+  ['freeze'], ['poison', 'freeze'], ['fire', 'freeze'], ['poison', 'fire', 'freeze']
+];
+const SNOWFLAKE_ARMS = Array.from({ length: 6 }, (_, k) => {
+  const ang = (k * Math.PI) / 3;
+  const cos = Math.cos(ang), sin = Math.sin(ang);
+  const bx = cos * 2.6, by = sin * 2.6;
+  return {
+    x: cos * 4.6, y: sin * 4.6, bx, by,
+    barb1X: bx + Math.cos(ang + Math.PI * 0.25) * 1.6,
+    barb1Y: by + Math.sin(ang + Math.PI * 0.25) * 1.6,
+    barb2X: bx + Math.cos(ang - Math.PI * 0.25) * 1.6,
+    barb2Y: by + Math.sin(ang - Math.PI * 0.25) * 1.6
+  };
+});
 
 /**
  * Renderiza o ícone de Caveira Roxa para envenenamento (veneno roxo da Valéria).
@@ -148,30 +167,19 @@ export function drawSnowflakeIcon(ctx, x, y) {
   ctx.stroke();
 
   // Floco de neve radial de 6 pontas
-  const armLen = 4.6;
-  const barbLen = 1.6;
-  const barbPos = 2.6;
-
   ctx.lineCap = 'round';
   ctx.strokeStyle = '#e3f4ff';
   ctx.lineWidth = 1.2;
 
   ctx.beginPath();
-  for (let k = 0; k < 6; k++) {
-    const ang = (k * Math.PI) / 3;
-    const cos = Math.cos(ang);
-    const sin = Math.sin(ang);
+  for (let k = 0; k < SNOWFLAKE_ARMS.length; k++) {
+    const arm = SNOWFLAKE_ARMS[k];
     ctx.moveTo(0, 0);
-    ctx.lineTo(cos * armLen, sin * armLen);
-
-    const bx = cos * barbPos;
-    const by = sin * barbPos;
-    const barbAng1 = ang + Math.PI * 0.25;
-    const barbAng2 = ang - Math.PI * 0.25;
-    ctx.moveTo(bx, by);
-    ctx.lineTo(bx + Math.cos(barbAng1) * barbLen, by + Math.sin(barbAng1) * barbLen);
-    ctx.moveTo(bx, by);
-    ctx.lineTo(bx + Math.cos(barbAng2) * barbLen, by + Math.sin(barbAng2) * barbLen);
+    ctx.lineTo(arm.x, arm.y);
+    ctx.moveTo(arm.bx, arm.by);
+    ctx.lineTo(arm.barb1X, arm.barb1Y);
+    ctx.moveTo(arm.bx, arm.by);
+    ctx.lineTo(arm.barb2X, arm.barb2Y);
   }
   ctx.stroke();
 
@@ -199,8 +207,15 @@ export function drawSnowflakeIcon(ctx, x, y) {
  * @param {Object} e Entidade do inimigo
  */
 export function drawEnemyStatusOverlays(e) {
-  ctx.save();
   const hasRoarMark = e.roarMarkTimer > 0 && e.isVulnerable && e.vulnerableTimer > 0;
+  const isAiming = !(e.stunTimer > 0) && (e.combatState === 'WINDUP' || e.lanceState === 'aim' || e.flameState === 'aim' || e.dashState === 'aim');
+  const statusMask = (((e.acidBurnTimer > 0) || ((e.acidStacks || 0) > 0 && (e.acidStackTimer || 0) > 0)) ? 1 : 0)
+    | ((e.fireBurnTimer || 0) > 0 ? 2 : 0)
+    | ((e.freezeTimer || 0) > 0 ? 4 : 0);
+  if (!hasRoarMark && !(e.stunTimer > 0) && !(e.isVulnerable && e.vulnerableTimer > 0)
+    && !e.isElite && !isAiming && statusMask === 0) return;
+
+  ctx.save();
   if (hasRoarMark) drawKragdorAffliction(ctx, e, frameCount);
   // Status marks occupy separate regions; the creature silhouette stays clear.
   if (e.stunTimer > 0 && !hasRoarMark) {
@@ -231,7 +246,7 @@ export function drawEnemyStatusOverlays(e) {
     ctx.lineTo(7,y-3);ctx.lineTo(6,y+3);ctx.closePath();ctx.fill();ctx.stroke();
   }
   // Alerta suspenso vermelho que carrega visualmente durante a preparação do golpe
-  if (!(e.stunTimer > 0) && (e.combatState === 'WINDUP' || e.lanceState === 'aim' || e.flameState === 'aim' || e.dashState === 'aim')) {
+  if (isAiming) {
     let prog = 0;
     if (e.combatState === 'WINDUP') {
       const maxF = (e.attackWindupFrames && e.attackWindupFrames > 0) ? e.attackWindupFrames : 20;
@@ -269,16 +284,7 @@ export function drawEnemyStatusOverlays(e) {
   }
 
   // --- Ícones de Status sobre a Cabeça do Monstro ---
-  const activeStatusIcons = [];
-  if ((e.acidBurnTimer > 0) || ((e.acidStacks || 0) > 0 && (e.acidStackTimer || 0) > 0)) {
-    activeStatusIcons.push('poison');
-  }
-  if ((e.fireBurnTimer || 0) > 0) {
-    activeStatusIcons.push('fire');
-  }
-  if ((e.freezeTimer || 0) > 0) {
-    activeStatusIcons.push('freeze');
-  }
+  const activeStatusIcons = STATUS_ICON_COMBINATIONS[statusMask];
 
   if (activeStatusIcons.length > 0) {
     ctx.save();
@@ -288,7 +294,6 @@ export function drawEnemyStatusOverlays(e) {
     const r = Number.isFinite(e.radius) && e.radius > 0 ? e.radius : 12;
     let iconY = -r * 1.35 - 11;
 
-    const isAiming = !(e.stunTimer > 0) && (e.combatState === 'WINDUP' || e.lanceState === 'aim' || e.flameState === 'aim' || e.dashState === 'aim');
     if (isAiming) iconY -= 14;
     if (e.isElite) iconY -= 11;
     if (e.stunTimer > 0) iconY -= 9;
@@ -605,6 +610,20 @@ export function drawCommonEnemyGroundDecorations(e) {
  * @param {Object} e Entidade do monstro comum
  */
 export function applyKinematicDeformations(e) {
+  if (isCrawler(e)) {
+    // Altitude stays vertical on screen; squash follows the creature's own axis.
+    ctx.translate(0, -Math.max(0, e.jumpZ || 0));
+    orientCrawler(ctx, e);
+    if (e.jumpZ > 0) ctx.scale(1.28, 0.78);
+    else if (e.leapState === 'windup') {
+      const tension = Math.sin(Math.min(1, (e.leapTimer || 0) / (e.leapDuration || 12)) * Math.PI);
+      ctx.scale(1 - tension * 0.22, 1 + tension * 0.18);
+    } else if (e.leapState === 'landing') {
+      const impact = 1 - Math.min(1, (e.leapTimer || 0) / (e.leapDuration || 8));
+      ctx.scale(1 + impact * 0.35, 1 - impact * 0.3);
+    }
+    return;
+  }
   if (e.roarMarkTimer > KRAGDOR_ULT.vulnerableDuration - 18) {
     const age = KRAGDOR_ULT.vulnerableDuration - e.roarMarkTimer;
     const recoil = Math.sin(age * 0.85) * (1 - age / 18);
@@ -812,4 +831,3 @@ export function drawEnemyAttackTelegraph(e) {
 
   ctx.restore();
 }
-

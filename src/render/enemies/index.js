@@ -11,6 +11,7 @@ import { drawEnemyStatusOverlays, drawMiniBossHpOverlay, drawCommonEnemyGroundDe
 import { drawCachedEnemy, clearSpriteCache } from './spriteCache.js';
 import { getEnemyDeathProgress } from '../../config/enemyDeaths.js';
 import { drawDeathResidue } from './deathEffects.js';
+import { orientCrawler } from '../../entities/enemies/crawlerLocomotion.js';
 export { clearSpriteCache };
 import * as zombie from './zombieRenderer.js';
 import * as bat from './batRenderer.js';
@@ -142,6 +143,7 @@ export function drawDyingEnemyShape(de) {
   ctx.translate(0, -(de.deathJumpZ || 0) * Math.max(0, 1 - t / 0.35));
   ctx.scale(de.facing, 1);
   if (de.rot) ctx.rotate(de.rot);
+  orientCrawler(ctx, de);
 
   const bodyAlpha = Math.max(0, 1 - Math.max(0, (t - 0.75) / 0.25));
   ctx.globalAlpha *= bodyAlpha;

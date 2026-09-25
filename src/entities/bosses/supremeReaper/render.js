@@ -9,6 +9,9 @@ import { dpr, viewW, viewH, bannerCtx } from '../../../main.js';
 import { getHudBottom } from '../../../core/responsive.js';
 import { player } from '../../player.js';
 import { REAPER_STATES, REAPER_CONFIG, REAPER_SKILLS } from './constants.js';
+import { drawReaperRanged } from './rangedAttacks.js';
+import { drawReaperRegalia } from './skinDetails.js';
+import { drawReaperIntroRitual, drawReaperIntroDischarge } from './introEffects.js';
 
 // ============================================================================
 // 1. BANNER CINEMATOGRÁFICO DE APRESENTAÇÃO EM TELA CHEIA
@@ -217,7 +220,15 @@ export function drawCinematicScreenTitle(ctx, e, frameCount) {
  * @param {number} frameCount
  */
 export function drawReaperSpawnIntro(ctx, e, frameCount) {
-  const introMax = e.introDuration || 300;
+  const duration = e.introDuration || REAPER_CONFIG.INTRO_DURATION;
+  const progress = Math.max(0, Math.min(1, 1 - e.introTimer / duration));
+  drawReaperIntroRitual(ctx, progress);
+  drawReaperIntroBody(ctx, e, frameCount);
+  drawReaperIntroDischarge(ctx, progress);
+}
+
+function drawReaperIntroBody(ctx, e, frameCount) {
+  const introMax = e.introDuration || REAPER_CONFIG.INTRO_DURATION;
   const progress = Math.max(0, Math.min(1, 1 - (e.introTimer / introMax)));
 
   // =========================================================================
@@ -430,6 +441,7 @@ export function drawReaperSpawnIntro(ctx, e, frameCount) {
     ctx.translate(18 - 36, Math.min(22, scytheY) + 10);
     ctx.rotate(0.24); // Levemente inclinada ao penetrar a terra
     const fakeBoss = { scytheAngle: 0, scytheGlow: 1.0, crankAngle: 0 };
+    ctx.scale(REAPER_CONFIG.BODY_SCALE, REAPER_CONFIG.BODY_SCALE);
     drawOrnateScythe(ctx, fakeBoss, 0, false, false, 0, frameCount);
     ctx.restore();
 
@@ -473,7 +485,7 @@ export function drawReaperSpawnIntro(ctx, e, frameCount) {
   if (progress < 0.75) {
     const act3Norm = (progress - 0.50) / 0.25;
     const wingSpan = 0.35 + act3Norm * 1.05; // 0.35 a 1.4x
-    const flap = Math.sin(frameCount * 0.16) * 10 * (1 - act3Norm * 0.3);
+    const flap = Math.sin(frameCount * 0.08) * 0.12 * (1 - act3Norm * 0.3);
     const bob = Math.sin(frameCount * 0.08) * 4;
 
     ctx.save();
@@ -485,6 +497,8 @@ export function drawReaperSpawnIntro(ctx, e, frameCount) {
     ctx.ellipse(0, 0, 75, 95, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    ctx.save();
+    ctx.scale(REAPER_CONFIG.BODY_SCALE, REAPER_CONFIG.BODY_SCALE);
     drawReaperShadow(ctx, e, bob, false, 0);
     drawSpectralWings(ctx, e, bob, false, false, flap, wingSpan);
     drawEclipseHalo(ctx, e, bob, frameCount, false, false, false, 0);
@@ -495,6 +509,8 @@ export function drawReaperSpawnIntro(ctx, e, frameCount) {
     drawReaperArmsAndGauntlets(ctx, e, bob, frameCount, false, false, 0.4, 0);
     drawMaskAndEyes(ctx, e, bob, frameCount, false, false, 0);
     drawOrnateScythe(ctx, e, bob, false, false, 0, frameCount);
+    drawReaperRegalia(ctx, e, bob, frameCount, false, false, false);
+    ctx.restore();
     drawGothicLanterns(ctx, e, bob, frameCount, false);
 
     ctx.restore();
@@ -506,7 +522,7 @@ export function drawReaperSpawnIntro(ctx, e, frameCount) {
   // =========================================================================
   const act4Norm = (progress - 0.75) / 0.25;
   const wingSpan = 1.45;
-  const flap = Math.sin(frameCount * 0.12) * 8;
+  const flap = Math.sin(frameCount * 0.08) * 0.08;
   const bob = Math.sin(frameCount * 0.08) * 4;
 
   ctx.save();
@@ -535,6 +551,8 @@ export function drawReaperSpawnIntro(ctx, e, frameCount) {
   ctx.restore();
 
   // 3. Renderização Plena de Thanatos em Prontidão de Batalha
+  ctx.save();
+  ctx.scale(REAPER_CONFIG.BODY_SCALE, REAPER_CONFIG.BODY_SCALE);
   drawReaperShadow(ctx, e, bob, false, 0);
   drawSpectralWings(ctx, e, bob, false, false, flap, wingSpan);
   drawEclipseHalo(ctx, e, bob, frameCount, false, false, false, 0);
@@ -545,6 +563,8 @@ export function drawReaperSpawnIntro(ctx, e, frameCount) {
   drawReaperArmsAndGauntlets(ctx, e, bob, frameCount, false, false, 0.4, 0);
   drawMaskAndEyes(ctx, e, bob, frameCount, false, false, 0);
   drawOrnateScythe(ctx, e, bob, false, false, 0, frameCount);
+  drawReaperRegalia(ctx, e, bob, frameCount, false, false, false);
+  ctx.restore();
   drawGothicLanterns(ctx, e, bob, frameCount, false);
 
   ctx.restore();
@@ -583,7 +603,7 @@ export function drawGhostTrail(ctx, e) {
     ctx.globalAlpha = t.alpha;
     ctx.fillStyle = t.enraged ? 'rgba(255, 71, 87, 0.35)' : 'rgba(0, 206, 201, 0.28)';
     ctx.beginPath();
-    ctx.ellipse(t.x - e.x, t.y - e.y, e.radius * 0.75, e.radius * 0.95, 0, 0, Math.PI * 2);
+    ctx.ellipse(t.x - e.x, t.y - e.y, e.radius * 0.75 * REAPER_CONFIG.BODY_SCALE, e.radius * 0.95 * REAPER_CONFIG.BODY_SCALE, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -600,7 +620,7 @@ export function drawAfterImages(ctx, e) {
 
     ctx.save();
     ctx.translate(ai.x - e.x, ai.y - e.y);
-    ctx.scale(ai.facing || 1, 1);
+    ctx.scale((ai.facing || 1) * REAPER_CONFIG.BODY_SCALE, REAPER_CONFIG.BODY_SCALE);
     ctx.globalAlpha = alpha;
 
     ctx.fillStyle = 'rgba(0, 206, 201, 0.35)';
@@ -636,8 +656,8 @@ export function drawEyeTrails(ctx, e) {
     const oy = pt.y - e.y;
 
     ctx.beginPath();
-    ctx.arc(ox - 5 * pt.facing, oy, size, 0, Math.PI * 2);
-    ctx.arc(ox + 5 * pt.facing, oy, size, 0, Math.PI * 2);
+    ctx.arc(ox - 5 * pt.facing * REAPER_CONFIG.BODY_SCALE, oy, size, 0, Math.PI * 2);
+    ctx.arc(ox + 5 * pt.facing * REAPER_CONFIG.BODY_SCALE, oy, size, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
@@ -2048,6 +2068,57 @@ export function drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 
 export function drawGothicLanterns(ctx, e, bob, frameCount, isEnraged) {
   if (!e.lanterns) return;
 
+  // 1. Rede de Lasers Espirituais (Spirit Lattice) entre lanternas adjacentes ativas
+  const n = e.lanterns.length;
+  if (n > 1) {
+    for (let i = 0; i < n; i++) {
+      const nextIdx = (i + 1) % n;
+      const la = e.lanterns[i];
+      const lb = e.lanterns[nextIdx];
+
+      if (la.active && lb.active) {
+        const lxA = Math.cos(la.angle) * la.dist;
+        const lyA = (Math.sin(la.angle) * (la.dist * 0.48)) + bob + (la.sway || 0);
+        const lxB = Math.cos(lb.angle) * lb.dist;
+        const lyB = (Math.sin(lb.angle) * (lb.dist * 0.48)) + bob + (lb.sway || 0);
+
+        const beamPulse = (Math.sin(frameCount * 0.2 + i) + 1) * 0.5;
+
+        ctx.save();
+        // Brilho difuso exterior
+        ctx.strokeStyle = isEnraged 
+          ? `rgba(255, 71, 87, ${0.30 + beamPulse * 0.35})` 
+          : `rgba(0, 206, 201, ${0.30 + beamPulse * 0.35})`;
+        ctx.lineWidth = 6.0 + beamPulse * 2.5;
+        ctx.beginPath();
+        ctx.moveTo(lxA, lyA);
+        ctx.lineTo(lxB, lyB);
+        ctx.stroke();
+
+        // Núcleo energético do feixe
+        ctx.strokeStyle = isEnraged ? '#ff7675' : '#81ecec';
+        ctx.lineWidth = 2.4;
+        ctx.stroke();
+
+        // Fio central branco-incandescente
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.0;
+        ctx.stroke();
+
+        // Partícula de pulso correndo ao longo do feixe
+        const sparkT = ((frameCount * 0.035 + i * 0.28) % 1.0);
+        const sparkX = lxA + (lxB - lxA) * sparkT;
+        const sparkY = lyA + (lyB - lyA) * sparkT;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(sparkX, sparkY, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+  }
+
   for (let l of e.lanterns) {
     if (!l.active) continue;
 
@@ -2060,7 +2131,7 @@ export function drawGothicLanterns(ctx, e, bob, frameCount, isEnraged) {
     ctx.lineWidth = 1.8;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    ctx.moveTo(0, -18 + bob);
+    ctx.moveTo(0, (-18 + bob) * REAPER_CONFIG.BODY_SCALE);
     ctx.lineTo(lx, ly - l.radius - 8);
     ctx.stroke();
     ctx.restore();
@@ -2340,62 +2411,799 @@ export function drawSoulTetherBeam(ctx, e, bob) {
   const targetY = player.y - e.y;
   const originY = -12 + bob;
 
+  const tension = e.tetherTension || 0;
+  const isHighTension = tension > 0.45;
+
   ctx.save();
 
-  // 1. Círculo Limite de Ruptura do Vínculo (310px) centrado no Ceifador
+  // 1. Círculo Limite de Ruptura do Vínculo (310px) centrado no Ceifador com pulso e alerta de tensão
   const maxR = e.tetherMaxDist || 310;
-  ctx.strokeStyle = 'rgba(0, 206, 201, 0.40)';
-  ctx.lineWidth = 2.2;
+  ctx.strokeStyle = isHighTension 
+    ? `rgba(255, 71, 87, ${0.40 + tension * 0.40})` 
+    : 'rgba(0, 206, 201, 0.40)';
+  ctx.lineWidth = 2.2 + tension * 1.5;
   ctx.setLineDash([8, 8]);
-  ctx.lineDashOffset = -performance.now() * 0.02;
+  ctx.lineDashOffset = -performance.now() * (0.02 + tension * 0.04);
   ctx.beginPath();
   ctx.arc(0, 0, maxR, 0, Math.PI * 2);
   ctx.stroke();
   ctx.setLineDash([]);
 
   // Marcadores de pulso nas 4 direções cardeais do anel
-  ctx.fillStyle = '#81ecec';
+  ctx.fillStyle = isHighTension ? '#ff7675' : '#81ecec';
   for (let k = 0; k < 4; k++) {
     const ma = (k * Math.PI) / 2;
     ctx.beginPath();
-    ctx.arc(Math.cos(ma) * maxR, Math.sin(ma) * maxR, 3.5, 0, Math.PI * 2);
+    ctx.arc(Math.cos(ma) * maxR, Math.sin(ma) * maxR, 3.5 + tension * 2.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // 2. Feixe / Corrente de Almas entre Ceifador e Jogador
-  ctx.strokeStyle = 'rgba(0, 206, 201, 0.85)';
-  ctx.lineWidth = 3.5;
+  // 2. Feixe / Corrente de Almas entre Ceifador e Jogador com vibração/estiramento por tensão
+  const jitterX = isHighTension ? (Math.random() - 0.5) * (tension * 5.5) : 0;
+  const jitterY = isHighTension ? (Math.random() - 0.5) * (tension * 5.5) : 0;
+
+  ctx.strokeStyle = isHighTension 
+    ? `rgba(255, 71, 87, ${0.85 + tension * 0.15})` 
+    : 'rgba(0, 206, 201, 0.85)';
+  ctx.lineWidth = 3.5 + tension * 2.2;
   ctx.setLineDash([10, 6]);
-  ctx.lineDashOffset = -performance.now() * 0.04;
+  ctx.lineDashOffset = -performance.now() * (0.04 + tension * 0.08);
   ctx.beginPath();
   ctx.moveTo(0, originY);
-  ctx.lineTo(targetX, targetY);
+  ctx.lineTo(targetX + jitterX, targetY + jitterY);
   ctx.stroke();
 
   ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1.6;
+  ctx.lineWidth = 1.6 + tension * 0.8;
   ctx.setLineDash([6, 10]);
   ctx.lineDashOffset = performance.now() * 0.05;
   ctx.beginPath();
   ctx.moveTo(0, originY);
-  ctx.lineTo(targetX, targetY);
+  ctx.lineTo(targetX + jitterX, targetY + jitterY);
   ctx.stroke();
   ctx.setLineDash([]);
 
   // Orbe de conexão no Jogador
-  ctx.strokeStyle = '#00cec9';
-  ctx.lineWidth = 2.2;
+  ctx.strokeStyle = isHighTension ? '#ff4757' : '#00cec9';
+  ctx.lineWidth = 2.2 + tension * 1.5;
   ctx.beginPath();
-  ctx.arc(targetX, targetY, 22, 0, Math.PI * 2);
+  ctx.arc(targetX, targetY, 22 + tension * 5, 0, Math.PI * 2);
   ctx.stroke();
 
-  ctx.fillStyle = 'rgba(0, 206, 201, 0.22)';
+  ctx.fillStyle = isHighTension ? 'rgba(255, 71, 87, 0.35)' : 'rgba(0, 206, 201, 0.22)';
   ctx.fill();
 
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();
   ctx.arc(targetX, targetY, 4.5, 0, Math.PI * 2);
   ctx.fill();
+
+  ctx.restore();
+}
+
+/**
+ * Desenha os Fragmentos de Alma liberados pela destruição das lanternas no espaço do mundo.
+ */
+export function drawSoulShards(ctx, e, frameCount) {
+  if (!e.soulShards || e.soulShards.length === 0) return;
+
+  for (let s of e.soulShards) {
+    const bob = Math.sin((frameCount * 0.08) + s.bobOffset) * 5;
+    const sx = s.x;
+    const sy = s.y + bob;
+
+    ctx.save();
+    ctx.translate(sx, sy);
+
+    // 1. Halo difuso exterior pulsante
+    const pulse = (Math.sin(frameCount * 0.15 + s.bobOffset) + 1) * 0.5;
+    const auraR = s.radius * (1.2 + pulse * 0.4);
+    const grad = ctx.createRadialGradient(0, 0, 2, 0, 0, auraR);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.35, '#81ecec');
+    grad.addColorStop(0.75, 'rgba(0, 206, 201, 0.45)');
+    grad.addColorStop(1, 'rgba(0, 206, 201, 0)');
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, auraR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Anel rúnico rotativo ao redor do fragmento
+    ctx.strokeStyle = '#00cec9';
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([4, 4]);
+    ctx.lineDashOffset = -frameCount * 0.05;
+    ctx.beginPath();
+    ctx.arc(0, 0, s.radius * 1.35, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 3. Cristal de Essência / Orbe Central
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, 0, s.radius * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 4. Labareda espectral ascendente
+    ctx.fillStyle = 'rgba(129, 236, 236, 0.85)';
+    ctx.beginPath();
+    ctx.moveTo(-4, -2);
+    ctx.quadraticCurveTo(0, -s.radius * 1.8 - pulse * 4, 4, -2);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+/**
+ * Renderiza o Sino Espectral do Badalo Fúnebre e suas reverberações astrais.
+ */
+export function drawDeathTollBell(ctx, e, frameCount) {
+  const S = e.deathToll;
+  if (!S || !S.active) return;
+
+  const bx = S.x || e.x;
+  const by = S.y || (e.y - 70);
+
+  ctx.save();
+  ctx.translate(bx, by);
+
+  // 1. Correntes astrais verticais conectando o sino ao Ceifador
+  ctx.save();
+  ctx.strokeStyle = 'rgba(241, 196, 15, 0.45)';
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([5, 5]);
+  ctx.lineDashOffset = -frameCount * 0.1;
+  ctx.beginPath();
+  ctx.moveTo(0, 20);
+  ctx.lineTo(e.x - bx, (e.y - 15) - by);
+  ctx.stroke();
+  ctx.restore();
+
+  // 2. Halo difuso do sino pulsante
+  const chimePulse = Math.sin(frameCount * 0.15) * 4;
+  const haloR = 34 + chimePulse;
+  const haloGrad = ctx.createRadialGradient(0, 0, 8, 0, 0, haloR);
+  haloGrad.addColorStop(0, 'rgba(255, 234, 167, 0.55)');
+  haloGrad.addColorStop(0.5, 'rgba(241, 196, 15, 0.25)');
+  haloGrad.addColorStop(1, 'rgba(241, 196, 15, 0)');
+  ctx.fillStyle = haloGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, haloR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 3. Sino Espectral Estilizado (Geometria Gótica)
+  const swing = Math.sin(frameCount * 0.25) * 0.12;
+  ctx.rotate(swing);
+
+  // Topo do sino (argola / coroa de fixação)
+  ctx.strokeStyle = '#ffeaa7';
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  ctx.arc(0, -22, 6, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Corpo do sino
+  ctx.fillStyle = '#2d3436';
+  ctx.strokeStyle = '#f1c40f';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-7, -18);
+  ctx.bezierCurveTo(-14, -6, -20, 8, -26, 16);
+  ctx.quadraticCurveTo(0, 21, 26, 16);
+  ctx.bezierCurveTo(20, 8, 14, -6, 7, -18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Friso dourado / rúnico na boca do sino
+  ctx.strokeStyle = '#ffeaa7';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-24, 13);
+  ctx.quadraticCurveTo(0, 17, 24, 13);
+  ctx.stroke();
+
+  // Badalo interno (clapper) oscilando
+  const clapperSwing = Math.sin(frameCount * 0.35) * 10;
+  ctx.strokeStyle = '#f39c12';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(clapperSwing, 22);
+  ctx.stroke();
+
+  ctx.fillStyle = '#ffeaa7';
+  ctx.beginPath();
+  ctx.arc(clapperSwing, 22, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
+ * Renderiza os anéis de som concêntricos do Badalo Fúnebre e suas frestas seguras destacadas.
+ */
+export function drawDeathTollRings(ctx, e, frameCount) {
+  const S = e.deathToll;
+  if (!S || !S.rings || S.rings.length === 0) return;
+
+  const bx = e.x;
+  const by = e.y;
+
+  ctx.save();
+  for (const ring of S.rings) {
+    const r = ring.radius;
+    if (r <= 5) continue;
+
+    const ringAlpha = Math.max(0, Math.min(1, (ring.maxRadius - r) / (ring.maxRadius * 0.25)));
+    const step = (Math.PI * 2) / ring.gapCount;
+
+    for (let g = 0; g < ring.gapCount; g++) {
+      const gapCenter = ring.baseGapAngle + g * step;
+      const startSafe = gapCenter - ring.gapHalfWidth;
+      const endSafe = gapCenter + ring.gapHalfWidth;
+      const nextStartSafe = (gapCenter + step) - ring.gapHalfWidth;
+
+      // 1. Arco Letal (entre endSafe e nextStartSafe)
+      ctx.save();
+      ctx.strokeStyle = ring.hitPlayer 
+        ? `rgba(255, 71, 87, ${ringAlpha * 0.85})` 
+        : `rgba(241, 196, 15, ${ringAlpha * 0.90})`;
+      ctx.lineWidth = 5.5;
+      ctx.shadowColor = ring.hitPlayer ? '#ff4757' : '#f1c40f';
+      ctx.shadowBlur = 12;
+
+      ctx.beginPath();
+      ctx.arc(bx, by, r, endSafe, nextStartSafe);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(bx, by, r, endSafe, nextStartSafe);
+      ctx.stroke();
+      ctx.restore();
+
+      // 2. Fresta Segura (Safe Gap) destacada com arcos tracejados verde-esmeralda/ciano
+      ctx.save();
+      ctx.strokeStyle = `rgba(46, 204, 113, ${ringAlpha * 0.80})`;
+      ctx.lineWidth = 3.5;
+      ctx.setLineDash([6, 6]);
+      ctx.lineDashOffset = -frameCount * 0.08;
+      ctx.beginPath();
+      ctx.arc(bx, by, r, startSafe, endSafe);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Marcadores rúnicos verdes nos limites da fresta segura
+      ctx.fillStyle = '#2ecc71';
+      const p1x = bx + Math.cos(startSafe) * r;
+      const p1y = by + Math.sin(startSafe) * r;
+      const p2x = bx + Math.cos(endSafe) * r;
+      const p2y = by + Math.sin(endSafe) * r;
+      ctx.beginPath();
+      ctx.arc(p1x, p1y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(p2x, p2y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+/**
+ * Renderiza as Fendas Dimensionais (Veil Cleave) no espaço do mundo.
+ */
+export function drawVeilCleaves(ctx, e, frameCount) {
+  if (!e.veilCleaves || e.veilCleaves.length === 0) return;
+
+  ctx.save();
+  for (const vc of e.veilCleaves) {
+    const cosA = Math.cos(vc.angle);
+    const sinA = Math.sin(vc.angle);
+    const halfL = vc.length * 0.5;
+    const x1 = vc.x - cosA * halfL;
+    const y1 = vc.y - sinA * halfL;
+    const x2 = vc.x + cosA * halfL;
+    const y2 = vc.y + sinA * halfL;
+
+    const baseColor = vc.isEnraged ? '#ff4757' : '#00cec9';
+    const rgbColor = vc.isEnraged ? '255, 71, 87' : '0, 206, 201';
+
+    if (!vc.exploded) {
+      // 1. Fase de Carga: Fissura espacial se rasgando e atraindo matéria
+      const progress = 1 - Math.max(0, vc.timer / vc.maxTimer);
+      const pulse = Math.sin(frameCount * 0.35) * 0.25 + 0.75;
+      const w = Math.max(4, vc.width * progress);
+
+      // Faixa de perigo / corredor de dano translúcido
+      ctx.save();
+      ctx.fillStyle = `rgba(${rgbColor}, ${0.12 + progress * 0.18})`;
+      ctx.beginPath();
+      const perpX = -sinA * (w * 0.5);
+      const perpY = cosA * (w * 0.5);
+      ctx.moveTo(x1 + perpX, y1 + perpY);
+      ctx.lineTo(x2 + perpX, y2 + perpY);
+      ctx.lineTo(x2 - perpX, y2 - perpY);
+      ctx.lineTo(x1 - perpX, y1 - perpY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Linhas de borda tracejadas do corredor
+      ctx.strokeStyle = `rgba(${rgbColor}, ${0.45 + progress * 0.45})`;
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([8, 6]);
+      ctx.lineDashOffset = -frameCount * 0.1;
+      ctx.beginPath();
+      ctx.moveTo(x1 + perpX, y1 + perpY);
+      ctx.lineTo(x2 + perpX, y2 + perpY);
+      ctx.moveTo(x1 - perpX, y1 - perpY);
+      ctx.lineTo(x2 - perpX, y2 - perpY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Fenda central cintilante de vácuo dimensional
+      ctx.strokeStyle = baseColor;
+      ctx.lineWidth = 3 + pulse * 2.5;
+      ctx.shadowColor = baseColor;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      // Linha de luz branca central afiada
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      // Indicadores de sucção gravitacional (setas/marcas perpendiculares convergindo para o centro)
+      if (progress > 0.3) {
+        ctx.strokeStyle = `rgba(${rgbColor}, ${0.5 + pulse * 0.3})`;
+        ctx.lineWidth = 1.5;
+        const arrowDist = (1 - ((frameCount * 0.05) % 1)) * (w * 0.6 + 10);
+        for (let s = -halfL + 40; s < halfL - 20; s += 70) {
+          const cx = vc.x + cosA * s;
+          const cy = vc.y + sinA * s;
+          ctx.beginPath();
+          ctx.moveTo(cx - sinA * arrowDist, cy + cosA * arrowDist);
+          ctx.lineTo(cx - sinA * (arrowDist * 0.3), cy + cosA * (arrowDist * 0.3));
+          ctx.moveTo(cx + sinA * arrowDist, cy - cosA * arrowDist);
+          ctx.lineTo(cx + sinA * (arrowDist * 0.3), cy - cosA * (arrowDist * 0.3));
+          ctx.stroke();
+        }
+      }
+
+      ctx.restore();
+    } else {
+      // 2. Fase Pós-Detonação (Fade Out da cicatriz dimensional)
+      const fadeAlpha = Math.max(0, vc.fadeTimer / 24);
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 255, 255, ${fadeAlpha})`;
+      ctx.lineWidth = vc.width * fadeAlpha * 1.2;
+      ctx.shadowColor = baseColor;
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      ctx.strokeStyle = `rgba(${rgbColor}, ${fadeAlpha * 0.8})`;
+      ctx.lineWidth = vc.width * fadeAlpha * 0.6;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+/**
+ * Renderiza a jaula das Correntes do Purgatório, suas âncoras colossais e o Elo Fraturado.
+ */
+export function drawPurgatoryChains(ctx, e, frameCount) {
+  const P = e.purgatoryChains;
+  if (!P || !P.active || !P.anchors) return;
+
+  ctx.save();
+
+  // 1. Correntes Perimetrais conectando as 4 âncoras
+  for (let k = 0; k < 4; k++) {
+    const a1 = P.anchors[k];
+    const a2 = P.anchors[(k + 1) % 4];
+    if (!a1 || !a2) continue;
+
+    const isShattered = (k === P.shatteredLinkIndex);
+    const linkActive = a1.active && a2.active;
+    if (!linkActive) continue;
+
+    ctx.save();
+    if (isShattered) {
+      const pulse = Math.sin(frameCount * 0.25) * 0.35 + 0.65;
+      ctx.strokeStyle = `rgba(129, 236, 236, ${pulse})`;
+      ctx.lineWidth = 4.5;
+      ctx.setLineDash([8, 6]);
+      ctx.lineDashOffset = -frameCount * 0.18;
+      ctx.shadowColor = '#00cec9';
+      ctx.shadowBlur = 14;
+
+      ctx.beginPath();
+      ctx.moveTo(a1.x, a1.y);
+      ctx.lineTo(a2.x, a2.y);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.0;
+      ctx.beginPath();
+      ctx.moveTo(a1.x, a1.y);
+      ctx.lineTo(a2.x, a2.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const midX = (a1.x + a2.x) * 0.5;
+      const midY = (a1.y + a2.y) * 0.5;
+      const dSize = 8 + Math.sin(frameCount * 0.3) * 3;
+      ctx.fillStyle = '#00cec9';
+      ctx.beginPath();
+      ctx.moveTo(midX, midY - dSize);
+      ctx.lineTo(midX + dSize, midY);
+      ctx.lineTo(midX, midY + dSize);
+      ctx.lineTo(midX - dSize, midY);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(midX, midY, 3, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.strokeStyle = 'rgba(142, 68, 173, 0.75)';
+      ctx.lineWidth = 5.0;
+      ctx.shadowColor = '#8e44ad';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(a1.x, a1.y);
+      ctx.lineTo(a2.x, a2.y);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#a29bfe';
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([5, 8]);
+      ctx.lineDashOffset = frameCount * 0.08;
+      ctx.beginPath();
+      ctx.moveTo(a1.x, a1.y);
+      ctx.lineTo(a2.x, a2.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
+  }
+
+  // 2. As 4 Âncoras Colossais
+  for (let a of P.anchors) {
+    ctx.save();
+    ctx.translate(a.x, a.y);
+
+    if (a.active) {
+      const isBossNear = Math.hypot(e.x - a.x, e.y - a.y) <= 180;
+
+      ctx.save();
+      const auraColor = isBossNear ? 'rgba(255, 71, 87, 0.40)' : 'rgba(142, 68, 173, 0.25)';
+      ctx.fillStyle = auraColor;
+      ctx.beginPath();
+      ctx.arc(0, 0, a.radius * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (isBossNear) {
+        ctx.strokeStyle = 'rgba(255, 71, 87, 0.85)';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([6, 4]);
+        ctx.lineDashOffset = -frameCount * 0.15;
+        ctx.beginPath();
+        ctx.arc(0, 0, a.radius * 1.8, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = a.hitFlash > 0 ? '#ffffff' : '#1e1e24';
+      ctx.strokeStyle = isBossNear ? '#ff4757' : '#8e44ad';
+      ctx.lineWidth = 3.2;
+
+      ctx.beginPath();
+      ctx.moveTo(-14, 18);
+      ctx.lineTo(-8, -16);
+      ctx.lineTo(0, -24);
+      ctx.lineTo(8, -16);
+      ctx.lineTo(14, 18);
+      ctx.lineTo(0, 24);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      const hpRatio = Math.max(0, Math.min(1, a.hp / a.maxHp));
+      const corePulse = Math.sin(frameCount * 0.18 + a.id) * 2;
+      ctx.fillStyle = isBossNear ? '#ff4757' : (hpRatio < 0.4 ? '#e74c3c' : '#00cec9');
+      ctx.beginPath();
+      ctx.arc(0, 0, 5 + corePulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      const bw = 34;
+      const bh = 4;
+      const bx = -bw * 0.5;
+      const by = -30;
+      ctx.fillStyle = 'rgba(10, 15, 20, 0.75)';
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = hpRatio > 0.5 ? '#00cec9' : '#e74c3c';
+      ctx.fillRect(bx, by, bw * hpRatio, bh);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.fillStyle = 'rgba(45, 52, 54, 0.65)';
+      for (let s = 0; s < 4; s++) {
+        const sx = Math.cos(s * 1.5) * 10;
+        const sy = Math.sin(s * 1.5) * 8;
+        ctx.fillRect(sx - 3, sy - 3, 6, 6);
+      }
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Renderiza a Sombra do Pecador (Trial of the Mirror) e o rastro de chamas no solo.
+ */
+export function drawSinnerShadow(ctx, e, frameCount) {
+  const S = e.sinnerShadow;
+  if (!S || !S.active) return;
+
+  ctx.save();
+
+  // 1. Rastro de Chamas Espectrais no Solo
+  if (S.trail && S.trail.length > 0) {
+    for (let t of S.trail) {
+      const alpha = Math.max(0, t.life / t.maxLife);
+      const rad = 14 + Math.sin(frameCount * 0.2 + t.x) * 3;
+
+      const grad = ctx.createRadialGradient(t.x, t.y, 2, t.x, t.y, rad);
+      grad.addColorStop(0, `rgba(255, 255, 255, ${alpha * 0.75})`);
+      grad.addColorStop(0.35, `rgba(142, 68, 173, ${alpha * 0.65})`);
+      grad.addColorStop(0.75, `rgba(108, 92, 231, ${alpha * 0.35})`);
+      grad.addColorStop(1, 'rgba(142, 68, 173, 0)');
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, rad, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 2. Silhueta Espectral da Sombra do Pecador
+  if (S.shadowX !== undefined && S.shadowY !== undefined) {
+    ctx.save();
+    ctx.translate(S.shadowX, S.shadowY);
+
+    const shadowR = 20 + Math.sin(frameCount * 0.2) * 2;
+    const sGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, shadowR);
+    sGrad.addColorStop(0, 'rgba(142, 68, 173, 0.65)');
+    sGrad.addColorStop(0.6, 'rgba(44, 12, 54, 0.40)');
+    sGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = sGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, shadowR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(20, 10, 28, 0.85)';
+    ctx.strokeStyle = '#8e44ad';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(0, -6, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-10, 16);
+    ctx.lineTo(0, 2);
+    ctx.lineTo(10, 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ff4757';
+    ctx.beginPath();
+    ctx.arc(-3, -7, 1.8, 0, Math.PI * 2);
+    ctx.arc(3, -7, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Renderiza a Marcha dos Condenados (Wall of the Restless):
+ * Uma colossal onda de almas penadas e lâminas astrais cortando a arena,
+ * com 2 Aberturas Seguras (Safe Gateways) destacadas por arcos rúnicos esmeralda/ciano.
+ */
+export function drawWallOfRestless(ctx, e, frameCount) {
+  const W = e.wallOfRestless;
+  if (!W || !W.active) return;
+
+  const fc = frameCount || 0;
+  const halfLen = W.length * 0.5;
+  const halfThick = W.thickness * 0.5;
+
+  ctx.save();
+  ctx.translate(W.x, W.y);
+  ctx.rotate(W.dirAngle);
+
+  // Ordena os portais seguros ao longo do eixo Y (-halfLen até +halfLen)
+  const gates = (W.safeGates || []).map(g => ({
+    minY: g.centerOffset - g.width * 0.5,
+    maxY: g.centerOffset + g.width * 0.5,
+    center: g.centerOffset,
+    width: g.width
+  })).sort((a, b) => a.minY - b.minY);
+
+  // Determina os intervalos perigosos da muralha (crimson/obsidian plasma)
+  const segments = [];
+  let curY = -halfLen;
+  for (let g of gates) {
+    if (g.minY > curY) {
+      segments.push({ startY: curY, endY: g.minY });
+    }
+    curY = Math.max(curY, g.maxY);
+  }
+  if (curY < halfLen) {
+    segments.push({ startY: curY, endY: halfLen });
+  }
+
+  // 1. Renderiza os segmentos perigosos da Muralha de Almas
+  for (let seg of segments) {
+    const segH = seg.endY - seg.startY;
+    if (segH <= 0) continue;
+
+    const wallGrad = ctx.createLinearGradient(-halfThick, 0, halfThick, 0);
+    wallGrad.addColorStop(0, 'rgba(10, 0, 8, 0)');
+    wallGrad.addColorStop(0.25, 'rgba(180, 20, 40, 0.70)');
+    wallGrad.addColorStop(0.65, 'rgba(255, 71, 87, 0.92)');
+    wallGrad.addColorStop(0.95, 'rgba(255, 255, 255, 0.95)');
+    wallGrad.addColorStop(1, 'rgba(255, 71, 87, 0)');
+
+    ctx.fillStyle = wallGrad;
+    ctx.fillRect(-halfThick, seg.startY, W.thickness, segH);
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(halfThick, seg.startY);
+    ctx.lineTo(halfThick, seg.endY);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(255, 118, 117, 0.85)';
+    ctx.lineWidth = 1.6;
+    const toothStep = 45;
+    for (let py = seg.startY + 15; py < seg.endY - 10; py += toothStep) {
+      const toothPulse = Math.sin(fc * 0.2 + py) * 6;
+      ctx.beginPath();
+      ctx.moveTo(halfThick - 4, py);
+      ctx.lineTo(halfThick + 16 + toothPulse, py + 12);
+      ctx.lineTo(halfThick - 6, py + 24);
+      ctx.stroke();
+    }
+
+    const soulStep = 60;
+    for (let sy = seg.startY + 25; sy < seg.endY - 15; sy += soulStep) {
+      const soulFloatX = Math.sin(fc * 0.15 + sy * 0.05) * 8;
+      const soulFloatY = sy + Math.cos(fc * 0.12 + sy * 0.03) * 6;
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.beginPath();
+      ctx.arc(soulFloatX, soulFloatY, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ff4757';
+      ctx.fillRect(soulFloatX + 1.5, soulFloatY - 1.5, 1.5, 1.5);
+      ctx.fillRect(soulFloatX + 1.5, soulFloatY + 0.5, 1.5, 1.5);
+    }
+  }
+
+  // 2. Renderiza as 2 Aberturas Seguras (Safe Gateways)
+  for (let g of gates) {
+    const gateTop = g.minY;
+    const gateBottom = g.maxY;
+    const gateHeight = gateBottom - gateTop;
+
+    ctx.save();
+
+    const safeGrad = ctx.createLinearGradient(-halfThick * 1.5, 0, halfThick * 1.5, 0);
+    safeGrad.addColorStop(0, 'rgba(46, 204, 113, 0)');
+    safeGrad.addColorStop(0.2, 'rgba(46, 204, 113, 0.18)');
+    safeGrad.addColorStop(0.5, 'rgba(129, 236, 236, 0.32)');
+    safeGrad.addColorStop(0.8, 'rgba(46, 204, 113, 0.18)');
+    safeGrad.addColorStop(1, 'rgba(46, 204, 113, 0)');
+    ctx.fillStyle = safeGrad;
+    ctx.fillRect(-halfThick * 1.5, gateTop, W.thickness * 1.5, gateHeight);
+
+    const pulse = Math.sin(fc * 0.25 + g.center) * 0.3 + 0.7;
+    ctx.strokeStyle = `rgba(46, 204, 113, ${pulse})`;
+    ctx.lineWidth = 3.0;
+    ctx.setLineDash([8, 6]);
+    ctx.lineDashOffset = -fc * 0.2;
+
+    ctx.beginPath();
+    ctx.moveTo(-halfThick * 1.8, gateTop);
+    ctx.lineTo(halfThick * 1.8, gateTop);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-halfThick * 1.8, gateBottom);
+    ctx.lineTo(halfThick * 1.8, gateBottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#2ecc71';
+    ctx.beginPath();
+    ctx.arc(-halfThick * 1.2, gateTop, 6, 0, Math.PI * 2);
+    ctx.arc(halfThick * 1.2, gateTop, 6, 0, Math.PI * 2);
+    ctx.arc(-halfThick * 1.2, gateBottom, 6, 0, Math.PI * 2);
+    ctx.arc(halfThick * 1.2, gateBottom, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    const runePulse = Math.sin(fc * 0.18) * 3;
+    ctx.strokeStyle = 'rgba(129, 236, 236, 0.85)';
+    ctx.lineWidth = 2.0;
+    ctx.beginPath();
+    ctx.arc(0, g.center, 12 + runePulse, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, g.center, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Renderiza a Foice Secundária da Dança Macabra (Fase 3 / Dual Scythes).
+ */
+export function drawOffhandScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 0, frameCount = 0) {
+  ctx.save();
+  ctx.translate(-36, -6 + bob + collapseProg * 14);
+  ctx.scale(-1, 1);
+  const offAngle = -e.scytheAngle * 0.75 + Math.sin((frameCount || 0) * 0.12) * 0.25;
+  ctx.rotate(offAngle);
+
+  ctx.save();
+  ctx.shadowColor = '#ff4757';
+  ctx.shadowBlur = 18;
+  drawOrnateScythe(ctx, e, 0, isVuln, true, 0, frameCount);
+  ctx.restore();
 
   ctx.restore();
 }
@@ -2706,148 +3514,7 @@ export function drawSoulWells(ctx, e, frameCount) {
  * Desenha a Guilhotina Celestial e a telegrafia de Marca da Morte com retículo de travamento.
  */
 export function drawDeathMarkExecution(ctx, e, frameCount) {
-  const mark = e.deathMark;
-  if (!mark || !mark.active) return;
-
-  const targetX = mark.locked ? mark.lockedX : mark.x;
-  const targetY = mark.locked ? mark.lockedY : mark.y;
-  const prog = Math.max(0, Math.min(1, 1 - (mark.timer / mark.maxTimer)));
-  const radius = mark.radius || 46;
-
-  ctx.save();
-  ctx.translate(targetX, targetY);
-
-  // 1. Círculo de Mira no Solo (Perspectiva Isométrica)
-  ctx.save();
-  ctx.scale(1, 0.50);
-
-  if (!mark.locked) {
-    // Fase de Rastreamento (Ciano)
-    const rot = frameCount * 0.05;
-    ctx.strokeStyle = 'rgba(0, 206, 201, 0.75)';
-    ctx.lineWidth = 2.4;
-    ctx.beginPath();
-    ctx.arc(0, 0, radius, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // 4 Marcadores de Mira Cardinais
-    ctx.fillStyle = '#81ecec';
-    for (let k = 0; k < 4; k++) {
-      const ka = rot + (k * Math.PI / 2);
-      ctx.beginPath();
-      ctx.arc(Math.cos(ka) * radius, Math.sin(ka) * radius, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Retículo em cruz no centro
-    ctx.strokeStyle = '#81ecec';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.moveTo(-16, 0);
-    ctx.lineTo(16, 0);
-    ctx.moveTo(0, -16);
-    ctx.lineTo(0, 16);
-    ctx.stroke();
-  } else {
-    // Alvo Travado: Alerta Vermelho Carmesim de Execução Iminente!
-    const flash = Math.sin(frameCount * 0.45) * 0.25 + 0.75;
-    const redGlow = `rgba(255, 71, 87, ${flash})`;
-
-    // Área de Perigo Fatal
-    ctx.fillStyle = `rgba(255, 71, 87, ${0.28 * flash})`;
-    ctx.beginPath();
-    ctx.arc(0, 0, radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Anel Externo Carmesim
-    ctx.strokeStyle = '#ff4757';
-    ctx.lineWidth = 3.6;
-    ctx.beginPath();
-    ctx.arc(0, 0, radius, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Dentes de aviso para o centro
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2.0;
-    const teeth = 8;
-    for (let t = 0; t < teeth; t++) {
-      const ta = (t * Math.PI * 2) / teeth;
-      ctx.beginPath();
-      ctx.moveTo(Math.cos(ta) * radius, Math.sin(ta) * radius);
-      ctx.lineTo(Math.cos(ta) * (radius - 9), Math.sin(ta) * (radius - 9));
-      ctx.stroke();
-    }
-
-    // Crânio / Marca da Morte Central
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(0, -2, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillRect(-4, 3, 8, 4);
-    ctx.fillStyle = '#ff4757';
-    ctx.fillRect(-3, -3, 2, 3);
-    ctx.fillRect(1, -3, 2, 3);
-
-    // Prévia das Fissuras em Cruz nos 4 Eixos Cardinais
-    ctx.strokeStyle = redGlow;
-    ctx.lineWidth = 2.8;
-    ctx.setLineDash([10, 8]);
-    ctx.lineDashOffset = -frameCount * 2;
-    ctx.beginPath();
-    ctx.moveTo(-260, 0);
-    ctx.lineTo(260, 0);
-    ctx.moveTo(0, -260);
-    ctx.lineTo(0, 260);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  ctx.restore();
-
-  // 2. Guilhotina Celestial Descendendo dos Céus (Espaço Vertical)
-  const beamGrad = ctx.createLinearGradient(0, -350, 0, 0);
-  beamGrad.addColorStop(0, 'rgba(255, 71, 87, 0)');
-  beamGrad.addColorStop(0.7, mark.locked ? 'rgba(255, 71, 87, 0.45)' : 'rgba(0, 206, 201, 0.35)');
-  beamGrad.addColorStop(1, mark.locked ? 'rgba(255, 71, 87, 0.85)' : 'rgba(0, 206, 201, 0.6)');
-  ctx.fillStyle = beamGrad;
-  ctx.fillRect(-10, -350, 20, 350);
-
-  // Lâmina da Guilhotina Caindo do Céu
-  const dropAltitude = -360 * Math.max(0, 1 - prog * 1.3);
-  ctx.save();
-  ctx.translate(0, dropAltitude);
-
-  // Lâmina de Guilhotina Monumental
-  ctx.fillStyle = '#141a1f';
-  ctx.beginPath();
-  ctx.moveTo(-28, -60);
-  ctx.lineTo(28, -60);
-  ctx.lineTo(28, -15);
-  ctx.lineTo(-28, 12);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.strokeStyle = mark.locked ? '#ff4757' : '#00cec9';
-  ctx.lineWidth = 2.4;
-  ctx.stroke();
-
-  // Fio afiado prateado de corte
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 3.2;
-  ctx.beginPath();
-  ctx.moveTo(28, -15);
-  ctx.lineTo(-28, 12);
-  ctx.stroke();
-
-  // Runa central na lâmina
-  ctx.fillStyle = mark.locked ? '#ff4757' : '#81ecec';
-  ctx.beginPath();
-  ctx.arc(0, -30, 5, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
-
-  ctx.restore();
+  return;
 }
 
 /**
@@ -2865,6 +3532,8 @@ export function drawTriadClones(ctx, e, frameCount) {
     ctx.scale(cloneFacing, 1);
 
     const cBob = Math.sin(frameCount * 0.12) * 4;
+    ctx.save();
+    ctx.scale(REAPER_CONFIG.BODY_SCALE, REAPER_CONFIG.BODY_SCALE);
 
     // 1. Sombra e Manto Espectral da Réplica
     drawReaperShadow(ctx, e, cBob, false, 0);
@@ -2892,6 +3561,8 @@ export function drawTriadClones(ctx, e, frameCount) {
     ctx.rotate(0.35);
     const cloneBoss = { scytheAngle: 0.2, scytheGlow: 1.0, crankAngle: 0 };
     drawOrnateScythe(ctx, cloneBoss, 0, false, false, 0, frameCount);
+    ctx.restore();
+
     ctx.restore();
 
     // 2. Telegrafia do Corte Convergente (Cone de Corte Iminente)
@@ -2928,7 +3599,7 @@ export function drawTriadClones(ctx, e, frameCount) {
  * @param {number} frameCount Contador de frames global.
  */
 export function drawSupremeReaper(ctx, e, frameCount) {
-  // 1. Introdução Cinemática de 5 segundos
+  // 1. Introdução Cinemática de 6 segundos
   if (e.actionState === REAPER_STATES.SPAWN_INTRO) {
     drawReaperSpawnIntro(ctx, e, frameCount);
     if (e.titleTimer > 0) {
@@ -2948,6 +3619,7 @@ export function drawSupremeReaper(ctx, e, frameCount) {
   const isEnraged = e.isEnraged || e.isPhase3 || (targetPhase >= 2 && morph > 0.05);
   const isPhase3 = e.isPhase3 || (targetPhase === 3 && morph > 0.05);
   const isWindup = (
+    e.actionState === REAPER_STATES.WINDUP_RANGED ||
     e.actionState === REAPER_STATES.WINDUP ||
     e.actionState === REAPER_STATES.WINDUP_BOOMERANG ||
     e.actionState === REAPER_STATES.WINDUP_EXECUTION ||
@@ -2969,10 +3641,18 @@ export function drawSupremeReaper(ctx, e, frameCount) {
   // Elementos do Mundo em Coordenadas Globais Absolutas
   ctx.save();
   ctx.translate(-e.x, -e.y);
+  drawReaperRanged(ctx, e, frameCount);
   drawSoulWells(ctx, e, frameCount);
   drawBoomerangScythe(ctx, e, frameCount);
   drawDeathMarkExecution(ctx, e, frameCount);
   drawTriadClones(ctx, e, frameCount);
+  drawSoulShards(ctx, e, frameCount);
+  drawDeathTollRings(ctx, e, frameCount);
+  drawDeathTollBell(ctx, e, frameCount);
+  drawVeilCleaves(ctx, e, frameCount);
+  drawPurgatoryChains(ctx, e, frameCount);
+  drawSinnerShadow(ctx, e, frameCount);
+  drawWallOfRestless(ctx, e, frameCount);
   ctx.restore();
 
   if (isHarvest) {
@@ -2991,8 +3671,9 @@ export function drawSupremeReaper(ctx, e, frameCount) {
 
   ctx.restore();
 
-  // 4. CORPO DO CHEFE (Espaço local com orientação +X para frente)
+  // 4. Corpo 20% maior; efeitos em coordenadas de mundo conservam sua geometria.
   ctx.save();
+  ctx.scale(REAPER_CONFIG.BODY_SCALE, REAPER_CONFIG.BODY_SCALE);
 
   if (isAimingBlink) {
     ctx.globalAlpha = 0.65 + Math.sin(frameCount * 0.3) * 0.25;
@@ -3038,12 +3719,16 @@ export function drawSupremeReaper(ctx, e, frameCount) {
   }
 
   drawMaskAndEyes(ctx, e, bob, frameCount, isVuln, isEnraged, collapseProg);
+  drawReaperRegalia(ctx, e, bob, frameCount, isVuln, isEnraged, isPhase3, collapseProg);
 
   // Quando desarmado (Foice arremessada), renderiza chamas espirituais nas mãos
   if (e.isUnarmed) {
     drawUnarmedSoulFlames(ctx, e, bob, frameCount);
   } else {
     drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg, frameCount);
+    if (e.hasDualScythes || isPhase3) {
+      drawOffhandScythe(ctx, e, bob, isVuln, isEnraged, collapseProg, frameCount);
+    }
   }
 
   ctx.restore();

@@ -27,7 +27,9 @@ export function chaosCycleBehavior(e, dt, angle, curSpeed, ctx) {
           radius: 5,
           damage: Math.round(e.damage * 0.35),
           life: 85,
-          bulletType: 'CHAOS'
+          bulletType: 'CHAOS',
+          sourceName: e.name || 'Ciclope do Caos',
+          enemyType: e.baseType || 'CHAOS_HERALD'
         });
       }
     }

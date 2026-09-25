@@ -3,9 +3,9 @@
  * Renderizador de Cartas de Tarô Arcano de Poder (Level-up & Bênçãos de Chefes).
  * Design System: Neo-Arcane / Void Astral (Paridade com Pause & Morte)
  */
-import { player, isHeroInUninterruptibleState } from '../../entities/player.js';
+import { player, isHeroInUninterruptibleState, getNextLevelXp } from '../../entities/player.js';
 import { checkIsSynergyIngredient } from '../../config/items.js';
-import { getRandomUpgrades } from '../../config/upgrades.js';
+import { getRandomUpgrades, checkSynergies, upgradesPool, BLESSING_UPGRADE } from '../../config/upgrades.js';
 import { playSfx } from '../../core/audio.js';
 import { resetInput, resetInputSoft, restoreKeyboardMovement } from '../../core/input.js';
 import { gameState, setLastTime } from '../../main.js';
@@ -23,6 +23,9 @@ function isSynergyIngredient(optId) {
 }
 
 export let pendingLevelUps = 0;
+export function getPendingLevelUps() {
+  return pendingLevelUps;
+}
 export let bossRewardContext = null;
 let levelupKeydownHandler = null;
 let currentOptions = [];
@@ -75,6 +78,24 @@ export function updateUpgradeModalHeader() {
       queueCount.innerText = `${pendingLevelUps} Bênçãos`;
     } else {
       queueChip.style.display = 'none';
+    }
+
+    let autoSkipBtn = document.getElementById('levelup-auto-skip-btn');
+    if (!autoSkipBtn && queueChip.parentNode) {
+      autoSkipBtn = document.createElement('button');
+      autoSkipBtn.id = 'levelup-auto-skip-btn';
+      autoSkipBtn.className = 'levelup-auto-skip-btn';
+      autoSkipBtn.title = 'Aplica automaticamente todas as bênçãos restantes e fecha o Tarô';
+      autoSkipBtn.onclick = () => autoCompleteRemainingLevelUps();
+      queueChip.parentNode.insertBefore(autoSkipBtn, queueChip.nextSibling);
+    }
+    if (autoSkipBtn) {
+      if (pendingLevelUps > 1) {
+        autoSkipBtn.style.display = 'inline-flex';
+        autoSkipBtn.innerHTML = `⚡ Auto-Completar (${pendingLevelUps})`;
+      } else {
+        autoSkipBtn.style.display = 'none';
+      }
     }
   }
 
@@ -364,3 +385,53 @@ export function isUpgradeModalOpen() {
   const modal = document.getElementById('upgrade-modal');
   return !!(modal && (modal.classList.contains('active') || modal.classList.contains('closing') || modal.style.display === 'flex' || (modal.style.display !== 'none' && !modal.classList.contains('modal-hidden'))));
 }
+
+/**
+ * Enfileira N níveis para seleção manual carta a carta pelo player no Tarô Arcano (Console Dev).
+ * @param {number} count Quantidade de níveis a enfileirar (1 a 100).
+ */
+export function queueManualLevelUps(count = 1) {
+  const levels = Math.max(1, Math.min(100, Math.floor(count)));
+  pendingLevelUps += levels;
+  player.level += levels;
+  player.nextXp = getNextLevelXp(player.level);
+  player.xp = 0;
+  player.hp = player.maxHp;
+
+  updateUpgradeModalHeader();
+  presentDeferredLevelUpModal();
+}
+
+/**
+ * Aplica automaticamente todas as bênçãos restantes na fila de upgrades e fecha o Tarô.
+ * Utilizado pelo botão de conveniência quando o jogador não deseja escolher todas manualmente.
+ */
+export function autoCompleteRemainingLevelUps() {
+  if (pendingLevelUps <= 0) return;
+  const count = pendingLevelUps;
+  pendingLevelUps = 0;
+
+  for (let i = 0; i < count; i++) {
+    const synergies = checkSynergies();
+    if (synergies && synergies.length > 0) {
+      synergies[0].apply();
+    }
+    const available = upgradesPool.filter(opt => opt.isAvailable());
+    if (available.length > 0) {
+      const randIdx = Math.floor(Math.random() * available.length);
+      available[randIdx].apply();
+    } else {
+      BLESSING_UPGRADE.apply();
+    }
+  }
+
+  const finalSynergies = checkSynergies();
+  if (finalSynergies && finalSynergies.length > 0) {
+    finalSynergies.forEach(syn => syn.apply());
+  }
+
+  player.hp = player.maxHp;
+  playSfx('level');
+  closeLevelUpModal();
+}
+

@@ -10,6 +10,7 @@ import { triggerShake, cameraViewW, cameraViewH } from '../../state/gameState.js
 import { getNeighborIndices } from '../../core/spatialGrid.js';
 import { distToSegment } from '../../core/math.js';
 import { getMetaBonuses } from '../../systems/progression.js';
+import { getBossPhaseDefeatDamage } from '../../systems/devtools.js';
 import { player, selectedHeroKey } from './player.js';
 
 export function calculateEffectiveDamage() {
@@ -38,30 +39,20 @@ export function updateSpinningAxes(dt) {
   const hitRadius = player.evolvedAxe ? 28 : 22;
 
   // Consulta espacial consolidada uma única vez para o anel orbital completo
-  _axeCandidates.length = 0;
-  const ringNeighbors = getNeighborIndices(player.x, player.y, effectiveRadius + hitRadius + 45);
-  const ringCount = ringNeighbors.length;
-  for (let k = 0; k < ringCount; k++) {
-    _axeCandidates.push(ringNeighbors[k]);
-  }
-
-  const maxReachBullet = effectiveRadius + hitRadius + 14;
-  const maxReachBulletSq = maxReachBullet * maxReachBullet;
+  getNeighborIndices(player.x, player.y, effectiveRadius + hitRadius + 45, _axeCandidates);
 
   for (let i = 0; i < count; i++) {
     const angle = player.axeAngle + (i * (Math.PI * 2 / count));
     const ax = player.x + Math.cos(angle) * effectiveRadius;
     const ay = player.y + Math.sin(angle) * effectiveRadius;
 
-    // Destruição de projéteis ao longo da cápsula com bounding radial rápido
+    // O corte pertence ao machado orbital, não ao segmento até o corpo do jogador.
     for (let bIdx = enemyBullets.length - 1; bIdx >= 0; bIdx--) {
       const eb = enemyBullets[bIdx];
-      const bdx = eb.x - player.x;
-      const bdy = eb.y - player.y;
-      if (bdx * bdx + bdy * bdy > maxReachBulletSq) continue;
-
-      const bSeg = distToSegment(eb.x, eb.y, player.x, player.y, ax, ay);
-      if (bSeg.dist < (hitRadius + eb.radius)) {
+      const bdx = eb.x - ax;
+      const bdy = eb.y - ay;
+      const cutRadius = hitRadius + (eb.radius ?? 6);
+      if (bdx * bdx + bdy * bdy < cutRadius * cutRadius) {
         createHitParticles(eb.x, eb.y, '#f1c40f', 5);
         playSfx('parry_slice');
         enemyBullets.splice(bIdx, 1);
@@ -123,6 +114,8 @@ export function updateSpinningAxes(dt) {
           finalDmg *= (1 + player.executeBonus);
         }
 
+        finalDmg = getBossPhaseDefeatDamage(e, finalDmg);
+
         e.hp -= finalDmg;
         e.hitFlash = 4;
 
@@ -162,7 +155,7 @@ export function updateSpinningAxes(dt) {
         // Repulsão tangencial e radial suave amplificada pelo peso do personagem
         if (!e.isBossSubTarget) {
           const kbMult = player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0;
-          const bossResist = e.isFinalBoss ? 0.10 : ((e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.50 : 1.0));
+          const bossResist = e.isFinalBoss ? 0.10 : ((e.bossId === 2 || e.bossId === 3) ? 0.10 : ((e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.50 : 1.0)));
           if (isOuterZone) {
             const tanAng = angle + AXE_SPIN_DIRECTION * Math.PI * 0.5;
             const pushForce = (player.evolvedAxe ? 12 : 7) * (player.berserkTimer > 0 ? 1.6 : 1.0) * kbMult * bossResist;
@@ -208,7 +201,7 @@ export function fireWeapons() {
 
     let weaponRange = 320;
     if (w.type === 'POTION') weaponRange = 312;
-    else if (w.type === 'HAMMER') weaponRange = 110;
+    else if (w.type === 'HAMMER') weaponRange = player.evolvedHammer ? 140 : (90 + (w.count - 1) * 12);
     else if (w.type === 'SWORD') weaponRange = 300;
     else if (w.type === 'STAFF') weaponRange = 340;
     else if (w.type === 'AXE') continue;
@@ -401,4 +394,3 @@ export function fireWeapons() {
     }
   }
 }
-

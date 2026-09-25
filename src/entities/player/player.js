@@ -14,6 +14,7 @@ import { createHitParticles } from '../../systems/combat.js';
 import { bullets, enemies, enemyBullets } from '../../state/collections.js';
 import { gameState, triggerShake, camera, CAMERA_ZOOM, cinematicCamera, matchIntro } from '../../state/gameState.js';
 import { getMetaBonuses } from '../../systems/progression.js';
+import { triggerUltBurst } from '../../render/ultButtonRenderer.js';
 
 import { setInventoryPlayer, registerWeaponInInventory, registerPassiveInInventory } from './inventory.js';
 
@@ -96,6 +97,8 @@ export const player = {
   roarOriginY: 0,
   invisTimer: 0,
   isPhasing: false,
+  tempShield: 0,
+  tempShieldTimer: 0,
 
   // Inventário Estruturado (ItemRegistry)
   inventory: {
@@ -307,6 +310,7 @@ export function getHeroSkillDirection(options = {}) {
 
 export function triggerHeroSkill(options = {}) {
   if (player.skillCd > 0 || !gameState.isInMatch || gameState.isPaused || gameState.isDead || gameState.isWon || (matchIntro && matchIntro.active) || cinematicCamera.isCinematic) return;
+  try { triggerUltBurst(selectedHeroKey); } catch (_) {}
 
   if (selectedHeroKey === 'KNIGHT') {
     player.dashDuration = 24;
@@ -398,6 +402,8 @@ export function triggerHeroSkill(options = {}) {
     player.alchemistBuffTimer = 300;
     player.alchemistSkillDisoriented = true;
     player.iFrames = 30;
+    player.tempShield = 25;
+    player.tempShieldTimer = 240;
 
     playSfx('potion_shatter');
     triggerShake(10);
@@ -429,7 +435,7 @@ export function triggerHeroSkill(options = {}) {
         damage: player.damage * 0.70,
         life: flightFrames,
         angle: 0,
-        puddleRadius: 48,
+        puddleRadius: 62.4,
         puddleDuration: player.evolvedPotion ? 340 : 280,
         isEvolved: player.evolvedPotion,
         trail: []
@@ -440,6 +446,11 @@ export function triggerHeroSkill(options = {}) {
   player.skillCd = player.skillMaxCd;
 }
 
+export function getNextLevelXp(level) {
+  // Multiplica por 2 a facilidade de subir de nível (reduz à metade o requisito de XP)
+  return Math.max(1, Math.round((12 + (level * 7) + Math.floor(Math.pow(level, 1.28))) * 0.5));
+}
+
 export function addXP(amount) {
   playSfx('gem');
   const mult = (player && player.xpMultiplier) ? player.xpMultiplier : 1.0;
@@ -447,7 +458,7 @@ export function addXP(amount) {
   while (player.xp >= player.nextXp) {
     player.xp -= player.nextXp;
     player.level++;
-    player.nextXp = 12 + (player.level * 7) + Math.floor(Math.pow(player.level, 1.28));
+    player.nextXp = getNextLevelXp(player.level);
     window.dispatchEvent(new CustomEvent('player:levelup'));
   }
 }
@@ -457,6 +468,8 @@ export function resetPlayer(heroKey) {
   const c = CHARACTERS[selectedHeroKey];
   const meta = getMetaBonuses();
 
+  player.characterKey = heroKey;
+  player.selectedHeroKey = heroKey;
   player.x = 0;
   player.y = 0;
   player.radius = 14;
@@ -471,7 +484,7 @@ export function resetPlayer(heroKey) {
   player.regenTimer = 0;
   player.level = 1;
   player.xp = 0;
-  player.nextXp = 20;
+  player.nextXp = getNextLevelXp(1);
   player.cooldownReduction = meta.cooldownReduction || 0;
   player.executeBonus = meta.executeBonus || 0;
   player.phoenixRevives = meta.phoenixRevives || 0;
@@ -535,6 +548,8 @@ export function resetPlayer(heroKey) {
   player.alchemistSkillTimer = 0;
   player.alchemistBuffTimer = 0;
   player.alchemistSkillDisoriented = false;
+  player.tempShield = 0;
+  player.tempShieldTimer = 0;
   player.skillMaxCd = Math.round(c.stats.skillCooldownMax * (1 - player.cooldownReduction));
   player.skillCd = 0;
   player.knockbackReceived = c.stats.knockbackReceived !== undefined ? c.stats.knockbackReceived : 1.0;

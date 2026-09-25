@@ -4,6 +4,7 @@
  * Despachante unificado de renderização dos 16 Minibosses de Hord.io.
  */
 import { ctx } from '../../main.js';
+import { orientCrawler } from '../../entities/enemies/crawlerLocomotion.js';
 import { drawThreatGlyph, drawDyingThreatGlyph } from './threatGlyph.js';
 import { getEnemyDeathProgress } from '../../config/enemyDeaths.js';
 import { drawDeathResidue } from '../enemies/deathEffects.js';
@@ -58,7 +59,10 @@ export function drawMiniBossShape(e) {
 
   const renderer = MINIBOSS_RENDERERS[e.baseType];
   if (renderer && renderer.draw) {
+    ctx.save();
+    orientCrawler(ctx, e);
     renderer.draw(e);
+    ctx.restore();
   } else {
     ctx.fillStyle = eliteColor;
     ctx.beginPath();
@@ -96,6 +100,7 @@ export function drawDyingMiniBossShape(de) {
 
   const renderer = MINIBOSS_RENDERERS[de.baseType];
   if (renderer && renderer.drawDying) {
+    orientCrawler(ctx, de);
     renderer.drawDying(de, t);
   } else {
     ctx.scale(1, Math.max(0.05, 1 - t));

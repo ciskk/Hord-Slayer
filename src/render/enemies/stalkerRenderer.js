@@ -1,5 +1,5 @@
 import { ctx, frameCount } from '../../state/gameState.js';
-import { getRelativeAimAngle } from '../../core/math.js';
+import { crawlPhase } from '../../entities/enemies/crawlerLocomotion.js';
 import { STALKER_DASH } from '../../config/stalkerDash.js';
 import { beginCreature, endCreature, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
@@ -33,15 +33,14 @@ export function draw(e) {
   const aiming = !dead && e.dashState === 'aim';
   const dashing = !dead && e.dashState === 'dashing';
   const progress = Math.min(1, Math.max(0, (e.dashTimer || 0) / STALKER_DASH.windup));
-  const committed = ['aim', 'dashing', 'cooldown'].includes(e.dashState);
   beginCreature(ctx, e);
   ctx.translate(0, .32); // Belly contacts the ground shadow instead of floating above it.
-  if (committed) ctx.rotate(getRelativeAimAngle(e.dashAngle ?? (e.facing === -1 ? Math.PI : 0), e.facing || 1));
   const stretch = dashing ? 1.16 : aiming ? .8 : 1;
   ctx.scale(stretch, aiming ? 1.1 : dashing ? .86 : 1);
   for (let i = 0; i < 6; i++) {
-    const x = -1.12 + i * .29;
-    const y = dead ? .05 : Math.sin(frameCount * .13 - i * .65) * (aiming ? .025 : .075);
+    const wave = crawlPhase(e, frameCount) - i * .75;
+    const x = -1.12 + i * .29 + (dead ? 0 : Math.cos(wave) * .06);
+    const y = dead ? .05 : Math.sin(wave) * (aiming ? .025 : .14);
     const h = .12 + i * .064;
     polygon(ctx, [[x-.24,y+.08],[x-.17,y-h*.65],[x+.02,y-h],[x+.23,y-h*.57],[x+.26,y+h*.55],[x+.05,y+h],[x-.18,y+h*.67]], i === 4 ? p.shade : p.body, p.ink, .045);
     stroke(ctx, [[x-.1,y-h*.62],[x+.04,y-h*.76],[x+.14,y-h*.48]], p.accent, .055);

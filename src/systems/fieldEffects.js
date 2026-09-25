@@ -8,6 +8,7 @@
 import { getNeighborIndices } from '../core/spatialGrid.js';
 import { playSfx } from '../core/audio.js';
 import { addDamageText, createHitParticles, applyFreeze } from './combat.js';
+import { getBossPhaseDefeatDamage } from './devtools.js';
 
 export function updateFieldEffects(dt, { 
   player, 
@@ -66,6 +67,8 @@ export function updateFieldEffects(dt, {
           }
           const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
           let finalDmg = isCrit ? currentAuraDmg * player.critMult : currentAuraDmg * (player.nonCritDamageMult || 1.0);
+
+          finalDmg = getBossPhaseDefeatDamage(e, finalDmg);
 
           e.hp -= finalDmg;
           e.hitFlash = 3;
@@ -133,6 +136,8 @@ export function updateFieldEffects(dt, {
           const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
           let finalDmg = isCrit ? dmg * player.critMult : dmg * (player.nonCritDamageMult || 1.0);
 
+          finalDmg = getBossPhaseDefeatDamage(e, finalDmg);
+
           e.hp -= finalDmg;
           e.hitFlash = 4;
           e.orbitalHitCd = player.evolvedOrbitals ? 8 : 12;
@@ -143,7 +148,7 @@ export function updateFieldEffects(dt, {
           if (!e.isBossSubTarget) {
             const pushAng = Math.atan2(e.y - player.y, e.x - player.x);
             const basePush = player.evolvedOrbitals ? 1.36 : 0.96;
-            const bossResist = e.isFinalBoss ? 0.00 : ((e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.45 : 1.0));
+            const bossResist = e.isFinalBoss ? 0.00 : ((e.bossId === 2 || e.bossId === 3) ? 0.10 : ((e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.45 : 1.0)));
             const pushForce = basePush * (player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0) * bossResist;
             e.pushVx = (e.pushVx || 0) + Math.cos(pushAng) * pushForce;
             e.pushVy = (e.pushVy || 0) + Math.sin(pushAng) * pushForce;

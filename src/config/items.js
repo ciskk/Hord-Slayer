@@ -215,7 +215,7 @@ export const SYNERGIES = [
     apply: (player) => {
       player.evolvedAxe = true;
       player.axeCount = AXE_EVOLVED_COUNT;
-      player.axeSpinSpeed = (player.axeSpinSpeed || 0.085) + 0.05;
+      player.axeSpinSpeed = (player.axeSpinSpeed || 0.085) + 0.01;
     }
   },
   {

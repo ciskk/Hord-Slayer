@@ -4,6 +4,7 @@
  */
 
 import { MONOLITH_STATES, MONOLITH_CONFIG } from './constants.js';
+import { drawTectonicCharge } from './charge.js';
 import { dpr, viewW, viewH, bannerCtx } from '../../../main.js';
 import { getHudBottom } from '../../../core/responsive.js';
 
@@ -1975,6 +1976,7 @@ export function drawAbyssalMonolith(ctx, e, frameCount) {
 
   // Telegrafias exclusivas do chefe (Epicentro, Onda de Fendas, Slam e Giro)
   drawTelegraphsAndZones(ctx, e, frameCount);
+  drawTectonicCharge(ctx, e, frameCount);
 
   // Orbes Orbitais (Litocistos como Meteoros)
   drawLitocistos(ctx, e, bob, frameCount, isEnraged, isP3);
@@ -1995,6 +1997,15 @@ export function drawAbyssalMonolith(ctx, e, frameCount) {
   }
 
   drawShadow(ctx, e, bob, isVuln);
+
+  // Compress in anticipation, then lean into the dash and settle while braking.
+  if (e.charge && (e.actionState === MONOLITH_STATES.WINDUP_CHARGE || e.actionState === MONOLITH_STATES.CHARGING)) {
+    const winding = e.actionState === MONOLITH_STATES.WINDUP_CHARGE;
+    const tension = winding ? 1 - e.actionTimer / e.maxActionTimer : Math.sin(Math.PI * e.charge.elapsed / e.charge.duration);
+    ctx.translate((winding ? -7 : 10) * tension, winding ? 8 * tension : -5 * tension);
+    ctx.rotate((winding ? -0.05 : 0.13) * tension);
+    ctx.scale(1 + 0.05 * tension, 1 - 0.07 * tension);
+  }
 
   // Aura térmica e pulsos de magma em slow motion durante a transição cinematográfica
   if (e.phaseCinematic && morph > 0.05) {

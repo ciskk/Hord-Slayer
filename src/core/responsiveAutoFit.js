@@ -211,6 +211,7 @@ function applyAutoFitScale(container, target, scale, naturalH) {
     container.classList.contains('levelup-screen-overlay') ||
     container.classList.contains('chest-screen-overlay') ||
     container.classList.contains('death-screen-overlay') ||
+    container.classList.contains('victory-screen-overlay') ||
     container.classList.contains('pause-screen-overlay') ||
     container.classList.contains('locked-hero-overlay');
 

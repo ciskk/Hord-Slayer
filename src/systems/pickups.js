@@ -14,6 +14,7 @@ import { addXP } from '../entities/player.js';
 import { transitionToArenaTheme } from '../render/environment.js';
 import { getHordeArenaTheme } from './waves.js';
 import { onAltarChestCollected } from './worldEvents.js';
+import { lastAttackerName, deathContext } from '../state/events.js';
 
 export function getGemConfig(xp) {
   if (xp >= 50) {
@@ -69,9 +70,18 @@ export function compressGems(gems, player) {
       accumulatedXp += gems[_offscreenGems[j]].value;
     }
 
-    for (let j = 0; j < _offscreenGems.length; j++) {
-      gems.splice(_offscreenGems[j], 1);
+    // Os índices estão em ordem decrescente. Compacta os sobreviventes uma
+    // única vez, preservando sua ordem e evitando os deslocamentos de splice.
+    let removedIdx = _offscreenGems.length - 1;
+    let writeIdx = 0;
+    for (let readIdx = 0; readIdx < gems.length; readIdx++) {
+      if (removedIdx >= 0 && readIdx === _offscreenGems[removedIdx]) {
+        removedIdx--;
+      } else {
+        gems[writeIdx++] = gems[readIdx];
+      }
     }
+    gems.length = writeIdx;
 
     const cfg = getGemConfig(accumulatedXp);
     gems.push({ 
@@ -166,7 +176,11 @@ export function updatePickups(dt, {
         }
       });
     } else {
-      setLastAttackerName("Horda Devoradora");
+      if (!lastAttackerName && (!deathContext || !deathContext.name || deathContext.name === 'A Horda do Abismo')) {
+        if (typeof setLastAttackerName === 'function') {
+          setLastAttackerName("A Horda do Abismo");
+        }
+      }
       player.hp = 0;
       triggerDeath();
       return { playerDied: true };

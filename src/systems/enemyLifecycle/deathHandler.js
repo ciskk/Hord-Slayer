@@ -22,8 +22,10 @@ import { ENEMY_TYPES } from '../../config/enemies.js';
 import { addPersistentGold, addXP, getPersistentGold, selectedHeroKey } from '../../entities/player.js';
 import { getGemConfig } from '../pickups.js';
 import { onBossDefeated, setFirstBossKilled } from '../waves.js';
+import { clearActiveBarks } from '../barks.js';
 import { getNeighborIndices } from '../../core/spatialGrid.js';
 import { spawnMobCluster, isKaelInvisible } from '../../entities/enemies.js';
+import { setLastAttackerInfo } from '../../state/events.js';
 
 /**
  * Processa a morte de um inimigo: efeitos visuais, drops, explosões,
@@ -123,7 +125,13 @@ export function handleEnemyDeath(e, i, ctx) {
       if (pDistSq <= 55 * 55 && player.iFrames <= 0) {
         player.hp -= e.damage;
         player.iFrames = 20;
-        if (setLastAttackerName) setLastAttackerName("Explosão Necrótica");
+        setLastAttackerInfo({
+          name: e.name || 'Carniçal do Pavio',
+          category: e.isMiniBoss ? 'MINIBOSS' : 'HORDE',
+          attackName: 'Explosão Necrótica',
+          damage: Math.round(e.damage),
+          enemyType: e.baseType || 'EXPLODER'
+        });
         addDamageText(player.x, player.y, `-${Math.round(e.damage)}`, false, '#e67e22');
         if (player.hp <= 0) {
           player.hp = 0;
@@ -145,7 +153,9 @@ export function handleEnemyDeath(e, i, ctx) {
           damage: Math.round(e.damage * 0.35),
           life: 65,
           bulletType: 'FIRE_SHRAPNEL',
-          color: '#e74c3c'
+          color: '#e74c3c',
+          sourceName: e.name || 'Carniçal do Pavio',
+          enemyType: e.baseType || 'EXPLODER'
         });
       }
       acidPuddles.push({ x: e.x, y: e.y, radius: 24, life: 160, maxLife: 160, isFire: true });
@@ -189,7 +199,13 @@ export function handleEnemyDeath(e, i, ctx) {
       if (pDistSq <= 60 * 60 && player.iFrames <= 0) {
         player.hp -= e.damage;
         player.iFrames = 25;
-        if (setLastAttackerName) setLastAttackerName("Estilhaço Suicida");
+        setLastAttackerInfo({
+          name: e.name || 'Incinerador Instável',
+          category: 'MINIBOSS',
+          attackName: 'Estilhaço Suicida',
+          damage: Math.round(e.damage),
+          enemyType: e.baseType || 'FIRE_INCINERATOR'
+        });
         triggerShake(9);
         playSfx('hit');
         addDamageText(player.x, player.y, `-${Math.round(e.damage)}`, false, '#e67e22');
@@ -381,6 +397,30 @@ export function handleEnemyDeath(e, i, ctx) {
         bossProjectiles.length = 0;
         bossShockwaves.length = 0;
         voidVortices.length = 0;
+
+        // Ocultação imediata e total do HUD ao iniciar a animação cinematográfica de morte do chefe final
+        if (typeof document !== 'undefined') {
+          if (document.body) document.body.classList.add('boss-defeat-cinematic');
+          const hud = document.getElementById('hud');
+          if (hud) {
+            hud.classList.add('hud-hidden', 'hud-cinematic-death');
+            hud.style.setProperty('display', 'none', 'important');
+            hud.style.display = 'none';
+          }
+          const bossHud = document.getElementById('boss-hud');
+          if (bossHud) bossHud.style.display = 'none';
+          const skillBtn = document.getElementById('skill-btn-container');
+          if (skillBtn) {
+            skillBtn.classList.add('hud-hidden', 'hud-cinematic-death');
+            skillBtn.style.setProperty('display', 'none', 'important');
+            skillBtn.style.display = 'none';
+          }
+          const altarHud = document.getElementById('blood-altar-hud');
+          if (altarHud) altarHud.style.display = 'none';
+          const altarBtn = document.getElementById('blood-altar-channel-btn');
+          if (altarBtn) altarBtn.style.display = 'none';
+          clearActiveBarks();
+        }
 
         const bossHpFill = document.getElementById('boss-hp-fill');
         if (bossHpFill) {

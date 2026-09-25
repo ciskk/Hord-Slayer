@@ -13,6 +13,7 @@
 
 import { ctx, setMainCtx, frameCount, setFrameCount } from '../../state/gameState.js';
 import { layoutMetrics } from '../../core/responsive.js';
+import { isCrawler, crawlPhase } from '../../entities/enemies/crawlerLocomotion.js';
 
 const BASE_CELL_SIZE = 80;
 const BASE_HALF_CELL = 40;
@@ -124,7 +125,11 @@ export function drawCachedEnemy(targetCtx, e, renderer) {
 
   const isHit = e.hitFlash > 0;
   const stateKey = isHit ? 'h' : 'n';
-  const animStep = Math.abs(Math.floor(frameCount * 0.18)) % 6;
+  const crawler = isCrawler(e);
+  const phaseCount = crawler ? 12 : 6;
+  const animStep = crawler
+    ? Math.floor(((crawlPhase(e, frameCount) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2) * phaseCount)
+    : Math.abs(Math.floor(frameCount * 0.18)) % 6;
   const variant = e.variant || 0;
   const key = `${e.baseType}_r${e.radius}_v${variant}_f${animStep}_${stateKey}`;
 
@@ -170,6 +175,7 @@ export function drawCachedEnemy(targetCtx, e, renderer) {
         x: 0,
         y: 0,
         facing: 1,
+        crawlPhase: crawler ? animStep * Math.PI * 2 / phaseCount : e.crawlPhase,
         hitFlash: isHit ? 4 : 0,
         slowTimer: 0,
         combatState: 'CHASE'

@@ -214,6 +214,7 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     x,
     y,
     baseType: typeKey,
+    name: isElite ? `${def.name} (Elite)` : def.name,
     variant: typeKey === 'ZOMBIE' ? Math.floor(Math.random() * 4) : 0,
     radius,
     speed,

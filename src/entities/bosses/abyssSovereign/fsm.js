@@ -23,11 +23,19 @@ import {
   updateAnchors, 
   updateTentaclePhysics, 
   updateActiveAttacks,
-  updateHealingZones 
+  updateHealingZones,
+  updateThresholdBeams,
+  updateInexorableHarvest,
+  updateSpiralStream
 } from './physics.js';
 import { prepareNextAttack, startSkillCast } from './attacks.js';
+import { cancelArenaPattern, updateArenaPattern } from './arenaPatterns.js';
+import { applyBossPatternDamage } from '../../../systems/bossHazards.js';
+import { selectedHeroKey } from '../../player.js';
+import { playSovereignIntroCues } from './introEffects.js';
 
 export function triggerStabilityBreak(boss, context) {
+  cancelArenaPattern(boss);
   const { triggerShake, addDamageText, createHitParticles } = context;
 
   boss.actionState = SOVEREIGN_STATES.RECOVERY_STAGGER;
@@ -39,6 +47,9 @@ export function triggerStabilityBreak(boss, context) {
   boss.windupTimer = 0;
   boss.castDuration = 0;
   boss.currentSkill = null;
+  if (boss.thresholdBeams) boss.thresholdBeams.length = 0;
+  if (boss.harvestState) boss.harvestState = null;
+  if (boss.spiralBlades) boss.spiralBlades.length = 0;
 
   playSfx('shatter');
   triggerShake(16);
@@ -54,6 +65,7 @@ export function triggerStabilityBreak(boss, context) {
  * seguido por uma onda de repulsão radial firme com dano 0 (afasta o jogador sem arrancar HP injustamente).
  */
 export function triggerPhaseTransition(boss, nextPhase, context) {
+  cancelArenaPattern(boss);
   const { triggerShake, addDamageText } = context;
 
   boss.phase = nextPhase;
@@ -68,6 +80,9 @@ export function triggerPhaseTransition(boss, nextPhase, context) {
   boss.windupTimer = 0;
   boss.castDuration = 0;
   boss.currentSkill = null;
+  if (boss.thresholdBeams) boss.thresholdBeams.length = 0;
+  if (boss.harvestState) boss.harvestState = null;
+  if (boss.spiralBlades) boss.spiralBlades.length = 0;
 
   // Limpeza imediata de projéteis ao redor para clareza visual
   const clearRadiusSq = 450 * 450;
@@ -101,7 +116,11 @@ export function triggerPhaseTransition(boss, nextPhase, context) {
 
 export function updateAbyssSovereign(e, dt, context) {
   if (e.hp <= 0 && e.actionState !== SOVEREIGN_STATES.DEATH_COLLAPSE) {
+    cancelArenaPattern(e);
     cleanupRiftAnchors(e);
+    if (e.thresholdBeams) e.thresholdBeams.length = 0;
+    if (e.harvestState) e.harvestState = null;
+    if (e.spiralBlades) e.spiralBlades.length = 0;
     return;
   }
 
@@ -115,6 +134,26 @@ export function updateAbyssSovereign(e, dt, context) {
 
   // Lógica Especial da Sequência Cinematográfica de Derrota
   if (e.actionState === SOVEREIGN_STATES.DEATH_COLLAPSE) {
+    cancelArenaPattern(e);
+    if (typeof document !== 'undefined' && document.body && !document.body.classList.contains('boss-defeat-cinematic')) {
+      document.body.classList.add('boss-defeat-cinematic');
+      const hudEl = document.getElementById('hud');
+      if (hudEl) {
+        hudEl.classList.add('hud-hidden', 'hud-cinematic-death');
+        hudEl.style.setProperty('display', 'none', 'important');
+      }
+      const skillBtn = document.getElementById('skill-btn-container');
+      if (skillBtn) {
+        skillBtn.classList.add('hud-hidden', 'hud-cinematic-death');
+        skillBtn.style.setProperty('display', 'none', 'important');
+      }
+      const bossHud = document.getElementById('boss-hud');
+      if (bossHud) bossHud.style.display = 'none';
+      const altarHud = document.getElementById('blood-altar-hud');
+      if (altarHud) altarHud.style.display = 'none';
+      const altarBtn = document.getElementById('blood-altar-channel-btn');
+      if (altarBtn) altarBtn.style.display = 'none';
+    }
     cleanupRiftAnchors(e);
     if (e.healingZones) e.healingZones.length = 0;
     e.isTargetable = false;
@@ -187,7 +226,6 @@ export function updateAbyssSovereign(e, dt, context) {
         playSfx('boss');
         playSfx('chest_fanfare');
         e.supernovaFlashTimer = 35;
-        e.showGoldenBanner = true;
 
         if (context.bossShockwaves) {
           context.bossShockwaves.push({
@@ -202,8 +240,6 @@ export function updateAbyssSovereign(e, dt, context) {
             thickness: 8
           });
         }
-
-        addDamageText(e.x, e.y - e.radius - 24, "VITÓRIA SUPREMA!", true, '#f1c40f');
       }
 
       if (Math.floor(frameCount) % 3 === 0) {
@@ -242,21 +278,24 @@ export function updateAbyssSovereign(e, dt, context) {
   updateTentaclePhysics(e, dt);
   updateActiveAttacks(e, dt, context);
   updateHealingZones(e, dt, context);
+  updateThresholdBeams(e, dt, context);
+  updateInexorableHarvest(e, dt, context);
+  updateSpiralStream(e, dt, context);
 
   // Sincronização explícita e reativa da pálpebra e da paleta do estado inativo (IDLE)
   if (e.eyeAperture === undefined) e.eyeAperture = 1.0;
   if (e.idleBlend === undefined) e.idleBlend = 0.0;
 
   if (e.actionState === SOVEREIGN_STATES.IDLE) {
-    const isWakingUp = (e.idleTimer !== undefined && e.idleTimer <= 6);
+    const isWakingUp = (e.idleTimer !== undefined && e.idleTimer <= 3);
     if (isWakingUp) {
       e.eyeAnimState = 'OPENING';
-      e.eyeAperture = Math.min(1.0, e.eyeAperture + 0.20 * dt);
-      e.idleBlend = Math.max(0.0, e.idleBlend - 0.16 * dt);
+      e.eyeAperture = Math.min(1.0, e.eyeAperture + 0.40 * dt);
+      e.idleBlend = Math.max(0.0, e.idleBlend - 0.32 * dt);
     } else {
       e.eyeAnimState = 'CLOSING';
-      e.eyeAperture = Math.max(0.0, e.eyeAperture - 0.36 * dt);
-      e.idleBlend = Math.min(1.0, e.idleBlend + 0.30 * dt);
+      e.eyeAperture = Math.max(0.0, e.eyeAperture - 0.72 * dt);
+      e.idleBlend = Math.min(1.0, e.idleBlend + 0.60 * dt);
       if (e.eyeAperture === 0) e.eyeAnimState = 'CLOSED';
     }
   } else {
@@ -330,11 +369,41 @@ export function updateAbyssSovereign(e, dt, context) {
     curSpeed *= (1 - 0.18);
   }
 
+  if (e.arenaPattern) {
+    const finished = updateArenaPattern(e, dt, player,
+      (damage, name) => applyBossPatternDamage(player, damage, e, name, selectedHeroKey, context),
+      () => { playSfx('singularity'); triggerShake(7); triggerHaptic('medium'); });
+    if (finished) {
+      e.actionState = SOVEREIGN_STATES.RECOVERY_STAGGER;
+      e.staggerTimer = e.phase === 3 ? 48 : 60;
+      e.isStaggered = true;
+      e.isVulnerable = true;
+      e.currentSkill = null;
+      addDamageText(e.x, e.y - e.radius - 14, 'BRECHA SIDÉRICA!', true, '#f1c40f');
+    } else {
+      const p = e.arenaPattern;
+      e.actionState = p.active ? SOVEREIGN_STATES.CASTING : SOVEREIGN_STATES.WINDUP;
+      e.windupMax = p.warning;
+      e.windupTimer = p.active ? 0 : Math.max(0, p.warning - p.elapsed);
+    }
+    e.isTargetable = true;
+    clampBossToArena(e);
+    return;
+  }
+
   switch (e.actionState) {
     case SOVEREIGN_STATES.SPAWN_INTRO: {
       const introMax = e.introDuration || 440;
+      const previousProgress = Math.min(1, Math.max(0, 1 - e.introTimer / introMax));
       e.introTimer -= dt;
       const progress = Math.min(1.0, Math.max(0, 1 - (e.introTimer / introMax)));
+      playSovereignIntroCues(previousProgress, progress, playSfx, triggerHaptic);
+
+      if (progress >= 0.50 && !e.hasTriggeredTitle) {
+        e.hasTriggeredTitle = true;
+        e.titleTimer = 220;
+        e.titleMaxTimer = 220;
+      }
 
       e.isVulnerable = false;
       e.isTargetable = false;
@@ -359,9 +428,6 @@ export function updateAbyssSovereign(e, dt, context) {
             2
           );
         }
-        if (Math.floor(e.introTimer) === 410) {
-          playSfx('charge');
-        }
       } else if (progress < 0.50) {
         if (Math.floor(frameCount) % 3 === 0) {
           triggerShake(2.0 + Math.sin(progress * 10) * 2);
@@ -370,17 +436,7 @@ export function updateAbyssSovereign(e, dt, context) {
           createHitParticles(e.x + Math.cos(pAngle) * pDist, e.y + Math.sin(pAngle) * pDist, '#81ecec', 2);
           createHitParticles(e.x, e.y, '#ffffff', 1);
         }
-        if (Math.floor(e.introTimer) === 270) {
-          playSfx('warp');
-          triggerHaptic('medium');
-        }
       } else if (progress < 0.80) {
-        if (!e.hasTriggeredTitle) {
-          e.hasTriggeredTitle = true;
-          e.titleTimer = 220;
-          e.titleMaxTimer = 220;
-        }
-
         e.hoverAngle += 0.05 * dt;
         e.y += Math.sin(e.hoverAngle) * 0.3 * dt;
 
@@ -390,10 +446,6 @@ export function updateAbyssSovereign(e, dt, context) {
           createHitParticles(e.x + (Math.random() - 0.5) * e.radius * 2, e.y + (Math.random() - 0.5) * e.radius * 2, '#e84393', 1);
         }
 
-        if (Math.floor(e.introTimer) === 130) {
-          playSfx('forcefield');
-          triggerHaptic('medium');
-        }
       } else {
         e.hoverAngle += 0.07 * dt;
         e.y += Math.sin(e.hoverAngle) * 0.4 * dt;
@@ -405,14 +457,11 @@ export function updateAbyssSovereign(e, dt, context) {
           createHitParticles(e.x, e.y, '#e84393', 2);
         }
 
-        if (Math.floor(e.introTimer) === 50) {
-          playSfx('singularity');
-        }
       }
 
       if (e.introTimer <= 0) {
         e.actionState = SOVEREIGN_STATES.IDLE;
-        e.idleTimer = 42;
+        e.idleTimer = 21;
         e.isTargetable = true;
         e.stateTimer = 0;
 
@@ -512,7 +561,7 @@ export function updateAbyssSovereign(e, dt, context) {
         }
         e.actionState = SOVEREIGN_STATES.IDLE;
         e.stateTimer = 0;
-        e.idleTimer = 37;
+        e.idleTimer = 18;
       }
       break;
     }
@@ -529,7 +578,7 @@ export function updateAbyssSovereign(e, dt, context) {
       if (e.idleTimer <= 0) {
         e.actionState = SOVEREIGN_STATES.HOVER_CHASE;
         e.stateTimer = 0;
-        e.attackCooldown = e.phase === 3 ? 16 : (e.phase === 2 ? 22 : 28);
+        e.attackCooldown = e.phase === 3 ? 8 : (e.phase === 2 ? 11 : 14);
       }
       break;
     }
@@ -844,7 +893,7 @@ export function updateAbyssSovereign(e, dt, context) {
         } else {
           e.actionState = SOVEREIGN_STATES.IDLE;
           e.stateTimer = 0;
-          e.idleTimer = e.phase === 3 ? 12 : (e.phase === 2 ? 16 : 20);
+          e.idleTimer = e.phase === 3 ? 6 : (e.phase === 2 ? 8 : 10);
         }
       }
       break;
@@ -892,12 +941,137 @@ export function updateAbyssSovereign(e, dt, context) {
 
         e.actionState = SOVEREIGN_STATES.IDLE;
         e.stateTimer = 0;
-        e.idleTimer = e.phase === 3 ? 14 : (e.phase === 2 ? 18 : 22);
+        e.idleTimer = e.phase === 3 ? 7 : (e.phase === 2 ? 9 : 11);
       }
       break;
     }
 
-    case SOVEREIGN_STATES.RECOVERY_STAGGER: {
+        case SOVEREIGN_STATES.CYCLONE_CHARGE: {
+      e.stateTimer += dt;
+      e.cycloneTimer -= dt;
+
+      // 1. Rastreamento Inercial do Jogador (Torque Angular Suave)
+      const targetAngle = Math.atan2(player.y - e.y, player.x - e.x);
+      let angleDiff = targetAngle - e.cycloneAngle;
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+      const steerRate = (e.phase === 3 ? (SOVEREIGN_CONFIG.CYCLONE_STEER_RATE_P3 || 0.046) : (SOVEREIGN_CONFIG.CYCLONE_STEER_RATE || 0.038)) * dt;
+      e.cycloneAngle += Math.max(-steerRate, Math.min(steerRate, angleDiff * 0.14 * dt));
+
+      // 2. Deslocamento Linear em Alta Velocidade
+      const speed = (e.phase === 3 ? (SOVEREIGN_CONFIG.CYCLONE_SPEED_P3 || 7.2) : (SOVEREIGN_CONFIG.CYCLONE_SPEED_P1 || 5.8)) * dt;
+      e.x += Math.cos(e.cycloneAngle) * speed;
+      e.y += Math.sin(e.cycloneAngle) * speed;
+
+      // 3. Rotação Angular Supersônica do Disco de Serra Cósmica
+      e.cycloneSpinAngle = (e.cycloneSpinAngle || 0) + 0.38 * dt;
+
+      // 4. Registro de Pós-Imagens (Afterimages)
+      if (!e.cycloneAfterimages) e.cycloneAfterimages = [];
+      if (Math.floor(frameCount || 0) % 3 === 0) {
+        const primaryCol = e.phase === 3 ? '#00cec9' : (e.phase === 2 ? '#e84393' : '#8e44ad');
+        e.cycloneAfterimages.push({
+          x: e.x,
+          y: e.y,
+          spin: e.cycloneSpinAngle,
+          alpha: 0.60,
+          color: primaryCol,
+          radius: e.radius || 40
+        });
+        if (e.cycloneAfterimages.length > 10) {
+          e.cycloneAfterimages.shift();
+        }
+      }
+
+      // Atualiza fade das pós-imagens
+      for (let a = e.cycloneAfterimages.length - 1; a >= 0; a--) {
+        e.cycloneAfterimages[a].alpha -= 0.045 * dt;
+        if (e.cycloneAfterimages[a].alpha <= 0) {
+          e.cycloneAfterimages.splice(a, 1);
+        }
+      }
+
+      // 5. Emissão de Faíscas e Atrito nas Bordas da Arena Circular
+      if (e.arenaCenterX !== undefined && e.arenaRadius) {
+        const bdx = e.x - e.arenaCenterX;
+        const bdy = e.y - e.arenaCenterY;
+        const bDist = Math.hypot(bdx, bdy);
+        const maxR = e.arenaRadius - (e.radius || 40);
+
+        if (bDist >= maxR - 4) {
+          if (Math.floor(frameCount || 0) % 2 === 0) {
+            triggerShake(4);
+            playSfx('warp');
+            if (createHitParticles) {
+              createHitParticles(e.x, e.y, e.phase === 3 ? '#00cec9' : '#f1c40f', 3);
+            }
+          }
+        }
+      }
+
+      // 6. Colisão de Contato e Knockback Radial no Jogador
+      const cycloneHitRadius = SOVEREIGN_CONFIG.CYCLONE_RADIUS || 48;
+      const pdx = player.x - e.x;
+      const pdy = player.y - e.y;
+      const pDist = Math.hypot(pdx, pdy);
+
+      if (pDist <= cycloneHitRadius + (player.radius || 14) && (player.bossIFrames || 0) <= 0 && player.hp > 0) {
+        const hitDmg = Math.round((e.damage || 365) * (SOVEREIGN_CONFIG.CYCLONE_DAMAGE_RATIO || 0.38));
+        player.hp -= hitDmg;
+        player.bossIFrames = 22;
+        player.iFrames = 22;
+
+        const pNormX = pdx / (pDist || 1);
+        const pNormY = pdy / (pDist || 1);
+        player.pushVx = pNormX * 14.0;
+        player.pushVy = pNormY * 14.0;
+
+        triggerShake(16);
+        playSfx('hit');
+        triggerHaptic('heavy');
+        const primaryCol = e.phase === 3 ? '#00cec9' : (e.phase === 2 ? '#e84393' : '#8e44ad');
+        if (addDamageText) addDamageText(player.x, player.y, '-' + hitDmg, true, primaryCol);
+        if (createHitParticles) {
+          createHitParticles(player.x, player.y, primaryCol, 18);
+          createHitParticles(player.x, player.y, '#ffffff', 10);
+        }
+
+        if (player.hp <= 0) {
+          player.hp = 0;
+          try { triggerDeath(); } catch (err) {}
+        }
+      }
+
+      // 7. Encerramento da Investida: Descompressão e Breve Recuperação
+      if (e.cycloneTimer <= 0) {
+        e.actionState = SOVEREIGN_STATES.IDLE;
+        e.stateTimer = 0;
+        e.idleTimer = e.phase === 3 ? 14 : 20;
+
+        playSfx('singularity');
+        playSfx('warp');
+        triggerShake(12);
+        triggerHaptic('heavy');
+
+        if (context.bossShockwaves) {
+          context.bossShockwaves.push({
+            x: e.x,
+            y: e.y,
+            radius: e.radius,
+            maxRadius: 260,
+            speed: 10.0,
+            damage: 0,
+            knockback: 8.0,
+            hitPlayer: false,
+            colorRgb: e.phase === 3 ? '0, 206, 201' : '232, 67, 147'
+          });
+        }
+      }
+      break;
+    }
+
+case SOVEREIGN_STATES.RECOVERY_STAGGER: {
       e.isVulnerable = true;
       e.staggerTimer -= dt;
 
@@ -915,7 +1089,7 @@ export function updateAbyssSovereign(e, dt, context) {
         e.isStaggered = false;
         e.actionState = SOVEREIGN_STATES.IDLE;
         e.stateTimer = 0;
-        e.idleTimer = 40;
+        e.idleTimer = 20;
         addDamageText(e.x, e.y - e.radius - 12, "ESTABILIZADO!", true, '#8e44ad');
       }
       break;

@@ -1,5 +1,5 @@
 import { AXE_MAX_COUNT } from './axes.js';
-import { player, selectedHeroKey, registerWeaponInInventory, registerPassiveInInventory, addPersistentGold } from '../entities/player.js';
+import { player, selectedHeroKey, registerWeaponInInventory, registerPassiveInInventory, addPersistentGold, getNextLevelXp } from '../entities/player.js';
 import { getAvailableSynergies } from './items.js';
 
 export const upgradesPool = [
@@ -168,9 +168,9 @@ export const upgradesPool = [
     title: "Fenda Sísmica",
     rarity: "card-rare",
     badge: "Martelo",
-    desc: "Aumenta o raio do impacto sísmico 360° em +24px e amplifica o estilhaço de rochas",
-    getStat: () => `+24px Raio Sísmico (${(player.weapons.find(wp => wp.type === 'HAMMER')?.count || 1) + 1}/4)`,
-    stat: "+24px Raio Sísmico (Máx: 4)",
+    desc: "Propaga as fissuras +48px mais longe no solo, intensifica o esmagamento na base e amplia o dano",
+    getStat: () => `+48px Alcance da Fenda (${(player.weapons.find(wp => wp.type === 'HAMMER')?.count || 1) + 1}/4)`,
+    stat: "+48px Alcance da Fenda (Máx: 4)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'HAMMER');
       if (w) {
@@ -662,7 +662,7 @@ export function grantLevels(count = 50) {
   }
 
   // 4. Recalcula curva de XP para o novo nível
-  player.nextXp = 12 + (player.level * 7) + Math.floor(Math.pow(player.level, 1.28));
+  player.nextXp = getNextLevelXp(player.level);
   player.xp = 0;
 
   // 5. Restaura vida máxima total do herói

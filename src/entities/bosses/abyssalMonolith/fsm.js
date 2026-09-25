@@ -5,7 +5,8 @@ import { isBossPhaseReady } from '../../../systems/bossPhaseCinematic.js';
  */
 
 import { playSfx, triggerHaptic } from '../../../core/audio.js';
-import { enemies } from '../../../main.js';
+import { enemies, setLastAttackerInfo } from '../../../main.js';
+import { beginTectonicCharge, advanceTectonicCharge } from './charge.js';
 import { selectedHeroKey } from '../../player.js';
 import { triggerDeath } from '../../../systems/ui.js';
 import { MONOLITH_STATES, MONOLITH_SKILLS, MONOLITH_CONFIG } from './constants.js';
@@ -45,6 +46,12 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
     bossShockwaves = []
   } = context;
 
+  e.chargeCooldown = Math.max(0, (e.chargeCooldown || 0) - dt);
+  if (e.charge && ![MONOLITH_STATES.WINDUP_CHARGE, MONOLITH_STATES.CHARGING].includes(e.actionState)) {
+    e.charge = null;
+    e.aimLocked = false;
+  }
+
   // 0. Gerenciamento do Banner de Título
   if (e.titleTimer > 0) {
     e.titleTimer -= dt;
@@ -69,7 +76,14 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
   // Alvo de fechamento do punho (grip): 1 = punho fechado esmagador, 0 = garras abertas
   let targetGrip = 0.15;
 
-  if (e.actionState === MONOLITH_STATES.WINDUP_SLAM) {
+  if (e.actionState === MONOLITH_STATES.WINDUP_CHARGE || e.actionState === MONOLITH_STATES.CHARGING) {
+    const charging = e.actionState === MONOLITH_STATES.CHARGING;
+    const tension = charging ? 1 : 1 - e.actionTimer / e.maxActionTimer;
+    e.gauntlets.left.lift = e.gauntlets.right.lift = 12 + tension * 22;
+    e.gauntlets.left.rot = 0.65;
+    e.gauntlets.right.rot = -0.65;
+    targetGrip = 1;
+  } else if (e.actionState === MONOLITH_STATES.WINDUP_SLAM) {
     e.gauntlets.left.lift = Math.min(55, (e.gauntlets.left.lift || 0) + 3.2 * dt);
     e.gauntlets.right.lift = Math.min(55, (e.gauntlets.right.lift || 0) + 3.2 * dt);
     e.gauntlets.left.rot = 0.45;
@@ -166,6 +180,8 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
     e.speed = MONOLITH_CONFIG.ENRAGED_SPEED;
     e.orbitalAngularVelocity *= 1.35;
     e.actionState = MONOLITH_STATES.OVERHEAT_TRANSITION;
+    e.charge = null;
+    e.aimLocked = false;
     e.actionTimer = 55;
     e.isVulnerable = false;
 
@@ -205,6 +221,37 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
 
   // 6. MÁQUINA DE ESTADOS PRINCIPAL
   switch (e.actionState) {
+    case MONOLITH_STATES.WINDUP_CHARGE: {
+      e.actionTimer -= dt;
+      if (e.actionTimer <= 0) {
+        e.actionState = MONOLITH_STATES.CHARGING;
+        playSfx('charge');
+        triggerShake(7);
+      }
+      return;
+    }
+
+    case MONOLITH_STATES.CHARGING: {
+      const landed = advanceTectonicCharge(e, dt, player, () => {
+        const damage = Math.round((e.isPhase3 ? 110 : e.isEnraged ? 96 : 82) * (selectedHeroKey === 'KNIGHT' ? 0.8 : 1));
+        player.hp = Math.max(0, player.hp - damage);
+        player.bossIFrames = 30;
+        setLastAttackerInfo({ name: e.name || 'Monólito Abissal', category: 'BOSS', attackName: 'Investida Tectônica', damage, enemyType: 'BOSS_2' });
+        playSfx('hit');
+        triggerShake(10);
+        addDamageText(player.x, player.y, `-${damage}`, true, '#ff793f');
+        createHitParticles(player.x, player.y, '#ff793f', 10);
+        if (player.hp <= 0) triggerDeath();
+      });
+      createHitParticles(e.x - Math.cos(e.aimAngle) * 45, e.y - Math.sin(e.aimAngle) * 45, '#e67e22', 2);
+      if (landed) {
+        triggerShake(10);
+        playSfx('boss');
+        createHitParticles(e.x, e.y, '#f39c12', 16);
+      }
+      return;
+    }
+
     case MONOLITH_STATES.SPAWN_INTRO: {
       const introMax = e.introDuration || 300;
       e.introTimer -= dt;
@@ -634,7 +681,13 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
 
       e.skillCooldown -= dt;
       if (e.skillCooldown <= 0) {
-        selectNextSkill(e, dist, player);
+        if (dist >= MONOLITH_CONFIG.CHARGE_MIN_DISTANCE && e.chargeCooldown <= 0) {
+          beginTectonicCharge(e, player);
+          playSfx('charge');
+          addDamageText(e.x, e.y - 80, 'INVESTIDA TECTÔNICA!', true, '#ffb74d');
+        } else {
+          selectNextSkill(e, dist, player);
+        }
       }
       break;
     }

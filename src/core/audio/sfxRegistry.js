@@ -35,7 +35,12 @@ export const SFX_COOLDOWNS = {
   bell_toll: 150,
   death_collapse: 0,
   death_evaporate: 0,
-  death_nova: 0
+  death_nova: 0,
+  holy_ready: 400,
+  fire_ready: 400,
+  void_ready: 400,
+  blood_ready: 400,
+  alchemic_ready: 400
 };
 
 // Escala musical pentatônica para coleta contínua de gemas
@@ -1066,5 +1071,144 @@ export const SFX_REGISTRY = {
   // Feedback de clique sutil para botões da interface
   click: (params) => {
     SFX_REGISTRY.card_hover(params);
+  },
+
+  // Sinos da Catedral Solar - Carga da ULT de Roland (Paladino) Pronta
+  holy_ready: ({ ctx, t, volumeMult = 1.0, masterGainNode, haptic }) => {
+    const freqs = [659.25, 880.0, 1046.5, 1318.5]; // E5, A5, C6, E6
+    const baseGain = 0.08 * volumeMult;
+    freqs.forEach((freq, idx) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      const startT = t + idx * 0.045;
+      g.gain.setValueAtTime(0.0001, startT);
+      g.gain.linearRampToValueAtTime(baseGain * (1 - idx * 0.15), startT + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, startT + 0.38);
+      o.connect(g);
+      g.connect(masterGainNode);
+      o.start(startT);
+      o.stop(startT + 0.38);
+    });
+    if (typeof haptic === 'function') haptic('medium');
+  },
+
+  // Fornalha e Labareda Viva - Carga da ULT de Ignis (Piromante) Pronta
+  fire_ready: ({ ctx, t, volumeMult = 1.0, masterGainNode, osc, gain, filter, playNoise, haptic }) => {
+    filter.frequency.setValueAtTime(450, t);
+    filter.frequency.exponentialRampToValueAtTime(1600, t + 0.22);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(120, t);
+    osc.frequency.exponentialRampToValueAtTime(320, t + 0.18);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(0.12 * volumeMult, t + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+    osc.start(t);
+    osc.stop(t + 0.24);
+
+    playNoise({
+      filterType: 'bandpass',
+      filterFreq: 680,
+      rampFreq: 1400,
+      startGain: 0.14 * volumeMult,
+      duration: 0.25,
+      decay: 0.25
+    });
+    if (typeof haptic === 'function') haptic('heavy');
+  },
+
+  // Fenda do Vácuo & Lâmina Astral - Carga da ULT de Kael (Andarilho) Pronta
+  void_ready: ({ ctx, t, volumeMult = 1.0, masterGainNode, osc, gain, filter, playNoise, haptic }) => {
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(800, t);
+    filter.frequency.exponentialRampToValueAtTime(320, t + 0.3);
+    filter.Q.value = 4.0;
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(380, t);
+    osc.frequency.exponentialRampToValueAtTime(140, t + 0.3);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(0.09 * volumeMult, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+    osc.start(t);
+    osc.stop(t + 0.32);
+
+    playNoise({
+      filterType: 'highpass',
+      filterFreq: 1800,
+      rampFreq: 600,
+      startGain: 0.08 * volumeMult,
+      duration: 0.26,
+      decay: 0.26
+    });
+    if (typeof haptic === 'function') haptic('medium');
+  },
+
+  // Batimento Cardíaco Visceral (Lub-Dub) - Carga da ULT de Kragdor (Bárbaro) Pronta
+  blood_ready: ({ ctx, t, volumeMult = 1.0, masterGainNode, haptic }) => {
+    // 1º Batimento (Lub)
+    const o1 = ctx.createOscillator();
+    const g1 = ctx.createGain();
+    o1.type = 'sine';
+    o1.frequency.setValueAtTime(70, t);
+    o1.frequency.exponentialRampToValueAtTime(32, t + 0.12);
+    g1.gain.setValueAtTime(0.001, t);
+    g1.gain.linearRampToValueAtTime(0.22 * volumeMult, t + 0.015);
+    g1.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+    o1.connect(g1);
+    g1.connect(masterGainNode);
+    o1.start(t);
+    o1.stop(t + 0.14);
+
+    // 2º Batimento (Dub) - ligeiramente mais encorpado
+    const t2 = t + 0.15;
+    const o2 = ctx.createOscillator();
+    const g2 = ctx.createGain();
+    o2.type = 'sine';
+    o2.frequency.setValueAtTime(60, t2);
+    o2.frequency.exponentialRampToValueAtTime(26, t2 + 0.16);
+    g2.gain.setValueAtTime(0.001, t2);
+    g2.gain.linearRampToValueAtTime(0.28 * volumeMult, t2 + 0.02);
+    g2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.22);
+    o2.connect(g2);
+    g2.connect(masterGainNode);
+    o2.start(t2);
+    o2.stop(t2 + 0.22);
+
+    if (typeof haptic === 'function') haptic('heavy');
+  },
+
+  // Despressurização Cáustica e Borbulhar - Carga da ULT de Valéria (Alquimista) Pronta
+  alchemic_ready: ({ ctx, t, volumeMult = 1.0, masterGainNode, playNoise, haptic }) => {
+    // Escape de vapor
+    playNoise({
+      filterType: 'highpass',
+      filterFreq: 1400,
+      rampFreq: 2400,
+      startGain: 0.12 * volumeMult,
+      duration: 0.22,
+      decay: 0.22
+    });
+
+    // Três borbulhas químicas estourando em sequência
+    [0.0, 0.06, 0.12].forEach((offset, idx) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      const bt = t + offset;
+      const startF = 380 + idx * 80;
+      o.frequency.setValueAtTime(startF, bt);
+      o.frequency.exponentialRampToValueAtTime(startF * 1.8, bt + 0.04);
+      g.gain.setValueAtTime(0.001, bt);
+      g.gain.linearRampToValueAtTime(0.09 * volumeMult, bt + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, bt + 0.05);
+      o.connect(g);
+      g.connect(masterGainNode);
+      o.start(bt);
+      o.stop(bt + 0.05);
+    });
+
+    if (typeof haptic === 'function') haptic('medium');
   }
 };

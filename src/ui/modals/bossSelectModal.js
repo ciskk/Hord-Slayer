@@ -10,11 +10,12 @@ import {
   setLastTime, 
   resetGame 
 } from '../../main.js';
-import { renderDevToolsModal } from '../../systems/devtools.js';
+import { renderDevToolsModal, devCheats } from '../../systems/devtools.js';
 import { grantLevels } from '../../config/upgrades.js';
 import { playSfx } from '../../core/audio.js';
 import { closeCharSelectModal } from './characterSelectModal.js';
 import { triggerBossEncounter, spawnMiniBoss } from '../../entities/enemies.js';
+import { queueManualLevelUps } from './upgradeModal.js';
 
 export function isBossSelectAllowed() {
   if (gameState.isDead || gameState.isWon) return false;
@@ -72,16 +73,20 @@ export function launchBossTest(bossId, levelCount = 0) {
     setLastTime(performance.now());
   }
 
-  const levelsToGrant = typeof levelCount === 'boolean' ? (levelCount ? 50 : 0) : Number(levelCount || 0);
-  if (levelsToGrant > 0) {
-    grantLevels(levelsToGrant);
-  }
-
   setActiveBoss(null);
   bossShockwaves.length = 0;
   voidVortices.length = 0;
 
   triggerBossEncounter(bossId);
+
+  const levelsToGrant = typeof levelCount === 'boolean' ? (levelCount ? 50 : 0) : Number(levelCount || 0);
+  if (levelsToGrant > 0) {
+    if (devCheats.levelUpgradeMode === 'manual') {
+      queueManualLevelUps(levelsToGrant);
+    } else {
+      grantLevels(levelsToGrant);
+    }
+  }
 }
 
 export function launchMiniBossTest(miniBossType, levelCount = 0) {
@@ -105,12 +110,16 @@ export function launchMiniBossTest(miniBossType, levelCount = 0) {
     setLastTime(performance.now());
   }
 
+  spawnMiniBoss(miniBossType);
+
   const levelsToGrant = typeof levelCount === 'boolean' ? (levelCount ? 50 : 0) : Number(levelCount || 0);
   if (levelsToGrant > 0) {
-    grantLevels(levelsToGrant);
+    if (devCheats.levelUpgradeMode === 'manual') {
+      queueManualLevelUps(levelsToGrant);
+    } else {
+      grantLevels(levelsToGrant);
+    }
   }
-
-  spawnMiniBoss(miniBossType);
 }
 
 export function renderBossSelectModal() {

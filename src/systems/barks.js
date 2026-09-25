@@ -69,6 +69,10 @@ export function triggerMiniBossBark(miniBossType) {
  * Renderiza o widget de citação no DOM com animação suave
  */
 function displayBarkUI(speaker, quote, eventType, themeColor) {
+  if (typeof document !== 'undefined' && document.body && document.body.classList.contains('boss-defeat-cinematic')) {
+    return;
+  }
+
   const container = document.getElementById('boss-bark-container');
   const speakerEl = document.getElementById('boss-bark-speaker');
   const phaseTagEl = document.getElementById('boss-bark-phase-tag');

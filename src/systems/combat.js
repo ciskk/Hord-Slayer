@@ -9,6 +9,8 @@ import { bossShockwaves } from '../state/collections.js';
 import { setLastAttackerInfo } from '../state/events.js';
 import { selectedHeroKey, player } from '../entities/player.js';
 import { getEnemyDeathProfile } from '../config/enemyDeaths.js';
+import { getBossPhaseDefeatDamage } from './devtools.js';
+import { ENEMY_TYPES, MINI_BOSS_TYPES } from '../config/enemies.js';
 
 
 export const damageTexts = [];
@@ -63,6 +65,8 @@ export function addDyingEnemy(e, hitAngle = 0) {
     enraged: !!e.enraged,
     // Preserve visible equipment and evolved forms for the redesigned death pose.
     aimAngle: e.aimAngle,
+    moveAngle: e.moveAngle,
+    crawlPhase: e.crawlPhase,
     attackAngle: e.attackAngle,
     dashAngle: e.dashAngle,
     dashState: e.dashState,
@@ -163,15 +167,17 @@ export function updateCombatVisuals(dt) {
   }
   particles.length = pWrite;
 
+  const corpseDrag = Math.pow(0.86, dt);
+  const corpseSpinDrag = Math.pow(0.92, dt);
   let deWrite = 0;
   for (let i = 0; i < dyingEnemies.length; i++) {
     const de = dyingEnemies[i];
     de.x += de.vx * dt;
     de.y += de.vy * dt;
-    de.vx *= Math.pow(0.86, dt);
-    de.vy *= Math.pow(0.86, dt);
+    de.vx *= corpseDrag;
+    de.vy *= corpseDrag;
     de.rot = (de.rot || 0) + (de.vRot || 0) * dt;
-    de.vRot = (de.vRot || 0) * Math.pow(0.92, dt);
+    de.vRot = (de.vRot || 0) * corpseSpinDrag;
     de.timer -= dt;
     de.corpseTimer = Math.max(0, de.corpseTimer - dt);
     if (de.timer > 0) {
@@ -192,7 +198,8 @@ const NON_MELEE_BEHAVIORS_SET = new Set([
  * CHASE -> WINDUP (desaceleração e telegrafia) -> STRIKE (dano exclusivo) -> RECOVERY (vulnerabilidade).
  */
 export function processEnemyMeleeAttacks(player, enemies, dt, freezeTimer = 0) {
-  if (player.hp <= 0) return;
+  // A telegrafia e o golpe usam o mesmo relógio da IA, inclusive no freeze global.
+  if (player.hp <= 0 || freezeTimer > 0 || !(dt > 0)) return;
 
   const isKaelIntangible = player.invisTimer > 0;
   const enemyCount = enemies.length;
@@ -204,7 +211,6 @@ export function processEnemyMeleeAttacks(player, enemies, dt, freezeTimer = 0) {
     if (NON_MELEE_BEHAVIORS_SET.has(e.behavior)) continue;
 
     if (e.baseType === 'STALKER') {
-      if (freezeTimer > 0) continue;
       if ((e.stunTimer > 0 || isKaelIntangible) && (e.dashState === 'aim' || e.dashState === 'dashing')) {
         e.dashState = 'cooldown';
         e.dashTimer = 0;
@@ -338,16 +344,26 @@ export function processEnemyMeleeAttacks(player, enemies, dt, freezeTimer = 0) {
               else if (e.baseType === 'DULLAHAN_VANGUARD') strikeName = 'Estocada de Lança Decapitadora';
               else if (e.isElite) strikeName = 'Golpe Feroz de Elite';
 
+              const mobDef = ENEMY_TYPES[e.baseType] || MINI_BOSS_TYPES[e.baseType];
+              const resolvedMobName = e.name || (mobDef ? (e.isElite ? `${mobDef.name} (Elite)` : mobDef.name) : 'Abominação da Horda');
+
               setLastAttackerInfo({
-                name: e.name || 'Abominação da Horda',
+                name: resolvedMobName,
                 category: enemyCategory,
                 attackName: strikeName,
                 damage: Math.round(playerDmgTaken * (player.damageTakenMultiplier || 1.0)),
                 enemyType: e.baseType || e.type,
-                color: e.color || '#e74c3c'
+                color: e.color || (mobDef ? mobDef.color : '#e74c3c')
               });
 
-              const actualPlayerDmg = playerDmgTaken * (player.damageTakenMultiplier || 1.0);
+              let actualPlayerDmg = playerDmgTaken * (player.damageTakenMultiplier || 1.0);
+              if (player.tempShield && player.tempShield > 0) {
+                const absorb = Math.min(player.tempShield, actualPlayerDmg);
+                player.tempShield -= absorb;
+                actualPlayerDmg -= absorb;
+                addDamageText(player.x, player.y - 35, `ESCUDO ABSORVEU -${Math.round(absorb)}`, true, '#a29bfe');
+                if (player.tempShield <= 0) player.tempShieldTimer = 0;
+              }
               player.hp -= actualPlayerDmg;
               player.iFrames = Math.round(28 * (player.iFramesDurationMult !== undefined ? player.iFramesDurationMult : 1.0));
               triggerShake(7);
@@ -394,6 +410,7 @@ export function processEnemyMeleeAttacks(player, enemies, dt, freezeTimer = 0) {
                     isRetaliationBlocked = true;
                   }
                 }
+                reflectDmg = getBossPhaseDefeatDamage(e, reflectDmg);
                 e.hp -= reflectDmg;
                 e.hitFlash = 4;
                 playSfx('retaliation_clang');
@@ -506,4 +523,3 @@ export function applyFreeze(target, duration = 150, slowFactor = 0.55) {
   target.freezeTimer = Math.max(target.freezeTimer || 0, totalDuration);
   createHitParticles(target.x, target.y, '#74b9ff', 2);
 }
-

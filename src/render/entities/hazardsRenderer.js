@@ -634,51 +634,126 @@ export function renderBossShockwaves(ctx, bossShockwaves, activeBoss, frameCount
     if (alpha <= 0.01) continue;
 
     ctx.save();
-    const swColor = sw.colorRgb || (activeBoss && activeBoss.bossId === 3 ? '0, 206, 201' : '230, 126, 34');
+    const isReaper = (activeBoss && activeBoss.bossId === 3) || sw.isReaperWave || sw.isSpectral;
+    const isRed = sw.colorRgb === '255, 71, 87' || (activeBoss && activeBoss.bossId === 3 && (activeBoss.isEnraged || activeBoss.isPhase3));
+    const swColor = sw.colorRgb || (isReaper ? (isRed ? '255, 71, 87' : '0, 206, 201') : '230, 126, 34');
 
-    // 1. Corpo volumétrico translúcido da onda (camada externa com dispersão de luz)
-    ctx.strokeStyle = `rgba(${swColor}, ${alpha * 0.24})`;
-    ctx.lineWidth = 14;
-    ctx.beginPath();
-    ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
-    ctx.stroke();
+    if (isReaper) {
+      // === NOVO VISUAL: ONDA DE JULGAMENTO ESPECTRAL DO CEIFADOR SUPREMO ===
+      // 1. Névoa Espectral Rasteira de Vácuo (camada volumétrica difusa ampla)
+      ctx.strokeStyle = `rgba(${swColor}, ${alpha * 0.32})`;
+      ctx.lineWidth = Math.min(24, 14 + sw.radius * 0.05);
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+      ctx.stroke();
 
-    // 2. Camada intermediária saturada e nítida
-    ctx.strokeStyle = `rgba(${swColor}, ${alpha * 0.78})`;
-    ctx.lineWidth = 4.8;
-    ctx.beginPath();
-    ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
-    ctx.stroke();
+      // 2. Anel de Ressonância Necrótica (camada intermediária com aura de alma)
+      ctx.strokeStyle = `rgba(${swColor}, ${alpha * 0.85})`;
+      ctx.lineWidth = 5.2;
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+      ctx.stroke();
 
-    // 3. Crista frontal superaquecida de luz branca (marcação exata da hitbox)
-    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
-    ctx.stroke();
+      // 3. Fio da Foice Dimensional (crista afiada e incandescente de luz branca)
+      ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.98})`;
+      ctx.lineWidth = 2.0;
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+      ctx.stroke();
 
-    // 4. Fagulhas estelares projetadas na crista da onda para leitura visual imediata
-    if (sw.radius > 20 && alpha > 0.2) {
-      const sparkCount = 8;
-      const timeOffset = (frameCount || 0) * 0.04;
-      ctx.fillStyle = '#ffffff';
-      for (let s = 0; s < sparkCount; s++) {
-        const sAng = (s * Math.PI * 2) / sparkCount + timeOffset;
-        const sparkX = sw.x + Math.cos(sAng) * sw.radius;
-        const sparkY = sw.y + Math.sin(sAng) * sw.radius;
+      // 4. Espíritos / Chamas de Alma Orbitantes na Crista da Onda
+      if (sw.radius > 25 && alpha > 0.15) {
+        const soulCount = 10;
+        const timeOffset = (frameCount || 0) * 0.06;
+        for (let s = 0; s < soulCount; s++) {
+          const sAng = (s * Math.PI * 2) / soulCount + timeOffset;
+          const sx = sw.x + Math.cos(sAng) * sw.radius;
+          const sy = sw.y + Math.sin(sAng) * sw.radius;
 
-        ctx.beginPath();
-        ctx.arc(sparkX, sparkY, 2.0 * alpha, 0, Math.PI * 2);
-        ctx.fill();
+          ctx.save();
+          ctx.translate(sx, sy);
+          ctx.rotate(sAng + Math.PI * 0.5); // Orientada tangencialmente ao fluxo da onda
 
-        // Rastro curto radial
-        const trailLen = 7 * alpha;
-        ctx.strokeStyle = `rgba(${swColor}, ${alpha * 0.65})`;
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(sparkX, sparkY);
-        ctx.lineTo(sparkX - Math.cos(sAng) * trailLen, sparkY - Math.sin(sAng) * trailLen);
-        ctx.stroke();
+          // Rastro de fogo fátuo tangencial com gradiente
+          const flameLen = 14 * alpha;
+          const flameGrad = ctx.createLinearGradient(-flameLen, 0, 4, 0);
+          flameGrad.addColorStop(0, `rgba(${swColor}, 0)`);
+          flameGrad.addColorStop(0.6, `rgba(${swColor}, ${alpha * 0.85})`);
+          flameGrad.addColorStop(1, '#ffffff');
+          ctx.fillStyle = flameGrad;
+          ctx.beginPath();
+          ctx.moveTo(-flameLen, 0);
+          ctx.lineTo(-3, -2.5 * alpha);
+          ctx.lineTo(4, 0);
+          ctx.lineTo(-3, 2.5 * alpha);
+          ctx.closePath();
+          ctx.fill();
+
+          // Ponto incandescente da cabeça do espírito
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(1.5, 0, 2.0 * alpha, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.restore();
+
+          // Micro-fendas de éter radiais cortando o plano dimensional
+          if (s % 2 === 0) {
+            const crackLen = 8 * alpha;
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.75})`;
+            ctx.lineWidth = 1.0;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(sx + Math.cos(sAng) * crackLen, sy + Math.sin(sAng) * crackLen);
+            ctx.stroke();
+          }
+        }
+      }
+    } else {
+      // 1. Corpo volumétrico translúcido da onda (camada externa com dispersão de luz)
+      ctx.strokeStyle = `rgba(${swColor}, ${alpha * 0.24})`;
+      ctx.lineWidth = 14;
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 2. Camada intermediária saturada e nítida
+      ctx.strokeStyle = `rgba(${swColor}, ${alpha * 0.78})`;
+      ctx.lineWidth = 4.8;
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 3. Crista frontal superaquecida de luz branca (marcação exata da hitbox)
+      ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 4. Fagulhas estelares projetadas na crista da onda para leitura visual imediata
+      if (sw.radius > 20 && alpha > 0.2) {
+        const sparkCount = 8;
+        const timeOffset = (frameCount || 0) * 0.04;
+        ctx.fillStyle = '#ffffff';
+        for (let s = 0; s < sparkCount; s++) {
+          const sAng = (s * Math.PI * 2) / sparkCount + timeOffset;
+          const sparkX = sw.x + Math.cos(sAng) * sw.radius;
+          const sparkY = sw.y + Math.sin(sAng) * sw.radius;
+
+          ctx.beginPath();
+          ctx.arc(sparkX, sparkY, 2.0 * alpha, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Rastro curto radial
+          const trailLen = 7 * alpha;
+          ctx.strokeStyle = `rgba(${swColor}, ${alpha * 0.65})`;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(sparkX, sparkY);
+          ctx.lineTo(sparkX - Math.cos(sAng) * trailLen, sparkY - Math.sin(sAng) * trailLen);
+          ctx.stroke();
+        }
       }
     }
 

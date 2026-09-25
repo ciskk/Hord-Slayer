@@ -8,19 +8,45 @@ import { playSfx, triggerHaptic } from '../../../core/audio.js';
 import { enemies, canSpawnEnemyBullet } from '../../../main.js';
 import { REAPER_STATES, REAPER_CONFIG } from './constants.js';
 import { 
-  updateReaperLanterns, 
+  updateReaperLanterns,
+  updateSoulShards,
   spawnReaperLanterns, 
   updateSoulTether, 
   updateDelayedActions,
   updateScytheBoomerang,
   updateSoulWells,
   updateDeathMarkExecution,
-  updateTriadSlash
+  updateTriadSlash,
+  updateDeathToll,
+  updateVeilCleaves,
+  updatePurgatoryChains,
+  updateSinnerShadow,
+  updateWallOfRestless,
+  cleanupPurgatoryChains,
+  damagePlayerFromBoss,
+  isReaperAttackActive
 } from './mechanics.js';
+import { updateReaperRanged, cancelReaperRanged } from './rangedAttacks.js';
 import { 
   selectReaperSkill, 
   executeReaperSkill 
 } from './attacks.js';
+
+function checkAttackActive(boss, ctx) {
+  if (typeof isReaperAttackActive === 'function') {
+    return isReaperAttackActive(boss, ctx);
+  }
+  return Boolean(
+    (boss.delayedActions && boss.delayedActions.length > 0) ||
+    (ctx && ctx.bossTelegraphs && ctx.bossTelegraphs.some(t => t.boss === boss && (t.timer === undefined || t.timer > 0))) ||
+    (boss.triadClones && boss.triadClones.length > 0) ||
+    (boss.veilCleaves && boss.veilCleaves.some(vc => !vc.exploded)) ||
+    (boss.soulWells && boss.soulWells.some(w => !w.detonated)) ||
+    (boss.deathMark && boss.deathMark.active) ||
+    (boss.boomerangScythe && boss.boomerangScythe.active) ||
+    (boss.deathToll && boss.deathToll.active)
+  );
+}
 
 /**
  * Verifica e aciona transições de fase com base no HP restante do Ceifador.
@@ -38,6 +64,8 @@ export function checkReaperPhases(e, context) {
     e.speed *= 1.32;
     e.lanternAngularSpeed *= 1.5;
     e.actionState = REAPER_STATES.ENRAGE_TRANSITION;
+    cancelReaperRanged(e);
+    if (typeof cleanupPurgatoryChains === 'function') cleanupPurgatoryChains(e, (context && context.enemies) || (typeof enemies !== 'undefined' ? enemies : []));
     e.actionTimer = 65;
     e.isVulnerable = false;
     e.collapseProgress = 0;
@@ -55,6 +83,7 @@ export function checkReaperPhases(e, context) {
       speed: 6.5,
       damage: Math.round(e.damage * 0.42),
       colorRgb: '255, 71, 87',
+      isReaperWave: true,
       hitPlayer: false
     });
 
@@ -64,8 +93,28 @@ export function checkReaperPhases(e, context) {
   }
 
   if (hpRatio < REAPER_CONFIG.PHASE3_HP_RATIO && !e.isPhase3 && isBossPhaseReady(e, 3)) {
+    if (e.rangedAttack) {
+      cancelReaperRanged(e);
+      e.actionState = REAPER_STATES.POST_ATTACK_RECOVERY;
+      e.actionTimer = 36;
+    }
     e.isPhase3 = true;
-    e.speed *= 1.20;
+    e.hasDualScythes = true;
+    e.speed *= 1.25;
+    if (typeof cleanupPurgatoryChains === 'function') cleanupPurgatoryChains(e, (context && context.enemies) || (typeof enemies !== 'undefined' ? enemies : []));
+    if (context && context.bossShockwaves) {
+      context.bossShockwaves.push({
+        x: e.x,
+        y: e.y,
+        radius: 20,
+        maxRadius: 420,
+        speed: 7.5,
+        damage: Math.round(e.damage * 0.45),
+        colorRgb: '255, 71, 87',
+        isReaperWave: true,
+        hitPlayer: false
+      });
+    }
     e.lanternAngularSpeed *= 1.4;
     context.triggerShake(20);
     playSfx('boss');
@@ -80,6 +129,11 @@ export function checkReaperPhases(e, context) {
  * @param {Object} context Contexto global injetado do loop.
  */
 export function updateSupremeReaper(e, dt, context) {
+  if (e.hp <= 0) {
+    cancelReaperRanged(e);
+    if (typeof cleanupPurgatoryChains === 'function') cleanupPurgatoryChains(e, (context && context.enemies) || (typeof enemies !== 'undefined' ? enemies : []));
+    return;
+  }
   const {
     player,
     frameCount,
@@ -111,11 +165,11 @@ export function updateSupremeReaper(e, dt, context) {
 
   // 4. Gestão dos Rastros de Luz dos Olhos (Eye Trails)
   if (!e.eyeTrails) e.eyeTrails = [];
-  if (e.actionState !== REAPER_STATES.SPAWN_INTRO || (e.introTimer && e.introTimer < 180)) {
+  if (e.actionState !== REAPER_STATES.SPAWN_INTRO || (e.introTimer && e.introTimer < (e.introDuration || REAPER_CONFIG.INTRO_DURATION) * 0.6)) {
     if (Math.floor(frameCount) % 2 === 0) {
       e.eyeTrails.push({
         x: e.x,
-        y: e.y + (e.floatBob || 0) - (e.isVulnerable ? 12 : 36),
+        y: e.y + ((e.floatBob || 0) - (e.isVulnerable ? 12 : 36)) * REAPER_CONFIG.BODY_SCALE,
         facing: e.facing,
         life: 18,
         maxLife: 18,
@@ -186,10 +240,19 @@ export function updateSupremeReaper(e, dt, context) {
 
   // 6.2 Animação Expressiva de Thanatos 2.0 (Mandíbula, Coroa, Astrolábio e Balança)
   const isCastingHeavy = (
+    e.actionState === REAPER_STATES.WINDUP_RANGED ||
+    e.actionState === REAPER_STATES.RANGED_ATTACK ||
     e.actionState === REAPER_STATES.VORTEX_HARVEST ||
     e.actionState === REAPER_STATES.ENRAGE_TRANSITION ||
     e.actionState === REAPER_STATES.WINDUP_EXECUTION ||
     e.actionState === REAPER_STATES.WINDUP_BOOMERANG ||
+    e.actionState === REAPER_STATES.WINDUP_DEATH_TOLL ||
+    e.actionState === REAPER_STATES.DEATH_TOLL_ACTIVE ||
+    e.actionState === REAPER_STATES.WINDUP_VEIL_CLEAVE ||
+    e.actionState === REAPER_STATES.WINDUP_PURGATORY_CHAINS ||
+    e.actionState === REAPER_STATES.PURGATORY_CHAINS_ACTIVE ||
+    e.actionState === REAPER_STATES.WINDUP_WALL_OF_RESTLESS ||
+    e.actionState === REAPER_STATES.WALL_OF_RESTLESS_ACTIVE ||
     (e.actionState === REAPER_STATES.WINDUP && e.currentSkill === 'SOUL_SCYTHES')
   );
 
@@ -243,22 +306,67 @@ export function updateSupremeReaper(e, dt, context) {
     e.skillCooldown -= dt * (0.20 * activeLanterns.length);
   }
 
+  // Sinergia Mecânica da Balança do Julgamento (Sentença de Morte com HP crítico do jogador)
+  const isDeathSentence = playerHpRatio < 0.35 && e.actionState !== REAPER_STATES.SPAWN_INTRO && !e.isVulnerable && e.hp > 0;
+
+  if (isDeathSentence) {
+    e.isDeathSentence = true;
+    if (e.actionState === REAPER_STATES.CHASE) {
+      e.skillCooldown -= dt * 0.18; // CDR mais agressivo no frenesi da morte
+    }
+    if (!e.hasTriggeredDeathSentenceBark) {
+      e.hasTriggeredDeathSentenceBark = true;
+      if (addDamageText) addDamageText(e.x, e.y - 55, "SENTENÇA DE MORTE!", true, '#ff4757');
+      playSfx('crit');
+      if (triggerShake) triggerShake(10);
+    }
+  } else {
+    e.isDeathSentence = false;
+    if (playerHpRatio > 0.45) {
+      e.hasTriggeredDeathSentenceBark = false;
+    }
+  }
+
   updateReaperLanterns(e, dt, context);
+  if (typeof updateSoulShards === 'function') updateSoulShards(e, dt, context);
   checkReaperPhases(e, context);
   updateSoulTether(e, dt, context);
   updateScytheBoomerang(e, dt, context);
   updateSoulWells(e, dt, context);
   updateDeathMarkExecution(e, dt, context);
   updateTriadSlash(e, dt, context);
+  if (typeof updateDeathToll === 'function') updateDeathToll(e, dt, context);
+  if (typeof updateVeilCleaves === 'function') updateVeilCleaves(e, dt, context);
+  if (typeof updatePurgatoryChains === 'function') updatePurgatoryChains(e, dt, context);
+  if (typeof updateSinnerShadow === 'function') updateSinnerShadow(e, dt, context);
+  if (typeof updateWallOfRestless === 'function') updateWallOfRestless(e, dt, context);
+  if (e.rangedAttack && ![REAPER_STATES.WINDUP_RANGED, REAPER_STATES.RANGED_ATTACK].includes(e.actionState)) {
+    cancelReaperRanged(e);
+  }
 
   // MÁQUINA DE ESTADOS PRINCIPAL
   switch (e.actionState) {
+    case REAPER_STATES.WINDUP_RANGED:
+    case REAPER_STATES.RANGED_ATTACK: {
+      e.wingTargetSpan = 1.3;
+      e.scytheTargetAngle = -1.2 * e.facing;
+      e.scytheGlow = 0.9;
+      updateReaperRanged(e, dt, player,
+        (damage, name, color) => damagePlayerFromBoss(player, damage, name, context, color),
+        attack => {
+          playSfx('boss');
+          triggerShake(8);
+          addDamageText(e.x, e.y - 65, attack.name.toUpperCase(), true, attack.color);
+        });
+      return;
+    }
+
     // -----------------------------------------------------------------------
-    // INTRODUÇÃO CINEMÁTICA EM 4 ATOS (300 FRAMES / 5.0 SEGUNDOS)
+    // INTRODUÇÃO CINEMÁTICA EM 4 ATOS (360 FRAMES / 6.0 SEGUNDOS)
     // -----------------------------------------------------------------------
     case REAPER_STATES.SPAWN_INTRO: {
       e.introTimer -= dt;
-      const introMax = e.introDuration || 300;
+      const introMax = e.introDuration || REAPER_CONFIG.INTRO_DURATION;
       const progress = Math.max(0, Math.min(1, 1 - (e.introTimer / introMax)));
 
       // Preenchimento cinematográfico contínuo da barra de HP (0% a 100%)
@@ -270,14 +378,15 @@ export function updateSupremeReaper(e, dt, context) {
       const bossHpVal = document.getElementById('boss-hp-val');
       if (bossHpVal) bossHpVal.innerText = `${hpPercent}%`;
 
-      // ATO 1: O Frio Sepulcral & Selo Rúnico de Almas (0.00 <= progress < 0.25, frames 0-75)
+      // ATO 1: O Frio Sepulcral & Selo Rúnico de Almas (0.00 <= progress < 0.25, frames 0-90)
       if (progress < 0.25) {
         e.introAct = 1;
         e.wingTargetSpan = 0.05;
         e.scytheTargetAngle = 0.7;
         e.introRuneAngle = (e.introRuneAngle || 0) + 0.032 * dt;
 
-        if (Math.floor(e.introTimer) === Math.floor(introMax - 2)) {
+        if (!e.introSoundPlayed) {
+          e.introSoundPlayed = true;
           playSfx('singularity');
           playSfx('charge');
         }
@@ -295,7 +404,7 @@ export function updateSupremeReaper(e, dt, context) {
           createHitParticles(e.x, e.y, '#81ecec', 1);
         }
       } 
-      // ATO 2: A Queda da Foice Monumental & Despertar das Lanternas (0.25 <= progress < 0.50, frames 75-150)
+      // ATO 2: A Queda da Foice Monumental & Despertar das Lanternas (0.25 <= progress < 0.50, frames 90-180)
       else if (progress < 0.50) {
         e.introAct = 2;
         e.wingTargetSpan = 0.35;
@@ -328,7 +437,7 @@ export function updateSupremeReaper(e, dt, context) {
           createHitParticles(e.x, e.y, '#00cec9', 1);
         }
       } 
-      // ATO 3: Desdobrar do Serafim da Morte & Banner Imperial (0.50 <= progress < 0.75, frames 150-225)
+      // ATO 3: Desdobrar do Serafim da Morte & Banner Imperial (0.50 <= progress < 0.75, frames 180-270)
       else if (progress < 0.75) {
         e.introAct = 3;
         const act3Prog = (progress - 0.50) / 0.25;
@@ -353,7 +462,7 @@ export function updateSupremeReaper(e, dt, context) {
           );
         }
       } 
-      // ATO 4: Golpe do Julgamento & Onda de Choque (0.75 <= progress <= 1.00, frames 225-300)
+      // ATO 4: Golpe do Julgamento & Onda de Choque (0.75 <= progress <= 1.00, frames 270-360)
       else {
         e.introAct = 4;
         e.wingTargetSpan = 1.45;
@@ -375,6 +484,7 @@ export function updateSupremeReaper(e, dt, context) {
             speed: 9.0,
             damage: 0,
             colorRgb: '0, 206, 201',
+            isReaperWave: true,
             hitPlayer: false
           });
 
@@ -452,7 +562,7 @@ export function updateSupremeReaper(e, dt, context) {
         e.isTargetable = true;
         e.collapseProgress = 0;
         e.actionState = REAPER_STATES.CHASE;
-        e.skillCooldown = e.isEnraged ? 40 : 65;
+        e.skillCooldown = e.isEnraged ? 12 : 18;
 
         triggerShake(14);
         playSfx('boss');
@@ -461,9 +571,14 @@ export function updateSupremeReaper(e, dt, context) {
       return;
     }
 
-    // Janela de Recuperação Pós-Ataque (70 frames: punição melee)
+    // Janela de Recuperação Pós-Ataque (acelerada e frenética: 16-20 frames)
     case REAPER_STATES.POST_ATTACK_RECOVERY: {
-      e.actionTimer -= dt;
+      if (checkAttackActive(e, context)) {
+        // Postura mantida enquanto a animação/impacto do golpe anterior conclui na arena
+        return;
+      }
+
+      e.actionTimer -= dt * (e.isPhase3 ? 1.5 : 1.0);
       e.wingTargetSpan = 0.35;
       e.scytheTargetAngle = 0.7;
 
@@ -472,7 +587,7 @@ export function updateSupremeReaper(e, dt, context) {
       }
       if (e.actionTimer <= 0) {
         e.actionState = REAPER_STATES.CHASE;
-        e.skillCooldown = e.isEnraged ? 40 : 60;
+        e.skillCooldown = e.isPhase3 ? (REAPER_CONFIG.SKILL_COOLDOWN_P3 || 8) : (e.isEnraged ? (REAPER_CONFIG.SKILL_COOLDOWN_ENRAGED || 12) : (REAPER_CONFIG.SKILL_COOLDOWN_NORMAL || 18));
       }
       return;
     }
@@ -530,7 +645,7 @@ export function updateSupremeReaper(e, dt, context) {
 
         e.blinkTarget = null;
         e.actionState = REAPER_STATES.POST_ATTACK_RECOVERY;
-        e.actionTimer = 65;
+        e.actionTimer = 20;
       }
       return;
     }
@@ -567,7 +682,8 @@ export function updateSupremeReaper(e, dt, context) {
           maxRadius: 330,
           speed: 6.5,
           damage: Math.round(e.damage * 0.55),
-          colorRgb: '0, 206, 201',
+          colorRgb: e.isEnraged ? '255, 71, 87' : '0, 206, 201',
+          isReaperWave: true,
           hitPlayer: false
         });
 
@@ -584,12 +700,14 @@ export function updateSupremeReaper(e, dt, context) {
             radius: 7,
             damage: Math.round(e.damage * 0.28),
             life: 120,
-            isBossProjectile: true
+            isBossProjectile: true,
+            bulletType: 'REAPER_SOUL_ORB',
+            color: e.isEnraged ? '#ff4757' : '#00cec9'
           });
         }
 
         e.actionState = REAPER_STATES.POST_ATTACK_RECOVERY;
-        e.actionTimer = 70;
+        e.actionTimer = 22;
       }
       return;
     }
@@ -659,22 +777,14 @@ export function updateSupremeReaper(e, dt, context) {
       if (!e.boomerangScythe || !e.boomerangScythe.active || e.actionTimer <= 0) {
         e.isUnarmed = false;
         e.actionState = REAPER_STATES.CHASE;
-        e.skillCooldown = e.isEnraged ? 35 : 50;
+        e.skillCooldown = e.isEnraged ? 12 : 18;
       }
       return;
     }
 
     case REAPER_STATES.WINDUP_EXECUTION: {
-      e.actionTimer -= dt;
-      e.wingTargetSpan = 1.55;
-      e.scytheTargetAngle = -Math.PI * 0.55;
-      e.scytheGlow = 1.0;
-      if (Math.floor(frameCount) % 2 === 0) {
-        createHitParticles(e.x + (Math.random() - 0.5) * 30, e.y - 45 - Math.random() * 20, '#ff4757', 2);
-      }
-      if (e.actionTimer <= 0) {
-        executeReaperSkill(e, context);
-      }
+      e.actionState = REAPER_STATES.CHASE;
+      e.skillCooldown = 18;
       return;
     }
 
@@ -704,6 +814,149 @@ export function updateSupremeReaper(e, dt, context) {
       return;
     }
 
+    case REAPER_STATES.WINDUP_DEATH_TOLL: {
+      e.actionTimer -= dt;
+      e.wingTargetSpan = 1.60;
+      e.scytheTargetAngle = 0;
+      e.scytheGlow = 1.0;
+      if (Math.floor(frameCount) % 3 === 0) {
+        createHitParticles(e.x + (Math.random() - 0.5) * 30, e.y - 70 + (Math.random() - 0.5) * 20, '#f1c40f', 2);
+      }
+      if (e.actionTimer <= 0) {
+        executeReaperSkill(e, context);
+      }
+      return;
+    }
+
+    case REAPER_STATES.DEATH_TOLL_ACTIVE: {
+      e.wingTargetSpan = 1.45;
+      e.scytheTargetAngle = -Math.PI * 0.55;
+      e.scytheGlow = 1.0;
+      e.actionTimer -= dt;
+      if (e.actionTimer <= 0 && (!e.deathToll || !e.deathToll.active)) {
+        e.actionState = REAPER_STATES.CHASE;
+        e.skillCooldown = e.isEnraged ? 12 : 18;
+      }
+      return;
+    }
+
+    case REAPER_STATES.WINDUP_VEIL_CLEAVE: {
+      e.actionTimer -= dt;
+      e.wingTargetSpan = 1.40;
+      e.scytheTargetAngle = 1.4 * e.facing;
+      e.scytheGlow = 1.0;
+      if (e.actionTimer > 8) {
+        e.aimAngle = Math.atan2(player.y - e.y, player.x - e.x);
+      }
+      if (Math.floor(frameCount) % 3 === 0) {
+        createHitParticles(e.x + (Math.random() - 0.5) * 40, e.y + (Math.random() - 0.5) * 40, e.isEnraged ? '#ff4757' : '#00cec9', 2);
+      }
+      if (e.actionTimer <= 0) {
+        executeReaperSkill(e, context);
+      }
+      return;
+    }
+
+    case REAPER_STATES.WINDUP_PURGATORY_CHAINS: {
+      e.actionTimer -= dt;
+      e.wingTargetSpan = 1.65;
+      e.scytheTargetAngle = 0;
+      e.scytheGlow = 1.0;
+      if (Math.floor(frameCount) % 3 === 0) {
+        createHitParticles(e.x + (Math.random() - 0.5) * 45, e.y + (Math.random() - 0.5) * 45, '#8e44ad', 2);
+      }
+      if (e.actionTimer <= 0) {
+        executeReaperSkill(e, context);
+      }
+      return;
+    }
+
+    case REAPER_STATES.PURGATORY_CHAINS_ACTIVE: {
+      e.wingTargetSpan = 1.25;
+      e.scytheTargetAngle = -0.5 * e.facing;
+      e.scytheGlow = 0.85;
+
+      const dx = player.x - e.x;
+      const dy = player.y - e.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > 75) {
+        const moveAng = Math.atan2(dy, dx);
+        const pSpeed = Math.min(3.40, e.speed * 1.10);
+        e.x += Math.cos(moveAng) * pSpeed * dt;
+        e.y += Math.sin(moveAng) * pSpeed * dt;
+      }
+
+      if (e.purgatoryChains) {
+        e.purgatoryChains.cleaveCooldown = (e.purgatoryChains.cleaveCooldown || 40) - dt;
+        if (e.purgatoryChains.cleaveCooldown <= 0 && dist <= 145) {
+          e.purgatoryChains.cleaveCooldown = e.isEnraged ? 45 : 60;
+          e.aimAngle = Math.atan2(dy, dx);
+          if (context.bossTelegraphs) {
+            context.bossTelegraphs.push({
+              type: 'SCYTHE_CLEAVE',
+              x: e.x,
+              y: e.y,
+              radius: 180,
+              angle: e.aimAngle,
+              timer: e.isEnraged ? 36 : 44, // Piso de 36f (600ms)
+              maxTimer: e.isEnraged ? 36 : 44,
+              damage: Math.round(e.damage * 0.45),
+              color: '#8e44ad',
+              colorRgb: '142, 68, 173',
+              boss: e
+            });
+          }
+          playSfx('boss');
+          triggerShake(9);
+          triggerHaptic('heavy');
+        }
+      }
+
+      if (!e.purgatoryChains || !e.purgatoryChains.active) {
+        e.actionState = REAPER_STATES.CHASE;
+        e.skillCooldown = e.isEnraged ? 12 : 18;
+      }
+      return;
+    }
+
+    case REAPER_STATES.WINDUP_WALL_OF_RESTLESS: {
+      e.actionTimer -= dt;
+      e.wingTargetSpan = 1.75;
+      e.scytheTargetAngle = 1.6 * e.facing;
+      e.scytheGlow = 1.0;
+      if (Math.floor(frameCount) % 3 === 0) {
+        createHitParticles(e.x + (Math.random() - 0.5) * 50, e.y + (Math.random() - 0.5) * 50, '#ff4757', 3);
+      }
+      if (e.actionTimer <= 0) {
+        executeReaperSkill(e, context);
+      }
+      return;
+    }
+
+    case REAPER_STATES.WALL_OF_RESTLESS_ACTIVE: {
+      e.wingTargetSpan = 1.35;
+      e.scytheTargetAngle = 0.4 * e.facing;
+      e.scytheGlow = 0.9;
+
+      const dx = player.x - e.x;
+      const dy = player.y - e.y;
+      const dist = Math.hypot(dx, dy);
+
+      // Movimentação tática de assédio enquanto a onda avança
+      if (dist > 120) {
+        const moveAng = Math.atan2(dy, dx);
+        e.x += Math.cos(moveAng) * (e.speed * 0.85) * dt;
+        e.y += Math.sin(moveAng) * (e.speed * 0.85) * dt;
+      }
+
+      if (!e.wallOfRestless || !e.wallOfRestless.active) {
+        e.actionState = REAPER_STATES.CHASE;
+        e.skillCooldown = e.isPhase3 ? 8 : (e.isEnraged ? 12 : 18);
+      }
+      return;
+    }
+
     case REAPER_STATES.CHASE:
     default: {
       e.wingTargetSpan = 0.60;
@@ -714,7 +967,11 @@ export function updateSupremeReaper(e, dt, context) {
       const dist = Math.hypot(dx, dy);
 
       let curSpeed = e.speed;
-      if (activeLanterns.length > 0) curSpeed *= (1 + 0.10 * activeLanterns.length);
+      if (activeLanterns.length > 0) curSpeed *= (1 + 0.04 * activeLanterns.length);
+
+      // Teto máximo de velocidade de perseguição de Thanatos para preservar a viabilidade de kiting e evasão
+      const maxChaseSpeed = (e.isEnraged || e.isPhase3) ? 3.35 : 3.15;
+      if (curSpeed > maxChaseSpeed) curSpeed = maxChaseSpeed;
       if (e.slowTimer > 0) curSpeed *= (1 - 0.18);
 
       if (dist > 85) {
@@ -725,7 +982,9 @@ export function updateSupremeReaper(e, dt, context) {
 
       e.skillCooldown -= dt;
       if (e.skillCooldown <= 0) {
-        selectReaperSkill(e, dist, player);
+        if (!checkAttackActive(e, context)) {
+          selectReaperSkill(e, dist, player, context);
+        }
       }
       break;
     }

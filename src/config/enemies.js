@@ -6,8 +6,8 @@ export const ENEMY_TYPES = {
   ZOMBIE: { name: 'Zumbi Operário', radius: 13, speed: 1.38, hp: 175, color: '#2ecc71', behavior: 'chase', damage: 25, xp: 1 },
   BAT: { name: 'Morcego Carmesim', radius: 4.5, speed: 3.25, hp: 73, color: '#ff4757', behavior: 'swarm', damage: 18, xp: 1 },
   GOLEM: { name: 'Golem de Concreto', radius: 24, speed: 0.82, hp: 686, color: '#747d8c', behavior: 'tank', damage: 56, xp: 6 },
-  STALKER: { name: 'Assassino Espectral', radius: 12, speed: 1.35, hp: 189, color: '#d9b783', behavior: 'dash', damage: 34, xp: 3 },
-  EXPLODER: { name: 'Carniçal Ígneo', radius: 13, speed: 2.1, hp: 147, color: '#e67e22', behavior: 'kamikaze', damage: 39, xp: 2 },
+  STALKER: { name: 'Verme Sepulcral', radius: 12, speed: 1.35, hp: 189, color: '#d9b783', behavior: 'dash', damage: 34, xp: 3 },
+  EXPLODER: { name: 'Carniçal do Pavio', radius: 13, speed: 2.1, hp: 147, color: '#e67e22', behavior: 'kamikaze', damage: 39, xp: 2 },
   NECRO: { name: 'Cultista das Sombras', radius: 15, speed: 0.95, hp: 294, color: '#34495e', behavior: 'summoner', damage: 34, xp: 8 },
   SHOOTER: { name: 'Autômato Artilheiro', radius: 14, speed: 1.1, hp: 231, color: '#0984e3', behavior: 'shooter', damage: 29, xp: 4 },
   SHIELDED: { name: 'Guardião Blindado', radius: 16, speed: 1.0, hp: 406, color: '#b2bec3', behavior: 'shielded', damage: 40, xp: 5 },
@@ -26,10 +26,10 @@ export const ENEMY_TYPES = {
   MAIDEN_THORNS:    { name: 'Donzela das Agulhas', radius: 16, speed: 1.15, hp: 380, color: '#8e44ad', behavior: 'spike_retaliation', damage: 38, xp: 5 },
   MIRROR_BANSHEE:   { name: 'Banshee dos Espelhos', radius: 13, speed: 2.10, hp: 170, color: '#a29bfe', behavior: 'mirror_decoy', damage: 27, xp: 4 },
   DULLAHAN_VANGUARD:{ name: 'Cavaleiro Sem Cabeça', radius: 18, speed: 1.10, hp: 440, color: '#2c3e50', behavior: 'lance_charge', damage: 49, xp: 6 },
-  SNIPER_CULTIST:   { name: 'Atirador de Éter', radius: 14, speed: 0.80, hp: 180, color: '#9c88ff', behavior: 'long_range_sniper', damage: 55, xp: 5 },
-  VOID_SCAVENGER:   { name: 'Duende Ladrão de Gemas', radius: 12, speed: 2.30, hp: 95, color: '#00d2d3', behavior: 'xp_devourer', damage: 18, xp: 3 },
+  SNIPER_CULTIST:   { name: 'Arqueiro de Éter', radius: 14, speed: 0.80, hp: 180, color: '#9c88ff', behavior: 'long_range_sniper', damage: 55, xp: 5 },
+  VOID_SCAVENGER:   { name: 'Surrupiador do Vazio', radius: 12, speed: 2.30, hp: 95, color: '#00d2d3', behavior: 'xp_devourer', damage: 18, xp: 3 },
   GRAVE_GORGON:     { name: 'Carniçal Necrófago', radius: 17, speed: 1.10, hp: 350, color: '#535c68', behavior: 'corpse_eater', damage: 31, xp: 6 },
-  CURSED_CHEST:     { name: 'Mímico de Éter', radius: 18, speed: 2.50, hp: 850, color: '#e056fd', behavior: 'mimic_trap', damage: 47, xp: 15 }
+  CURSED_CHEST:     { name: 'Baú Mímico', radius: 18, speed: 2.50, hp: 850, color: '#e056fd', behavior: 'mimic_trap', damage: 47, xp: 15 }
 
 };
 
@@ -46,7 +46,7 @@ export const MINI_BOSS_TYPES = {
   ZOMBIE_ALPHA:     { name: 'Zumbi Alfa', radius: 26, speed: 1.1, hp: 952, color: '#27ae60', behavior: 'chase', damage: 39, xp: 95, gold: 20 },
   PHALANX_LEADER:   { name: 'Centurião da Guarda', radius: 28, speed: 1.2, hp: 1190, color: '#7f8c8d', behavior: 'shielded', damage: 44, xp: 110, gold: 25 },
   SEISMIC_SMASHER:  { name: 'Demolidor Sísmico', radius: 26, speed: 0.9, hp: 1288, color: '#95a5a6', behavior: 'ground_slam', damage: 47, xp: 120, gold: 25 },
-  ARTILLERY_MECH:   { name: 'Torre Móvel', radius: 25, speed: 0.9, hp: 1050, color: '#2980b9', behavior: 'shooter', damage: 31, xp: 130, gold: 22 },
+  ARTILLERY_MECH:   { name: 'Mecha de Artilharia', radius: 25, speed: 0.9, hp: 1050, color: '#2980b9', behavior: 'shooter', damage: 31, xp: 130, gold: 22 },
   FIRE_INCINERATOR: { name: 'Incinerador Instável', radius: 20, speed: 2.0, hp: 812, color: '#e67e22', behavior: 'kamikaze_spread', damage: 40, xp: 115, gold: 20 },
   BROOD_MATRIARCH:  { name: 'Matriarca Parasita', radius: 25, speed: 1.3, hp: 1232, color: '#00cec9', behavior: 'splitter_queen', damage: 17, xp: 140, gold: 30 },
   SPECTRAL_STALKER: { name: 'Predador Espectral', radius: 22, speed: 2.5, hp: 868, color: '#6c5ce7', behavior: 'backstab_dash', damage: 49, xp: 135, gold: 28 },
@@ -54,8 +54,8 @@ export const MINI_BOSS_TYPES = {
   RUNIC_WARDEN:     { name: 'Guardião Rúnico', radius: 27, speed: 1.1, hp: 1680, color: '#0984e3', behavior: 'protect_aura', damage: 31, xp: 150, gold: 35 },
   RUST_COLOSSUS:    { name: 'Colosso Ferruginoso', radius: 32, speed: 0.85, hp: 2240, color: '#d35400', behavior: 'boulder_throw', damage: 55, xp: 180, gold: 40 },
   SIEGE_CAPTAIN:    { name: 'Capitão de Cerco', radius: 26, speed: 1.0, hp: 1540, color: '#b71540', behavior: 'mortar_barrage', damage: 44, xp: 165, gold: 40 },
-  MOBILE_HIVE:      { name: 'Ninho Móvel', radius: 28, speed: 1.3, hp: 1820, color: '#16a085', behavior: 'bat_spawner', damage: 34, xp: 200, gold: 45 },
+  MOBILE_HIVE:      { name: 'Colmeia Móvel', radius: 28, speed: 1.3, hp: 1820, color: '#16a085', behavior: 'bat_spawner', damage: 34, xp: 200, gold: 45 },
   QUANTUM_SLICER:   { name: 'Fatiador Quântico', radius: 23, speed: 2.2, hp: 1372, color: '#a29bfe', behavior: 'blink_slash', damage: 56, xp: 190, gold: 45 },
   VOID_PRECURSOR:   { name: 'Precursor do Vazio', radius: 27, speed: 1.2, hp: 2520, color: '#8e44ad', behavior: 'vortex_carrier', damage: 49, xp: 220, gold: 50 },
-  CHAOS_HERALD:     { name: 'Arauto do Caos', radius: 30, speed: 1.7, hp: 3080, color: '#c0392b', behavior: 'chaos_cycle', damage: 62, xp: 220, gold: 60 }
+  CHAOS_HERALD:     { name: 'Ciclope do Caos', radius: 30, speed: 1.7, hp: 3080, color: '#c0392b', behavior: 'chaos_cycle', damage: 62, xp: 220, gold: 60 }
 };

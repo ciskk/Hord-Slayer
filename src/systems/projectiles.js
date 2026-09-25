@@ -12,6 +12,7 @@ import { getNeighborIndices } from '../core/spatialGrid.js';
 import { addGroundCrater, updateGroundCraters } from '../render/groundCracks.js';
 import { addKaelHitFissure } from '../render/kaelUlt.js';
 import { triggerDeath } from './ui.js';
+import { getBossPhaseDefeatDamage } from './devtools.js';
 
 export { bullets, enemyBullets, acidPuddles, MAX_CONCURRENT_ENEMY_BULLETS, canSpawnEnemyBullet };
 
@@ -95,6 +96,7 @@ export function updateProjectiles(dt) {
               // Decomposição Cáustica em Chefes: fator 10/9 (1.1111x) que, somado à base 1.35x, atinge exatamente 2.0x do impacto original (50% mais fácil)
               impactDmg *= (10 / 9);
             }
+            impactDmg = getBossPhaseDefeatDamage(e, impactDmg);
             e.hp -= impactDmg;
             e.hitFlash = 4;
             addDamageText(e.x, e.y, Math.round(impactDmg), isCrit || isKaelExecute, isKaelExecute ? '#7c3aed' : (isCrit ? '#f1c40f' : (b.isEvolved ? '#00cec9' : '#2ecc71')));
@@ -140,9 +142,11 @@ export function updateProjectiles(dt) {
       // No instante exato do impacto com o solo (Frame 8):
       if (!b.hasImpacted) {
         b.hasImpacted = true;
+        const strikeAngle = b.angle || 0;
+        const forwardOffset = 22;
         if (b.playerRef) {
-          b.x = b.playerRef.x;
-          b.y = b.playerRef.y;
+          b.x = b.playerRef.x + Math.cos(strikeAngle) * forwardOffset;
+          b.y = b.playerRef.y + Math.sin(strikeAngle) * forwardOffset;
         }
 
         playSfx('hammer_slam');
@@ -157,22 +161,24 @@ export function updateProjectiles(dt) {
           const edx = eb.x - b.x;
           const edy = eb.y - b.y;
           if (edx * edx + edy * edy <= cancelRadiusSq) {
-            createHitParticles(eb.x, eb.y, '#f1c40f', 3);
+            createHitParticles(eb.x, eb.y, '#111111', 3);
             createHitParticles(eb.x, eb.y, '#ffffff', 2);
             enemyBullets.splice(k, 1);
           }
         }
 
-        // Ondas de partículas sagradas telúricas moderadas (sem saturar buffer de partículas)
-        createHitParticles(b.x, b.y, '#f1c40f', b.isEvolved ? 8 : 6);
-        createHitParticles(b.x, b.y, '#ffffff', b.isEvolved ? 5 : 4);
+        // Ondas de partículas minerais telúricas escuras (sem cores mágicas saturadas)
+        createHitParticles(b.x, b.y, '#0a0a0a', b.isEvolved ? 8 : 6);
+        createHitParticles(b.x, b.y, '#2c3e50', b.isEvolved ? 5 : 4);
 
         // Gera ou re-energiza a cratera e fendas geológicas no solo (anti-stacking por proximidade)
-        addGroundCrater(b.x, b.y, b.angle || 0, b.radius || 50, b.count || 1, !!b.isEvolved, b.damage || 45);
+        addGroundCrater(b.x, b.y, strikeAngle, b.radius || 50, b.count || 1, !!b.isEvolved, b.damage || 45);
       }
     }
 
-    const bRadius = b.radius || 6;
+    const isHammerSlam = (b.type === 'HAMMER_SLAM');
+    const hammerReach = isHammerSlam ? (b.isEvolved ? 128 : (78 + ((b.count || 1) - 1) * 12)) : 0;
+    const bRadius = isHammerSlam ? Math.max(b.radius || 50, hammerReach) : (b.radius || 6);
     const candidates = getNeighborIndices(b.x, b.y, bRadius + 45, _bulletCandidates);
 
     for (let j = 0; j < candidates.length; j++) {
@@ -183,15 +189,52 @@ export function updateProjectiles(dt) {
 
       const dx = e.x - b.x;
       const dy = e.y - b.y;
-      const rSum = bRadius + (e.radius || 14);
+      const eRadius = e.radius || 14;
+      const rSum = (b.radius || 6) + eRadius;
 
-      if (dx * dx + dy * dy < rSum * rSum) {
+      let isHit = false;
+      let isSweetSpot = false;
+
+      if (isHammerSlam) {
+        // 1. Checagem de raio circular base
+        if (dx * dx + dy * dy < rSum * rSum) {
+          isHit = true;
+        }
+        // 2. Checagem ao longo do leque aberto de fissuras direcionais
+        if (!isHit && hammerReach > 0) {
+          const cosA = Math.cos(b.angle || 0);
+          const sinA = Math.sin(b.angle || 0);
+          const proj = dx * cosA + dy * sinA;
+          if (proj > 0 && proj <= hammerReach + eRadius) {
+            const perp = Math.abs(-dx * sinA + dy * cosA);
+            const maxPerp = Math.max(30, 20 + proj * 0.95) + eRadius;
+            if (perp <= maxPerp) {
+              isHit = true;
+            }
+          }
+        }
+        // 3. Sweet Spot na Base Esmagada (Ponto de Impacto Físico do Martelo):
+        const epicenterR = (b.isEvolved ? 32 : 24) + ((b.count || 1) - 1) * 3 + eRadius;
+        if (dx * dx + dy * dy <= epicenterR * epicenterR) {
+          isSweetSpot = true;
+        }
+      } else {
+        isHit = (dx * dx + dy * dy < rSum * rSum);
+      }
+
+      if (isHit) {
         if (!b.hitEnemies) b.hitEnemies = new Set();
         if (b.hitEnemies.has(e)) continue;
         b.hitEnemies.add(e);
 
         const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
         let finalDmg = (b.damage || 20) * (isCrit ? player.critMult : (player.nonCritDamageMult || 1.0));
+
+        // Impacto esmagador brutal na base: +35% de dano adicional!
+        if (isSweetSpot) {
+          finalDmg *= 1.35;
+          createHitParticles(e.x, e.y, '#ffffff', 3);
+        }
 
         const isBossEntity = !!e.isBoss;
         const isSubTarget = !!e.isBossSubTarget;
@@ -266,6 +309,8 @@ export function updateProjectiles(dt) {
           }
         }
 
+        finalDmg = getBossPhaseDefeatDamage(e, finalDmg);
+
         e.hp -= finalDmg;
         e.hitFlash = 4;
 
@@ -274,7 +319,7 @@ export function updateProjectiles(dt) {
           const impactAngle = b.angle !== undefined ? b.angle : Math.atan2(b.vy || 0, b.vx || 0);
           // Knockback balanceado: STAFF (Ignis) agora possui o mesmo empurrão base de SWORD (Kael) = 4.5
           const baseWeaponPush = (b.type === 'HAMMER_SLAM' ? 14.0 : 4.5);
-          const bossResist = e.isFinalBoss ? 0.00 : ((e.isBoss || e.isMiniBoss) ? 0.20 : (e.baseType === 'GOLEM' ? 0.25 : (isShieldBlocked ? 0.25 : (e.isElite ? 0.50 : 1.0))));
+          const bossResist = e.isFinalBoss ? 0.00 : ((e.bossId === 2 || e.bossId === 3) ? 0.10 : ((e.isBoss || e.isMiniBoss) ? 0.20 : (e.baseType === 'GOLEM' ? 0.25 : (isShieldBlocked ? 0.25 : (e.isElite ? 0.50 : 1.0)))));
           const totalPush = baseWeaponPush * (player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0) * bossResist;
           e.pushVx = (e.pushVx || 0) + Math.cos(impactAngle) * totalPush;
           e.pushVy = (e.pushVy || 0) + Math.sin(impactAngle) * totalPush;
@@ -391,7 +436,7 @@ export function updateProjectiles(dt) {
           hitPlayer: false,
           colorRgb: '211, 84, 0'
         });
-        addGroundCrater(eb.x, eb.y, 28);
+        addGroundCrater(eb.x, eb.y, 0, 45, 1, false, eb.damage || 35);
         playSfx('hammer_slam');
         triggerShake(6);
         triggerHaptic('heavy');
@@ -420,6 +465,7 @@ export function updateProjectiles(dt) {
         attackName: projName,
         damage: Math.round(finalEbDamage),
         color: eb.color || '#9b59b6',
+        enemyType: eb.enemyType || null,
         tacticTip: "Mantenha esquiva circular constante para que trajetórias balísticas e projéteis teleguiados errem o alvo."
       });
 

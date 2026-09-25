@@ -1,5 +1,5 @@
 import { ctx, frameCount } from '../../state/gameState.js';
-import { getRelativeAimAngle } from '../../core/math.js';
+import { legStride } from '../../entities/enemies/crawlerLocomotion.js';
 import { beginCreature, endCreature, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
 // Four separated legs on either side, a silk abdomen, and two fangs.
@@ -7,13 +7,12 @@ export function draw(e) {
   const p = creaturePalette(e, '#9aa6b2', '#343849', '#ff1744');
   const dead = e.deathPose || 0;
   beginCreature(ctx, e);
-  ctx.rotate(getRelativeAimAngle(e.aimAngle ?? (e.facing === -1 ? Math.PI : 0), e.facing || 1));
   for (let i = 0; i < 4; i++) {
     const x = 0.32 - i * 0.22;
     const reach = 0.92 - dead * 0.54;
-    const step = dead ? 0 : Math.sin(frameCount * 0.2 + i * 2) * 0.07;
     for (const side of [-1, 1]) {
-      const leg = [[x, side * 0.18], [0.67 - i * 0.44, side * (0.65 + step)], [0.95 - i * 0.64, side * (reach + step)]];
+      const { sweep, lift } = legStride(e, i, side, frameCount);
+      const leg = [[x, side * 0.18], [0.67 - i * 0.44 + sweep * .45, side * (0.65 - lift * .4)], [0.95 - i * 0.64 + sweep, side * (reach - lift)]];
       stroke(ctx, leg, p.ink, 0.16);
       stroke(ctx, leg, p.shade, 0.075);
     }

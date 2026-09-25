@@ -57,8 +57,8 @@ export const BESTIARY_ENTRIES = [
   },
   {
     id: 'STALKER',
-    name: 'Assassino Espectral',
-    title: 'Verme das Terras Sepulcrais',
+    name: 'Verme Sepulcral',
+    title: 'O Anelídeo das Criptas Profundas',
     category: 'HORDE',
     threat: 3,
     color: '#d9b783',
@@ -66,14 +66,14 @@ export const BESTIARY_ENTRIES = [
     damage: 34,
     speed: 'Rápido / Bote (1.35)',
     role: 'Emboscador de Arranque',
-    microLore: 'Vermes de pele bege e presas de marfim que revolvem a terra das sepulturas. Contraem seus anéis antes de se lançar sobre a presa em um bote feroz.',
+    microLore: 'Vermes de pele bege e presas de marfim que revolvem a terra das sepulturas. Contraem seus anéis sob a terra antes de se lançar sobre a presa em um bote feroz.',
     tactics: 'A poeira subindo do solo e o alerta vermelho anunciam o bote. A direção é fixada antes do ataque: desvie para o lado e aproveite a pausa do verme após a investida.',
     quotes: ['*a terra se revolve sob os anéis*', '*presas raspam a pedra da sepultura*']
   },
   {
     id: 'EXPLODER',
-    name: 'Carniçal Ígneo',
-    title: 'Pavio Humano do Miasma',
+    name: 'Carniçal do Pavio',
+    title: 'Detonador Miasmático Humano',
     category: 'HORDE',
     threat: 3,
     color: '#e67e22',
@@ -81,8 +81,8 @@ export const BESTIARY_ENTRIES = [
     damage: 39,
     speed: 'Veloz / Fúria (2.1)',
     role: 'Kamikaze Incandescente',
-    microLore: 'Cobaias alimentadas à força com óleo de enxofre ardente. Seus corações fervem a temperaturas vulcânicas até que a carcaça rompa em uma erupção apocalíptica.',
-    tactics: 'Ao notar o círculo de aviso ou o ruído de ignição, recue imediatamente. Abater um exploder de longe pode desencadear reações em cadeia devastadoras contra outros monstros.',
+    microLore: 'Cobaias alimentadas à força com óleo de enxofre ardente. Um longo pavio incandescente no topo de seus crânios consome-se freneticamente até que a carcaça rompa em uma erupção apocalíptica.',
+    tactics: 'Ao notar o círculo de aviso ou o chiado do pavio ardente, recue imediatamente. Abater um carniçal de longe pode desencadear reações em cadeia devastadoras contra outros monstros.',
     quotes: ['“QUEIME CONOSCO!”', '*chiado histérico de pavio aceso*']
   },
   {
@@ -331,7 +331,7 @@ export const BESTIARY_ENTRIES = [
   },
   {
     id: 'SNIPER_CULTIST',
-    name: 'Atirador de Éter',
+    name: 'Arqueiro de Éter',
     title: 'Olho da Seita Cega',
     category: 'HORDE',
     threat: 4,
@@ -346,8 +346,8 @@ export const BESTIARY_ENTRIES = [
   },
   {
     id: 'VOID_SCAVENGER',
-    name: 'Duende Ladrão de Gemas',
-    title: 'Devorador de Éter e Almas',
+    name: 'Surrupiador do Vazio',
+    title: 'Devorador de Almas Errantes',
     category: 'HORDE',
     threat: 3,
     color: '#00d2d3',
@@ -355,7 +355,7 @@ export const BESTIARY_ENTRIES = [
     damage: 18,
     speed: 'Frenético / Ágil (2.30)',
     role: 'Interrupção de Economia & Pinhata de XP',
-    microLore: 'Parasitas cósmicos corcundas atraídos pela cintilação das almas desprendidas. Engolem gemas de XP e moedas vorazmente, acumulando poder e massa corporal.',
+    microLore: 'Ladrões esguios corrompidos pelo Vazio, atraídos pela cintilação das almas desprendidas. Engolem gemas de XP e moedas vorazmente em suas bolsas dimensionais, acumulando poder e massa corporal.',
     tactics: 'Elimine-o rápido antes que ele consuma suas gemas de nível! Ao ser derrotado, devolve todo o XP acumulado multiplicado por 1.5x em uma explosão cintilante.',
     quotes: ['*risada estridente e gananciosa*', '“Tudo meu! Mais éter para o saco!”']
   },
@@ -376,7 +376,7 @@ export const BESTIARY_ENTRIES = [
   },
   {
     id: 'CURSED_CHEST',
-    name: 'Mímico de Éter',
+    name: 'Baú Mímico',
     title: 'A Ilusão da Cobiça Mortífera',
     category: 'HORDE',
     threat: 5,
@@ -385,7 +385,7 @@ export const BESTIARY_ENTRIES = [
     damage: 47,
     speed: 'Dormência / Fúria (2.50)',
     role: 'Emboscada de Baú Falso & Espólio Lendário',
-    microLore: 'Entidades transmutadoras do Abismo que assumem a aparência de arcas de ouro imperial. Quando a ganância do herói o faz baixar a guarda, a tampa se rompe em mandíbulas afiadas.',
+    microLore: 'Entidades transmutadoras do Abismo que assumem a aparência de arcas imperiais de carvalho e ferro reforçado. Quando a ganância do herói o faz baixar a guarda, a tampa se rompe em mandíbulas afiadas e língua voraz.',
     tactics: 'Identifique sua respiração quase imperceptível antes de se aproximar. Se derrotado com sucesso, libera um dilúvio de ouro e almas astrais.',
     quotes: ['“ACHOU QUE ERA UM TESOURO? EU SOU TUA MORTE!”', '*mandíbula metálica estala em fúria canina*']
   },
@@ -455,8 +455,8 @@ export const BESTIARY_ENTRIES = [
   },
   {
     id: 'ARTILLERY_MECH',
-    name: 'Torre Móvel',
-    title: 'Canhoneiro de Cerco Autônomo',
+    name: 'Mecha de Artilharia',
+    title: 'Plataforma de Cerco Autônoma',
     category: 'MINIBOSS',
     threat: 4,
     color: '#2980b9',
@@ -464,7 +464,7 @@ export const BESTIARY_ENTRIES = [
     damage: 31,
     speed: 'Plataforma (0.9)',
     role: 'Morteiro e Metralhadora',
-    microLore: 'Plataforma de artilharia pesada criada para conter rebeliões no coração da fortaleza. Seus tambores giratórios despejam metal incandescente sem intervalo.',
+    microLore: 'Mecha quadrúpede de artilharia pesada criado para conter rebeliões no coração da fortaleza. Suas quatro patas hidráulicas estabilizam a torreta enquanto seus tambores giratórios despejam metal incandescente sem intervalo.',
     tactics: 'Interrompa sua cadência usando habilidades de controle ou circule velozmente em arco fechado.',
     quotes: ['*alerta óptico: alvo bloqueado para erradicação*']
   },
@@ -575,8 +575,8 @@ export const BESTIARY_ENTRIES = [
   },
   {
     id: 'MOBILE_HIVE',
-    name: 'Ninho Móvel',
-    title: 'Colmeia de Morcegos Vivos',
+    name: 'Colmeia Móvel',
+    title: 'O Ventre Vampírico Alado',
     category: 'MINIBOSS',
     threat: 5,
     color: '#16a085',
@@ -584,8 +584,8 @@ export const BESTIARY_ENTRIES = [
     damage: 34,
     speed: 'Flutuante (1.3)',
     role: 'Gerador Contínuo de Morcegos',
-    microLore: 'Uma carcaça oca de gárgula que serve como útero para enxames vorazes de morcegos carmesins. Enquanto vive, o céu da arena permanece vermelho.',
-    tactics: 'Destrua o ninho antes que a densidade de morcegos impeça qualquer esquiva ou manobra na arena.',
+    microLore: 'Uma carcaça oca com asas coriáceas e alvéolos de quitina que serve como útero para enxames vorazes de morcegos carmesins. Enquanto vive, o céu da arena permanece vermelho.',
+    tactics: 'Destrua a colmeia antes que a densidade de morcegos impeça qualquer esquiva ou manobra na arena.',
     quotes: ['*revoada histérica de centenas de asas vampíricas*']
   },
   {
@@ -620,7 +620,7 @@ export const BESTIARY_ENTRIES = [
   },
   {
     id: 'CHAOS_HERALD',
-    name: 'Arauto do Caos',
+    name: 'Ciclope do Caos',
     title: 'O Flagelo do Apocalipse',
     category: 'MINIBOSS',
     threat: 5,
@@ -629,8 +629,8 @@ export const BESTIARY_ENTRIES = [
     damage: 62,
     speed: 'Implacável (1.7)',
     role: 'Ciclo Caótico de Três Fases',
-    microLore: 'O mais temido dos comandantes do inferno astral. Alterna entre investidas destruidoras, explosões de plasma e invocações desesperadas de hordas.',
-    tactics: 'Trate o Arauto como um chefe em escala reduzida: aprenda seu ciclo de três fases e nunca tente atacá-lo de peito aberto durante sua fase de fúria.',
+    microLore: 'Um titânico ciclope de chifres vulcânicos e garras esmagadoras, consagrado como comandante do inferno astral. Seu olho incandescente canaliza investidas destruidoras, espirais de plasma e pulsos sísmicos apocalípticos.',
+    tactics: 'Trate o Ciclope como um chefe em escala reduzida: aprenda seu ciclo de três fases e nunca tente atacá-lo de peito aberto durante sua fase de fúria.',
     quotes: ['“EU SOU O INÍCIO DO TEU FIM!”', '“O CAOS REIVINDICA TUA CARCAÇA!”']
   },
 
@@ -690,7 +690,7 @@ export const BESTIARY_ENTRIES = [
     speed: 'Ceifa Espiritual (2.1)',
     role: 'Chefe Supremo da Onda 8',
     microLore: 'A personificação espectral da morte no plano astral. Empunha a Foice do Destino, uma relíquia capaz de separar o espírito da matéria com um único corte cirúrgico.',
-    tactics: 'Nunca entre na rota de retorno de sua Foice Bumerangue. Destrua a Lanterna Espiritual para infligir Colapso Espiritual de 2.0s de vulnerabilidade no chefe.',
+    tactics: 'Saia das linhas das Lanças do Sepulcro antes das salvas. Na Cruz do Juízo, fuja para os quadrantes entre os braços numerados. No Coro dos Condenados, atravesse a abertura do anel indicada pelas linhas tracejadas. A mira fica fixa durante os avisos. Destrua todas as Lanternas Espirituais para cancelar esses ataques e provocar 2.0s de Colapso Espiritual. Evite a rota de retorno da Foice Bumerangue.',
     quotes: [
       '“Todo pulso se aquieta diante de minha foice.”',
       '“A LÂMINA DO DESTINO NÃO CONHECE MISERICÓRDIA!”',

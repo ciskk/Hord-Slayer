@@ -244,6 +244,7 @@ window.addEventListener('touchstart', e => {
       stick.curY = t.clientY;
       stick.normMag = 0;
       stick.isSaturated = false;
+      stick.mode = joystickMode;
       inputX = 0;
       inputY = 0;
       break;

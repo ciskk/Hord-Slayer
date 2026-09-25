@@ -30,6 +30,41 @@ export let isAltarBlockingBoss = false;
 let nextAltarSpawnSeconds = 100; // Primeiro altar surge ~100s de partida
 let isPlayerChanneling = false;
 var touchBtnInitialized = false;
+const altarHudDom = {};
+let lastAltarFillBackground = null;
+let lastAltarStatusMarkup = null;
+
+function setAltarClass(element, name, enabled) {
+  if (element.classList.contains(name) !== enabled) {
+    element.classList.toggle(name, enabled);
+  }
+}
+
+function setAltarDisplay(element, value) {
+  // O display também pode ser alterado pelas cinemáticas: confira o valor real.
+  if (element.style.display !== value) element.style.display = value;
+}
+
+function clearAltarStates(banner) {
+  setAltarClass(banner, 'is-warning', false);
+  setAltarClass(banner, 'is-climax', false);
+  setAltarClass(banner, 'is-completed', false);
+  setAltarClass(banner, 'is-failed', false);
+}
+
+function setAltarBackground(fill, value) {
+  if (value !== lastAltarFillBackground) {
+    lastAltarFillBackground = value;
+    fill.style.background = value;
+  }
+}
+
+function setAltarStatus(status, markup, restartAnimation = false) {
+  if (restartAnimation || markup !== lastAltarStatusMarkup) {
+    lastAltarStatusMarkup = markup;
+    status.innerHTML = markup;
+  }
+}
 
 export function getActiveBloodAltar() {
   return activeBloodAltar;
@@ -280,51 +315,53 @@ export function updateWorldEvents(dt, {
  * Atualiza os elementos de UI do Altar de Sangue (HUD e Botão Mobile).
  */
 export function updateBloodAltarHUD(data) {
-  const banner = document.getElementById('blood-altar-hud');
-  const fill = document.getElementById('blood-altar-fill');
-  const status = document.getElementById('blood-altar-status');
-  const timerEl = document.getElementById('blood-altar-timer');
-  const mobileBtn = document.getElementById('blood-altar-touch-btn');
-  const mobileCircle = document.getElementById('blood-altar-touch-circle');
-  const hud = document.getElementById('hud');
+  const banner = altarHudDom.banner || (altarHudDom.banner = document.getElementById('blood-altar-hud'));
+  const fill = altarHudDom.fill || (altarHudDom.fill = document.getElementById('blood-altar-fill'));
+  const status = altarHudDom.status || (altarHudDom.status = document.getElementById('blood-altar-status'));
+  const timerEl = altarHudDom.timer || (altarHudDom.timer = document.getElementById('blood-altar-timer'));
+  const mobileBtn = altarHudDom.mobileBtn || (altarHudDom.mobileBtn = document.getElementById('blood-altar-touch-btn'));
+  const mobileCircle = altarHudDom.mobileCircle || (altarHudDom.mobileCircle = document.getElementById('blood-altar-touch-circle'));
+  const hud = altarHudDom.hud || (altarHudDom.hud = document.getElementById('hud'));
 
   if (!data) {
-    if (hud) hud.classList.remove('altar-active');
+    if (hud) setAltarClass(hud, 'altar-active', false);
     if (banner) {
-      banner.style.display = 'none';
-      banner.classList.remove('is-warning', 'is-climax', 'is-completed', 'is-failed');
+      setAltarDisplay(banner, 'none');
+      clearAltarStates(banner);
     }
-    if (mobileBtn) mobileBtn.style.display = 'none';
+    if (mobileBtn) setAltarDisplay(mobileBtn, 'none');
     return;
   }
 
   // Interação Inicial (SPAWNED)
   if (data.state === 'SPAWNED') {
-    if (hud) hud.classList.remove('altar-active');
+    if (hud) setAltarClass(hud, 'altar-active', false);
     if (banner) {
-      banner.style.display = 'none';
-      banner.classList.remove('is-warning', 'is-climax', 'is-completed', 'is-failed');
+      setAltarDisplay(banner, 'none');
+      clearAltarStates(banner);
     }
 
     if (mobileBtn) {
       if (data.inRange) {
-        mobileBtn.style.display = 'flex';
+        setAltarDisplay(mobileBtn, 'flex');
         const progress = Math.max(0, Math.min(1, data.channelProgress || 0));
         const radius = (mobileCircle && mobileCircle.r && mobileCircle.r.baseVal) ? mobileCircle.r.baseVal.value : 31;
         const circ = 2 * Math.PI * radius;
         const dashOffset = circ * (1 - progress);
         if (mobileCircle) {
-          mobileCircle.style.strokeDasharray = `${circ}`;
-          mobileCircle.style.strokeDashoffset = `${dashOffset}`;
+          const dashArray = `${circ}`;
+          const offset = `${dashOffset}`;
+          if (mobileCircle.style.strokeDasharray !== dashArray) mobileCircle.style.strokeDasharray = dashArray;
+          if (mobileCircle.style.strokeDashoffset !== offset) mobileCircle.style.strokeDashoffset = offset;
         }
         if (progress > 0) {
-          mobileBtn.classList.add('is-channeling');
+          setAltarClass(mobileBtn, 'is-channeling', true);
         } else {
-          mobileBtn.classList.remove('is-channeling');
+          setAltarClass(mobileBtn, 'is-channeling', false);
         }
       } else {
-        mobileBtn.style.display = 'none';
-        mobileBtn.classList.remove('is-channeling');
+        setAltarDisplay(mobileBtn, 'none');
+        setAltarClass(mobileBtn, 'is-channeling', false);
       }
     }
   }
@@ -332,51 +369,54 @@ export function updateBloodAltarHUD(data) {
   // Desafio Ativo (ACTIVE)
   else if (data.state === 'ACTIVE') {
     if (mobileBtn) {
-      mobileBtn.style.display = 'none';
-      mobileBtn.classList.remove('is-channeling');
+      setAltarDisplay(mobileBtn, 'none');
+      setAltarClass(mobileBtn, 'is-channeling', false);
     }
 
-    if (hud) hud.classList.add('altar-active');
+    if (hud) setAltarClass(hud, 'altar-active', true);
 
     if (banner) {
-      banner.style.display = 'inline-flex';
-      banner.classList.remove('is-completed', 'is-failed');
+      setAltarDisplay(banner, 'inline-flex');
+      setAltarClass(banner, 'is-completed', false);
+      setAltarClass(banner, 'is-failed', false);
       const timeLeft = Math.max(0, data.timer);
       const pct = Math.max(0, Math.min(100, (timeLeft / data.maxTimer) * 100));
       
       if (timerEl) {
-        timerEl.textContent = `${timeLeft.toFixed(1)}s`;
+        const timerText = `${timeLeft.toFixed(1)}s`;
+        if (timerEl.textContent !== timerText) timerEl.textContent = timerText;
       }
 
       if (timeLeft <= 3.0) {
-        banner.classList.add('is-climax');
+        setAltarClass(banner, 'is-climax', true);
       } else {
-        banner.classList.remove('is-climax');
+        setAltarClass(banner, 'is-climax', false);
       }
 
       if (fill) {
         fill.style.width = `${pct}%`;
-        fill.style.background = data.isWarning 
+        setAltarBackground(fill, data.isWarning 
           ? 'linear-gradient(90deg, #ff1744 0%, #ff5252 100%)' 
           : (timeLeft <= 3.0 
               ? 'linear-gradient(90deg, #f39c12 0%, #f1c40f 100%)' 
-              : 'linear-gradient(90deg, #c0392b 0%, #ff3838 100%)');
+              : 'linear-gradient(90deg, #c0392b 0%, #ff3838 100%)'));
       }
 
       if (data.isWarning) {
-        banner.classList.add('is-warning');
+        setAltarClass(banner, 'is-warning', true);
         if (status) {
-          status.innerHTML = `
+          // Este conteúdo recria uma animação CSS em cada frame; preserve a cadência.
+          setAltarStatus(status, `
             <span class="altar-warning-alert">
               <svg viewBox="0 0 24 24" class="altar-status-icon warning-icon"><path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
               FORA DO CÍRCULO! <b>${data.graceLeft.toFixed(1)}s</b>
             </span>
-          `;
+          `, true);
         }
       } else {
-        banner.classList.remove('is-warning');
+        setAltarClass(banner, 'is-warning', false);
         if (status) {
-          status.innerHTML = '';
+          setAltarStatus(status, '');
         }
       }
     }
@@ -384,43 +424,47 @@ export function updateBloodAltarHUD(data) {
 
   // Concluído ou Falhado
   else if (data.state === 'COMPLETED') {
-    if (mobileBtn) mobileBtn.style.display = 'none';
-    if (hud) hud.classList.add('altar-active');
+    if (mobileBtn) setAltarDisplay(mobileBtn, 'none');
+    if (hud) setAltarClass(hud, 'altar-active', true);
     if (banner) {
-      banner.style.display = 'inline-flex';
-      banner.classList.add('is-completed');
-      banner.classList.remove('is-warning', 'is-climax', 'is-failed');
-      if (timerEl) timerEl.textContent = '0.0s';
+      setAltarDisplay(banner, 'inline-flex');
+      setAltarClass(banner, 'is-completed', true);
+      setAltarClass(banner, 'is-warning', false);
+      setAltarClass(banner, 'is-climax', false);
+      setAltarClass(banner, 'is-failed', false);
+      if (timerEl && timerEl.textContent !== '0.0s') timerEl.textContent = '0.0s';
       if (status) {
-        status.innerHTML = `
+        setAltarStatus(status, `
           <span style="color:#ffd166; font-weight:800; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:4px;">
             <svg viewBox="0 0 24 24" class="altar-status-icon" style="color:#ffd166;"><path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
             PACTO CUMPRIDO!
           </span>
-        `;
+        `);
       }
       if (fill) {
-        fill.style.width = '100%';
-        fill.style.background = 'linear-gradient(90deg, #f39c12 0%, #ffd166 100%)';
+        if (fill.style.width !== '100%') fill.style.width = '100%';
+        setAltarBackground(fill, 'linear-gradient(90deg, #f39c12 0%, #ffd166 100%)');
       }
     }
   } else if (data.state === 'FAILED') {
-    if (mobileBtn) mobileBtn.style.display = 'none';
-    if (hud) hud.classList.add('altar-active');
+    if (mobileBtn) setAltarDisplay(mobileBtn, 'none');
+    if (hud) setAltarClass(hud, 'altar-active', true);
     if (banner) {
-      banner.style.display = 'inline-flex';
-      banner.classList.add('is-failed');
-      banner.classList.remove('is-warning', 'is-climax', 'is-completed');
-      if (timerEl) timerEl.textContent = '0.0s';
+      setAltarDisplay(banner, 'inline-flex');
+      setAltarClass(banner, 'is-failed', true);
+      setAltarClass(banner, 'is-warning', false);
+      setAltarClass(banner, 'is-climax', false);
+      setAltarClass(banner, 'is-completed', false);
+      if (timerEl && timerEl.textContent !== '0.0s') timerEl.textContent = '0.0s';
       if (status) {
-        status.innerHTML = `
+        setAltarStatus(status, `
           <span style="color:#e056fd; font-weight:800; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:4px;">
             <svg viewBox="0 0 24 24" class="altar-status-icon" style="color:#e056fd;"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
             PACTO QUEBRADO!
           </span>
-        `;
+        `);
       }
-      if (fill) fill.style.width = '0%';
+      if (fill && fill.style.width !== '0%') fill.style.width = '0%';
     }
   }
 }

@@ -50,8 +50,8 @@ export const CHARACTERS = {
     },
     startingWeapon: "HAMMER",
     stats: { 
-      hp: 175, 
-      maxHp: 175, 
+      hp: 200, 
+      maxHp: 200, 
       speed: 3.2, 
       damage: 56.25, 
       auraLvl: 1, 
@@ -262,10 +262,10 @@ export const CHARACTERS = {
     },
     startingWeapon: "SWORD",
     stats: { 
-      hp: 87.5, 
-      maxHp: 87.5, 
+      hp: 65, 
+      maxHp: 65, 
       speed: 3.7, 
-      damage: 35, 
+      damage: 45.5, 
       auraLvl: 0, 
       projectiles: 1, 
       orbitals: 1, 
@@ -295,7 +295,7 @@ export const CHARACTERS = {
     },
     skill: {
       name: "Rugido Ancestral",
-      cooldown: "8s",
+      cooldown: "10s",
       desc: "Brado avassalador que atordoa a área, vaporiza projéteis inimigos e dobra a rotação do turbilhão em frenesi."
     },
     desc: "Passiva: Golpes da ponta da lâmina contra Chefes e Elites curam 0.5% do HP máximo (recarga de 0.6s). Contra hordas comuns, recupera 1 HP a cada 18 acertos.<br><b>Arma Inicial: Machado Giratório</b> (Translada em órbita; o cabo repele inimigos e a ponta desfere corte crítico integral).<br><b>Poder: Rugido Ancestral</b> (Atordoa inimigos em área por 0.6s, vaporiza projéteis e dobra a rotação do turbilhão em frenesi).",
@@ -330,8 +330,8 @@ export const CHARACTERS = {
     },
     startingWeapon: "AXE",
     stats: { 
-      hp: 154, 
-      maxHp: 154, 
+      hp: 185, 
+      maxHp: 185, 
       speed: 3.1, 
       damage: 67.5, 
       auraLvl: 0, 
@@ -340,7 +340,7 @@ export const CHARACTERS = {
       magnet: 95, 
       attackCooldown: 38, 
       critChance: 0.18, 
-      skillCooldownMax: 480,
+      skillCooldownMax: 600,
       knockbackReceived: 0.5,
       knockbackDealt: 0.9
     }
@@ -354,7 +354,7 @@ export const CHARACTERS = {
     lore: "Erudita dos venenos arcanos e ácidos mutagênicos. Domina a criação de compostos voláteis que dissolvem defesas e paralisam hordas sem depender de força bruta.",
     passive: {
       name: "Miasma Corrosivo & Fixação Cáustica",
-      desc: "Especialista Glass Cannon (70 HP máx, +35% de dano geral). Poças e impactos aplicam corrosão (+6% de dano por acúmulo, até +30%) e veneno aderente com decomposição cáustica que dobra o dano contra chefes (50% mais rápido). Poças curam e aceleram."
+      desc: "Especialista Glass Cannon (50 HP máx, +35% de dano geral). Poças e impactos aplicam corrosão (+6% de dano por acúmulo, até +30%) e veneno aderente com decomposição cáustica que dobra o dano contra chefes (50% mais rápido). Poças curam e aceleram."
     },
     weapon: {
       name: "Frascos Cáusticos",
@@ -366,7 +366,7 @@ export const CHARACTERS = {
       cooldown: "6.5s",
       desc: "Detona 6 frascos radiais sob 0.6s de imunidade evasiva, liberando fumaça que desorienta hordas por 1.8s e aplica Corrosão Total com Vulnerabilidade em Chefes."
     },
-    desc: "Passiva: Glass Cannon Cáustica (70 HP máx, +35% de dano em hordas). Aplica corrosão (até +30% de dano) e veneno mortal calibrado para abater chefes 50% mais rápido (2.0x DPS). Poças dissolvem tiros e curam ao pisar.<br><b>Arma Inicial: Frascos Cáusticos</b> (Bombardeio químico e poças).<br><b>Poder: Reagente Volátil</b> (6 frascos com 0.6s de imunidade; desorienta hordas e aplica Corrosão Total em Chefes).",
+    desc: "Passiva: Glass Cannon Cáustica (50 HP máx, +35% de dano em hordas). Aplica corrosão (até +30% de dano) e veneno mortal calibrado para abater chefes 50% mais rápido (2.0x DPS). Poças dissolvem tiros e curam ao pisar.<br><b>Arma Inicial: Frascos Cáusticos</b> (Bombardeio químico e poças).<br><b>Poder: Reagente Volátil</b> (6 frascos com 0.6s de imunidade; desorienta hordas e aplica Corrosão Total em Chefes).",
     color: { 
       armor: "#1b2a22", 
       coat: "#1b4438",
@@ -406,9 +406,9 @@ export const CHARACTERS = {
     },
     startingWeapon: "POTION",
     stats: { 
-      hp: 70, 
-      maxHp: 70, 
-      speed: 2.92, 
+      hp: 50, 
+      maxHp: 50, 
+      speed: 3.65, 
       damage: 58.05, 
       auraLvl: 0, 
       projectiles: 1, 

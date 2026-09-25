@@ -385,6 +385,18 @@
   text-shadow: 0 0 12px rgba(231, 76, 60, 0.6);
 }
 
+.cause-killer-title {
+  font-family: var(--font-body);
+  font-size: clamp(10px, 1.5vw, 12px);
+  font-style: italic;
+  font-weight: 600;
+  color: #ffd166;
+  opacity: 0.90;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+  text-shadow: 0 0 8px rgba(241, 196, 15, 0.4);
+}
+
 .cause-attack-metric-row {
   display: flex;
   align-items: center;
@@ -527,6 +539,109 @@
 .death-pill-value.highlight-crimson {
   color: #ff4757;
   text-shadow: 0 0 8px rgba(255, 71, 87, 0.4);
+}
+
+/* ======================================================== */
+/* 4.5. ARSENAL COMPACTO DA JORNADA (POST-MORTEM BUILD)     */
+/* ======================================================== */
+
+.death-arsenal-container {
+  width: 100%;
+  max-width: 680px;
+  background: linear-gradient(135deg, rgba(20, 6, 9, 0.75) 0%, rgba(10, 3, 5, 0.85) 100%);
+  border: 1px solid rgba(231, 76, 60, 0.25);
+  border-radius: 8px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-sizing: border-box;
+  animation: dossierReveal 0.85s 1.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.death-arsenal-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.death-arsenal-icon {
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 4px rgba(241, 196, 15, 0.5));
+}
+
+.death-arsenal-label {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #a4b0be;
+  text-transform: uppercase;
+}
+
+.death-arsenal-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.death-arsenal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  color: #ecf0f1;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.death-arsenal-pill:hover {
+  transform: translateY(-1px);
+  border-color: rgba(231, 76, 60, 0.45);
+}
+
+.death-arsenal-pill.is-evolved {
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.16) 0%, rgba(230, 126, 34, 0.12) 100%);
+  border-color: rgba(241, 196, 15, 0.55);
+  color: #ffd166;
+  box-shadow: 0 0 8px rgba(241, 196, 15, 0.25);
+}
+
+.death-arsenal-pill-name {
+  font-size: 10px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.death-arsenal-pill.is-evolved .death-arsenal-pill-name {
+  color: #fef08a;
+  font-weight: 700;
+}
+
+.death-arsenal-pill-lvl {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffd166;
+}
+
+.death-arsenal-pill.is-evolved .death-arsenal-pill-lvl {
+  background: rgba(241, 196, 15, 0.35);
+  color: #ffffff;
+  text-shadow: 0 0 4px #f1c40f;
 }
 
 /* ======================================================== */
@@ -787,6 +902,23 @@
     justify-content: center;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  .death-arsenal-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .death-arsenal-strip {
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .death-arsenal-pill {
+    padding: 2px 6px;
+    font-size: 9px;
   }
 }
 

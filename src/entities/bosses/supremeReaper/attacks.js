@@ -5,6 +5,24 @@
 
 import { playSfx, triggerHaptic } from '../../../core/audio.js';
 import { REAPER_STATES, REAPER_SKILLS, REAPER_CONFIG } from './constants.js';
+import { beginReaperRanged } from './rangedAttacks.js';
+import { isReaperAttackActive } from './mechanics.js';
+
+function checkAttackActive(boss, ctx) {
+  if (typeof isReaperAttackActive === 'function') {
+    return isReaperAttackActive(boss, ctx);
+  }
+  return Boolean(
+    (boss.delayedActions && boss.delayedActions.length > 0) ||
+    (ctx && ctx.bossTelegraphs && ctx.bossTelegraphs.some(t => t.boss === boss && (t.timer === undefined || t.timer > 0))) ||
+    (boss.triadClones && boss.triadClones.length > 0) ||
+    (boss.veilCleaves && boss.veilCleaves.some(vc => !vc.exploded)) ||
+    (boss.soulWells && boss.soulWells.some(w => !w.detonated)) ||
+    (boss.deathMark && boss.deathMark.active) ||
+    (boss.boomerangScythe && boss.boomerangScythe.active) ||
+    (boss.deathToll && boss.deathToll.active)
+  );
+}
 
 /**
  * Seleciona a próxima habilidade com base em avaliação tática situacional (Envelope Anti-Whiff, Predição de Movimento e Combos).
@@ -12,12 +30,18 @@ import { REAPER_STATES, REAPER_SKILLS, REAPER_CONFIG } from './constants.js';
  * @param {Object} e Entidade do chefe.
  * @param {number} dist Distância euclidiana até o jogador.
  * @param {Object} player Entidade do jogador.
+ * @param {Object} [context] Contexto opcional para verificação de telegrafias ativas.
  */
-export function selectReaperSkill(e, dist, player) {
+export function selectReaperSkill(e, dist, player, context = null) {
+  // Salvaguarda: se a animação ou impacto do ataque anterior ainda estiver em execução, não inicia novo ataque
+  if (checkAttackActive(e, context)) {
+    return;
+  }
+
   const isEnraged = e.isEnraged || e.isPhase3;
   const isP3 = e.isPhase3;
 
-  // 1. Tabela de Avaliação de Pesos Táticos (Utility Scoring - 9 Habilidades)
+  // Distância define o repertório; padrões novos exigem espaço para esquiva.
   const weights = {
     [REAPER_SKILLS.DOUBLE_CLEAVE]: 0,
     [REAPER_SKILLS.PHANTOM_BLINK]: 0,
@@ -27,7 +51,13 @@ export function selectReaperSkill(e, dist, player) {
     [REAPER_SKILLS.SCYTHE_BOOMERANG]: 0,
     [REAPER_SKILLS.DEATH_MARK_EXECUTION]: 0,
     [REAPER_SKILLS.SOUL_WELLS]: 0,
-    [REAPER_SKILLS.PHANTOM_TRIAD_SLASH]: 0
+    [REAPER_SKILLS.PHANTOM_TRIAD_SLASH]: 0,
+    [REAPER_SKILLS.PURGATORY_CHAINS]: 0,
+    [REAPER_SKILLS.SOUL_LANCES]: dist >= 220 ? 42 : 0,
+    [REAPER_SKILLS.GRAVE_CROSS]: dist >= 280 ? 38 : 0,
+    [REAPER_SKILLS.WAILING_RING]: dist >= 240 ? 34 : 0,
+    [REAPER_SKILLS.DEATH_TOLL]: dist >= 220 ? (isEnraged ? 36 : 28) : 0,
+    [REAPER_SKILLS.VEIL_CLEAVE]: (dist >= 140 && dist <= 440) ? (isEnraged ? 36 : 26) : 0
   };
 
   // CÁLCULO DOS PESOS BASE POR FAIXA DE DISTÂNCIA
@@ -43,15 +73,25 @@ export function selectReaperSkill(e, dist, player) {
     }
     weights[REAPER_SKILLS.SOUL_SCYTHES] = 10;
     weights[REAPER_SKILLS.SOUL_WELLS] = 15;
+    weights[REAPER_SKILLS.VEIL_CLEAVE] = 16;
+    if (!e.purgatoryChains || !e.purgatoryChains.active) {
+      const isMelee = player && (player.characterKey === 'KNIGHT' || player.characterKey === 'BARBARIAN' || player.selectedHeroKey === 'KNIGHT' || player.selectedHeroKey === 'BARBARIAN');
+      weights[REAPER_SKILLS.PURGATORY_CHAINS] = isMelee ? (isEnraged ? 45 : 36) : (isEnraged ? 35 : 26);
+    }
   } else if (dist <= 280) {
     // Zona 1: Médio Alcance (170px a 280px)
     weights[REAPER_SKILLS.PHANTOM_BLINK] = 35;
     weights[REAPER_SKILLS.SOUL_SCYTHES] = 30;
     weights[REAPER_SKILLS.SOUL_WELLS] = 30;
+    weights[REAPER_SKILLS.VEIL_CLEAVE] = isEnraged ? 36 : 28;
+    weights[REAPER_SKILLS.DEATH_TOLL] = 26;
+    if (!e.purgatoryChains || !e.purgatoryChains.active) {
+      weights[REAPER_SKILLS.PURGATORY_CHAINS] = isEnraged ? 32 : 24;
+    }
     if (isEnraged) {
       weights[REAPER_SKILLS.SCYTHE_BOOMERANG] = 35;
-      weights[REAPER_SKILLS.DEATH_MARK_EXECUTION] = 35;
       weights[REAPER_SKILLS.PHANTOM_TRIAD_SLASH] = 30;
+      weights[REAPER_SKILLS.WALL_OF_RESTLESS] = isP3 ? 45 : 28;
     }
     if (!e.tetherActive && dist <= 260) {
       weights[REAPER_SKILLS.SOUL_TETHER] = 20;
@@ -61,13 +101,18 @@ export function selectReaperSkill(e, dist, player) {
     }
   } else {
     // Zona 2: Longo Alcance (> 280px)
-    // Anti-whiff rigoroso: fecha o espaço com bumerangue, guilhotina celestial ou blink!
+    // Anti-whiff rigoroso: fecha o espaço com bumerangue, lâminas ou blink!
     weights[REAPER_SKILLS.PHANTOM_BLINK] = 40;
     weights[REAPER_SKILLS.SOUL_SCYTHES] = 35;
     weights[REAPER_SKILLS.SOUL_WELLS] = 30;
+    weights[REAPER_SKILLS.DEATH_TOLL] = isEnraged ? 38 : 30;
+    weights[REAPER_SKILLS.VEIL_CLEAVE] = 22;
+    if (!e.purgatoryChains || !e.purgatoryChains.active) {
+      weights[REAPER_SKILLS.PURGATORY_CHAINS] = isEnraged ? 35 : 25;
+    }
     if (isEnraged) {
       weights[REAPER_SKILLS.SCYTHE_BOOMERANG] = 45;
-      weights[REAPER_SKILLS.DEATH_MARK_EXECUTION] = 40;
+      weights[REAPER_SKILLS.WALL_OF_RESTLESS] = isP3 ? 50 : 32;
     }
   }
 
@@ -82,9 +127,8 @@ export function selectReaperSkill(e, dist, player) {
       const pdy = player.y - e.y;
       const isRetreating = (pvx * pdx + pvy * pdy) > 0;
       if (isRetreating) {
-        // Jogador fugindo: intensifica o Phantom Blink e a Guilhotina para cortar a rota
+        // Jogador fugindo: intensifica o Phantom Blink para cortar a rota
         weights[REAPER_SKILLS.PHANTOM_BLINK] *= 1.40;
-        if (isEnraged) weights[REAPER_SKILLS.DEATH_MARK_EXECUTION] *= 1.35;
       }
     }
 
@@ -92,11 +136,38 @@ export function selectReaperSkill(e, dist, player) {
     if (e.lanterns && e.lanterns.some(l => l.active) && dist >= 160) {
       weights[REAPER_SKILLS.SOUL_SCYTHES] *= 1.25;
     }
+
+    // Sinergia da Balança do Julgamento (Dinâmica de HP do Jogador)
+    const playerHpRatio = Math.max(0, Math.min(1, player.hp / (player.maxHp || 100)));
+    if (playerHpRatio > 0.70) {
+      // Balança pende para a Vida: Thanatos prioriza julgamento geométrico e controle de distância
+      if (weights[REAPER_SKILLS.SOUL_LANCES] > 0) weights[REAPER_SKILLS.SOUL_LANCES] *= 1.45;
+      if (weights[REAPER_SKILLS.GRAVE_CROSS] > 0) weights[REAPER_SKILLS.GRAVE_CROSS] *= 1.40;
+      if (weights[REAPER_SKILLS.WAILING_RING] > 0) weights[REAPER_SKILLS.WAILING_RING] *= 1.35;
+      if (weights[REAPER_SKILLS.PURGATORY_CHAINS] > 0) weights[REAPER_SKILLS.PURGATORY_CHAINS] *= 1.40;
+      weights[REAPER_SKILLS.SOUL_SCYTHES] *= 1.25;
+    } else if (playerHpRatio < 0.35) {
+      // Balança pende para a Morte ("Sentença de Morte"): Thanatos se torna impiedoso e fecha distância
+      weights[REAPER_SKILLS.PHANTOM_BLINK] *= 1.55;
+      weights[REAPER_SKILLS.DOUBLE_CLEAVE] *= 1.45;
+      weights[REAPER_SKILLS.VORTEX_HARVEST] *= 1.35;
+    }
   }
 
   // 3. Anti-Spam: Reduz repetição consecutiva
   if (e.lastUsedSkill && weights[e.lastUsedSkill] > 0) {
     weights[e.lastUsedSkill] *= 0.20;
+  }
+
+  // Não repetir os padrões de controle nem sobrepor um vínculo que impeça a fuga.
+  for (const skill of [REAPER_SKILLS.SOUL_LANCES, REAPER_SKILLS.GRAVE_CROSS, REAPER_SKILLS.WAILING_RING, REAPER_SKILLS.PURGATORY_CHAINS, REAPER_SKILLS.WALL_OF_RESTLESS]) {
+    if (e.lastUsedSkill === skill || e.tetherActive || dist > 900) weights[skill] = 0;
+  }
+  if (e.purgatoryChains && e.purgatoryChains.active) {
+    weights[REAPER_SKILLS.PURGATORY_CHAINS] = 0;
+  }
+  if (e.wallOfRestless && e.wallOfRestless.active) {
+    weights[REAPER_SKILLS.WALL_OF_RESTLESS] = 0;
   }
 
   // 4. Sorteio Ponderado por Roleta
@@ -115,7 +186,7 @@ export function selectReaperSkill(e, dist, player) {
 
   for (const skillKey in weights) {
     roll -= weights[skillKey];
-    if (roll <= 0) {
+    if (weights[skillKey] > 0 && roll <= 0) {
       chosenSkill = skillKey;
       break;
     }
@@ -125,9 +196,16 @@ export function selectReaperSkill(e, dist, player) {
   e.currentSkill = chosenSkill;
 
   switch (chosenSkill) {
+    case REAPER_SKILLS.SOUL_LANCES:
+    case REAPER_SKILLS.GRAVE_CROSS:
+    case REAPER_SKILLS.WAILING_RING:
+      beginReaperRanged(e, player, chosenSkill);
+      playSfx('charge');
+      break;
+
     case REAPER_SKILLS.DOUBLE_CLEAVE:
       e.actionState = REAPER_STATES.WINDUP;
-      e.actionTimer = isEnraged ? 26 : 34;
+      e.actionTimer = isEnraged ? 36 : 42; // Piso de 36f (600ms)
       break;
 
     case REAPER_SKILLS.PHANTOM_BLINK: {
@@ -169,50 +247,64 @@ export function selectReaperSkill(e, dist, player) {
 
     case REAPER_SKILLS.SOUL_SCYTHES:
       e.actionState = REAPER_STATES.WINDUP;
-      e.actionTimer = isEnraged ? 26 : 34;
+      e.actionTimer = isEnraged ? 36 : 42; // Piso de 36f (600ms)
       break;
 
     case REAPER_SKILLS.SOUL_TETHER:
       e.actionState = REAPER_STATES.WINDUP;
-      e.actionTimer = 24;
+      e.actionTimer = isEnraged ? 36 : 42; // Piso de 36f (600ms)
       break;
 
     case REAPER_SKILLS.VORTEX_HARVEST:
       e.actionState = REAPER_STATES.WINDUP;
-      e.actionTimer = isEnraged ? 24 : 32;
+      e.actionTimer = isEnraged ? 36 : 44; // Piso de 36f (600ms)
       break;
 
     case REAPER_SKILLS.SCYTHE_BOOMERANG:
       e.actionState = REAPER_STATES.WINDUP_BOOMERANG;
-      e.actionTimer = isEnraged ? 26 : 34;
+      e.actionTimer = isEnraged ? 36 : 44; // Piso de 36f (600ms)
       break;
 
-    case REAPER_SKILLS.DEATH_MARK_EXECUTION: {
-      const execWindup = REAPER_CONFIG.EXECUTION_WINDUP || 65;
-      e.actionState = REAPER_STATES.WINDUP_EXECUTION;
-      e.actionTimer = execWindup;
-      e.deathMark = {
-        active: true,
-        x: player.x,
-        y: player.y,
-        timer: execWindup,
-        maxTimer: execWindup,
-        locked: false,
-        lockLead: REAPER_CONFIG.EXECUTION_LOCK_LEAD || 18,
-        radius: REAPER_CONFIG.EXECUTION_RADIUS || 46
-      };
-      playSfx('singularity');
+    case REAPER_SKILLS.DEATH_MARK_EXECUTION:
+      e.actionState = REAPER_STATES.CHASE;
+      e.skillCooldown = 18;
       break;
-    }
 
     case REAPER_SKILLS.SOUL_WELLS:
       e.actionState = REAPER_STATES.WINDUP_SOUL_WELLS;
-      e.actionTimer = isEnraged ? 28 : 36;
+      e.actionTimer = isEnraged ? 36 : 44; // Piso de 36f (600ms)
       break;
 
     case REAPER_SKILLS.PHANTOM_TRIAD_SLASH:
       e.actionState = REAPER_STATES.WINDUP_TRIAD_SLASH;
       e.actionTimer = REAPER_CONFIG.TRIAD_WINDUP || 38;
+      break;
+
+    case REAPER_SKILLS.DEATH_TOLL:
+      e.actionState = REAPER_STATES.WINDUP_DEATH_TOLL;
+      e.actionTimer = isEnraged ? 36 : 44; // Piso de 36f (600ms)
+      playSfx('charge');
+      break;
+
+    case REAPER_SKILLS.VEIL_CLEAVE:
+      e.actionState = REAPER_STATES.WINDUP_VEIL_CLEAVE;
+      e.actionTimer = isEnraged ? 36 : 44; // Piso de 36f (600ms)
+      e.aimAngle = Math.atan2(player.y - e.y, player.x - e.x);
+      playSfx('warp');
+      break;
+
+    case REAPER_SKILLS.PURGATORY_CHAINS:
+      e.actionState = REAPER_STATES.WINDUP_PURGATORY_CHAINS;
+      e.actionTimer = isEnraged ? 36 : 44; // Piso de 36f (600ms)
+      playSfx('singularity');
+      break;
+
+    case REAPER_SKILLS.WALL_OF_RESTLESS:
+      e.actionState = REAPER_STATES.WINDUP_WALL_OF_RESTLESS;
+      e.actionTimer = e.isPhase3 ? 36 : 46; // Piso de 36f (600ms)
+      e.aimAngle = Math.atan2(player.y - e.y, player.x - e.x);
+      playSfx('boss');
+      playSfx('singularity');
       break;
   }
 
@@ -251,9 +343,9 @@ export function executeReaperSkill(e, context) {
         y: e.y,
         radius: 180,
         angle: angleToPlayer,
-        timer: 32,
-        maxTimer: 32,
-        damage: Math.round(e.damage * 0.45),
+        timer: 36,
+        maxTimer: 36,
+        damage: Math.round(e.damage * 0.35),
         color: e.isEnraged ? '#ff4757' : '#00cec9',
         colorRgb: e.isEnraged ? '255, 71, 87' : '0, 206, 201',
         boss: e
@@ -265,6 +357,7 @@ export function executeReaperSkill(e, context) {
           playSfx('crit');
           triggerShake(10);
           e.scytheGlow = 1.0;
+          e.scytheTargetAngle = -1.4 * e.facing;
           bossTelegraphs.push({
             type: 'SCYTHE_CLEAVE',
             x: e.x,
@@ -273,7 +366,7 @@ export function executeReaperSkill(e, context) {
             angle: angleToPlayer + 0.38 * e.facing,
             timer: 38,
             maxTimer: 38,
-            damage: Math.round(e.damage * 0.55),
+            damage: Math.round(e.damage * 0.42),
             color: '#ff4757',
             colorRgb: '255, 71, 87',
             boss: e
@@ -282,7 +375,7 @@ export function executeReaperSkill(e, context) {
       });
 
       e.actionState = REAPER_STATES.POST_ATTACK_RECOVERY;
-      e.actionTimer = 75;
+      e.actionTimer = 18;
       break;
     }
 
@@ -306,7 +399,7 @@ export function executeReaperSkill(e, context) {
           vx: Math.cos(bAng) * 6.5,
           vy: Math.sin(bAng) * 6.5,
           radius: 20,
-          damage: Math.round(e.damage * 0.48),
+          damage: Math.round(e.damage * 0.28),
           life: 140,
           maxLife: 140,
           color: e.isEnraged ? '#ff4757' : '#00cec9',
@@ -315,7 +408,7 @@ export function executeReaperSkill(e, context) {
       }
 
       e.actionState = REAPER_STATES.POST_ATTACK_RECOVERY;
-      e.actionTimer = 60;
+      e.actionTimer = 16;
       break;
     }
 
@@ -325,7 +418,7 @@ export function executeReaperSkill(e, context) {
       e.tetherActive = true;
       e.tetherTimer = 160;
       e.actionState = REAPER_STATES.CHASE;
-      e.skillCooldown = 80;
+      e.skillCooldown = 18;
       addDamageText(player.x, player.y, "VÍNCULO DAS ALMAS!", true, '#00cec9');
       break;
     }
@@ -369,7 +462,7 @@ export function executeReaperSkill(e, context) {
         maxDist: targetDist,
         grindTimer: 0,
         radius: REAPER_CONFIG.BOOMERANG_RADIUS || 34,
-        damage: Math.round(e.damage * 0.40)
+        damage: Math.round(e.damage * 0.25)
       };
 
       e.actionState = REAPER_STATES.BOOMERANG_ACTIVE;
@@ -378,12 +471,10 @@ export function executeReaperSkill(e, context) {
       break;
     }
 
-    case REAPER_SKILLS.DEATH_MARK_EXECUTION: {
-      // O retículo de marca já está ativo e rastreando no updateDeathMarkExecution
-      e.actionState = REAPER_STATES.POST_ATTACK_RECOVERY;
-      e.actionTimer = e.isEnraged ? 28 : 36;
+    case REAPER_SKILLS.DEATH_MARK_EXECUTION:
+      e.actionState = REAPER_STATES.CHASE;
+      e.skillCooldown = 18;
       break;
-    }
 
     case REAPER_SKILLS.SOUL_WELLS: {
       playSfx('boss');
@@ -433,7 +524,7 @@ export function executeReaperSkill(e, context) {
       playSfx('singularity');
       addDamageText(e.x, e.y - 45, "CHAMAS SEPULCRAIS!", true, '#00cec9');
       e.actionState = REAPER_STATES.POST_ATTACK_RECOVERY;
-      e.actionTimer = 42;
+      e.actionTimer = 16;
       break;
     }
 
@@ -462,7 +553,7 @@ export function executeReaperSkill(e, context) {
           x: cx,
           y: cy,
           slashAngle: cSlashAng,
-          timer: 28,
+          timer: 36, // Piso de 36f (600ms)
           slashed: false,
           fadeTimer: 20,
           alpha: 0.95
@@ -475,9 +566,9 @@ export function executeReaperSkill(e, context) {
         y: e.y,
         radius: 185,
         angle: e.aimAngle,
-        timer: 28,
-        maxTimer: 28,
-        damage: Math.round(e.damage * 0.50),
+        timer: 36,
+        maxTimer: 36,
+        damage: Math.round(e.damage * 0.40),
         color: '#ff4757',
         colorRgb: '255, 71, 87',
         boss: e
@@ -485,13 +576,223 @@ export function executeReaperSkill(e, context) {
 
       addDamageText(centerPlayerX, centerPlayerY - 45, "TRÍADE DA MORTE!", true, '#ff4757');
       e.actionState = REAPER_STATES.POST_ATTACK_RECOVERY;
-      e.actionTimer = 65;
+      e.actionTimer = 18;
+      break;
+    }
+
+    case REAPER_SKILLS.DEATH_TOLL: {
+      playSfx('singularity');
+      playSfx('charge');
+      triggerShake(14);
+      triggerHaptic('heavy');
+      e.wingTargetSpan = 1.45;
+      e.scytheTargetAngle = -Math.PI * 0.60;
+      e.scytheGlow = 1.0;
+
+      const chimes = REAPER_CONFIG.DEATH_TOLL_CHIMES || 3;
+      const interval = REAPER_CONFIG.DEATH_TOLL_CHIME_INTERVAL || 63;
+
+      e.deathToll = {
+        active: true,
+        chimeCount: 0,
+        maxChimes: chimes,
+        timer: 10,
+        interval: interval,
+        rings: [],
+        x: e.x,
+        y: e.y - 70,
+        bellAlpha: 1.0,
+        bellScale: 1.0
+      };
+
+      addDamageText(e.x, e.y - 50, "O SINO DA MORTE!", true, '#81ecec');
+      e.actionState = REAPER_STATES.DEATH_TOLL_ACTIVE;
+      e.actionTimer = chimes * interval + Math.ceil((REAPER_CONFIG.DEATH_TOLL_RING_MAX_RADIUS || 680) / (REAPER_CONFIG.DEATH_TOLL_RING_SPEED || 4.03)) + 30;
+      break;
+    }
+
+    case REAPER_SKILLS.VEIL_CLEAVE: {
+      playSfx('warp');
+      playSfx('boss');
+      triggerShake(12);
+      triggerHaptic('heavy');
+      e.wingTargetSpan = 1.40;
+      e.scytheTargetAngle = 1.4 * e.facing;
+      e.scytheGlow = 1.0;
+
+      if (!e.veilCleaves) e.veilCleaves = [];
+      const isX = e.isEnraged || e.isPhase3;
+      const primaryAngle = e.aimAngle !== undefined ? e.aimAngle : Math.atan2(player.y - e.y, player.x - e.x);
+      const cuts = [primaryAngle];
+      if (isX) cuts.push(primaryAngle + Math.PI / 2);
+
+      const targetX = player.x;
+      const targetY = player.y;
+
+      for (const ang of cuts) {
+        e.veilCleaves.push({
+          x: targetX,
+          y: targetY,
+          angle: ang,
+          length: REAPER_CONFIG.VEIL_CLEAVE_LENGTH || 580,
+          width: REAPER_CONFIG.VEIL_CLEAVE_WIDTH || 114,
+          timer: REAPER_CONFIG.VEIL_CLEAVE_FUSE || 68,
+          maxTimer: REAPER_CONFIG.VEIL_CLEAVE_FUSE || 68,
+          damage: Math.round(e.damage * (REAPER_CONFIG.VEIL_CLEAVE_DAMAGE || 0.46)),
+          exploded: false,
+          fadeTimer: 24,
+          isEnraged: e.isEnraged || e.isPhase3
+        });
+      }
+
+      addDamageText(e.x, e.y - 45, isX ? "RASGO DIMENSIONAL EM X!" : "RASGO DO VÉU!", true, '#00cec9');
+      e.actionState = REAPER_STATES.POST_ATTACK_RECOVERY;
+      e.actionTimer = 18;
+      break;
+    }
+
+    case REAPER_SKILLS.PURGATORY_CHAINS: {
+      playSfx('singularity');
+      playSfx('boss');
+      triggerShake(16);
+      triggerHaptic('heavy');
+      e.wingTargetSpan = 1.60;
+      e.scytheTargetAngle = 0;
+      e.scytheGlow = 1.0;
+
+      let cx = e.x;
+      let cy = e.y;
+      const radius = REAPER_CONFIG.CHAINS_RADIUS || 554;
+      const anchorHp = REAPER_CONFIG.CHAINS_ANCHOR_HP || 3000;
+      const anchorRadius = REAPER_CONFIG.CHAINS_ANCHOR_RADIUS || 22;
+      const targetList = context.enemies || (typeof enemies !== 'undefined' ? enemies : []);
+
+      if (player && player.hp > 0) {
+        const pDist = Math.hypot(player.x - e.x, player.y - e.y);
+        if (pDist > 60) {
+          const maxOffset = radius * 0.40;
+          const offset = Math.min(pDist * 0.5, maxOffset);
+          cx = e.x + ((player.x - e.x) / pDist) * offset;
+          cy = e.y + ((player.y - e.y) / pDist) * offset;
+        }
+      }
+
+      const anchors = [];
+      for (let i = 0; i < 4; i++) {
+        const ang = Math.PI * 0.25 + i * (Math.PI * 0.5);
+        const ax = cx + Math.cos(ang) * radius;
+        const ay = cy + Math.sin(ang) * radius;
+
+        const anchor = {
+          id: i,
+          x: ax,
+          y: ay,
+          radius: anchorRadius,
+          hp: anchorHp,
+          maxHp: anchorHp,
+          active: true,
+          isBossSubTarget: true,
+          isTargetable: true,
+          parentBoss: e,
+          baseType: 'PURGATORY_ANCHOR',
+          color: '#8e44ad',
+          hitFlash: 0,
+          hitCd: 0,
+          axeHitCd: 0
+        };
+        anchors.push(anchor);
+        if (targetList && !targetList.includes(anchor)) {
+          targetList.push(anchor);
+        }
+      }
+
+      const shatteredLinkIndex = Math.floor(Math.random() * 4);
+
+      e.purgatoryChains = {
+        active: true,
+        cx,
+        cy,
+        radius,
+        anchors,
+        brokenCount: 0,
+        shatteredLinkIndex,
+        timer: REAPER_CONFIG.CHAINS_MAX_DURATION || 720,
+        maxTimer: REAPER_CONFIG.CHAINS_MAX_DURATION || 720,
+        cleaveCooldown: 40
+      };
+
+      e.sinnerShadow = {
+        active: true,
+        history: [],
+        trail: [],
+        timer: REAPER_CONFIG.CHAINS_MAX_DURATION || 720
+      };
+
+      addDamageText(e.x, e.y - 65, "CORRENTES DO PURGATÓRIO!", true, '#8e44ad');
+      e.actionState = REAPER_STATES.PURGATORY_CHAINS_ACTIVE;
+      e.actionTimer = REAPER_CONFIG.CHAINS_MAX_DURATION || 720;
+      break;
+    }
+
+    case REAPER_SKILLS.WALL_OF_RESTLESS: {
+      playSfx('boss');
+      playSfx('warp');
+      triggerShake(18);
+      triggerHaptic('heavy');
+      e.wingTargetSpan = 1.70;
+      e.scytheTargetAngle = 1.5 * e.facing;
+      e.scytheGlow = 1.0;
+
+      const primaryAngle = e.aimAngle !== undefined ? e.aimAngle : Math.atan2(player.y - e.y, player.x - e.x);
+      const spd = REAPER_CONFIG.WALL_OF_RESTLESS_SPEED || 3.5;
+      const wallLen = REAPER_CONFIG.WALL_OF_RESTLESS_LENGTH || 1400;
+      const wallW = REAPER_CONFIG.WALL_OF_RESTLESS_WIDTH || 52;
+      const gateW = REAPER_CONFIG.WALL_OF_RESTLESS_GATE_WIDTH || 90;
+
+      const startX = e.x - Math.cos(primaryAngle) * 120;
+      const startY = e.y - Math.sin(primaryAngle) * 120;
+
+      const gate1 = -280 + (Math.random() - 0.5) * 80;
+      const gate2 = 280 + (Math.random() - 0.5) * 80;
+
+      e.wallOfRestless = {
+        active: true,
+        x: startX,
+        y: startY,
+        angle: primaryAngle,
+        dirAngle: primaryAngle,
+        vx: Math.cos(primaryAngle) * spd,
+        vy: Math.sin(primaryAngle) * spd,
+        length: wallLen,
+        width: wallW,
+        thickness: wallW,
+        speed: spd,
+        distTraveled: 0,
+        maxDist: 1400,
+        life: 480,
+        maxLife: 480,
+        gates: [gate1, gate2],
+        safeGates: [
+          { centerOffset: gate1, width: gateW },
+          { centerOffset: gate2, width: gateW }
+        ],
+        gateWidth: gateW,
+        damage: Math.round(e.damage * (REAPER_CONFIG.WALL_OF_RESTLESS_DAMAGE || 0.52)),
+        hasHitPlayer: false,
+        fadeTimer: 30,
+        fireTimer: 30,
+        bladeCooldown: 30
+      };
+
+      addDamageText(e.x, e.y - 75, "MARCHA DOS CONDENADOS!", true, '#ff4757');
+      e.actionState = REAPER_STATES.WALL_OF_RESTLESS_ACTIVE;
+      e.actionTimer = Math.round(1400 / spd) + 50;
       break;
     }
 
     default: {
       e.actionState = REAPER_STATES.CHASE;
-      e.skillCooldown = 60;
+      e.skillCooldown = 18;
       break;
     }
   }

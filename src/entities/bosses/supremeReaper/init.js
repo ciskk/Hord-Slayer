@@ -17,17 +17,18 @@ export function initSupremeReaper(boss) {
   boss.actionTimer = 0;
   boss.currentSkill = null;
   boss.lastUsedSkill = null;
-  boss.skillCooldown = 75;
+  boss.skillCooldown = 18;
   boss.aimAngle = 0;
 
-  // Intro Cinemática de 5.0 segundos (300 frames a 60 FPS) e Banner
-  boss.introDuration = REAPER_CONFIG.INTRO_DURATION || 300;
+  // Intro Cinemática de 6.0 segundos (360 frames a 60 FPS) e Banner
+  boss.introDuration = REAPER_CONFIG.INTRO_DURATION;
   boss.introTimer = boss.introDuration;
   boss.isTargetable = false;
   boss.titleTimer = 0;
   boss.titleMaxTimer = REAPER_CONFIG.TITLE_DURATION || 180;
   boss.hasTriggeredTitle = false;
   boss.hasRoared = false;
+  boss.introSoundPlayed = false;
   boss.introAct = 1;
 
   boss.delayedActions = [];
@@ -50,16 +51,27 @@ export function initSupremeReaper(boss) {
 
   boss.tetherActive = false;
   boss.tetherTimer = 0;
+  boss.tetherTension = 0;
   boss.tetherMaxDist = REAPER_CONFIG.TETHER_MAX_DIST;
   boss.blinkTarget = null;
   boss.phantoms = [];
+  boss.isDeathSentence = false;
+  boss.hasTriggeredDeathSentenceBark = false;
 
-  // Novas Mecânicas: Foice Bumerangue, Guilhotina, Poços e Tríade
+  // Novas Mecânicas: Foice Bumerangue, Guilhotina, Poços, Tríade e Fragmentos de Alma
   boss.boomerangScythe = null;
   boss.isUnarmed = false;
   boss.soulWells = [];
   boss.deathMark = null;
   boss.triadClones = [];
+  boss.rangedAttack = null;
+  boss.soulShards = [];
+  boss.deathToll = null;
+  boss.veilCleaves = [];
+  boss.purgatoryChains = null;
+  boss.sinnerShadow = null;
+  boss.wallOfRestless = null;
+  boss.hasDualScythes = false;
 
   // Variáveis da Nova Introdução Cinematográfica
   boss.introRuneAngle = 0;

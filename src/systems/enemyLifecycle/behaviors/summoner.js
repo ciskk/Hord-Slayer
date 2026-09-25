@@ -35,7 +35,9 @@ export function summonerBehavior(e, dt, angle, curSpeed, ctx) {
       damage: 18,
       life: 160,
       bulletType: 'SHADOW_ORB',
-      color: '#9b59b6'
+      color: '#9b59b6',
+      sourceName: e.name || 'Cultista das Sombras',
+      enemyType: e.baseType || 'NECRO'
     });
     createHitParticles(e.x + Math.cos(angle) * 18, e.y + Math.sin(angle) * 18 - 8, '#9b59b6', 6);
     addDamageText(e.x, e.y, "ORBE SOMBRIO!", false, '#a29bfe');

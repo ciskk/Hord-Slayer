@@ -17,7 +17,8 @@ export {
   destroyLantern, 
   updateSoulTether, 
   scheduleDelayedAction, 
-  updateDelayedActions 
+  updateDelayedActions,
+  isReaperAttackActive
 } from './mechanics.js';
 export { 
   selectReaperSkill, 

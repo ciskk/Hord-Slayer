@@ -5,6 +5,7 @@
  */
 import { playSfx } from '../../core/audio.js';
 import { createHitParticles, addDamageText } from '../combat.js';
+import { integrateEnemyKnockback } from './knockback.js';
 
 /**
  * Processa status effects, timers de emerge, knockback e DoTs cáusticos.
@@ -52,15 +53,7 @@ export function tickEnemyStatus(e, dt, player, triggerShake) {
   if (e.isBossSubTarget) return 'skip';
 
   // Integração Cinética de Knockback Suave (Impulso com Fricção Exponencial)
-  if (e.pushVx || e.pushVy) {
-    e.x += (e.pushVx || 0) * dt;
-    e.y += (e.pushVy || 0) * dt;
-    const kbFriction = Math.pow(0.82, dt);
-    e.pushVx = (e.pushVx || 0) * kbFriction;
-    e.pushVy = (e.pushVy || 0) * kbFriction;
-    if (Math.abs(e.pushVx) < 0.05) e.pushVx = 0;
-    if (Math.abs(e.pushVy) < 0.05) e.pushVy = 0;
-  }
+  integrateEnemyKnockback(e, dt);
 
   if (e.acidStackTimer > 0) {
     e.acidStackTimer -= dt;

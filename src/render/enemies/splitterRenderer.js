@@ -1,5 +1,5 @@
 import { ctx, frameCount } from '../../state/gameState.js';
-import { getRelativeAimAngle } from '../../core/math.js';
+import { crawlPhase, legStride } from '../../entities/enemies/crawlerLocomotion.js';
 import { beginCreature, endCreature, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
 // Segmented teal flesh links the brood carrier with the smaller jumping larvae.
@@ -10,20 +10,15 @@ export function draw(e) {
   const strike = !dead && e.combatState === 'STRIKE';
   const windup = !dead && (e.combatState === 'WINDUP' || e.leapState === 'windup');
   const airborne = !dead && (e.jumpZ || 0) > 0;
-  const leapPose = airborne || e.leapState === 'windup' || (dead && (e.deathJumpZ || 0) > 0);
-  const crawl = dead ? 0 : Math.sin(frameCount * .25) * .065;
+  const phase = crawlPhase(e, frameCount);
   beginCreature(ctx, e);
-  if (mini && leapPose && e.leapAngle !== undefined) {
-    ctx.rotate(getRelativeAimAngle(e.leapAngle, e.facing || 1));
-  } else if ((windup || strike) && e.attackAngle !== undefined) {
-    ctx.rotate(getRelativeAimAngle(e.attackAngle, e.facing || 1));
-  }
   const contract = dead ? e.deathPose * .3 : windup ? .16 : 0;
   if (mini) {
     for (let ring = 2; ring >= 0; ring--) {
-      const x = -.47 * ring * (1 - contract) + crawl;
+      const wave = phase - ring * .9;
+      const x = -.47 * ring * (1 - contract) + (dead || airborne ? 0 : Math.cos(wave) * .1);
       const height = .48 - ring * .09;
-      const curl = dead ? -Math.sin(ring * .7) * e.deathPose * .45 : 0;
+      const curl = dead ? -Math.sin(ring * .7) * e.deathPose * .45 : airborne ? 0 : Math.sin(wave) * .12;
       polygon(ctx, [[x -.43, curl -.16], [x -.13, curl -height], [x + .24, curl -height * .76], [x + .43, curl], [x + .24, curl + height * .77], [x -.2, curl + height], [x -.46, curl + .13]], ring === 2 ? p.shade : p.body);
       polygon(ctx, [[x -.13, curl -height], [x + .24, curl -height * .76], [x + .36, curl -.04], [x -.09, curl -.17]], p.accent, null);
     }
@@ -41,8 +36,10 @@ export function draw(e) {
     }
     stroke(ctx, [[-.99, -.02], [.24, -.02]], p.ink, .1);
     for (const side of [-1, 1]) {
-      polygon(ctx, [[-.75, side * .53], [-.93, side * (.9 + crawl)], [-.42, side * .62]], p.shade);
-      polygon(ctx, [[.11, side * .52], [.02, side * (.94 - crawl)], [.48, side * .53]], p.shade);
+      const rear = legStride(e, 0, side, frameCount);
+      const front = legStride(e, 1, side, frameCount);
+      polygon(ctx, [[-.75, side * .53], [-.93 + rear.sweep, side * (.98 - rear.lift)], [-.42, side * .62]], p.shade);
+      polygon(ctx, [[.11, side * .52], [.02 + front.sweep, side * (1.02 - front.lift)], [.48, side * .53]], p.shade);
     }
   }
   const headX = mini ? .38 : .57;

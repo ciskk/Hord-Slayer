@@ -5,6 +5,7 @@
 import { playSfx } from '../../../core/audio.js';
 import { createHitParticles, addDamageText } from '../../combat.js';
 import { triggerDeath } from '../../ui.js';
+import { setLastAttackerInfo } from '../../../state/events.js';
 
 export function lanceChargeBehavior(e, dt, angle, curSpeed, ctx) {
   const { player, triggerShake, setLastAttackerName } = ctx;
@@ -37,7 +38,13 @@ export function lanceChargeBehavior(e, dt, angle, curSpeed, ctx) {
     if (distToPlayerSq <= (e.radius + player.radius + 6) ** 2 && player.iFrames <= 0) {
       player.hp -= e.damage;
       player.iFrames = 22;
-      if (setLastAttackerName) setLastAttackerName("Cavaleiro Sem Cabeça");
+      setLastAttackerInfo({
+        name: e.name || 'Cavaleiro Sem Cabeça',
+        category: 'HORDE',
+        attackName: 'Investida com Lança',
+        damage: Math.round(e.damage),
+        enemyType: e.baseType || 'DULLAHAN_VANGUARD'
+      });
       triggerShake(7);
       playSfx('hit');
       addDamageText(player.x, player.y, `-${Math.round(e.damage)}`, false, '#2c3e50');

@@ -1,5 +1,5 @@
 import { ctx, frameCount } from '../../state/gameState.js';
-import { getRelativeAimAngle } from '../../core/math.js';
+import { getCrawlerAngle, legStride } from '../../entities/enemies/crawlerLocomotion.js';
 import { beginCreature, endCreature, materialPolygon, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
 /** A low chitin queen: six hooked legs carry a huge, translucent clutch. */
@@ -12,10 +12,10 @@ export function draw(e) {
   beginCreature(ctx, e);
   for (let i = 0; i < 3; i++) {
     const x = -.67 + i*.54;
-    const step = dead || wind ? 0 : Math.sin(frameCount*.15 + i*1.6)*.06;
     for (const side of [-1,1]) {
-      polygon(ctx, [[x,.2*side],[x-.23,.72*side],[x+.05,(1.09+step)*side],[x-.11,.65*side],[x+.12,.27*side]], p.shade);
-      stroke(ctx, [[x-.17,.64*side],[x-.02,.96*side]], p.body, .075);
+      const { sweep, lift } = legStride(e, i, side, frameCount);
+      polygon(ctx, [[x,.2*side],[x-.23+sweep*.45,(.72-lift*.4)*side],[x+.05+sweep,(1.09-lift)*side],[x-.11+sweep*.45,(.65-lift*.4)*side],[x+.12,.27*side]], p.shade);
+      stroke(ctx, [[x-.17+sweep*.45,(.64-lift*.4)*side],[x-.02+sweep,(.96-lift)*side]], p.body, .075);
     }
   }
   const pulse = eggs ? .05+.05*(e.castProgress || 0) : 0;
@@ -29,7 +29,8 @@ export function draw(e) {
   materialPolygon(ctx, [[-.39,-.44],[.24,-.52],[.61,-.26],[.61,.3],[.25,.5],[-.37,.35],[-.52,-.02]], p, 'chitin');
   polygon(ctx, [[-.22,-.38],[.18,-.45],[.37,-.25],[-.07,-.01]], p.shade, null);
   ctx.save();
-  ctx.rotate(getRelativeAimAngle(e.aimAngle ?? (e.facing === -1 ? Math.PI : 0), e.facing || 1));
+  // Only the mouth aims independently while casting; the shell follows motion.
+  if (acid) ctx.rotate((e.aimAngle ?? getCrawlerAngle(e)) - getCrawlerAngle(e));
   polygon(ctx, [[.3,-.33],[.73,-.3],[.9,0],[.72,.31],[.3,.29]], p.shade);
   const open = acid ? .15 : .04;
   polygon(ctx, [[.67,-.18],[1.02,-.49-open],[1.23,-.27-open],[1.01,-.08],[1.06,-.29-open],[.86,-.15]], p.body);

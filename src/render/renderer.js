@@ -7,6 +7,7 @@ import { drawBossPhaseCinematic } from '../systems/bossPhaseCinematic.js';
  * e despacho para os renderizadores modulares especializados.
  */
 import { stick } from '../core/input.js';
+import { drawJoystick } from './joystickRenderer.js';
 import { renderEnvironment, ARENA_PALETTES } from './environment.js';
 import { drawEnemyShape, drawDyingEnemyShape } from './enemiesRenderer.js';
 import { drawPlayerCharacter, drawPlayerEquipment } from './playerRenderer.js';
@@ -282,66 +283,7 @@ export function render() {
     const b = bullets[i];
 
     if (b.type === 'HAMMER_SLAM') {
-      const progress = 1 - (b.life / b.maxLife);
-      const alpha = Math.max(0, b.life / b.maxLife);
-
-      ctx.save();
-      ctx.translate(b.x, b.y);
-
-      if (progress < 0.32) {
-        // FASE 1: WINDUP - Glifo de Carga e Solo Rúnico Sagrado Concentrando Luz
-        const windT = progress / 0.32;
-        const gatherR = 32 * (1 - windT * 0.4);
-        ctx.strokeStyle = `rgba(241, 196, 15, ${windT * 0.65})`;
-        ctx.lineWidth = 1.8;
-        ctx.beginPath();
-        ctx.arc(0, 0, gatherR, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // Raios de luz convergindo ao ponto de esmagamento
-        for (let r = 0; r < 4; r++) {
-          const rAng = b.angle + (r * Math.PI * 0.5) + windT * 0.8;
-          ctx.strokeStyle = `rgba(255, 235, 150, ${windT * 0.75})`;
-          ctx.lineWidth = 1.4;
-          ctx.beginPath();
-          ctx.moveTo(Math.cos(rAng) * (gatherR + 14), Math.sin(rAng) * (gatherR + 14));
-          ctx.lineTo(Math.cos(rAng) * 5, Math.sin(rAng) * 5);
-          ctx.stroke();
-        }
-      } else {
-        // IMPACTO SÍSMICO IMEDIATO: Anel de choque estelar dourado e nítido
-        // (Sem disco branco sólido opaco que cega a tela e polui a visão em alta cadência)
-        const impactP = (progress - 0.32) / 0.68;
-        const flashAlpha = Math.max(0, 1 - impactP * 3.2);
-        if (flashAlpha > 0) {
-          const shockRingR = b.radius * (0.25 + impactP * 0.75);
-
-          // Anel principal de choque sagrado
-          ctx.strokeStyle = b.isEvolved ? `rgba(243, 156, 18, ${flashAlpha * 0.85})` : `rgba(241, 196, 15, ${flashAlpha * 0.80})`;
-          ctx.lineWidth = Math.max(1.5, 3.2 * (1 - impactP * 0.7));
-          ctx.beginPath();
-          ctx.arc(0, 0, shockRingR, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // Filete fino interno celestial
-          ctx.strokeStyle = `rgba(255, 255, 255, ${flashAlpha * 0.75})`;
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          ctx.arc(0, 0, shockRingR * 0.88, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // Ponto de luz concentrado rápido apenas no início exato do choque
-          if (impactP < 0.20) {
-            const burstAlpha = (1 - impactP / 0.20) * 0.45;
-            ctx.fillStyle = `rgba(255, 255, 255, ${burstAlpha})`;
-            ctx.beginPath();
-            ctx.arc(0, 0, 16, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-      }
-
-      ctx.restore();
+      // O ataque telúrico do Sir Roland renderiza exclusivamente as fissuras negras no solo via drawGroundCraters
       continue;
     }
 
@@ -666,11 +608,128 @@ export function render() {
     const eb = enemyBullets[i];
     if (eb.x < viewLeft || eb.x > viewRight || eb.y < viewTop || eb.y > viewBottom) continue;
 
-    const bType = eb.bulletType || 'DEFAULT';
+    let bType = eb.bulletType || 'DEFAULT';
+    if (bType === 'DEFAULT' && ((eb.isBossProjectile && activeBoss && activeBoss.bossId === 3) || eb.isReaperProjectile)) {
+      bType = eb.isAstralBlade ? 'ASTRAL_SCYTHE_SHARD' : 'REAPER_SOUL_ORB';
+    }
+
     ctx.save();
     ctx.translate(eb.x, eb.y);
 
-    if (bType === 'TECH') {
+    if (bType === 'REAPER_SOUL_ORB') {
+      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
+      const isRed = eb.color === '#ff4757' || eb.color === '255, 71, 87' || (activeBoss && activeBoss.bossId === 3 && (activeBoss.isEnraged || activeBoss.isPhase3));
+      const primaryColor = isRed ? '#ff4757' : '#00cec9';
+      const secondaryColor = isRed ? '#ff6b81' : '#81ecec';
+      const glowRgba = isRed ? '255, 71, 87' : '0, 206, 201';
+      const coreColor = isRed ? '#1e040c' : '#04161c';
+
+      ctx.rotate(bAng);
+
+      // 1. Rastro Espectral Fluido (Ectoplasma / Cauda de Cometa de Almas)
+      const bRad = eb.radius || 7;
+      const tailLen = Math.max(16, bRad * 2.8);
+      const trailGrad = ctx.createLinearGradient(-tailLen, 0, 4, 0);
+      trailGrad.addColorStop(0, `rgba(${glowRgba}, 0)`);
+      trailGrad.addColorStop(0.4, `rgba(${glowRgba}, 0.28)`);
+      trailGrad.addColorStop(0.75, `rgba(${glowRgba}, 0.65)`);
+      trailGrad.addColorStop(1, 'rgba(255, 255, 255, 0.9)');
+      ctx.fillStyle = trailGrad;
+      ctx.beginPath();
+      ctx.moveTo(-tailLen, 0);
+      ctx.lineTo(-3, -bRad * 0.75);
+      ctx.lineTo(bRad, 0);
+      ctx.lineTo(-3, bRad * 0.75);
+      ctx.closePath();
+      ctx.fill();
+
+      // 2. Halo de Fogo Fátuo Pulsante
+      const pulse = Math.sin((frameCount || 0) * 0.3 + (eb.x * 0.05)) * 1.5;
+      const baseR = bRad + pulse * 0.4;
+      const haloGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, baseR * 1.8);
+      haloGrad.addColorStop(0, `rgba(${glowRgba}, 0.85)`);
+      haloGrad.addColorStop(0.45, `rgba(${glowRgba}, 0.45)`);
+      haloGrad.addColorStop(1, `rgba(${glowRgba}, 0)`);
+      ctx.fillStyle = haloGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, baseR * 1.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3. Lâminas Gêmeas de Foice Espectral em Órbita
+      const rotSpin = (frameCount || 0) * 0.16 + (eb.x * 0.02);
+      ctx.save();
+      ctx.rotate(rotSpin);
+      ctx.strokeStyle = secondaryColor;
+      ctx.lineWidth = 1.6;
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.arc(0, 0, baseR * 1.15, side * Math.PI * 0.5 - 0.7, side * Math.PI * 0.5 + 0.7);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // 4. Núcleo de Vácuo Abissal
+      ctx.fillStyle = coreColor;
+      ctx.beginPath();
+      ctx.arc(0, 0, baseR * 0.85, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = primaryColor;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      // 5. Olho Espectral / Faísca de Alma Incandescente
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(baseR * 0.2, 0, Math.max(1.4, baseR * 0.28), 0, Math.PI * 2);
+      ctx.fill();
+    } else if (bType === 'ASTRAL_SCYTHE_SHARD' || eb.isAstralBlade) {
+      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
+      const isRed = eb.color === '#ff4757' || eb.color === '255, 71, 87' || (activeBoss && (activeBoss.isEnraged || activeBoss.isPhase3));
+      const glowRgba = isRed ? '255, 71, 87' : '0, 206, 201';
+      const mainColor = isRed ? '#ff4757' : '#00cec9';
+      const lightColor = isRed ? '#ff6b81' : '#81ecec';
+
+      ctx.rotate(bAng);
+
+      // 1. Rastro de corte translúcido de foice
+      const trailGrad = ctx.createLinearGradient(-22, 0, 6, 0);
+      trailGrad.addColorStop(0, `rgba(${glowRgba}, 0)`);
+      trailGrad.addColorStop(0.5, `rgba(${glowRgba}, 0.4)`);
+      trailGrad.addColorStop(1, 'rgba(255, 255, 255, 0.9)');
+      ctx.fillStyle = trailGrad;
+      ctx.beginPath();
+      ctx.moveTo(-22, 0);
+      ctx.quadraticCurveTo(-6, -8, 8, 0);
+      ctx.quadraticCurveTo(-6, 8, -22, 0);
+      ctx.fill();
+
+      // 2. Lâmina Curva de Foice Astral (crescente afiado)
+      ctx.fillStyle = isRed ? '#2b0610' : '#072027';
+      ctx.strokeStyle = lightColor;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(10, 0);
+      ctx.quadraticCurveTo(-2, -10, -14, -6);
+      ctx.quadraticCurveTo(-4, 0, -14, 6);
+      ctx.quadraticCurveTo(-2, 10, 10, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 3. Fio da lâmina cortante (espelho de luz branca)
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(10, 0);
+      ctx.quadraticCurveTo(-2, -9, -12, -5);
+      ctx.stroke();
+
+      // 4. Núcleo incandescente de energia
+      ctx.fillStyle = mainColor;
+      ctx.beginPath();
+      ctx.arc(0, 0, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (bType === 'TECH') {
       const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
       ctx.rotate(bAng);
       // Rastro de Plasma Carmesim
@@ -1504,73 +1563,11 @@ export function render() {
     }
   }
 
-  if (stick.active) {
-    ctx.save();
-    
-    // 1. Base externa do joystick
-    const isSat = stick.isSaturated;
-    const baseColor = isSat ? 'rgba(241, 196, 15, ' : 'rgba(129, 236, 236, ';
-    
-    // Fundo translúcido sutil
-    ctx.fillStyle = 'rgba(10, 12, 18, 0.35)';
-    ctx.beginPath();
-    ctx.arc(stick.startX, stick.startY, stick.radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Anel externo
-    ctx.strokeStyle = `${baseColor}0.38)`;
-    ctx.lineWidth = isSat ? 2.5 : 1.8;
-    ctx.beginPath();
-    ctx.arc(stick.startX, stick.startY, stick.radius, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Círculo pontilhado da zona morta interna
-    const innerDeadzone = stick.radius * 0.12;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 3]);
-    ctx.beginPath();
-    ctx.arc(stick.startX, stick.startY, innerDeadzone, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // 2. Linha do vetor de direção
-    if (stick.normMag > 0.08) {
-      ctx.strokeStyle = `${baseColor}0.45)`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(stick.startX, stick.startY);
-      ctx.lineTo(stick.curX, stick.curY);
-      ctx.stroke();
-    }
-
-    // 3. Knob do Polegar
-    const knobRadius = isSat ? 22 : 19;
-    const knobGrad = ctx.createRadialGradient(
-      stick.curX - 3, stick.curY - 3, 2,
-      stick.curX, stick.curY, knobRadius
-    );
-    if (isSat) {
-      knobGrad.addColorStop(0, '#ffffff');
-      knobGrad.addColorStop(0.4, '#f1c40f');
-      knobGrad.addColorStop(1, 'rgba(211, 84, 0, 0.85)');
-    } else {
-      knobGrad.addColorStop(0, '#ffffff');
-      knobGrad.addColorStop(0.4, '#74b9ff');
-      knobGrad.addColorStop(1, 'rgba(9, 132, 227, 0.75)');
-    }
-
-    ctx.fillStyle = knobGrad;
-    ctx.beginPath();
-    ctx.arc(stick.curX, stick.curY, knobRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Borda do Knob
-    ctx.strokeStyle = isSat ? '#ffeaa7' : '#dfe6e9';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.restore();
+  // Joystick Virtual Mobile diegético e refinado (Flutuante vs Dinâmico)
+  const isBossDefeatCinematic = (activeBoss && (activeBoss.actionState === 'DEATH_COLLAPSE' || activeBoss.isDying))
+    || enemies.some(en => en && en.isBoss && (en.actionState === 'DEATH_COLLAPSE' || en.isDying));
+  if (!isBossDefeatCinematic) {
+    drawJoystick(ctx, stick, frameCount);
   }
 
   // 3. Overlay Cósmico de Vitória do Boss Final (Banner Dourado + Fade-Out da Tela)
@@ -1578,7 +1575,7 @@ export function render() {
   const sovereignBoss = (activeBoss && activeBoss.bossId === 4) 
     ? activeBoss 
     : enemies.find(en => en && en.bossId === 4);
-  if (sovereignBoss && (sovereignBoss.showGoldenBanner || sovereignBoss.fadeAlpha > 0)) {
+  if (sovereignBoss && sovereignBoss.fadeAlpha > 0) {
     drawBossVictoryOverlay(ctx, sovereignBoss, frameCount);
   }
 

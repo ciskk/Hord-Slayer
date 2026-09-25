@@ -8,6 +8,56 @@
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { triggerDeath } from './ui.js';
 import { addDamageText, createHitParticles } from './combat.js';
+import { setLastAttackerInfo } from '../state/events.js';
+
+/**
+ * Aplica dano de perigo de chefe ao jogador com mitigação passiva de classe e One-Shot Protection (OSP).
+ */
+function applyHazardDamage(player, rawDamage, selectedHeroKey, defaultIFrames = 20) {
+  let finalDmg = rawDamage || 0;
+  if (selectedHeroKey === 'KNIGHT') finalDmg = Math.round(finalDmg * 0.80);
+  const playerMaxHp = player.maxHp || 100;
+  let ospTriggered = false;
+  if (player.hp / playerMaxHp >= 0.90 && finalDmg >= player.hp) {
+    finalDmg = Math.floor(playerMaxHp * 0.80);
+    ospTriggered = true;
+  }
+  // Barreira Química (Shield de Valéria)
+  if (player.tempShield && player.tempShield > 0) {
+    const absorb = Math.min(player.tempShield, finalDmg);
+    player.tempShield -= absorb;
+    finalDmg -= absorb;
+    addDamageText(player.x, player.y - 35, `ESCUDO ABSORVEU -${absorb}`, true, '#a29bfe');
+    if (player.tempShield <= 0) player.tempShieldTimer = 0;
+  }
+
+  player.hp -= finalDmg;
+  player.bossIFrames = ospTriggered ? 36 : defaultIFrames;
+  if (ospTriggered) {
+    player.iFrames = Math.max(player.iFrames || 0, 36);
+    addDamageText(player.x, player.y - 25, "PROTEÇÃO DE SOBREVIDA!", true, '#2ecc71');
+  }
+  return { finalDmg, ospTriggered };
+}
+
+// Padrões locais podem reutilizar as mesmas defesas e atribuição de dano dos perigos globais.
+export function applyBossPatternDamage(player, damage, boss, attackName, selectedHeroKey, context) {
+  if (!player || player.hp <= 0 || player.bossIFrames > 0
+    || player.dashDuration > 0 || player.ignisDashDuration > 0 || player.invisTimer > 0) return;
+  const { finalDmg } = applyHazardDamage(player, damage, selectedHeroKey, 26);
+  setLastAttackerInfo({
+    name: boss.name || 'Soberano do Abismo', category: 'BOSS',
+    attackName, damage: finalDmg, enemyType: `BOSS_${boss.bossId}`
+  });
+  playSfx('hit');
+  context.triggerShake(7);
+  context.addDamageText(player.x, player.y, `-${finalDmg}`, false, '#e84393');
+  context.createHitParticles(player.x, player.y, '#e84393', 6);
+  if (player.hp <= 0) {
+    player.hp = 0;
+    triggerDeath();
+  }
+}
 
 export function updateBossHazards(dt, {
   player,
@@ -30,9 +80,6 @@ export function updateBossHazards(dt, {
     const sDist = Math.sqrt(sdx * sdx + sdy * sdy);
 
     if (!sw.hitPlayer && Math.abs(sDist - sw.radius) < 16 && player.bossIFrames <= 0) {
-      let finalSwDamage = sw.damage || 0;
-      if (selectedHeroKey === 'KNIGHT') finalSwDamage = Math.round(finalSwDamage * 0.80);
-
       // Repulsão / Knockback Radial da Onda de Choque
       if (sw.knockback && sDist > 0.1) {
         const pushForce = sw.knockback;
@@ -40,10 +87,16 @@ export function updateBossHazards(dt, {
         player.pushVy = (sdy / sDist) * pushForce;
       }
 
-      if (finalSwDamage > 0) {
-        player.hp -= finalSwDamage;
-        player.bossIFrames = 20;
-        setLastAttackerName(activeBoss ? activeBoss.name : "Onda de Choque Sísmica");
+      if ((sw.damage || 0) > 0) {
+        const { finalDmg: finalSwDamage } = applyHazardDamage(player, sw.damage, selectedHeroKey, 20);
+        const bName = (activeBoss && activeBoss.name) ? activeBoss.name : "Chefe do Abismo";
+        setLastAttackerInfo({
+          name: bName,
+          category: "BOSS",
+          attackName: "Onda de Choque Sísmica",
+          damage: finalSwDamage,
+          enemyType: (activeBoss && activeBoss.bossId) ? `BOSS_${activeBoss.bossId}` : null
+        });
         triggerShake(9);
         playSfx('hit');
         const swColor = sw.color || (activeBoss && activeBoss.bossId === 3 ? '#00cec9' : '#e67e22');
@@ -95,12 +148,18 @@ export function updateBossHazards(dt, {
 
         const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
         if (dSq < tel.radius * tel.radius && player.bossIFrames <= 0) {
-          player.hp -= tel.damage;
-          player.bossIFrames = 22;
-          setLastAttackerName("Teleporte Carmesim");
+          const { finalDmg: dmgTaken } = applyHazardDamage(player, tel.damage, selectedHeroKey, 22);
+          const bName = (tel.boss && tel.boss.name) || (activeBoss && activeBoss.name) || "Lorde Vampírico";
+          setLastAttackerInfo({
+            name: bName,
+            category: "BOSS",
+            attackName: "Teleporte Carmesim",
+            damage: dmgTaken,
+            enemyType: (tel.boss && tel.boss.bossId) ? `BOSS_${tel.boss.bossId}` : 'BOSS_1'
+          });
           triggerShake(10);
           playSfx('hit');
-          addDamageText(player.x, player.y, `-${tel.damage}`, false, '#8e44ad');
+          addDamageText(player.x, player.y, `-${dmgTaken}`, false, '#8e44ad');
 
           if (player.hp <= 0) {
             player.hp = 0;
@@ -140,12 +199,18 @@ export function updateBossHazards(dt, {
 
         const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
         if (dSq < tel.radius * tel.radius && player.bossIFrames <= 0) {
-          player.hp -= tel.damage;
-          player.bossIFrames = 22;
-          setLastAttackerName("Erupção de Sangue");
+          const { finalDmg: dmgTaken } = applyHazardDamage(player, tel.damage, selectedHeroKey, 22);
+          const bName = (tel.boss && tel.boss.name) || (activeBoss && activeBoss.name) || "Lorde Vampírico";
+          setLastAttackerInfo({
+            name: bName,
+            category: "BOSS",
+            attackName: "Erupção de Sangue",
+            damage: dmgTaken,
+            enemyType: (tel.boss && tel.boss.bossId) ? `BOSS_${tel.boss.bossId}` : 'BOSS_1'
+          });
           triggerShake(8);
           playSfx('hit');
-          addDamageText(player.x, player.y, `-${tel.damage}`, false, '#ff1744');
+          addDamageText(player.x, player.y, `-${dmgTaken}`, false, '#ff1744');
 
           if (player.hp <= 0) {
             player.hp = 0;
@@ -176,13 +241,19 @@ export function updateBossHazards(dt, {
         createHitParticles(sparkX, sparkY, '#ffffff', 8);
 
         if (Math.abs(proj) <= halfLen && perpDist <= (tel.width || 34) && player.bossIFrames <= 0) {
-          player.hp -= tel.damage;
-          player.bossIFrames = 24;
-          setLastAttackerName("Fratura Dimensional");
+          const { finalDmg: dmgTaken } = applyHazardDamage(player, tel.damage, selectedHeroKey, 24);
+          const bName = (tel.boss && tel.boss.name) || (activeBoss && activeBoss.name) || "Thanatos, o Ceifador Supremo";
+          setLastAttackerInfo({
+            name: bName,
+            category: "BOSS",
+            attackName: "Fratura Dimensional",
+            damage: dmgTaken,
+            enemyType: (tel.boss && tel.boss.bossId) ? `BOSS_${tel.boss.bossId}` : 'BOSS_3'
+          });
           triggerShake(14);
           playSfx('hit');
           triggerHaptic('heavy');
-          addDamageText(player.x, player.y, `-${tel.damage}`, false, '#00cec9');
+          addDamageText(player.x, player.y, `-${dmgTaken}`, false, '#00cec9');
 
           if (player.hp <= 0) {
             player.hp = 0;
@@ -215,13 +286,19 @@ export function updateBossHazards(dt, {
 
         const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
         if (dSq < (tel.radius * tel.radius) && player.bossIFrames <= 0) {
-          player.hp -= tel.damage;
-          player.bossIFrames = 22;
-          setLastAttackerName("Meteoro do Vazio");
+          const { finalDmg: dmgTaken } = applyHazardDamage(player, tel.damage, selectedHeroKey, 22);
+          const bName = (tel.boss && tel.boss.name) || (activeBoss && activeBoss.name) || "Soberano do Abismo";
+          setLastAttackerInfo({
+            name: bName,
+            category: "BOSS",
+            attackName: "Meteoro do Vazio",
+            damage: dmgTaken,
+            enemyType: (tel.boss && tel.boss.bossId) ? `BOSS_${tel.boss.bossId}` : 'BOSS_4'
+          });
           triggerShake(12);
           playSfx('hit');
           triggerHaptic('heavy');
-          addDamageText(player.x, player.y, `-${tel.damage}`, false, '#e84393');
+          addDamageText(player.x, player.y, `-${dmgTaken}`, false, '#e84393');
 
           if (player.hp <= 0) {
             player.hp = 0;
@@ -249,12 +326,19 @@ export function updateBossHazards(dt, {
 
         const maxAngle = tel.arcHalf !== undefined ? tel.arcHalf : Math.PI * 0.52;
         if (cDist < tel.radius && angleDiff <= maxAngle && player.bossIFrames <= 0) {
-          player.hp -= tel.damage;
-          player.bossIFrames = 24;
-          setLastAttackerName((tel.boss && tel.boss.bossId === 1) ? "Garras Vampíricas" : "Corte de Foice Espectral");
+          const { finalDmg: dmgTaken } = applyHazardDamage(player, tel.damage, selectedHeroKey, 24);
+          const bName = (tel.boss && tel.boss.name) || (activeBoss && activeBoss.name) || "Chefe Supremo";
+          const atkName = (tel.boss && tel.boss.bossId === 1) ? "Garras Vampíricas" : "Corte de Foice Espectral";
+          setLastAttackerInfo({
+            name: bName,
+            category: "BOSS",
+            attackName: atkName,
+            damage: dmgTaken,
+            enemyType: (tel.boss && tel.boss.bossId) ? `BOSS_${tel.boss.bossId}` : (activeBoss ? `BOSS_${activeBoss.bossId}` : null)
+          });
           triggerShake(12);
           playSfx('hit');
-          addDamageText(player.x, player.y, `-${tel.damage}`, true, cleaveHitColor);
+          addDamageText(player.x, player.y, `-${dmgTaken}`, true, cleaveHitColor);
           createHitParticles(tel.x, player.y, cleaveHitColor, 16);
           const bossPushDist = 28 * (player.knockbackReceived !== undefined ? player.knockbackReceived : 1.0);
           player.x += Math.cos(playerAng) * bossPushDist;
@@ -288,9 +372,15 @@ export function updateBossHazards(dt, {
 
         const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
         if (dSq < tel.radius * tel.radius && player.bossIFrames <= 0) {
-          player.hp -= tel.damage;
-          player.bossIFrames = 22;
-          setLastAttackerName("Monólito Basáltico");
+          const { finalDmg: dmgTaken } = applyHazardDamage(player, tel.damage, selectedHeroKey, 22);
+          const bName = (tel.boss && tel.boss.name) || (activeBoss && activeBoss.name) || "Monólito Abissal";
+          setLastAttackerInfo({
+            name: bName,
+            category: "BOSS",
+            attackName: "Impacto Basáltico",
+            damage: dmgTaken,
+            enemyType: (tel.boss && tel.boss.bossId) ? `BOSS_${tel.boss.bossId}` : 'BOSS_2'
+          });
           triggerShake(10);
           playSfx('hit');
           addDamageText(player.x, player.y, `-${tel.damage}`, false, '#e67e22');
@@ -313,12 +403,18 @@ export function updateBossHazards(dt, {
 
         const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
         if (dSq < tel.radius * tel.radius && player.bossIFrames <= 0) {
-          player.hp -= tel.damage;
-          player.bossIFrames = 20;
-          setLastAttackerName("Fissura Tectônica");
+          const { finalDmg: dmgTaken } = applyHazardDamage(player, tel.damage, selectedHeroKey, 20);
+          const bName = (tel.boss && tel.boss.name) || (activeBoss && activeBoss.name) || "Monólito Abissal";
+          setLastAttackerInfo({
+            name: bName,
+            category: "BOSS",
+            attackName: "Fissura Tectônica",
+            damage: dmgTaken,
+            enemyType: (tel.boss && tel.boss.bossId) ? `BOSS_${tel.boss.bossId}` : 'BOSS_2'
+          });
           triggerShake(8);
           playSfx('hit');
-          addDamageText(player.x, player.y, `-${tel.damage}`, false, '#e67e22');
+          addDamageText(player.x, player.y, `-${dmgTaken}`, false, '#e67e22');
 
           if (player.hp <= 0) {
             player.hp = 0;
@@ -351,13 +447,19 @@ export function updateBossHazards(dt, {
 
         const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
         if (dSq < tel.radius * tel.radius && player.bossIFrames <= 0) {
-          player.hp -= tel.damage;
-          player.bossIFrames = 22;
-          setLastAttackerName("Bombardeio Abissal");
+          const { finalDmg: dmgTaken } = applyHazardDamage(player, tel.damage, selectedHeroKey, 22);
+          const bName = (tel.boss && tel.boss.name) || (activeBoss && activeBoss.name) || "Monólito Abissal";
+          setLastAttackerInfo({
+            name: bName,
+            category: "BOSS",
+            attackName: "Bombardeio Abissal",
+            damage: dmgTaken,
+            enemyType: (tel.boss && tel.boss.bossId) ? `BOSS_${tel.boss.bossId}` : 'BOSS_2'
+          });
           triggerShake(12);
           playSfx('hit');
           triggerHaptic('heavy');
-          addDamageText(player.x, player.y, `-${tel.damage}`, false, '#00cec9');
+          addDamageText(player.x, player.y, `-${dmgTaken}`, false, '#00cec9');
 
           if (player.hp <= 0) {
             player.hp = 0;
@@ -385,12 +487,18 @@ export function updateBossHazards(dt, {
 
       const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
       if (dSq < tel.radius * tel.radius && player.bossIFrames <= 0) {
-        player.hp -= tel.damage;
-        player.bossIFrames = 22;
-        setLastAttackerName(activeBoss ? activeBoss.name : "Cataclismo de Chefe");
+        const { finalDmg: dmgTaken } = applyHazardDamage(player, tel.damage, selectedHeroKey, 22);
+        const bName = (activeBoss && activeBoss.name) ? activeBoss.name : "Cataclismo de Chefe";
+        setLastAttackerInfo({
+          name: bName,
+          category: "BOSS",
+          attackName: "Cataclismo do Solo",
+          damage: dmgTaken,
+          enemyType: (activeBoss && activeBoss.bossId) ? `BOSS_${activeBoss.bossId}` : null
+        });
         triggerShake(10);
         playSfx('hit');
-        addDamageText(player.x, player.y, `-${tel.damage}`, false, '#e74c3c');
+        addDamageText(player.x, player.y, `-${dmgTaken}`, false, '#e74c3c');
 
         if (player.hp <= 0) {
           player.hp = 0;
@@ -431,9 +539,16 @@ export function updateBossHazards(dt, {
     const pdx = player.x - bp.x;
     const pdy = player.y - bp.y;
     if (player.bossIFrames <= 0 && (pdx * pdx + pdy * pdy) < (player.radius + bp.radius) ** 2) {
-      player.hp -= bp.damage;
-      player.bossIFrames = 18;
-      setLastAttackerName(bp.type === 'SOUL_SCYTHE' ? "Foice Giratória Espiritual" : "Projétil Abissal");
+      const { finalDmg: dmgTaken } = applyHazardDamage(player, bp.damage, selectedHeroKey, 18);
+      const bName = (bp.sourceBoss && bp.sourceBoss.name) || (activeBoss && activeBoss.name) || "Chefe do Abismo";
+      const atkName = bp.type === 'SOUL_SCYTHE' ? "Foice Giratória Espiritual" : "Projétil Abissal";
+      setLastAttackerInfo({
+        name: bName,
+        category: "BOSS",
+        attackName: atkName,
+        damage: dmgTaken,
+        enemyType: (bp.sourceBoss && bp.sourceBoss.bossId) ? `BOSS_${bp.sourceBoss.bossId}` : (activeBoss ? `BOSS_${activeBoss.bossId}` : null)
+      });
       triggerShake(8);
       playSfx('hit');
       const projHitColor = bp.color || '#e74c3c';

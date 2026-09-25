@@ -62,6 +62,7 @@ import {
   triggerDeath, 
   triggerVictory, 
   finalizeVictoryAndReturnToMenu,
+  markRunStartGold,
   openChestModal,
   setBossRewardContext,
   ensureBossUpgradeCount,
@@ -74,7 +75,7 @@ import { transitionToArenaTheme, resetEnvironment } from './render/environment.j
 import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
 import { initResponsive, layoutMetrics, GRAPHICS_QUALITY, getGraphicsQuality, setGraphicsQuality, resolveTargetDpr } from './core/responsive.js';
 import { clearSpriteCache } from './render/enemies/spriteCache.js';
-import { devCheats } from './systems/devtools.js';
+import { devCheats, getBossPhaseDefeatDamage } from './systems/devtools.js';
 import { clearActiveBarks } from './systems/barks.js';
 import { forceClosePause } from './ui/modals/pauseModal.js';
 import { updateDeathSequence, resetDeathSequence, skipDeathSequence } from './render/deathAnimation.js';
@@ -482,7 +483,11 @@ export function terminateMatch() {
   if (bloodFilter) bloodFilter.classList.remove('active');
 
   const victoryFade = document.getElementById('victory-fade-overlay');
-  if (victoryFade) victoryFade.classList.remove('active');
+  if (victoryFade) {
+    victoryFade.classList.remove('active');
+    victoryFade.style.display = 'none';
+    victoryFade.style.opacity = '0';
+  }
 
   const freezeOverlay = document.getElementById('freeze-overlay');
   if (freezeOverlay) freezeOverlay.style.display = 'none';
@@ -512,10 +517,12 @@ export function terminateMatch() {
     bossHud.classList.remove('enraged', 'hit-shake', 'hit-flash');
   }
   document.body.classList.remove('in-game');
+  document.body.classList.remove('boss-defeat-cinematic');
   const hud = document.getElementById('hud');
   if (hud) {
     hud.classList.add('hud-hidden');
     hud.classList.remove('boss-active');
+    hud.classList.remove('hud-cinematic-death');
     hud.style.setProperty('display', 'none', 'important');
     hud.style.display = 'none';
   }
@@ -541,17 +548,26 @@ export function terminateMatch() {
 
 export function resetGame() {
   terminateMatch();
+  markRunStartGold();
 
   gameState.isInMatch = true;
   gameState.isPaused = false;
   setLastTime(performance.now());
   document.body.classList.add('in-game');
+  document.body.classList.remove('boss-defeat-cinematic');
 
   const hud = document.getElementById('hud');
   if (hud) {
     hud.classList.remove('hud-hidden');
+    hud.classList.remove('hud-cinematic-death');
     hud.style.removeProperty('display');
     hud.style.display = 'flex';
+  }
+  const skillBtn = document.getElementById('skill-btn-container');
+  if (skillBtn) {
+    skillBtn.classList.remove('hud-hidden');
+    skillBtn.classList.remove('hud-cinematic-death');
+    skillBtn.style.removeProperty('display');
   }
 
   const waveCard = document.getElementById('hud-wave-card');
@@ -570,7 +586,6 @@ export function resetGame() {
   if (hud) {
     hud.classList.add('hud-cinematic-intro');
   }
-  const skillBtn = document.getElementById('skill-btn-container');
   if (skillBtn) {
     skillBtn.classList.add('hud-cinematic-intro');
   }
@@ -714,6 +729,9 @@ function update(dt) {
     }
 
     // Retorna imediatamente: durante a introdução o tempo não corre, inimigos não se movem e armas não disparam!
+    if (matchIntro.hudRevealed) {
+      updateSkillUI();
+    }
     return;
   }
 
@@ -798,6 +816,14 @@ function update(dt) {
       player.alchemistBuffTimer -= dt;
       if (Math.floor(frameCount) % 6 === 0) {
         createHitParticles(player.x + (Math.random() - 0.5) * 14, player.y + 6, '#d6a2e8', 1);
+      }
+    }
+
+    // Decaimento da Barreira Química de Valéria
+    if (player.tempShieldTimer > 0) {
+      player.tempShieldTimer -= dt;
+      if (player.tempShieldTimer <= 0) {
+        player.tempShield = 0;
       }
     }
 
@@ -908,6 +934,17 @@ function update(dt) {
   if (player.alchemistBuffTimer > 0) {
     currentSpeed *= 1.15;
   }
+  if (player.soulSpeedBuffTimer > 0) {
+    player.soulSpeedBuffTimer -= dt;
+    currentSpeed *= 1.20;
+  }
+  if (player.judgmentSlowTimer > 0) {
+    player.judgmentSlowTimer -= dt;
+    currentSpeed *= 0.75;
+  }
+  if (player.berserkTimer > 0) {
+    currentSpeed *= 1.20;
+  }
   player.speed = currentSpeed;
 
   const wasIgnisDashing = player.ignisDashDuration > 0;
@@ -970,6 +1007,7 @@ function update(dt) {
           impactDmg *= 1.25;
           if (e.isVulnerable) impactDmg *= 1.25;
         }
+        impactDmg = getBossPhaseDefeatDamage(e, impactDmg);
         e.hp -= impactDmg;
         e.hitFlash = 5;
         if (player.rolandImpactCooldown <= 0) {
@@ -1059,6 +1097,7 @@ function update(dt) {
           impactDmg *= 1.25;
           if (e.isVulnerable) impactDmg *= 1.25;
         }
+        impactDmg = getBossPhaseDefeatDamage(e, impactDmg);
         e.hp -= impactDmg;
         e.hitFlash = 4;
         addDamageText(e.x, e.y, Math.round(impactDmg), true, '#f1c40f');
@@ -1093,6 +1132,7 @@ function update(dt) {
             blastDmg *= 1.25;
             if (e.isVulnerable) blastDmg *= 1.25;
           }
+          blastDmg = getBossPhaseDefeatDamage(e, blastDmg);
           e.hp -= blastDmg;
           addDamageText(e.x, e.y, Math.round(blastDmg), true, '#e67e22');
           createHitParticles(e.x, e.y, '#f1c40f', 5);
@@ -1201,6 +1241,134 @@ function update(dt) {
     }
   }
 
+  // Barreira Física das Correntes do Purgatório (Thanatos - Fase 3)
+  // Confinamento perimetral em tempo real para impedir que investidas/ULTs (Sir Roland, Ignis) atravessem
+  if (activeBoss && activeBoss.purgatoryChains && activeBoss.purgatoryChains.active && (activeBoss.purgatoryChains.brokenCount || 0) < 1) {
+    const P = activeBoss.purgatoryChains;
+    // Se qualquer âncora foi destruída ou está com HP zerado, a jaula foi rompida: nenhuma barreira invisível deve reter o jogador
+    if (P.anchors && !P.anchors.some(a => !a.active || a.hp <= 0)) {
+      const reqDist = (player.radius || 14) + 4;
+      let contactOccurred = false;
+
+      // 1. Checa rompimento tático pelo Elo Fraturado durante Dash / ULT
+      if (P.shatteredLinkIndex !== undefined) {
+        const s = P.shatteredLinkIndex;
+        const a1 = P.anchors[s];
+        const a2 = P.anchors[(s + 1) % 4];
+        if (a1 && a2 && a1.active && a2.active) {
+          const dx = a2.x - a1.x, dy = a2.y - a1.y;
+          const l2 = dx * dx + dy * dy;
+          const t = l2 > 0 ? Math.max(0, Math.min(1, ((player.x - a1.x) * dx + (player.y - a1.y) * dy) / l2)) : 0;
+          const dLink = Math.hypot(player.x - (a1.x + t * dx), player.y - (a1.y + t * dy));
+          if (dLink <= reqDist + 16) {
+            const isDashing = (player.dashDuration > 0) || (player.ignisDashDuration > 0) || (player.invisTimer > 0) || player.isPhasing || ((player.iFrames || 0) > 0);
+            if (isDashing) {
+              P.brokenCount = 1;
+              playSfx('shatter');
+              playSfx('crit');
+              triggerShake(14);
+              triggerHaptic('heavy');
+              createHitParticles(player.x, player.y, '#00cec9', 24);
+              addDamageText(player.x, player.y, "ELO FRATURADO ROMPIDO!", true, '#00cec9');
+            }
+          }
+        }
+      }
+
+      // 2. Confinamento nas correntes intactas com deflexão de velocidade
+      if (P.brokenCount < 1 && P.anchors) {
+        for (let k = 0; k < 4; k++) {
+          const a1 = P.anchors[k];
+          const a2 = P.anchors[(k + 1) % 4];
+          if (!a1 || !a2 || !a1.active || !a2.active) continue;
+
+          const dx = a2.x - a1.x;
+          const dy = a2.y - a1.y;
+          const segLen = Math.hypot(dx, dy);
+          if (segLen < 1) continue;
+
+          // Só interage se o jogador estiver no intervalo longitudinal do segmento
+          const segProj = ((player.x - a1.x) * dx + (player.y - a1.y) * dy) / (segLen * segLen);
+          if (segProj < -0.05 || segProj > 1.05) continue;
+
+          const ux = dx / segLen;
+          const uy = dy / segLen;
+
+          const midX = (a1.x + a2.x) * 0.5;
+          const midY = (a1.y + a2.y) * 0.5;
+          let inNx = -uy, inNy = ux;
+          if (inNx * (P.cx - midX) + inNy * (P.cy - midY) < 0) {
+            inNx = -inNx;
+            inNy = -inNy;
+          }
+          const outNx = -inNx, outNy = -inNy;
+
+          const t = Math.max(0, Math.min(1, segProj));
+          const qx = a1.x + t * dx;
+          const qy = a1.y + t * dy;
+
+          const distIn = (player.x - qx) * inNx + (player.y - qy) * inNy;
+          if (distIn < reqDist) {
+            const correction = reqDist - distIn;
+            player.x += inNx * correction;
+            player.y += inNy * correction;
+            contactOccurred = true;
+
+            const vOut = (player.vx || 0) * outNx + (player.vy || 0) * outNy;
+            if (vOut > 0) { player.vx -= vOut * outNx; player.vy -= vOut * outNy; }
+
+            const pushOut = (player.pushVx || 0) * outNx + (player.pushVy || 0) * outNy;
+            if (pushOut > 0) { player.pushVx -= pushOut * outNx; player.pushVy -= pushOut * outNy; }
+
+            const dashOut = (player.dashVx || 0) * outNx + (player.dashVy || 0) * outNy;
+            if (dashOut > 0) { player.dashVx -= dashOut * outNx; player.dashVy -= dashOut * outNy; }
+
+            const ignisOut = (player.ignisDashVx || 0) * outNx + (player.ignisDashVy || 0) * outNy;
+            if (ignisOut > 0) { player.ignisDashVx -= ignisOut * outNx; player.ignisDashVy -= ignisOut * outNy; }
+          }
+        }
+
+        // 3. Salvaguarda Radial Global da Jaula (apenas ativa se todas as 4 correntes estiverem 100% intactas)
+        if ((P.brokenCount || 0) === 0 && !P.anchors.some(a => !a.active || a.hp <= 0)) {
+          const pdx = player.x - P.cx;
+          const pdy = player.y - P.cy;
+          const pDist = Math.hypot(pdx, pdy);
+          const maxPRadius = P.radius - reqDist;
+          if (pDist > maxPRadius && pDist > 0) {
+            player.x = P.cx + (pdx / pDist) * maxPRadius;
+            player.y = P.cy + (pdy / pDist) * maxPRadius;
+
+            const rNx = pdx / pDist;
+            const rNy = pdy / pDist;
+
+            const vDot = (player.vx || 0) * rNx + (player.vy || 0) * rNy;
+            if (vDot > 0) { player.vx -= vDot * rNx; player.vy -= vDot * rNy; }
+
+            const dashDot = (player.dashVx || 0) * rNx + (player.dashVy || 0) * rNy;
+            if (dashDot > 0) { player.dashVx -= dashDot * rNx; player.dashVy -= dashDot * rNy; }
+
+            const ignisDot = (player.ignisDashVx || 0) * rNx + (player.ignisDashVy || 0) * rNy;
+            if (ignisDot > 0) { player.ignisDashVx -= ignisDot * rNx; player.ignisDashVy -= ignisDot * rNy; }
+
+            contactOccurred = true;
+          }
+        }
+      }
+
+    if (contactOccurred) {
+      if (Math.floor(frameCount) % 4 === 0) {
+        createHitParticles(player.x, player.y, '#8e44ad', 3);
+        createHitParticles(player.x, player.y, '#ffffff', 2);
+      }
+      if (!P.lastContactSound || frameCount - P.lastContactSound > 18) {
+        P.lastContactSound = frameCount;
+        playSfx('forcefield');
+        triggerHaptic('light');
+      }
+    }
+  }
+}
+
   // Emit at the resolved world position, after arena collision and knockback.
   if (wasIgnisDashing) {
     traceIgnisStep(player.x, player.y, player.ignisDashDuration <= 0, player.facing);
@@ -1219,13 +1387,51 @@ function update(dt) {
   }
 
   // Câmera Cinematográfica Dinâmica e Letterbox
+  const bossDying = (activeBoss && (activeBoss.actionState === 'DEATH_COLLAPSE' || activeBoss.isDying))
+    ? activeBoss
+    : enemies.find(e => e.isBoss && (e.actionState === 'DEATH_COLLAPSE' || e.isDying));
+
+  const isBossDefeatCinematic = !!bossDying;
   const isBossSpawning = !!(activeBoss && activeBoss.actionState === 'SPAWN_INTRO');
-  cinematicCamera.isCinematic = isBossSpawning;
+  cinematicCamera.isCinematic = isBossSpawning || isBossDefeatCinematic;
 
   let focusX = player.x;
   let focusY = player.y;
 
-  if (isBossSpawning) {
+  if (isBossDefeatCinematic) {
+    focusX = bossDying.x;
+    focusY = bossDying.y;
+    cinematicCamera.returningToPlayer = false;
+    player.iFrames = Math.max(player.iFrames, 999);
+
+    if (typeof document !== 'undefined' && document.body && !document.body.classList.contains('boss-defeat-cinematic')) {
+      document.body.classList.add('boss-defeat-cinematic');
+      const hudEl = document.getElementById('hud');
+      if (hudEl) {
+        hudEl.classList.add('hud-hidden', 'hud-cinematic-death');
+        hudEl.style.setProperty('display', 'none', 'important');
+      }
+      const skillBtn = document.getElementById('skill-btn-container');
+      if (skillBtn) {
+        skillBtn.classList.add('hud-hidden', 'hud-cinematic-death');
+        skillBtn.style.setProperty('display', 'none', 'important');
+      }
+      const bossHud = document.getElementById('boss-hud');
+      if (bossHud) bossHud.style.display = 'none';
+      const altarHud = document.getElementById('blood-altar-hud');
+      if (altarHud) altarHud.style.display = 'none';
+      const altarBtn = document.getElementById('blood-altar-channel-btn');
+      if (altarBtn) altarBtn.style.display = 'none';
+      clearActiveBarks();
+    }
+
+    // Close-up cinematográfico dinâmico no Boss (Zoom in dramático na morte)
+    const defeatProg = bossDying.defeatProgress || 0;
+    const zoomMultiplier = 1.40 + 0.35 * Math.sin(Math.min(1.0, defeatProg * 1.25) * Math.PI * 0.5);
+    const targetDefeatZoom = baseCameraZoom * zoomMultiplier;
+    const zoomPanFactor = 1 - Math.pow(1 - 0.065, dt);
+    setCameraZoom(CAMERA_ZOOM + (targetDefeatZoom - CAMERA_ZOOM) * zoomPanFactor);
+  } else if (isBossSpawning) {
     focusX = activeBoss.x;
     focusY = activeBoss.y;
     cinematicCamera.returningToPlayer = true;
@@ -1235,7 +1441,12 @@ function update(dt) {
   const targetCamX = focusX - cameraViewW / 2;
   const targetCamY = focusY - cameraViewH / 2;
 
-  if (isBossSpawning) {
+  if (isBossDefeatCinematic) {
+    // Pan cinematográfico suave focalizando diretamente no centro do boss
+    const panFactor = 1 - Math.pow(1 - 0.07, dt);
+    camera.x += (targetCamX - camera.x) * panFactor;
+    camera.y += (targetCamY - camera.y) * panFactor;
+  } else if (isBossSpawning) {
     const panFactor = 1 - Math.pow(1 - 0.045, dt);
     camera.x += (targetCamX - camera.x) * panFactor;
     camera.y += (targetCamY - camera.y) * panFactor;
@@ -1261,7 +1472,7 @@ function update(dt) {
     camera.y = targetCamY;
   }
 
-  const targetLetterbox = isBossSpawning ? 1.0 : 0.0;
+  const targetLetterbox = (isBossSpawning || isBossDefeatCinematic) ? 1.0 : 0.0;
   cinematicCamera.letterboxProgress += (targetLetterbox - cinematicCamera.letterboxProgress) * (1 - Math.pow(1 - 0.08, dt));
 
   checkBossSchedule(seconds);

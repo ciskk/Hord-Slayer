@@ -33,6 +33,7 @@
 @import "./css/responsive/landscape.css";
 @import "./css/responsive/portrait.css";
 @import "./css/responsive/autofit.css";
+@import "./css/screens/victory.css";
 
 @keyframes urgentPulse {
   0% { transform: scale(1); filter: brightness(1); }
