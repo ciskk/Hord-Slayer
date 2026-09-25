@@ -1,4 +1,4 @@
-# ⚔️ Hord.io: Survivors Evolution
+# ⚔️ Hord Slayer
 
 <p align="center">
   <img src="https://img.shields.io/badge/Tecnologia-HTML5%20%7C%20Canvas%202D-E34F26?style=for-the-badge&logo=html5&logoColor=white" alt="HTML5 Canvas 2D" />
@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/Plataforma-Web%20%7C%20Mobile%20Ready-blueviolet?style=for-the-badge" alt="Mobile Ready" />
 </p>
 
-**Hord.io: Survivors Evolution** é um jogo de ação e sobrevivência em hordas (*bullet heaven / survivors-like*) desenvolvido inteiramente com **tecnologias web nativas (Vanilla JS + HTML5 Canvas 2D)**.
+**Hord Slayer** é um jogo de ação e sobrevivência em hordas (*bullet heaven / survivors-like*) desenvolvido inteiramente com **tecnologias web nativas (Vanilla JS + HTML5 Canvas 2D)**.
 
 Sem frameworks, sem bibliotecas externas e sem assets de imagem ou áudio pré-gravados: todo o pipeline gráfico, física de multidão, cenários, efeitos visuais e áudio são **gerados proceduralmente e sintetizados em tempo real**.
 
@@ -19,14 +19,15 @@ Sem frameworks, sem bibliotecas externas e sem assets de imagem ou áudio pré-g
 - **Motor Próprio em Vanilla JS**: Arquitetura modular orientada a subsistemas desacoplados em ES6 Modules, sem dependências circulares.
 - **Gerenciamento de Estado Centralizado (`src/state/`)**: Desacoplamento do loop principal através de módulos atômicos para estado de partida (`gameState.js`), coleções ativas na arena (`collections.js`) e despachador de eventos/causa mortis (`events.js`).
 - **Pipeline Gráfico com Múltiplos Canvas 2D**: Camada de jogo principal (`game-canvas`) combinada com camada de sobreposição (`banner-canvas`) para anúncios cinemáticos, banners de ondas e introduções de chefes sem sobreposição destrutiva. Suporte dinâmico a `devicePixelRatio` (limitado a 2.0x para nitidez e fluidez constante a 60 FPS).
-- **Renderizadores Especializados e Modulares**: Renderização procedural dedicada para cada um dos 5 heróis em `src/render/heroes/` e elementos de combate em `src/render/entities/` (hazards, projéteis, pickups, props e hordas).
+- **Otimizações Zero-GC & Offscreen Canvas Caching**: Ícones vetoriais de status (veneno, queimadura e congelamento) cacheados em telas offscreen de 24x24 (`ctx.drawImage`), eliminação de alocações com spread de objetos e transformações afins diretas em resíduos de morte.
 - **Spatial Hash Grid 2D**: Algoritmo de particionamento espacial em células de `75px` com chaves inteiras de 32-bit e pool estático de arrays para checagem otimizada de colisões entre centenas de entidades simultâneas com reuso total de memória (Zero Garbage Collection).
-- **Física de Multidão e Resolução Elástica**: Dinâmica de separação de massas (comuns, elites, minibosses e chefes) com hiperarmadura e imunidade a empurrões durante investidas especiais.
+- **Física de Multidão & Tokens de Ataque Melee**: Concorrência de golpes coordenada que limita o ataque simultâneo de hordas comuns a no máximo 6 monstros por frame (`MAX_MELEE_ATTACK_TOKENS`), prevenindo shotgunning injusto.
+- **Purga Dimensional & Fusão Dinâmica de Drops**: O Altar do Chefe Final condensa 100% das gemas de XP do mapa aberto em uma única Orbe Cósmica, resgata baús distantes e descarta detritos, poças e crateras. Abates contínuos contam com fusão de gemas de XP vizinhas (<38px) para eliminar picos de entidades.
 - **Códice do Bestiário (45 Criaturas Catalogadas)**: 10 monstros comuns de horda, 15 monstros expandidos, 16 minibosses com inteligência artificial e máquinas de estados finitos (FSM) exclusivas, além de 4 chefes monumentais com múltiplas fases de combate e falas cinemáticas dinâmicas (*Boss Barks*).
 - **Áudio Sintetizado em Tempo Real (Web Audio API)**: Efeitos sonoros procedurais gerados via osciladores, filtros em cascata e ruído branco, com auto-desbloqueio em qualquer primeiro gesto do usuário, restauração dinâmica pós-morte/stasis e escala harmônica na coleta de gemas, somado a feedback tátil (Vibration API).
 - **HUD Grim Cyber-Gothic & Modais Diegéticos**: Interface responsiva de alta fidelidade com medalhões vetoriais em bronze e ouro antigo, barras dinâmicas de HP/XP, supressão coordenada de cards de onda (`banner-suppressed`), layout otimizado para desktop e botão de ULT calibrado para toque móvel.
 - **Subsistema Unificado de Meta-Progressão (`src/systems/progression.js`)**: Persistência no `localStorage` de ouro/almas, árvore de talentos do Astrolábio com 100% de reembolso, monumentos de melhor partida, biometria por herói, grimório de 25 conquistas e bestiário.
-- **Análise Forense de Causa Mortis**: Rastreamento detalhado da causa da morte com identificação do agressor (Chefe, Miniboss, Elite, Horda, Perigo Ambiental ou Projétil), dano sofrido e dica tática específica para a próxima tentativa.
+- **Análise Forense de Causa Mortis & Dicas Táticas**: Rastreamento detalhado da causa da morte com identificação do agressor (Chefe, Miniboss, Elite, Horda, Perigo Ambiental ou Projétil), dano sofrido e dicas táticas contextuais específicas para cada ataque fatal.
 - **Eventos Mundiais & Pactos de Risco**: Altar de Sangue que surge proceduralmente com círculo ritual de contenção, acelerando a horda em 2.0x em troca de baús lendários garantidos.
 - **Controles Híbridos & Modos de Joystick**: Suporte responsivo com alternância dinâmica para teclado/mouse (Desktop) e Joystick virtual analógico (Mobile nos modos *Flutuante* e *Dinâmico*).
 
@@ -53,11 +54,11 @@ Cada sobrevivente possui arquétipo, arma inicial, habilidade ativa com atributo
 
 | Sobrevivente | Título / Arquétipo | Arma Inicial | Habilidade Ativa | Estilo Tático |
 |---|---|---|---|---|
-| **Sir Roland** | O Paladino | Martelo Sagrado | Investida Sagrada | Tanque retaliador: reduz 20% do dano corpo a corpo recebido e reflete 50% de volta aos agressores. |
-| **Ignis** | A Piromante | Cajado da Tormenta | Passo Ígneo | DPS de artilharia ígnea: acertos críticos aplicam combustão residual contínua que drena vida ao longo do tempo. |
+| **Sir Roland** | O Paladino | Martelo Sagrado | Investida Sagrada | Tanque retaliador: reduz 20% do dano corpo a corpo recebido e reflete 50% de volta aos agressores. Sua investida desfere 2.8x de dano de impacto com ondas consagradas. |
+| **Ignis** | A Piromante | Cajado da Tormenta | Passo Ígneo | DPS de artilharia ígnea: acertos críticos aplicam combustão residual contínua. Seu avanço flamejante atinge alvos com 3.4x de dano e explosão final de magma. |
 | **Kael** | O Andarilho Sombrio | Lâminas Espirituais | Manto de Fumaça | Assassino crítico: desfere 2.0x de dano em oponentes com <35% de vida (1.5x contra chefes/elites) e invisibilidade com 100% de crítico e velocidade dobrada. |
 | **Kragdor** | O Bárbaro Furioso | Machado Giratório | Rugido Ancestral | Lutador sustentável: rotação orbital destrutiva, roubo de vida (0.5% em chefes/elites) e atordoamento em área. |
-| **Valéria** | A Alquimista Cáustica | Frascos Cáusticos | Reagente Volátil | Controle e corrosão: poças violetas que dissolvem projéteis inimigos, causam 70% de lentidão, acumulam corrosão (+30% dano sofrido) e concedem cura e velocidade contínuas à Valéria. |
+| **Valéria** | A Alquimista Cáustica | Frascos Cáusticos | Reagente Volátil | Controle e corrosão glass cannon: dano base aprimorado (72.56), poças violetas que dissolvem tiros, desaceleram em 70%, acumulam corrosão (+30% dano sofrido) e concedem cura e velocidade. |
 
 ---
 
@@ -85,8 +86,8 @@ O jogo progride através de 10 ondas de hordas cronometradas, 16 tipos de minibo
 |---|---|---|
 | **Lorde Vampírico** | *Pátio do Solar Abandonado* | Telegrafias de corte com foice e onda frontal de sangue, investida em névoa espectral, enxames de morcegos de longo alcance, gêiseres de sangue com adagas balísticas e repulsão tática. |
 | **Monólito Abissal** | *Cratera de Basalto* | Litocistos Tectônicos orbitais destrutíveis, fontes termais de cura (+25 HP), esmagamento frontal pesado, erupção do epicentro, salva vulcânica de lanças de basalto das manoplas, fendas tectônicas cruzadas em X, onda de fendas, chuva de meteoros e vórtice da caldeira. |
-| **Thanatos, o Ceifador Supremo** | *Pátio da Abadia em Ruínas* | Visual original com asas espectrais, auréola astral e foice ornamental. Lanternas de Almas com colapso de 2.0s, foice bumerangue, teleporte e vórtice colhedor. Três novos ataques de longo alcance: Lanças do Sepulcro (salvas em trajetórias fixas), Cruz do Juízo (dois braços de execução sequenciais) e Coro dos Condenados (anel de almas com abertura de fuga). |
-| **Soberano do Abismo** | *Horizonte do Vazio* | **3 fases de combate**, introdução cinematográfica em 4 atos, barreira física de contenção do Altar, horizonte de eventos contrátil com asfixia, Âncoras Cósmicas com mitigação e regeneração de vida, Santuários Celestiais de cura, crucifixo giratório de feixes, corte dimensional, bombardeio abissal e sequência dramática de derrota (DEATH_COLLAPSE) em 4 atos com Supernova Dourada. |
+| **Thanatos, o Ceifador Supremo** | *Pátio da Abadia em Ruínas* | Visual original com asas espectrais, auréola astral e foice ornamental. Lanternas de Almas com colapso de 2.0s, foice bumerangue, teleporte e vórtice colhedor. Três ataques de longo alcance: Lanças do Sepulcro, Cruz do Juízo e Coro dos Condenados (anel veloz de 36 a 48 almas a 4.33 de velocidade com abertura estreita de fuga de 30°). |
+| **Soberano do Abismo** | *Horizonte do Vazio* | **3 fases de combate**, introdução cinematográfica em 4 atos com enquadramento dinâmico de câmera e cartela tipográfica, anatomia com 12 tentáculos em camadas 3D (dorsal/ventral) com física inercial de efeito chicote, olho observador com rastreamento contínuo, micro-saccades e membrana nictitante, domo com estrelas internas e sangramento cósmico por fase, agulhas em suspensão magnética, Turbilhão com rotação de carapaça e afterimages anatômicas, Torrente Orbital dos Quatro Horizontes com Disparos Abissais, barreira de contenção do Altar, horizonte de eventos contrátil, Âncoras Cósmicas, Santuários Celestiais e colapso fatal (DEATH_COLLAPSE) com Supernova Dourada. |
 
 ---
 
@@ -138,7 +139,7 @@ Interface monumental com navegação pan & zoom interativa, anéis de armilar e 
 Organização modular orientada a separação de responsabilidades, estado centralizado, pipeline gráfico Canvas 2D segregado e arquitetura desacoplada de chefes:
 
 ```text
-Hord.io/
+Hord-Slayer/
 ├── index.html                  # Interface do DOM, HUD, modais e canvases (game-canvas e banner-canvas)
 ├── style.css                   # Ponto de entrada e importação do Design System modular
 ├── README.md                   # Documentação oficial do projeto
@@ -148,8 +149,8 @@ Hord.io/
 │   ├── components/             # Botões góticos e estrutura base de modais
 │   ├── devtools/               # Estilização do console secreto de desenvolvedor
 │   ├── hud/                    # HUD de combate em alta fidelidade e falas de chefes (barks)
-│   ├── responsive/             # Regras de adaptação para landscape e portrait móvel
-│   └── screens/                # Telas modais (seleção, astrolábio, baú, bestiário, pausa, morte, etc.)
+│   ├── responsive/             # Regras de adaptação para landscape, portrait e auto-fit
+│   └── screens/                # Telas modais (seleção, astrolábio, baú, bestiário, pausa, morte, vitória)
 │
 └── src/
     ├── main.js                 # Ponto de entrada, loop principal, inicialização e orquestração do jogo
@@ -161,12 +162,18 @@ Hord.io/
     │
     ├── config/                 # Catálogos de dados, balanceamento e lore
     │   ├── achievements.js     # Catálogo de 25 conquistas e mapa de desbloqueio de heróis
+    │   ├── arenas.js           # Configurações de biomas, temas, trilhas e paletas cromáticas
+    │   ├── axes.js             # Parâmetros balísticos do machado giratório de Kragdor
     │   ├── bestiary.js         # Códice do bestiário (45 criaturas catalogadas, fraquezas e lore)
     │   ├── characters.js       # Atributos, armas, paletas cromáticas e passivas dos 5 sobreviventes
     │   ├── enemies.js          # Configuração de monstros comuns, 16 minibosses e arquichefes
+    │   ├── enemyDeaths.js      # Perfis de morte, decomposição, física e estilhaços de criaturas
     │   ├── heroProfiles.js     # Perfis narrativos, títulos ancestrais e status dos heróis
     │   ├── items.js            # Registro único de armas, passivas universais e matriz de sinergias
+    │   ├── kaelUlt.js          # Configuração e parâmetros da ULT Manto de Fumaça de Kael
+    │   ├── kragdorUlt.js       # Configuração e parâmetros do Rugido Ancestral de Kragdor
     │   ├── squads.js           # Formações táticas pré-definidas de hordas
+    │   ├── stalkerDash.js      # Parâmetros de investida espectral do Spectral Stalker
     │   ├── talents.js          # Definições declarativas da árvore de talentos (Astrolábio Cósmico)
     │   └── upgrades.js         # Lógica de seleção e sorteio ponderado de cartas de tarô
     │
@@ -176,7 +183,9 @@ Hord.io/
     │   │   └── sfxRegistry.js  # Catálogo com 48 sintetizadores sonoros procedurais
     │   ├── input.js            # Mapeamento unificado de teclado, mouse, touch e joysticks móveis
     │   ├── math.js             # Funções vetoriais, interpolação, ângulos e colisões
+    │   ├── perfMetrics.js      # Telemetria em tempo real, monitoramento zero-GC e baseline de FPS
     │   ├── responsive.js       # Métricas de layout dinâmico, DPR (limitado a 2.0x) e safe areas
+    │   ├── responsiveAutoFit.js # Motor adaptativo smart auto-fit para viewport e displays variados
     │   └── spatialGrid.js      # Spatial Hash Grid 2D (células de 75px, chaves 32-bit e pool estático)
     │
     ├── entities/               # Lógica de entidades de jogo e inteligências artificiais
@@ -189,7 +198,7 @@ Hord.io/
     │   │   ├── vampireLord/    # Módulo desacoplado do Lorde Vampírico (Boss 1)
     │   │   ├── abyssalMonolith/ # Módulo desacoplado do Monólito Abissal (Boss 2)
     │   │   ├── supremeReaper/  # Módulo desacoplado do Ceifador Supremo Thanatos (Boss 3)
-    │   │   └── abyssSovereign/ # Módulo desacoplado do Soberano do Abismo (Boss 4)
+    │   │   └── abyssSovereign/ # Módulo do Soberano do Abismo (Boss 4: FSM, física chicote, intro e render)
     │   │
     │   ├── enemies/            # Spawners e máquinas de estados de inimigos
     │   │   ├── minibossAI.js   # Fachada de retrocompatibilidade para controladores dos 16 minibosses
@@ -205,15 +214,26 @@ Hord.io/
     │   ├── bestRunPreview.js   # Renderização procedural do monumento da melhor partida
     │   ├── bestiaryPreview.js  # Desenho dinâmico das criaturas no códice do bestiário
     │   ├── characterPreview.js # Desenho procedural dos heróis e armas na tela de seleção
+    │   ├── creatureStyle.js    # Estilo base, deformações cinemáticas e renderização de morte
+    │   ├── deathAnimation.js   # Sequência cinematográfica de morte do herói e necrofiltro
+    │   ├── desktopHeroStage.js # Pedestal 3D procedural e iluminação de palco no desktop
     │   ├── enemiesRenderer.js  # Fachada de retrocompatibilidade para monstros comuns e elites
-    │   ├── enemies/            # Renderizadores procedurais dedicados para cada uma das 24 criaturas comuns
+    │   ├── enemies/            # Renderizadores procedurais dedicados para cada criatura comum
     │   ├── environment.js      # Fachada e orquestrador de solo, transições de biomas e atmosfera
     │   ├── groundCracks.js     # Fissuras de impacto, crateras e fendas de magma no solo
+    │   ├── ignisUlt.js         # Efeitos de fogo e labaredas da ULT Passo Ígneo de Ignis
+    │   ├── joystickRenderer.js # Desenho do joystick virtual analógico e botões de toque móvel
     │   ├── kaelRenderer.js     # Fachada de compatibilidade para o renderer de Kael
+    │   ├── kaelUlt.js          # Efeitos visuais de fumaça e vultos da ULT Manto de Fumaça
+    │   ├── kragdorAxes.js      # Renderizador dos machados voadores e giratórios de Kragdor
+    │   ├── kragdorUlt.js       # Onda de choque sonora da ULT Rugido Ancestral de Kragdor
     │   ├── minibossesRenderer.js # Fachada de retrocompatibilidade para os 16 minibosses
     │   ├── minibosses/         # Renderizadores procedurais dedicados para cada um dos 16 minibosses
     │   ├── playerRenderer.js   # Fachada e renderização de auras sagradas, orbitais e machados
     │   ├── renderer.js         # Orquestrador gráfico principal (câmera, shake, camadas e partículas)
+    │   ├── rolandUlt.js        # Efeitos de rastro consagrado da Investida Sagrada de Roland
+    │   ├── ultButtonRenderer.js # Botão Canvas 2D dinâmico de ULT com cooldown e prontidão
+    │   ├── valeriaUlt.js       # Frascos e névoa cáustica da ULT Reagente Volátil de Valéria
     │   │
     │   ├── entities/           # Renderizadores especializados de elementos de arena
     │   │   ├── hazardsRenderer.js # Poças ácidas, vórtices, ondas de choque e telegrafias
@@ -223,6 +243,7 @@ Hord.io/
     │   │
     │   ├── environment/        # Módulos especializados de cenários e arenas surreais
     │   │   ├── abyssArena.js   # Renderizador surreal do Altar do Vazio e Soberano do Abismo
+    │   │   ├── naturalTerrain.js # Terreno procedural, biomas naturais e cache de texturas
     │   │   └── biomeProps/     # Despacho O(1) e desenho procedural de props por bioma
     │   │       ├── ivoryOssuary.js    # Candelabros tombados, mosaicos e anjos decapitados
     │   │       ├── crimsonSalt.js     # Espículas salinas, fontes eólicas e salmoura carmesim
@@ -235,12 +256,17 @@ Hord.io/
     │   │       └── index.js           # Tabela de despacho O(1) de props de arenas
     │   │
     │   ├── heroes/             # Renderizadores dedicados para cada um dos 5 sobreviventes
-    │   │   ├── ignisRenderer.js # Efeitos de fogo, cajado estelar e manto da Piromante
-    │   │   ├── index.js        # Despachante unificado de renderização de heróis
-    │   │   ├── kaelRenderer.js # Manto espectral em farrapos, adagas duplas e capuz de Kael
+    │   │   ├── ignisRenderer.js   # Efeitos de fogo, cajado estelar e manto da Piromante
+    │   │   ├── index.js           # Despachante unificado de renderização de heróis
+    │   │   ├── kaelRenderer.js    # Manto espectral em farrapos, adagas duplas e capuz de Kael
+    │   │   ├── kragdorAxe.js      # Geometria vetorial do machado de guerra ancestral
     │   │   ├── kragdorRenderer.js # Tatuagens rúnicas, machado giratório e fúria do Bárbaro
-    │   │   ├── rolandRenderer.js # Armadura de placas, elmo sagrado e martelo do Paladino
+    │   │   ├── rolandRenderer.js  # Armadura de placas, elmo sagrado e martelo do Paladino
+    │   │   ├── skinMaterials.js   # Paletas cromáticas e sombreamento procedural de peles
     │   │   └── valeriaRenderer.js # Frascos de vidro, reagentes cáusticos e vidrarias da Alquimista
+    │   │
+    │   ├── projectiles/        # Renderizadores procedurais especializados de projéteis
+    │   │   └── abyssalBolt.js  # Disparo relativístico de vácuo e plasma ciano com núcleo estelar
     │   │
     │   └── worldEvents/        # Eventos mundiais dinâmicos e mecânicas contextuais
     │       └── bloodAltarRenderer.js # Desenho do Altar de Sangue, círculos de sacrifício e HUD
@@ -248,17 +274,19 @@ Hord.io/
     ├── systems/                # Regras e subsistemas de jogo
     │   ├── barks.js            # Provocações e falas cinemáticas dos chefes em combate
     │   ├── bossHazards.js      # Perigos de arena (ondas de choque, projéteis e telegrafias)
-    │   ├── combat.js           # Resolução de ataques, sangramento, atordoamento e dano
+    │   ├── bossPhaseCinematic.js # Cinemáticas de transição de fase de chefes com slow motion
+    │   ├── combat.js           # Resolução de ataques, sangramento, atordoamento e tokens de dano
     │   ├── devtools.js         # Painel de desenvolvedor, testes e comandos rápidos (`W + 5`)
     │   ├── enemyLifecycle.js   # Fachada modular para ciclo de vida e IA de monstros
     │   ├── enemyLifecycle/     # Subsistema modular de ciclo de vida (status, morte, comportamentos)
     │   │   ├── behaviors/      # 33 módulos especializados de IA e despacho O(1) de monstros
     │   │   ├── deathHandler.js # Resolução de abates, drops, baús, Bestiário e chefes
     │   │   ├── index.js        # Orquestrador do laço principal de atualização de inimigos
+    │   │   ├── knockback.js    # Dinâmica vetorial de repulsão física e atenuação inercial
     │   │   └── statusEffects.js # Knockback suave, timers de emerge e DoTs cáusticos
     │   ├── fieldEffects.js     # Efeitos de terreno, poças ácidas e desaceleração
     │   ├── physics.js          # Separação elástica de multidão e colisões de corpos
-    │   ├── pickups.js          # Coleta e atração gravitacional de gemas, ouro e baús
+    │   ├── pickups.js          # Coleta de gemas, fusão de XP e Purga Dimensional de Arena
     │   ├── progression.js      # Subsistema central de meta-progressão, persistência e recordes
     │   ├── projectiles.js      # Balística, projéteis teleguiados e regras de adrenalina melee
     │   ├── ui.js               # Fachada de interface para retrocompatibilidade
@@ -266,20 +294,22 @@ Hord.io/
     │   └── worldEvents.js      # Eventos mundiais dinâmicos (Altar de Sangue e pactos rituais)
     │
     └── ui/                     # Componentes e controladores de interface
+        ├── cardIcons.js        # Gerador procedural de glifos para as cartas de Tarô e armas
         ├── hudController.js    # Controle da HUD de combate, vitais, banners e cooldowns
         ├── icons.js            # Gerador procedural de ícones SVG e glifos rúnicos
         ├── uiManager.js        # Gerenciador central da UI, fiação de modais e escutas de eventos DOM
         └── modals/             # Modais modulares desacoplados
-            ├── achievementsModal.js # Grimório de Conquistas e Monumento da Maior Jornada
-            ├── bestiaryModal.js     # Códice do Bestiário das Trevas e preview procedural
-            ├── bossSelectModal.js   # Painel de seleção de chefes para duelo
+            ├── achievementsModal.js   # Grimório de Conquistas e Monumento da Maior Jornada
+            ├── bestiaryModal.js       # Códice do Bestiário das Trevas e preview procedural
+            ├── bossSelectModal.js     # Painel de seleção de chefes para duelo
             ├── characterSelectModal.js # Tela monumental de seleção dos 5 heróis
-            ├── chestModal.js        # Abertura de baús de tesouro e fusões lendárias
-            ├── codexModal.js        # Fachada de retrocompatibilidade do Códice Ancestral
-            ├── gameOverModal.js     # Tela de derrota e necrofiltro com resumo de run
-            ├── pauseModal.js        # Estase temporal, inventário pausado e opções
-            ├── talentsModal.js      # Astrolábio Cósmico e Árvore Rúnica de Talentos
-            └── upgradeModal.js      # Cartas de Tarô Arcano no avanço de nível
+            ├── chestModal.js          # Abertura de baús de tesouro e fusões lendárias
+            ├── codexModal.js          # Fachada de retrocompatibilidade do Códice Ancestral
+            ├── gameOverModal.js       # Tela de derrota, dicas táticas e necrofiltro
+            ├── pauseModal.js          # Estase temporal, inventário pausado e opções
+            ├── talentsModal.js        # Astrolábio Cósmico e Árvore Rúnica de Talentos
+            ├── upgradeModal.js        # Cartas de Tarô Arcano no avanço de nível
+            └── victoryResults.js      # Resumo consagrado de vitória e biometria final
 ```
 
 ---

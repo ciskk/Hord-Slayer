@@ -355,7 +355,8 @@ export function triggerDeath() {
     killerCategory: (deathContext && deathContext.category) ? deathContext.category : 'HORDE',
     killerAttack: (deathContext && deathContext.attackName) ? deathContext.attackName : 'Golpe Melee Fatal',
     lethalDmg: (deathContext && deathContext.damage > 0) ? `-${deathContext.damage} Dano` : 'Golpe Fatal',
-    enemyType: deathContext ? deathContext.enemyType : null
+    enemyType: deathContext ? deathContext.enemyType : null,
+    tacticTip: (deathContext && deathContext.tacticTip) ? deathContext.tacticTip : ''
   };
 
   // Dispara a sequência cinematográfica dramática (zoom, queda, evaporação e Nova)
@@ -449,7 +450,7 @@ export function openDeathModalReal() {
 
   const tacticDescElem = document.getElementById('death-tactic-text');
   if (tacticDescElem) {
-    tacticDescElem.innerText = tacticText;
+    tacticDescElem.innerText = (pendingDeathPayload && pendingDeathPayload.tacticTip) || (deathContext && deathContext.tacticTip) || tacticText;
   }
 
   // 5. Estatísticas da Partida (Biometria em Badges Transparentes)
