@@ -337,6 +337,11 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0, forcedAngle = n
     if (enemies.some(e => e.baseType === 'STALKER' && e.hp > 0)) return;
     count = Math.min(count, 1);
   }
+  // Redução de 50% na chance de spawn do Baú Mímico e limite de 1 por emboscada
+  if (typeKey === 'CURSED_CHEST') {
+    if (Math.random() < 0.50) return;
+    count = Math.min(count, 1);
+  }
   const def = ENEMY_TYPES[typeKey] || ENEMY_TYPES.ZOMBIE;
   const minutes = frameCount / 3600;
   const scaleFactor = 1.0 + (minutes * 0.28);
@@ -393,6 +398,10 @@ export function spawnSquad(squadKey, eliteChance = 0, forcedAngle = null) {
       continue;
     }
     if (isKaelInvisible() && isWormEnemyType(member.type)) {
+      continue;
+    }
+    // Redução de 50% na chance de spawn do Baú Mímico na formação do esquadrão
+    if (member.type === 'CURSED_CHEST' && Math.random() < 0.50) {
       continue;
     }
     const def = ENEMY_TYPES[member.type] || ENEMY_TYPES.ZOMBIE;

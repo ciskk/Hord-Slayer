@@ -560,8 +560,24 @@ export function handleEnemyDeath(e, i, ctx) {
       addDamageText(e.x, e.y - 12, `+${bonusGold} OURO!`, false, '#f1c40f');
     } else if (e.baseType === 'CURSED_CHEST') {
       addPersistentGold(15);
-      spawnChest(e.x, e.y, 'MINI_BOSS');
-      addDamageText(e.x, e.y - 15, "+15 OURO & BAÚ!", true, '#e056fd');
+      // Redução de 70% na chance de drop de baú (de 100% para 30%)
+      const droppedChest = Math.random() < 0.30;
+      if (droppedChest) {
+        spawnChest(e.x, e.y, 'MINI_BOSS');
+        addDamageText(e.x, e.y - 15, "+15 OURO & BAÚ!", true, '#e056fd');
+      } else {
+        addDamageText(e.x, e.y - 15, "+15 OURO!", false, '#f1c40f');
+      }
+      const gCfg = getGemConfig(e.xp);
+      gems.push({
+        x: e.x,
+        y: e.y,
+        radius: gCfg.radius,
+        color: gCfg.color,
+        value: e.xp,
+        isSuper: gCfg.isSuper,
+        pulseOffset: Math.random() * Math.PI * 2
+      });
     } else if (e.baseType === 'TRAIL_CRAWLER') {
       let merged = false;
       for (let pIdx = acidPuddles.length - 1; pIdx >= 0; pIdx--) {
