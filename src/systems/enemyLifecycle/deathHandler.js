@@ -20,7 +20,7 @@ import {
 import { recordCreatureKill } from '../../config/bestiary.js';
 import { ENEMY_TYPES } from '../../config/enemies.js';
 import { addPersistentGold, addXP, getPersistentGold, selectedHeroKey } from '../../entities/player.js';
-import { getGemConfig } from '../pickups.js';
+import { getGemConfig, spawnOrMergeGem } from '../pickups.js';
 import { onBossDefeated, setFirstBossKilled } from '../waves.js';
 import { clearActiveBarks } from '../barks.js';
 import { getNeighborIndices } from '../../core/spatialGrid.js';
@@ -568,16 +568,7 @@ export function handleEnemyDeath(e, i, ctx) {
       } else {
         addDamageText(e.x, e.y - 15, "+15 OURO!", false, '#f1c40f');
       }
-      const gCfg = getGemConfig(e.xp);
-      gems.push({
-        x: e.x,
-        y: e.y,
-        radius: gCfg.radius,
-        color: gCfg.color,
-        value: e.xp,
-        isSuper: gCfg.isSuper,
-        pulseOffset: Math.random() * Math.PI * 2
-      });
+      spawnOrMergeGem(gems, e.x, e.y, e.xp);
     } else if (e.baseType === 'TRAIL_CRAWLER') {
       let merged = false;
       for (let pIdx = acidPuddles.length - 1; pIdx >= 0; pIdx--) {
@@ -597,16 +588,7 @@ export function handleEnemyDeath(e, i, ctx) {
         acidPuddles.push({ x: e.x, y: e.y, radius: 24, life: 160, maxLife: 160, isCaustic: true, isFire: false });
       }
     } else {
-      const gCfg = getGemConfig(e.xp);
-      gems.push({
-        x: e.x,
-        y: e.y,
-        radius: gCfg.radius,
-        color: gCfg.color,
-        value: e.xp,
-        isSuper: gCfg.isSuper,
-        pulseOffset: Math.random() * Math.PI * 2
-      });
+      spawnOrMergeGem(gems, e.x, e.y, e.xp);
     }
 
     if (e.baseType === 'MIRROR_BANSHEE' && !e.isDecoy) {

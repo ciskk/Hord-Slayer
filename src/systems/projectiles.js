@@ -3,7 +3,7 @@
  * Subsistema Balístico, Poças Ambientais e Paridade de Dano Melee (Fase 3 e 5).
  */
 import { player, selectedHeroKey } from '../entities/player.js';
-import { enemies, bullets, enemyBullets, acidPuddles, bossShockwaves, MAX_CONCURRENT_ENEMY_BULLETS, canSpawnEnemyBullet } from '../state/collections.js';
+import { enemies, bullets, enemyBullets, acidPuddles, bossShockwaves, MAX_CONCURRENT_ENEMY_BULLETS, canSpawnEnemyBullet, activeBoss } from '../state/collections.js';
 import { triggerShake } from '../state/gameState.js';
 import { setLastAttackerInfo } from '../state/events.js';
 import { addDamageText, createHitParticles, applyFireBurn, applyFreeze } from './combat.js';
@@ -20,6 +20,12 @@ export { bullets, enemyBullets, acidPuddles, MAX_CONCURRENT_ENEMY_BULLETS, canSp
  * Atualiza projéteis do jogador e dos inimigos, aplicando regras de adrenalina melee (+25% se <= 130px).
  */
 export function updateProjectiles(dt) {
+  // Contexto de Culling Radial para a Arena do Boss Final (Fase 3)
+  const isFinalBoss = activeBoss && (activeBoss.isFinalBoss || activeBoss.arenaCenterX !== undefined);
+  const arenaCullDistSq = isFinalBoss ? ((activeBoss.arenaRadius || 620) + 40) ** 2 : 0;
+  const acx = isFinalBoss ? activeBoss.arenaCenterX : 0;
+  const acy = isFinalBoss ? activeBoss.arenaCenterY : 0;
+
   // 1. Projéteis do Jogador
   let bulletWriteIdx = 0;
   for (let i = 0; i < bullets.length; i++) {
@@ -57,6 +63,15 @@ export function updateProjectiles(dt) {
 
     b.x += (b.vx || 0) * dt;
     b.y += (b.vy || 0) * dt;
+
+    // Culling Radial Restrito: Descarte imediato de projéteis fora da arena do Boss Final
+    if (isFinalBoss) {
+      const bdx = b.x - acx;
+      const bdy = b.y - acy;
+      if (bdx * bdx + bdy * bdy > arenaCullDistSq) {
+        continue;
+      }
+    }
 
     if (b.life <= 0) {
       if (b.type === 'POTION') {
@@ -419,6 +434,15 @@ export function updateProjectiles(dt) {
 
     eb.x += eb.vx * dt;
     eb.y += eb.vy * dt;
+
+    // Culling Radial Restrito: Descarte imediato de projéteis inimigos fora da arena do Boss Final
+    if (isFinalBoss) {
+      const ebdx = eb.x - acx;
+      const ebdy = eb.y - acy;
+      if (ebdx * ebdx + ebdy * ebdy > arenaCullDistSq) {
+        continue;
+      }
+    }
 
     if (eb.life <= 0) {
       if (eb.isWebCocoon) {

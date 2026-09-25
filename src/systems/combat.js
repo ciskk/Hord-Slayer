@@ -5,7 +5,7 @@
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { triggerDeath } from './ui.js';
 import { triggerShake } from '../state/gameState.js';
-import { bossShockwaves } from '../state/collections.js';
+import { bossShockwaves, activeBoss } from '../state/collections.js';
 import { setLastAttackerInfo } from '../state/events.js';
 import { selectedHeroKey, player } from '../entities/player.js';
 import { getEnemyDeathProfile } from '../config/enemyDeaths.js';
@@ -17,6 +17,11 @@ export const damageTexts = [];
 export const particles = [];
 export const bloodSplats = [];
 export const dyingEnemies = [];
+
+export function clearCombatVisuals() {
+  bloodSplats.length = 0;
+  dyingEnemies.length = 0;
+}
 
 export function addDyingEnemy(e, hitAngle = 0) {
   if (!e || e.isBoss || e.isBossSubTarget) return;
@@ -33,8 +38,8 @@ export function addDyingEnemy(e, hitAngle = 0) {
   const rotSign = Math.sin(hitAngle) >= 0 ? 1 : -1;
   const initialVRot = profile.spin * rotSign;
 
-  // Mobile/Performance Hard Cap: limit concurrent dying enemies to 60
-  if (dyingEnemies.length >= 60) {
+  // Mobile/Performance Hard Cap: limita cadáveres ativos a 24 para evitar sobrecarga gráfica
+  if (dyingEnemies.length >= 24) {
     let removeIdx = -1;
     for (let k = 0; k < dyingEnemies.length; k++) {
       if (!dyingEnemies[k].isMiniBoss) {
@@ -95,12 +100,29 @@ export function addDyingEnemy(e, hitAngle = 0) {
     explodedNaturally: !!e.explodedNaturally,
     corpseTimer,
     timer: duration,
-    maxTimer: duration
+    maxTimer: duration,
+    // Flags estáticas de estado terminal (Zero alocações de objetos no renderizador)
+    combatState: 'DEAD',
+    actionState: 'DEAD',
+    isCharging: false,
+    isFlamethrowing: false,
+    isFiring: false,
+    summonTimer: 0,
+    shootTimer: 0,
+    sniperCharge: 0,
+    castProgress: 0,
+    deathPose: 0
   });
 }
 
 // Hard Caps para Mobile: limita instâncias ativas para conter picos de GC e aliviar o pipeline gráfico
 export function addDamageText(x, y, text, isCrit = false, color = '#fff') {
+  if (activeBoss && (activeBoss.isFinalBoss || activeBoss.arenaCenterX !== undefined)) {
+    const dx = x - activeBoss.arenaCenterX;
+    const dy = y - activeBoss.arenaCenterY;
+    const limit = (activeBoss.arenaRadius || 620) + 40;
+    if (dx * dx + dy * dy > limit * limit) return; // Não gera textos no vazio além da arena
+  }
   if (damageTexts.length >= 25) {
     damageTexts.shift();
   }
@@ -118,6 +140,12 @@ export function addDamageText(x, y, text, isCrit = false, color = '#fff') {
 }
 
 export function createHitParticles(x, y, color, count = 5) {
+  if (activeBoss && (activeBoss.isFinalBoss || activeBoss.arenaCenterX !== undefined)) {
+    const dx = x - activeBoss.arenaCenterX;
+    const dy = y - activeBoss.arenaCenterY;
+    const limit = (activeBoss.arenaRadius || 620) + 40;
+    if (dx * dx + dy * dy > limit * limit) return; // Não cria partículas fora da arena circular
+  }
   const maxParticles = 40;
   const allowedCount = Math.min(count, Math.max(0, maxParticles - particles.length));
   for (let i = 0; i < allowedCount; i++) {
@@ -132,6 +160,9 @@ export function createHitParticles(x, y, color, count = 5) {
 }
 
 export function addBloodSplat(x, y, color = 'rgba(100, 18, 18, 0.45)') {
+  if (activeBoss && (activeBoss.isFinalBoss || activeBoss.arenaCenterX !== undefined)) {
+    return; // Arena surreal do vazio do Boss Final não acumula manchas no chão
+  }
   if (bloodSplats.length > 110) bloodSplats.shift();
   bloodSplats.push({
     x: x + (Math.random() - 0.5) * 8,
@@ -142,6 +173,11 @@ export function addBloodSplat(x, y, color = 'rgba(100, 18, 18, 0.45)') {
 }
 
 export function updateCombatVisuals(dt) {
+  const isFinalBoss = activeBoss && (activeBoss.isFinalBoss || activeBoss.arenaCenterX !== undefined);
+  const arenaLimitSq = isFinalBoss ? ((activeBoss.arenaRadius || 620) + 40) ** 2 : 0;
+  const acx = isFinalBoss ? activeBoss.arenaCenterX : 0;
+  const acy = isFinalBoss ? activeBoss.arenaCenterY : 0;
+
   let dtWrite = 0;
   for (let i = 0; i < damageTexts.length; i++) {
     const dtItem = damageTexts[i];
@@ -150,6 +186,11 @@ export function updateCombatVisuals(dt) {
     dtItem.vy += 0.16 * dt;
     dtItem.life -= dt;
     if (dtItem.life > 0) {
+      if (isFinalBoss) {
+        const dtx = dtItem.x - acx;
+        const dty = dtItem.y - acy;
+        if (dtx * dtx + dty * dty > arenaLimitSq) continue;
+      }
       damageTexts[dtWrite++] = dtItem;
     }
   }
@@ -162,6 +203,11 @@ export function updateCombatVisuals(dt) {
     p.y += p.vy * dt;
     p.life -= dt;
     if (p.life > 0) {
+      if (isFinalBoss) {
+        const pdx = p.x - acx;
+        const pdy = p.y - acy;
+        if (pdx * pdx + pdy * pdy > arenaLimitSq) continue;
+      }
       particles[pWrite++] = p;
     }
   }
@@ -170,6 +216,9 @@ export function updateCombatVisuals(dt) {
   const corpseDrag = Math.pow(0.86, dt);
   const corpseSpinDrag = Math.pow(0.92, dt);
   let deWrite = 0;
+  // Aceleração dinâmica de decomposição em massacres:
+  // Se houver mais de 12 cadáveres simultâneos, os corpos mais velhos decompõem até 2.5x mais rápido
+  const massDecayMult = dyingEnemies.length > 20 ? 2.5 : dyingEnemies.length > 12 ? 1.75 : 1.0;
   for (let i = 0; i < dyingEnemies.length; i++) {
     const de = dyingEnemies[i];
     de.x += de.vx * dt;
@@ -178,8 +227,9 @@ export function updateCombatVisuals(dt) {
     de.vy *= corpseDrag;
     de.rot = (de.rot || 0) + (de.vRot || 0) * dt;
     de.vRot = (de.vRot || 0) * corpseSpinDrag;
-    de.timer -= dt;
-    de.corpseTimer = Math.max(0, de.corpseTimer - dt);
+    const decayDt = de.isMiniBoss ? dt : dt * massDecayMult;
+    de.timer -= decayDt;
+    de.corpseTimer = Math.max(0, de.corpseTimer - decayDt);
     if (de.timer > 0) {
       dyingEnemies[deWrite++] = de;
     }
@@ -204,6 +254,17 @@ export function processEnemyMeleeAttacks(player, enemies, dt, freezeTimer = 0) {
 
   const isKaelIntangible = player.invisTimer > 0;
   const enemyCount = enemies.length;
+
+  // Sistema de Attack Tokens: limita concorrência de ataques melee simultâneos de monstros comuns
+  const MAX_MELEE_ATTACK_TOKENS = 6;
+  let activeAttackers = 0;
+  for (let i = 0; i < enemyCount; i++) {
+    const e = enemies[i];
+    if (!e || e.hp <= 0 || e.isBoss || e.isBossSubTarget) continue;
+    if (e.combatState === 'WINDUP' || e.combatState === 'STRIKE') {
+      activeAttackers++;
+    }
+  }
 
   for (let i = 0; i < enemyCount; i++) {
     const e = enemies[i];
@@ -272,12 +333,16 @@ export function processEnemyMeleeAttacks(player, enemies, dt, freezeTimer = 0) {
           e.attackCooldown -= dt;
         } else if (distSq <= strikeLimit * strikeLimit) {
           if ((e.emergeTimer || 0) <= 0 && (!e.leapState || e.leapState === 'none')) {
-            e.combatState = 'WINDUP';
-            e.attackTimer = e.attackWindupFrames;
-            e.attackAngle = Math.atan2(dy, dx);
-            const isShieldBearer = (e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER' || e.hasFrontalShield);
-            if (!isShieldBearer) {
-              e.facing = dx >= 0 ? 1 : -1;
+            const isPriority = e.isElite || e.isMiniBoss;
+            if (isPriority || activeAttackers < MAX_MELEE_ATTACK_TOKENS) {
+              e.combatState = 'WINDUP';
+              if (!isPriority) activeAttackers++;
+              e.attackTimer = e.attackWindupFrames;
+              e.attackAngle = Math.atan2(dy, dx);
+              const isShieldBearer = (e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER' || e.hasFrontalShield);
+              if (!isShieldBearer) {
+                e.facing = dx >= 0 ? 1 : -1;
+              }
             }
           }
         }

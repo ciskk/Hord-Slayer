@@ -30,6 +30,7 @@ import { playSfx, triggerHaptic } from '../../core/audio.js';
 import { initBoss } from '../bosses/bossRegistry.js';
 import { transitionToArenaTheme } from '../../render/environment.js';
 import { triggerBossBark, triggerMiniBossBark } from '../../systems/barks.js';
+import { purgeWorldForFinalBoss } from '../../systems/pickups.js';
 
 export const MAX_ENEMIES = 150;
 
@@ -598,6 +599,12 @@ export function triggerBossEncounter(bossId) {
   enemies.push(boss);
   setActiveBoss(boss);
   initBoss(boss);
+
+  // Purga Dimensional de Entidades para o Boss Final (Fase 1: Otimização de Arena)
+  if (boss.isFinalBoss || boss.bossId === 4) {
+    purgeWorldForFinalBoss(boss, player);
+  }
+
   triggerBossBark(bossId, 'SPAWN');
 
   const hud = document.getElementById('hud');

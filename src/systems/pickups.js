@@ -9,12 +9,14 @@
  */
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { triggerDeath, openChestModal } from './ui.js';
-import { addDamageText, createHitParticles, addBloodSplat } from './combat.js';
+import { addDamageText, createHitParticles, addBloodSplat, clearCombatVisuals } from './combat.js';
 import { addXP } from '../entities/player.js';
 import { transitionToArenaTheme } from '../render/environment.js';
 import { getHordeArenaTheme } from './waves.js';
 import { onAltarChestCollected } from './worldEvents.js';
 import { lastAttackerName, deathContext } from '../state/events.js';
+import { gems, props, drops, chests, acidPuddles } from '../state/collections.js';
+import { clearGroundCraters } from '../render/groundCracks.js';
 
 export function getGemConfig(xp) {
   if (xp >= 50) {
@@ -26,6 +28,51 @@ export function getGemConfig(xp) {
   } else {
     return { radius: 3.5, color: '#00d2d3', isSuper: false };
   }
+}
+
+/**
+ * Spawna uma gema de XP ou funde com uma gema comum adjacente caso haja aglomeração no local.
+ * Evita explosão de centenas de entidades e draw calls ao abater hordas densas com ULTs.
+ * @param {Array} gems - Lista de gemas ativas
+ * @param {number} x - Posição X
+ * @param {number} y - Posição Y
+ * @param {number} xp - Quantidade de XP
+ * @param {boolean} isSuper - Se é gema especial
+ * @param {boolean} forcedPull - Se deve iniciar com atração forçada
+ */
+export function spawnOrMergeGem(gems, x, y, xp, isSuper = false, forcedPull = false) {
+  if (!isSuper) {
+    const checkCount = Math.min(gems.length, 14);
+    for (let k = gems.length - 1; k >= gems.length - checkCount; k--) {
+      const existing = gems[k];
+      if (!existing || existing.isSuper) continue;
+      const dx = existing.x - x;
+      const dy = existing.y - y;
+      if (dx * dx + dy * dy <= 38 * 38) {
+        existing.value += xp;
+        const cfg = getGemConfig(existing.value);
+        existing.radius = cfg.radius;
+        existing.color = cfg.color;
+        existing.isSuper = cfg.isSuper;
+        if (forcedPull) existing.forcedPull = true;
+        return existing;
+      }
+    }
+  }
+
+  const cfg = getGemConfig(xp);
+  const gem = {
+    x,
+    y,
+    radius: cfg.radius,
+    color: cfg.color,
+    value: xp,
+    isSuper: isSuper || cfg.isSuper,
+    forcedPull: !!forcedPull,
+    pulseOffset: Math.random() * Math.PI * 2
+  };
+  gems.push(gem);
+  return gem;
 }
 
 export function spawnChest(chests, x, y, tier = 'BOSS') {
@@ -104,13 +151,7 @@ export function purgeAllNormalEnemies(enemies, gems) {
       createHitParticles(e.x, e.y, '#e056fd', 8);
       addDamageText(e.x, e.y, 9999, true, '#e056fd');
       if (e.xp > 0) {
-        gems.push({
-          x: e.x,
-          y: e.y,
-          value: e.xp,
-          ...getGemConfig(e.xp),
-          forcedPull: true
-        });
+        spawnOrMergeGem(gems, e.x, e.y, e.xp, false, true);
       }
       addBloodSplat(e.x, e.y);
       enemies.splice(i, 1);
@@ -328,4 +369,82 @@ export function updatePickups(dt, {
   enemies.length = writeIdx;
 
   return { playerDied: false };
+}
+
+/**
+ * Realiza a Purga Dimensional de Entidades no momento em que o Boss Final assume o controle da arena (Fase 1).
+ * - Condensa 100% das gemas de XP do mapa em 1 única Orbe Cósmica dentro da arena (preserva todo o progresso do jogador).
+ * - Elimina todos os props destrutíveis do mundo infinito (caixas, vasos, lápides).
+ * - Resgata baús de tesouro distantes para dentro do círculo da arena.
+ * - Elimina poças de ácido, drops obsoletos, marcas de sangue e crateras de combates anteriores.
+ * @param {Object} boss Entidade do Soberano do Abismo
+ * @param {Object} player Entidade do Jogador
+ */
+export function purgeWorldForFinalBoss(boss, player) {
+  if (!boss) return;
+
+  const cx = boss.arenaCenterX !== undefined ? boss.arenaCenterX : boss.x;
+  const cy = boss.arenaCenterY !== undefined ? boss.arenaCenterY : boss.y;
+  const arenaRadius = boss.arenaRadius || 620;
+
+  // 1. Condensação de 100% das gemas de XP acumuladas no mapa aberto em uma única Orbe Cósmica
+  let totalXp = 0;
+  for (let i = 0; i < gems.length; i++) {
+    totalXp += (gems[i].value || 1);
+  }
+  gems.length = 0;
+
+  if (totalXp > 0) {
+    const cfg = getGemConfig(totalXp);
+    // Posição tática visível no campo de visão inicial: 75% na direção do jogador a partir do centro
+    let targetX = cx;
+    let targetY = cy;
+    if (player && player.x !== undefined && player.y !== undefined) {
+      targetX = player.x * 0.75 + cx * 0.25;
+      targetY = player.y * 0.75 + cy * 0.25;
+    }
+
+    gems.push({
+      x: targetX,
+      y: targetY,
+      radius: Math.max(12, cfg.radius),
+      color: '#00cec9', // Tom ciano/cósmico brilhante do Vazio
+      value: totalXp,
+      isSuper: true,
+      pulseOffset: 0,
+      forcedPull: false
+    });
+
+    addDamageText(targetX, targetY - 24, "ORBE CÓSMICA DE XP!", true, "#00cec9");
+    createHitParticles(targetX, targetY, '#00cec9', 18);
+    createHitParticles(targetX, targetY, '#ffffff', 10);
+    try { playSfx('warp'); } catch (e) {}
+  }
+
+  // 2. Limpeza total de props destrutíveis do mapa aberto
+  props.length = 0;
+
+  // 3. Resgate e reposicionamento de baús deixados para trás
+  const maxSafeChestDist = arenaRadius - 100;
+  for (let i = 0; i < chests.length; i++) {
+    const ch = chests[i];
+    const cdx = ch.x - cx;
+    const cdy = ch.y - cy;
+    const dist = Math.hypot(cdx, cdy) || 1;
+    if (dist > maxSafeChestDist) {
+      ch.x = cx + (cdx / dist) * maxSafeChestDist;
+      ch.y = cy + (cdy / dist) * maxSafeChestDist;
+      ch.z = 0;
+      ch.vz = 0;
+      ch.isResting = true;
+    }
+  }
+
+  // 4. Limpeza de drops de campo e poças residuais
+  drops.length = 0;
+  acidPuddles.length = 0;
+
+  // 5. Purga de marcas de sangue, ragdolls de inimigos e fissuras no solo
+  clearCombatVisuals();
+  clearGroundCraters();
 }
