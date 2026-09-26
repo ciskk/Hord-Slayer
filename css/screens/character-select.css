@@ -231,6 +231,7 @@
 }
 
 .char-relic-btn {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -285,12 +286,117 @@
 }
 
 /* ======================================================== */
+/* 2.1 SINALIZADORES DE NOTIFICAÇÃO NAS RELÍQUIAS (PIPS)     */
+/* ======================================================== */
+
+.relic-notification-pip {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none;
+  animation: relicPipFloat 2.2s ease-in-out infinite;
+}
+
+.relic-notification-pip .pip-pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: relicPipRingPulse 2.0s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+}
+
+.relic-notification-pip .pip-glyph-body {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transform: rotate(45deg);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  transition: all 0.2s ease;
+}
+
+.relic-notification-pip .pip-micro-icon {
+  width: 7px;
+  height: 7px;
+  transform: rotate(-45deg);
+  display: block;
+}
+
+/* 1. Bestiário: Ciano Arcano */
+.pip-bestiary .pip-pulse-ring {
+  border: 1.5px solid #00f5d4;
+  box-shadow: 0 0 10px #00f5d4;
+}
+.pip-bestiary .pip-glyph-body {
+  background: linear-gradient(135deg, #00f5d4 0%, #0984e3 100%);
+  color: #04121e;
+  box-shadow: 0 0 10px #00f5d4, 0 0 16px rgba(0, 245, 212, 0.7);
+}
+
+/* 2. Conquistas: Violeta / Ametista Nobre */
+.pip-achievements .pip-pulse-ring {
+  border: 1.5px solid #c084fc;
+  box-shadow: 0 0 10px #c084fc;
+}
+.pip-achievements .pip-glyph-body {
+  background: linear-gradient(135deg, #f3e8ff 0%, #a855f7 100%);
+  color: #1a0826;
+  box-shadow: 0 0 10px #c084fc, 0 0 16px rgba(168, 85, 247, 0.7);
+}
+
+/* 3. Astrolábio: Ouro Cósmico / Almas */
+.pip-talents .pip-pulse-ring {
+  border: 1.5px solid #ffd166;
+  box-shadow: 0 0 10px #ffd166;
+}
+.pip-talents .pip-glyph-body {
+  background: linear-gradient(135deg, #fff3cd 0%, #f1c40f 60%, #e67e22 100%);
+  color: #2b1802;
+  box-shadow: 0 0 10px #ffd166, 0 0 16px rgba(241, 196, 15, 0.75);
+}
+
+@keyframes relicPipRingPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0.95;
+  }
+  65%, 100% {
+    transform: translate(-50%, -50%) scale(2.3);
+    opacity: 0;
+  }
+}
+
+@keyframes relicPipFloat {
+  0%, 100% {
+    transform: translateY(0);
+    filter: brightness(1);
+  }
+  50% {
+    transform: translateY(-2px);
+    filter: brightness(1.25);
+  }
+}
+
+/* ======================================================== */
 /* 3. COMPOSIÇÃO PANORÂMICA: 3 ALAS CINEMATOGRÁFICAS        */
 /* ======================================================== */
 
 .char-panoramic-stage {
   display: grid;
-  grid-template-columns: minmax(260px, 300px) minmax(0, 1fr) minmax(360px, 420px);
+  grid-template-columns: minmax(300px, 345px) minmax(0, 1fr) minmax(360px, 420px);
   gap: 20px;
   flex: 1 1 auto;
   min-height: 0;
@@ -361,7 +467,7 @@
   gap: 8px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 4px;
+  padding: 4px 10px 4px 2px;
   flex: 1 1 auto;
   min-height: 0;
   box-sizing: border-box;
@@ -386,30 +492,90 @@
 }
 
 /* Nó Individual de Sigilo */
+/* Nó Individual de Sigilo (Placa de Obsidiana Lapidada) */
 .char-sigil-item {
   position: relative;
-  width: 100%;
+  width: calc(100% - 6px);
   height: 64px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
-  background: rgba(10, 16, 32, 0.65);
-  border: 1.2px solid rgba(255, 255, 255, 0.08);
+  /* Textura de Pedra Lapidada: Fundo mineral escuro de obsidiana */
+  background: linear-gradient(135deg, rgba(16, 22, 38, 0.92) 0%, rgba(9, 13, 24, 0.96) 50%, rgba(5, 7, 14, 0.98) 100%);
+  /* Aresta de corte chanfrado mineral */
+  border: 1.2px solid rgba(255, 255, 255, 0.09);
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Chanfros escuros, oclusão tátil interna e sombra externa */
+  box-shadow: 
+    inset 1px 1px 0 rgba(255, 255, 255, 0.12),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.85),
+    inset 0 0 18px rgba(0, 0, 0, 0.75),
+    0 4px 14px rgba(0, 0, 0, 0.65);
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   overflow: hidden;
   flex-shrink: 0;
 }
 
+/* Micro-chanfro lapidado na aresta superior */
+.char-sigil-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 0.24s ease, background 0.24s ease;
+}
+
+/* Hover: Ativação gradual do brilho de borda e aquecimento da pedra */
 .char-sigil-item:hover {
-  background: rgba(18, 28, 54, 0.85);
-  border-color: var(--char-panel-border-hover);
+  background: linear-gradient(135deg, rgba(22, 30, 52, 0.95) 0%, rgba(13, 18, 34, 0.97) 50%, rgba(7, 10, 18, 0.99) 100%);
+  border-color: rgba(255, 255, 255, 0.24);
   transform: translateX(3px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+  /* Hover Glow & Rim Light: iluminação periférica sutil na cor do herói */
+  box-shadow: 
+    inset 1px 1px 0 rgba(255, 255, 255, 0.24),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.9),
+    inset 0 0 16px var(--showcase-color, rgba(0, 245, 212, 0.18)),
+    0 6px 20px rgba(0, 0, 0, 0.75),
+    0 0 15px var(--showcase-color, rgba(0, 245, 212, 0.32));
+}
+
+.char-sigil-item:hover::before {
+  background: linear-gradient(90deg, transparent, var(--showcase-color, rgba(0, 245, 212, 0.65)), transparent);
+}
+
+.char-sigil-item:hover .sigil-focus-needle {
+  opacity: 0.45;
+  transform: scaleY(0.75);
+}
+
+/* Estado Ativo: Rim Light Pleno e Fusão Arcana */
+.char-sigil-item.active {
+  background: linear-gradient(90deg, rgba(24, 38, 72, 0.96) 0%, rgba(14, 20, 38, 0.94) 60%, rgba(8, 12, 24, 0.98) 100%);
+  border-color: var(--showcase-color, #00f5d4);
+  /* Rim Light total com irradiação externa e brilho interno nas bordas */
+  box-shadow: 
+    inset 1px 1px 0 rgba(255, 255, 255, 0.35),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.9),
+    inset 0 0 18px var(--showcase-color, rgba(0, 245, 212, 0.25)),
+    0 8px 24px rgba(0, 0, 0, 0.8),
+    0 0 22px var(--showcase-color, rgba(0, 245, 212, 0.45));
+  transform: translateX(4px);
+}
+
+.char-sigil-item.active::before {
+  background: linear-gradient(90deg, transparent, #ffffff, var(--showcase-color, #00f5d4), transparent);
 }
 
 /* Feixe Indicador Ativo */
@@ -420,17 +586,11 @@
   left: 0;
   width: 3.5px;
   background: var(--showcase-color, #00f5d4);
-  box-shadow: 0 0 12px var(--showcase-color, #00f5d4);
+  box-shadow: 0 0 12px var(--showcase-color, #00f5d4), 0 0 20px var(--showcase-color, #00f5d4);
   opacity: 0;
   transform: scaleY(0.4);
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.char-sigil-item.active {
-  background: linear-gradient(90deg, rgba(28, 42, 78, 0.92) 0%, rgba(12, 18, 36, 0.85) 100%);
-  border-color: var(--showcase-color, #00f5d4);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.7), 0 0 16px var(--showcase-color, rgba(0, 245, 212, 0.25)), inset 0 0 12px rgba(255, 255, 255, 0.04);
-  transform: translateX(5px);
+  z-index: 3;
 }
 
 .char-sigil-item.active .sigil-focus-needle {
@@ -438,19 +598,71 @@
   transform: scaleY(1);
 }
 
+/* Linhas de Circuito Rúnico Entalhadas na Obsidiana */
+.sigil-runic-circuit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.20;
+  color: var(--showcase-color, #00f5d4);
+  transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), filter 0.28s ease;
+}
+
+.runic-circuit-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.char-sigil-item:hover .sigil-runic-circuit {
+  opacity: 0.72;
+  filter: drop-shadow(0 0 3px var(--showcase-color, #00f5d4));
+}
+
+.char-sigil-item.active .sigil-runic-circuit {
+  opacity: 0.95;
+  filter: drop-shadow(0 0 5px var(--showcase-color, #00f5d4));
+}
+
+.char-sigil-item.active .circuit-path-base {
+  animation: circuitPulseFlow 2.8s ease-in-out infinite;
+}
+
+.char-sigil-item.active .circuit-node {
+  filter: drop-shadow(0 0 3px currentColor);
+}
+
+@keyframes circuitPulseFlow {
+  0%, 100% {
+    stroke-opacity: 0.65;
+  }
+  50% {
+    stroke-opacity: 1;
+  }
+}
+
 /* Medalhão Circular Heráldico */
 .sigil-crest-disc {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(16, 24, 42, 0.95) 0%, rgba(4, 6, 12, 0.98) 100%);
+  background: radial-gradient(circle, rgba(18, 26, 46, 0.98) 0%, rgba(4, 6, 12, 1) 100%);
   border: 1.5px solid var(--disc-accent, #4b5563);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   position: relative;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+  z-index: 2;
+  box-shadow: 
+    inset 0 0 8px rgba(0, 0, 0, 0.8),
+    0 0 10px rgba(0, 0, 0, 0.7);
   transition: all 0.22s ease;
 }
 
@@ -459,6 +671,13 @@
   height: 22px;
   color: var(--disc-accent, #4b5563);
   transition: all 0.22s ease;
+}
+
+.char-sigil-item:hover .sigil-crest-disc {
+  border-color: var(--showcase-color, #00f5d4);
+  box-shadow: 
+    inset 0 0 8px rgba(0, 0, 0, 0.8),
+    0 0 12px var(--showcase-color, rgba(0, 245, 212, 0.4));
 }
 
 .char-sigil-item.active .sigil-crest-disc {
@@ -484,6 +703,7 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 0 6px rgba(255, 118, 117, 0.5);
+  z-index: 3;
 }
 
 /* Identidade do Sigilo */
@@ -492,6 +712,8 @@
   flex-direction: column;
   min-width: 0;
   flex-grow: 1;
+  position: relative;
+  z-index: 2;
 }
 
 .sigil-archetype-tag {
@@ -502,6 +724,11 @@
   text-transform: uppercase;
   line-height: 1;
   margin-bottom: 2px;
+  transition: color 0.22s ease;
+}
+
+.char-sigil-item:hover .sigil-archetype-tag {
+  color: var(--showcase-color, #00f5d4);
 }
 
 .char-sigil-item.active .sigil-archetype-tag {
@@ -517,6 +744,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.2;
+  transition: color 0.22s ease;
+}
+
+.char-sigil-item:hover .sigil-hero-name {
+  color: #ffffff;
 }
 
 .char-sigil-item.active .sigil-hero-name {
@@ -553,14 +785,56 @@
   letter-spacing: 0.8px;
 }
 
+/* Placa de Obsidiana com Selo Primordial Ativo (Bloqueado) */
 .char-sigil-item.sigil-locked {
-  opacity: 0.72;
-  filter: grayscale(0.25);
+  background: linear-gradient(135deg, rgba(20, 11, 17, 0.92) 0%, rgba(12, 8, 14, 0.96) 100%);
+  border-color: rgba(255, 118, 117, 0.22);
+  opacity: 0.78;
+  filter: grayscale(0.2);
+  box-shadow: 
+    inset 1px 1px 0 rgba(255, 118, 117, 0.12),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.9),
+    inset 0 0 18px rgba(0, 0, 0, 0.8),
+    0 4px 12px rgba(0, 0, 0, 0.65);
+}
+
+.char-sigil-item.sigil-locked .sigil-runic-circuit {
+  color: #ff7675;
+  opacity: 0.25;
 }
 
 .char-sigil-item.sigil-locked:hover {
-  opacity: 0.92;
+  background: linear-gradient(135deg, rgba(30, 15, 24, 0.95) 0%, rgba(16, 9, 18, 0.98) 100%);
+  border-color: rgba(255, 118, 117, 0.50);
+  opacity: 0.96;
   filter: grayscale(0);
+  box-shadow: 
+    inset 1px 1px 0 rgba(255, 118, 117, 0.25),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.9),
+    inset 0 0 16px rgba(255, 118, 117, 0.20),
+    0 6px 18px rgba(0, 0, 0, 0.8),
+    0 0 16px rgba(255, 118, 117, 0.35);
+}
+
+.char-sigil-item.sigil-locked:hover .sigil-runic-circuit {
+  opacity: 0.65;
+  filter: drop-shadow(0 0 4px #ff7675);
+}
+
+.char-sigil-item.sigil-locked.active {
+  background: linear-gradient(90deg, rgba(45, 14, 25, 0.96) 0%, rgba(20, 8, 15, 0.96) 100%);
+  border-color: #ff7675;
+  box-shadow: 
+    inset 1px 1px 0 rgba(255, 255, 255, 0.25),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.9),
+    inset 0 0 18px rgba(255, 118, 117, 0.28),
+    0 8px 24px rgba(0, 0, 0, 0.85),
+    0 0 20px rgba(255, 118, 117, 0.45);
+}
+
+.char-sigil-item.sigil-locked.active .sigil-runic-circuit {
+  opacity: 0.90;
+  filter: drop-shadow(0 0 5px #ff7675);
 }
 
 .roster-wing-footer {
@@ -573,9 +847,9 @@
 }
 
 .roster-key-hint {
-  font-size: 8.5px;
+  font-size: 10.5px;
   font-weight: 700;
-  color: #64748b;
+  color: #7d8ea6;
   letter-spacing: 0.8px;
   text-transform: uppercase;
 }
@@ -650,13 +924,10 @@
 }
 
 .hero-canvas-shift {
-  animation: heroCanvasShiftAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* Transição diegética 100% renderizada em alta fidelidade no Canvas 60 FPS via heroTransition.js */
+  animation: none;
 }
 
-@keyframes heroCanvasShiftAnim {
-  0% { opacity: 0.6; transform: scale(0.96); }
-  100% { opacity: 1; transform: scale(1); }
-}
 
 /* Setas de Navegação Minimalistas Flutuantes - Flanqueando o Palco de Forma Elegante */
 .stage-chevron-nav {
@@ -723,13 +994,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 6px 13px;
   background: rgba(14, 20, 36, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 14px;
   color: #c8d6e5;
   font-family: var(--font-heading);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 1px;
   cursor: pointer;
@@ -738,8 +1009,8 @@
 }
 
 .console-action-btn svg {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   transition: transform 0.22s ease;
 }
 
@@ -763,13 +1034,13 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 10px;
+  padding: 6px 11px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 12px;
   color: #64748b;
   font-family: var(--font-heading);
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 0.8px;
   cursor: pointer;
@@ -839,6 +1110,11 @@
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--showcase-color, #00f5d4), transparent);
   box-shadow: 0 0 12px var(--showcase-color, #00f5d4);
+}
+
+/* No Desktop, a alça tátil de Bottom Sheet mobile permanece 100% oculta */
+.sheet-drag-handle-zone {
+  display: none;
 }
 
 .char-hologram-dossier {
@@ -1058,6 +1334,79 @@
   color: #94a3b8;
   line-height: 1.4;
   padding-left: 2px;
+}
+
+/* ======================================================== */
+/* 2.3.1 MICRO-DIAGRAMA DE ALCANCE NO CARD DE HABILIDADE    */
+/* ======================================================== */
+
+.skill-aoe-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 3px 6px;
+  background: rgba(8, 12, 24, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  box-shadow: 
+    inset 0 0 10px rgba(0, 0, 0, 0.8),
+    0 2px 8px rgba(0, 0, 0, 0.6);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: help;
+  user-select: none;
+}
+
+.loadout-entry-skill:hover .skill-aoe-cluster {
+  background: rgba(14, 20, 40, 0.95);
+  border-color: var(--aoe-accent, rgba(0, 245, 212, 0.55));
+  box-shadow: 
+    inset 0 0 12px var(--aoe-accent, rgba(0, 245, 212, 0.20)),
+    0 0 14px var(--aoe-accent, rgba(0, 245, 212, 0.35));
+  transform: scale(1.05);
+}
+
+.skill-aoe-reticle {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--aoe-accent, #00f5d4);
+  filter: drop-shadow(0 0 3px var(--aoe-accent, #00f5d4));
+  transition: transform 0.22s ease, filter 0.22s ease;
+}
+
+.skill-aoe-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.loadout-entry-skill:hover .skill-aoe-reticle {
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 6px var(--aoe-accent, #00f5d4));
+}
+
+.skill-aoe-tag {
+  font-family: var(--font-heading);
+  font-size: 7.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--aoe-accent, #00f5d4);
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1;
+  opacity: 0.95;
+  transition: all 0.22s ease;
+}
+
+.loadout-entry-skill:hover .skill-aoe-tag {
+  color: #ffffff;
+  text-shadow: 0 0 8px var(--aoe-accent, #00f5d4);
 }
 
 
@@ -1353,13 +1702,13 @@
 .primordial-seal-banner {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 9px 13px;
-  background: linear-gradient(135deg, rgba(42, 14, 26, 0.85) 0%, rgba(20, 8, 16, 0.95) 100%);
+  gap: 7px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(42, 14, 26, 0.9) 0%, rgba(20, 8, 16, 0.96) 100%);
   border: 1.2px solid rgba(255, 118, 117, 0.45);
-  border-radius: 9px;
+  border-radius: 12px;
   margin-bottom: 12px;
-  box-shadow: 0 0 16px rgba(255, 118, 117, 0.2);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6), 0 0 16px rgba(255, 118, 117, 0.25);
   flex-shrink: 0;
 }
 
@@ -1367,6 +1716,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .seal-icon {
@@ -1393,15 +1743,95 @@
 
 .seal-name {
   font-family: var(--font-heading);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 800;
   color: #ffd166;
+  letter-spacing: 0.6px;
+}
+
+/* Badge estilizado do Selo Primordial Ativo com Razão */
+.seal-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2.5px 8px;
+  background: rgba(255, 118, 117, 0.14);
+  border: 1px solid rgba(255, 118, 117, 0.45);
+  border-radius: 999px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.seal-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff7675;
+  box-shadow: 0 0 6px #ff7675;
+  animation: lockedDotPulse 1.8s ease-in-out infinite;
+}
+
+.seal-status-text {
+  font-family: var(--font-heading, 'Cinzel', serif);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ff9f9f;
+  text-transform: uppercase;
+}
+
+.seal-status-ratio {
+  font-family: var(--font-heading, 'Cinzel', serif);
+  font-size: 8.5px;
+  font-weight: 900;
+  color: #ffd166;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 209, 102, 0.35);
+  letter-spacing: 0.5px;
 }
 
 .seal-desc {
-  font-size: 9.5px;
+  font-size: 10.5px;
+  color: #e2e8f0;
+  line-height: 1.42;
+}
+
+/* Bloco de Progresso Cósmico do Selo */
+.seal-progress-block {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 3px;
+  padding: 6px 9px;
+  background: rgba(8, 12, 22, 0.65);
+  border: 1px solid rgba(255, 118, 117, 0.22);
+  border-radius: 7px;
+}
+
+.seal-progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.seal-progress-label {
+  font-family: var(--font-heading, 'Cinzel', serif);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
   color: #cbd5e1;
-  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.seal-progress-val {
+  font-family: var(--font-heading, 'Cinzel', serif);
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #ffd166;
+  letter-spacing: 0.8px;
 }
 
 .seal-track {
@@ -1415,7 +1845,9 @@
 .seal-fill {
   height: 100%;
   background: linear-gradient(90deg, #ff7675, #ffd166);
-  box-shadow: 0 0 10px #ff7675;
+  border-radius: 3px;
+  box-shadow: 0 0 10px rgba(255, 209, 102, 0.5);
+  transition: width 0.3s ease;
 }
 
 .seal-meta {
@@ -1442,28 +1874,155 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 18px;
-  background: linear-gradient(135deg, var(--showcase-color, #00f5d4) 0%, #0984e3 50%, var(--showcase-color, #00f5d4) 100%) !important;
+  padding: 8px 24px;
+  background: linear-gradient(135deg, 
+    var(--showcase-color, #00f5d4) 0%, 
+    color-mix(in srgb, var(--showcase-color, #00f5d4) 75%, #000000) 50%, 
+    var(--showcase-color, #00f5d4) 100%
+  ) !important;
   border: 1.5px solid var(--showcase-color, #00f5d4) !important;
-  border-radius: 10px;
+  border-radius: 24px;
   color: #040508 !important;
-  font-family: var(--font-heading);
+  font-family: var(--font-heading, 'Cinzel', serif);
   font-size: clamp(12px, 1.1vw, 14px);
   font-weight: 900;
-  letter-spacing: 2px;
+  letter-spacing: 2.2px;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 -4px 16px rgba(4, 6, 14, 0.8), 0 4px 20px rgba(0, 0, 0, 0.9), 0 0 22px var(--showcase-color, rgba(0, 245, 212, 0.45)), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  box-shadow: 0 -4px 16px rgba(4, 6, 14, 0.8), 0 4px 20px rgba(0, 0, 0, 0.9), 0 0 24px var(--showcase-color, rgba(0, 245, 212, 0.5)), inset 0 1px 0 rgba(255, 255, 255, 0.6);
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow: hidden;
+  overflow: visible !important;
   user-select: none;
+}
+
+/* 4.1 Borda de Fogo Etéreo / Plasma Vivo */
+.btn-arcane-flames {
+  position: absolute;
+  inset: -2px;
+  border-radius: 26px;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(90deg, 
+    var(--showcase-color, #00f5d4), 
+    color-mix(in srgb, var(--showcase-color, #00f5d4) 65%, #ffffff), 
+    color-mix(in srgb, var(--showcase-color, #00f5d4) 45%, #000000), 
+    var(--showcase-color, #00f5d4)
+  );
+  background-size: 300% 300%;
+  opacity: 0.65;
+  filter: blur(4px);
+  animation: arcaneFlameDrift 4s ease infinite;
+  transition: opacity 0.25s ease, filter 0.25s ease;
+}
+
+/* 4.2 Sparks Rúnicos nos 4 Cantos */
+.btn-corner-sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.corner-spark {
+  position: absolute;
+  font-size: 11px;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 0 6px var(--showcase-color, #00f5d4), 0 0 14px var(--showcase-color, #00f5d4);
+  opacity: 0.85;
+  animation: cornerSparkFlicker 2.8s ease-in-out infinite;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease, text-shadow 0.25s ease;
+}
+
+.corner-spark.top-left {
+  top: -5px;
+  left: -5px;
+  animation-delay: 0s;
+}
+
+.corner-spark.top-right {
+  top: -5px;
+  right: -5px;
+  animation-delay: 0.7s;
+}
+
+.corner-spark.bottom-left {
+  bottom: -5px;
+  left: -5px;
+  animation-delay: 1.4s;
+}
+
+.corner-spark.bottom-right {
+  bottom: -5px;
+  right: -5px;
+  animation-delay: 2.1s;
+}
+
+/* 4.3 Micro-Brasas e Fagulhas Ascendentes */
+.btn-ember-drift {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 2;
+}
+
+.ember-spark {
+  position: absolute;
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 6px var(--showcase-color, #00f5d4), 0 0 10px var(--showcase-color, #00f5d4);
+  opacity: 0;
+  animation: emberDriftRise 2.6s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+.ember-spark.ember-1 {
+  left: 20%;
+  bottom: 2px;
+  animation-delay: 0.1s;
+}
+
+.ember-spark.ember-2 {
+  left: 45%;
+  bottom: 3px;
+  animation-delay: 0.8s;
+}
+
+.ember-spark.ember-3 {
+  left: 68%;
+  bottom: 1px;
+  animation-delay: 1.5s;
+}
+
+.ember-spark.ember-4 {
+  right: 14%;
+  bottom: 4px;
+  animation-delay: 2.2s;
+}
+
+/* 4.4 Halo Radial de Energia */
+.btn-catalyst-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at center, var(--showcase-color, rgba(0, 245, 212, 0.45)) 0%, transparent 72%);
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 0.28s ease, transform 0.28s ease;
 }
 
 .btn-catalyst-content {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
+  transition: transform 0.2s ease, text-shadow 0.2s ease;
 }
 
 .btn-hotkey-hint {
@@ -1473,24 +2032,34 @@
   color: rgba(4, 5, 8, 0.85);
   letter-spacing: 1px;
   position: relative;
-  z-index: 2;
+  z-index: 3;
   background: rgba(255, 255, 255, 0.3);
   padding: 2px 7px;
   border-radius: 4px;
   border: 1px solid rgba(0, 0, 0, 0.15);
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
+/* 4.5 Feixe de Brilho Dinâmico (Shimmer Sweep) */
 .btn-shimmer-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.btn-shimmer-sweep::after {
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
-  width: 40%;
+  width: 45%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
   transform: skewX(-22deg);
   animation: catalystShimmerSweep 3.2s infinite;
-  pointer-events: none;
-  z-index: 1;
 }
 
 @keyframes catalystShimmerSweep {
@@ -1498,14 +2067,99 @@
   35%, 100% { transform: translateX(360%) skewX(-22deg); }
 }
 
+@keyframes arcaneFlameDrift {
+  0% {
+    background-position: 0% 50%;
+    transform: scale(0.99);
+  }
+  50% {
+    background-position: 100% 50%;
+    transform: scale(1.02);
+  }
+  100% {
+    background-position: 0% 50%;
+    transform: scale(0.99);
+  }
+}
+
+@keyframes cornerSparkFlicker {
+  0%, 100% {
+    transform: scale(0.85);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+@keyframes emberDriftRise {
+  0% {
+    transform: translateY(0) translateX(0) scale(0.4);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.95;
+    transform: translateY(-8px) translateX(2px) scale(1.1);
+  }
+  60% {
+    opacity: 0.7;
+    transform: translateY(-20px) translateX(-3px) scale(0.85);
+  }
+  100% {
+    transform: translateY(-34px) translateX(4px) scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* 4.6 Estados de Interação: Ignição ao passar o mouse ou receber foco */
 .btn-ignition-catalyst:hover {
+  transform: translateY(-2.5px) scale(1.01);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.92), 0 0 36px var(--showcase-color, rgba(0, 245, 212, 0.85)), 0 0 54px rgba(9, 132, 227, 0.45);
+  filter: brightness(1.14);
+}
+
+.btn-ignition-catalyst:hover .btn-arcane-flames {
+  opacity: 1;
+  filter: blur(6px) brightness(1.3);
+}
+
+.btn-ignition-catalyst:hover .corner-spark {
+  opacity: 1;
+  transform: scale(1.4) rotate(45deg);
+  filter: brightness(1.4);
+  text-shadow: 0 0 10px #ffffff, 0 0 20px var(--showcase-color, #00f5d4);
+}
+
+.btn-ignition-catalyst:hover .ember-spark {
+  animation-duration: 1.8s;
+  box-shadow: 0 0 8px #ffffff, 0 0 14px var(--showcase-color, #00f5d4);
+}
+
+.btn-ignition-catalyst:hover .btn-catalyst-glow {
+  opacity: 0.85;
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.btn-ignition-catalyst:focus-visible {
+  outline: none;
   transform: translateY(-2px);
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.9), 0 0 32px var(--showcase-color, rgba(0, 245, 212, 0.75));
-  filter: brightness(1.1);
+  box-shadow: 0 0 0 3px #ffffff, 0 0 36px var(--showcase-color, rgba(0, 245, 212, 0.95)) !important;
+}
+
+.btn-ignition-catalyst:focus-visible .btn-arcane-flames {
+  opacity: 1;
+  filter: blur(6px) brightness(1.35);
+}
+
+.btn-ignition-catalyst:focus-visible .corner-spark {
+  opacity: 1;
+  transform: scale(1.4) rotate(45deg);
 }
 
 .btn-ignition-catalyst:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.995);
+  filter: brightness(0.96);
 }
 
 .btn-ignition-catalyst:disabled {
@@ -1519,11 +2173,15 @@
 }
 
 .btn-ignition-catalyst:disabled .btn-shimmer-sweep,
+.btn-ignition-catalyst:disabled .btn-arcane-flames,
+.btn-ignition-catalyst:disabled .btn-corner-sparks,
+.btn-ignition-catalyst:disabled .btn-ember-drift,
+.btn-ignition-catalyst:disabled .btn-catalyst-glow,
 .btn-ignition-catalyst:disabled .btn-hotkey-hint {
   display: none !important;
 }
 
-/* Estado de Selo Ativo Interativo (Botão Clicável para Exibir Requisitos) */
+/* 4.7 Estado de Selo Ativo Interativo (Botão Clicável para Exibir Requisitos) */
 .btn-ignition-catalyst.is-locked {
   background: linear-gradient(135deg, rgba(65, 16, 26, 0.95) 0%, rgba(135, 24, 40, 0.92) 50%, rgba(55, 12, 22, 0.95) 100%) !important;
   border: 1.5px solid rgba(255, 118, 117, 0.75) !important;
@@ -1535,13 +2193,44 @@
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.btn-ignition-catalyst.is-locked .btn-arcane-flames {
+  background: linear-gradient(90deg, #ff7675, #d63031, #e84393, #ff7675);
+  background-size: 300% 300%;
+  opacity: 0.45;
+  filter: blur(3.5px);
+}
+
+.btn-ignition-catalyst.is-locked .corner-spark {
+  color: #ffeaa7;
+  text-shadow: 0 0 6px #ff7675, 0 0 12px rgba(255, 118, 117, 0.75);
+}
+
+.btn-ignition-catalyst.is-locked .ember-spark {
+  background: #ffeaa7;
+  box-shadow: 0 0 6px #ff7675, 0 0 10px #d63031;
+}
+
+.btn-ignition-catalyst.is-locked .btn-catalyst-glow {
+  background: radial-gradient(ellipse at center, rgba(255, 118, 117, 0.38) 0%, transparent 70%);
+}
+
 .btn-ignition-catalyst.is-locked:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2.5px) scale(1.01);
   background: linear-gradient(135deg, rgba(85, 20, 35, 0.98) 0%, rgba(165, 30, 50, 0.96) 50%, rgba(75, 15, 30, 0.98) 100%) !important;
   border-color: #ff7675 !important;
   color: #ffffff !important;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.9), 0 0 32px rgba(255, 118, 117, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
-  filter: brightness(1.12);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.9), 0 0 34px rgba(255, 118, 117, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+  filter: brightness(1.14);
+}
+
+.btn-ignition-catalyst.is-locked:hover .btn-arcane-flames {
+  opacity: 0.85;
+  filter: blur(5.5px) brightness(1.25);
+}
+
+.btn-ignition-catalyst.is-locked:hover .corner-spark {
+  transform: scale(1.4) rotate(45deg);
+  text-shadow: 0 0 10px #ffffff, 0 0 18px #ff7675;
 }
 
 .btn-ignition-catalyst.is-locked:active {
@@ -1550,6 +2239,9 @@
 
 .btn-ignition-catalyst.is-locked .btn-shimmer-sweep {
   display: block !important;
+}
+
+.btn-ignition-catalyst.is-locked .btn-shimmer-sweep::after {
   background: linear-gradient(90deg, transparent, rgba(255, 118, 117, 0.45), transparent);
 }
 
@@ -1580,7 +2272,7 @@
 
 @media (max-width: 1200px) {
   .char-panoramic-stage {
-    grid-template-columns: minmax(230px, 260px) minmax(0, 1fr) minmax(330px, 360px);
+    grid-template-columns: minmax(265px, 300px) minmax(0, 1fr) minmax(330px, 360px);
     gap: 14px;
   }
 
@@ -1616,7 +2308,7 @@
 
 @media (max-width: 950px) {
   .char-panoramic-stage {
-    grid-template-columns: minmax(200px, 230px) minmax(0, 1fr) minmax(300px, 330px);
+    grid-template-columns: minmax(230px, 265px) minmax(0, 1fr) minmax(300px, 330px);
     gap: 12px;
   }
 
@@ -1996,16 +2688,36 @@
   gap: 6px;
   align-self: flex-start;
   margin-top: 3px;
-  padding: 2.5px 8px;
+  padding: 3px 9px;
   background: rgba(255, 118, 117, 0.15);
-  border: 1px solid rgba(255, 118, 117, 0.4);
+  border: 1px solid rgba(255, 118, 117, 0.45);
   border-radius: 999px;
-  font-family: var(--font-body);
-  font-size: 9px;
+  font-family: var(--font-heading, 'Cinzel', serif);
+  font-size: 8.5px;
   font-weight: 800;
   letter-spacing: 1px;
   color: #ff9f9f;
   text-transform: uppercase;
+}
+
+.locked-status-pill .locked-status-text {
+  font-family: var(--font-heading, 'Cinzel', serif);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.locked-status-pill .locked-status-ratio {
+  font-family: var(--font-heading, 'Cinzel', serif);
+  font-size: 9px;
+  font-weight: 900;
+  color: #ffd166;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 209, 102, 0.35);
+  letter-spacing: 0.5px;
+  margin-left: 2px;
 }
 
 .locked-pulse-dot {
@@ -2402,8 +3114,8 @@
   }
 }
 
-/* O altar do PC ocupa toda a altura; os controles flutuam sobre os últimos degraus. */
-@media (min-width: 851px) and (min-height: 521px) and (orientation: landscape) {
+/* O altar horizontal ocupa toda a altura; os controles flutuam sobre o primeiro plano. */
+@media (orientation: landscape) {
   .char-scene-container {
     padding-bottom: 0;
   }
@@ -2421,6 +3133,7 @@
     padding-bottom: 0;
     border-radius: 0;
     isolation: isolate;
+    container-type: inline-size;
   }
 
   .char-stage-viewport {
@@ -2432,6 +3145,9 @@
   #char-preview-canvas {
     position: absolute;
     inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
     filter: none;
   }
 
@@ -2446,6 +3162,32 @@
     background: rgba(6, 10, 22, .92);
     border-color: rgba(178, 195, 215, .24);
     box-shadow: 0 8px 24px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .04);
+  }
+
+  @container (max-width: 420px) {
+    .char-pedestal-console {
+      max-width: calc(100% - 12px);
+      box-sizing: border-box;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+      padding: 4px 6px;
+      margin-bottom: max(env(safe-area-inset-bottom, 10px), 10px);
+    }
+
+    .console-pose-cluster {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .console-action-btn,
+    .stage-pose-btn {
+      gap: 3px;
+      padding: 5px 6px;
+      font-size: 8px;
+      letter-spacing: .3px;
+    }
   }
 }
 

@@ -83,7 +83,7 @@
   }
 
   .char-panoramic-stage {
-    grid-template-columns: 180px minmax(0, 1fr) 280px !important;
+    grid-template-columns: 207px minmax(0, 1fr) 280px !important;
     gap: 8px !important;
     height: calc(100dvh - 40px) !important;
   }

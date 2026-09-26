@@ -117,27 +117,34 @@
     max-height: 100dvh !important;
     display: flex !important;
     flex-direction: column !important;
-    padding: max(env(safe-area-inset-top, 6px), 6px) 
-             max(env(safe-area-inset-right, 8px), 8px) 
-             0 
-             max(env(safe-area-inset-left, 8px), 8px) !important;
+    padding: 0 !important;
     box-sizing: border-box !important;
-    gap: 4px !important;
+    gap: 0 !important;
     overflow: hidden !important;
+    position: relative !important;
   }
 
-  /* 2.1 Top Bar Reorganizada Mobile: [Botões expandidos com nome] → [Moedas] */
+  /* 2.1 Top Bar Flutuante em Glassmorphism Mobile */
   .char-scene-header {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 50 !important;
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    padding: max(env(safe-area-inset-top, 4px), 4px) 8px 6px 8px !important;
-    border-bottom: 1.2px solid rgba(0, 245, 212, 0.16) !important;
+    padding: max(env(safe-area-inset-top, 14px), 14px) 10px 8px 10px !important;
+    background: rgba(6, 11, 24, 0.76) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    border-bottom: 1.2px solid rgba(0, 245, 212, 0.18) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6) !important;
     flex-shrink: 0 !important;
     gap: 6px !important;
     width: 100% !important;
     box-sizing: border-box !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   .char-scene-header::after {
@@ -165,30 +172,50 @@
     order: 1 !important;
     display: flex !important;
     align-items: center !important;
-    gap: clamp(3px, 1.2vw, 6px) !important;
+    gap: clamp(3px, 1.1vw, 5px) !important;
     flex: 1 1 auto !important;
     min-width: 0 !important;
   }
 
   /* Botões de Relíquias expandidos com ícone + nome */
   .char-relic-btn {
-    height: 27px !important;
+    height: 28px !important;
     width: auto !important;
     min-width: 0 !important;
-    padding: 3px clamp(5px, 1.4vw, 8px) !important;
+    padding: 3px clamp(5px, 1.3vw, 8px) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 5px !important;
-    border-radius: 7px !important;
+    gap: 4.5px !important;
+    border-radius: 8px !important;
     flex-shrink: 1 !important;
-    background: rgba(12, 18, 34, 0.75) !important;
+    background: rgba(12, 18, 34, 0.78) !important;
     backdrop-filter: blur(14px) !important;
     -webkit-backdrop-filter: blur(14px) !important;
-    border: 1.2px solid rgba(255, 255, 255, 0.12) !important;
-    color: #c8d6e5 !important;
+    border: 1.2px solid rgba(255, 255, 255, 0.13) !important;
+    color: #cbd5e1 !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
     user-select: none !important;
+    position: relative !important;
+    overflow: visible !important;
+  }
+
+  .relic-notification-pip {
+    top: -3px !important;
+    right: -2px !important;
+    width: 11px !important;
+    height: 11px !important;
+    z-index: 5 !important;
+  }
+
+  .relic-notification-pip .pip-glyph-body {
+    width: 8px !important;
+    height: 8px !important;
+  }
+
+  .relic-notification-pip .pip-micro-icon {
+    width: 5px !important;
+    height: 5px !important;
   }
 
   .char-relic-btn .relic-icon {
@@ -201,9 +228,9 @@
   .char-relic-btn .relic-label {
     display: inline-block !important;
     font-family: var(--font-heading) !important;
-    font-size: clamp(8px, 2.1vw, 9.5px) !important;
+    font-size: clamp(8px, 2.0vw, 9.2px) !important;
     font-weight: 800 !important;
-    letter-spacing: 0.8px !important;
+    letter-spacing: 0.7px !important;
     white-space: nowrap !important;
     color: inherit !important;
     line-height: 1 !important;
@@ -216,17 +243,17 @@
     align-items: center !important;
     margin-left: auto !important;
     flex-shrink: 0 !important;
-    padding: 3px clamp(6px, 1.5vw, 9px) !important;
-    height: 27px !important;
+    padding: 3px clamp(6px, 1.6vw, 9px) !important;
+    height: 28px !important;
     border-radius: 14px !important;
-    gap: 4px !important;
+    gap: 4.5px !important;
     font-family: var(--font-heading) !important;
-    font-size: clamp(10px, 2.4vw, 11.5px) !important;
+    font-size: clamp(10.5px, 2.4vw, 11.5px) !important;
     font-weight: 800 !important;
-    background: rgba(8, 14, 28, 0.88) !important;
-    border: 1.2px solid rgba(255, 209, 102, 0.35) !important;
+    background: rgba(8, 14, 28, 0.90) !important;
+    border: 1.2px solid rgba(255, 209, 102, 0.40) !important;
     color: #ffd166 !important;
-    box-shadow: 0 0 10px rgba(255, 209, 102, 0.15) !important;
+    box-shadow: 0 0 10px rgba(255, 209, 102, 0.18) !important;
   }
 
   .char-souls-capsule .souls-label {
@@ -244,37 +271,33 @@
     flex-shrink: 0 !important;
   }
 
-  /* 2.2 Reorganização Panorâmica -> Fluxo Vertical Cinemático */
+  /* 2.2 Reorganização Panorâmica -> Palco Aberto Imersivo com Camadas */
   .char-panoramic-stage {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 4px !important;
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    flex: 1 1 100% !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
-    flex: 1 1 auto !important;
     min-height: 0 !important;
     overflow: hidden !important;
   }
 
-  /* Tier 1: Palco Superior do Campeão (Proporção equilibrada e visual limpo) */
+  /* Tier 1: Palco Imersivo do Campeão (Canvas 2D ao Vivo com Ampla Visibilidade) */
   .char-stage-wing {
-    order: 1 !important;
-    flex: 0 1 clamp(150px, 33vh, 275px) !important;
-    flex: 0 1 clamp(150px, 33dvh, 275px) !important;
-    min-height: 120px !important;
-    max-height: 35vh !important;
-    max-height: 35dvh !important;
+    position: absolute !important;
+    inset: 0 !important;
     width: 100% !important;
+    height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-    position: relative !important;
     overflow: hidden !important;
     background: transparent !important;
     border: none !important;
     padding: 0 !important;
+    z-index: 10 !important;
   }
 
   /* Oculta completamente o nome do herói ("O PALADINO") na versão mobile */
@@ -283,72 +306,9 @@
     display: none !important;
   }
 
-  /* Título Principal "Altar dos Condenados" Centralizado Abaixo da Barra Superior */
+  /* Oculta o título redundante "Altar dos Condenados" sobre o herói */
   .char-stage-main-title {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    position: absolute !important;
-    top: 6px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    z-index: 15 !important;
-    pointer-events: none !important;
-    text-align: center !important;
-    width: max-content !important;
-    max-width: 92% !important;
-    gap: 2px !important;
-  }
-
-  .char-stage-main-title .char-eyebrow-wrapper {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 6px !important;
-  }
-
-  .char-stage-main-title .char-eyebrow-line {
-    width: clamp(16px, 4.5vw, 28px) !important;
-    height: 1px !important;
-    background: linear-gradient(90deg, transparent, var(--showcase-color, #00f5d4)) !important;
-  }
-
-  .char-stage-main-title .char-eyebrow-line.right {
-    background: linear-gradient(90deg, var(--showcase-color, #00f5d4), transparent) !important;
-  }
-
-  .char-stage-main-title .char-brand-sigil {
-    font-size: 11px !important;
-    color: var(--showcase-color, #00f5d4) !important;
-    filter: drop-shadow(0 0 8px currentColor) !important;
-    animation: sigilPulse 2.8s infinite ease-in-out !important;
-  }
-
-  .char-stage-main-title .char-brand-eyebrow {
-    font-family: var(--font-heading) !important;
-    font-size: clamp(7.5px, 2vw, 9px) !important;
-    font-weight: 800 !important;
-    letter-spacing: 2.2px !important;
-    color: var(--showcase-color, #00f5d4) !important;
-    text-transform: uppercase !important;
-    text-shadow: 0 0 8px rgba(0, 245, 212, 0.4) !important;
-  }
-
-  .char-stage-main-title .char-brand-title {
-    font-family: var(--font-display) !important;
-    font-size: clamp(14px, 4.2vw, 18px) !important;
-    font-weight: 900 !important;
-    letter-spacing: clamp(1.2px, 0.4vw, 1.8px) !important;
-    margin: 0 !important;
-    line-height: 1.15 !important;
-    color: #ffffff !important;
-    text-transform: uppercase !important;
-    white-space: nowrap !important;
-    text-shadow: 0 0 16px var(--showcase-color, rgba(0, 245, 212, 0.55)), 
-                 0 0 30px rgba(9, 132, 227, 0.4), 
-                 2px 3px 6px #000000 !important;
-    filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.9)) !important;
+    display: none !important;
   }
 
   .char-stage-viewport {
@@ -358,69 +318,177 @@
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    padding-top: max(env(safe-area-inset-top, 50px), 50px) !important;
+    padding-bottom: 110px !important;
+    box-sizing: border-box !important;
   }
 
   #char-preview-canvas {
     width: 100% !important;
     height: 100% !important;
+    max-height: 85vh !important;
+    max-height: 85dvh !important;
     object-fit: contain !important;
     display: block !important;
     position: relative !important;
     z-index: 5 !important;
   }
 
+  /* Setas Laterais de Navegação Flutuantes */
   .stage-chevron-nav {
-    width: 34px !important;
-    height: 34px !important;
-    border-radius: 50% !important;
-    z-index: 16 !important;
-    background: rgba(8, 14, 28, 0.72) !important;
-  }
-
-  .stage-chevron-nav.prev { left: max(8px, calc(50% - 155px)) !important; }
-  .stage-chevron-nav.next { right: max(8px, calc(50% - 155px)) !important; }
-
-  .char-pedestal-console {
     position: absolute !important;
-    bottom: 4px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    width: auto !important;
-    max-width: 95% !important;
-    padding: 3px 8px !important;
-    border-radius: 16px !important;
-    z-index: 18 !important;
-    gap: 6px !important;
+    top: 45% !important;
+    transform: translateY(-50%) !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    z-index: 20 !important;
+    background: rgba(8, 14, 28, 0.75) !important;
+    border: 1.2px solid rgba(255, 255, 255, 0.22) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.7) !important;
+    color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
   }
 
-  .console-action-btn {
-    padding: 3px 8px !important;
-    font-size: 8.5px !important;
-    border-radius: 10px !important;
-    gap: 4px !important;
+  .stage-chevron-nav svg {
+    width: 18px !important;
+    height: 18px !important;
+    stroke: #ffffff !important;
+    stroke-width: 2.2 !important;
+    fill: none !important;
   }
 
-  .console-pose-cluster {
-    gap: 3px !important;
+  .stage-chevron-nav:active {
+    transform: translateY(-50%) scale(0.92) !important;
+    background: rgba(14, 24, 46, 0.9) !important;
   }
 
-  .stage-pose-btn {
-    padding: 3px 7px !important;
-    font-size: 8px !important;
-    border-radius: 8px !important;
-    gap: 3px !important;
+  .stage-chevron-nav.prev {
+    left: 10px !important;
   }
 
-  /* Tier 2: Esteira Horizontal de Sigilos dos Campeões */
-  .char-roster-wing {
-    order: 2 !important;
-    width: 100% !important;
-    flex: 0 0 auto !important;
-    margin: 0 !important;
+  .stage-chevron-nav.next {
+    right: 10px !important;
+  }
+
+  /* Controles Flutuantes de Pedestal (Botão Rápido de Giro) */
+  .char-pedestal-console,
+  #char-pedestal-console {
+    position: absolute !important;
+    right: 12px !important;
+    top: calc(52px + env(safe-area-inset-top, 0px)) !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
     padding: 0 !important;
+    gap: 8px !important;
+    z-index: 25 !important;
+    box-shadow: none !important;
+  }
+
+  /* Cluster de Posturas (Passivo, Ataque, Poder) visível no mobile */
+  .console-pose-cluster {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    align-items: center !important;
+  }
+
+  .console-action-btn,
+  .stage-pose-btn {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0 !important;
+    border: 1.2px solid rgba(255, 255, 255, 0.18) !important;
+    background: rgba(10, 16, 32, 0.82) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    color: #e2e8f0 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6) !important;
+    transition: all 0.2s ease !important;
+    box-sizing: border-box !important;
+  }
+
+  .console-action-btn span,
+  .stage-pose-btn span {
+    display: none !important;
+  }
+
+  .console-action-btn svg,
+  .stage-pose-btn svg {
+    width: 18px !important;
+    height: 18px !important;
+    margin: 0 !important;
+    display: block !important;
+    flex-shrink: 0 !important;
+    stroke: currentColor !important;
+  }
+
+  .console-action-btn:active,
+  .stage-pose-btn:active {
+    transform: scale(0.92) !important;
+  }
+
+  .console-action-btn.flipped svg {
+    transform: scaleX(-1);
+    transition: transform 0.25s ease;
+  }
+
+  /* Correção de contraste e traço para qualquer pose ativa */
+  .stage-pose-btn.active {
+    background: var(--showcase-color, #00f5d4) !important;
+    color: #040914 !important;
+    border-color: #ffffff !important;
+    box-shadow: 0 0 16px var(--showcase-color, rgba(0, 245, 212, 0.7)), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+    transform: scale(1.08) !important;
+  }
+
+  .stage-pose-btn.active svg {
+    stroke: #040914 !important;
+    fill: #040914 !important;
+    filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.4)) !important;
+  }
+
+  .stage-pose-btn.active svg path,
+  .stage-pose-btn.active svg circle,
+  .stage-pose-btn.active svg polygon,
+  .stage-pose-btn.active svg line {
+    stroke: #040914 !important;
+  }
+
+  /* Tier 2: Esteira Flutuante de Sigilos dos Campeões */
+  .char-roster-wing {
+    position: absolute !important;
+    bottom: calc(180px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 30 !important;
+    margin: 0 !important;
+    padding: 0 8px !important;
     border: none !important;
     background: transparent !important;
     box-shadow: none !important;
+    pointer-events: auto !important;
+    box-sizing: border-box !important;
+    transition: opacity 0.25s ease, transform 0.25s ease !important;
   }
 
   .roster-wing-header,
@@ -436,10 +504,12 @@
     scroll-snap-type: x mandatory !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
-    gap: 7px !important;
-    padding: 2px 4px !important;
+    gap: 8px !important;
+    padding: 3px 18px !important;
     width: 100% !important;
     box-sizing: border-box !important;
+    mask-image: linear-gradient(to right, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%) !important;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%) !important;
   }
 
   #char-pedestals.char-sigil-pillar::-webkit-scrollbar {
@@ -449,7 +519,7 @@
   .char-sigils-flow {
     display: flex !important;
     flex-direction: row !important;
-    gap: 7px !important;
+    gap: 8px !important;
     width: auto !important;
     align-items: center !important;
   }
@@ -457,20 +527,25 @@
   .char-sigil-item {
     flex: 0 0 auto !important;
     width: auto !important;
-    min-width: 100px !important;
-    height: 42px !important;
-    padding: 3px 10px 3px 6px !important;
-    border-radius: 21px !important;
-    gap: 7px !important;
+    min-width: 108px !important;
+    height: 44px !important;
+    padding: 3px 12px 3px 6px !important;
+    border-radius: 22px !important;
+    gap: 8px !important;
     scroll-snap-align: center !important;
-    border: 1.2px solid rgba(255, 255, 255, 0.12) !important;
-    background: rgba(10, 16, 32, 0.8) !important;
+    border: 1.2px solid rgba(255, 255, 255, 0.13) !important;
+    background: rgba(10, 16, 32, 0.82) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5) !important;
+    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.22s ease, box-shadow 0.22s ease !important;
   }
 
   .char-sigil-item.active {
-    transform: scale(1.03) !important;
+    transform: scale(1.04) !important;
     border-color: var(--showcase-color, #00f5d4) !important;
-    box-shadow: 0 0 14px var(--showcase-color, rgba(0, 245, 212, 0.35)) !important;
+    background: rgba(14, 24, 46, 0.94) !important;
+    box-shadow: 0 0 16px var(--showcase-color, rgba(0, 245, 212, 0.38)), 0 4px 16px rgba(0, 0, 0, 0.6) !important;
   }
 
   .sigil-focus-needle {
@@ -478,8 +553,8 @@
   }
 
   .sigil-crest-disc {
-    width: 30px !important;
-    height: 30px !important;
+    width: 32px !important;
+    height: 32px !important;
     border-radius: 50% !important;
     flex-shrink: 0 !important;
   }
@@ -493,6 +568,7 @@
     display: flex !important;
     flex-direction: column !important;
     min-width: 0 !important;
+    justify-content: center !important;
   }
 
   .sigil-archetype-tag {
@@ -500,42 +576,232 @@
   }
 
   .sigil-hero-name {
-    font-size: 11px !important;
+    font-size: 11.5px !important;
     font-weight: 800 !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    letter-spacing: 0.5px !important;
+    color: #f1f5f9 !important;
+  }
+
+  .sigil-meta-row {
+    font-size: 8.5px !important;
     line-height: 1.1 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    margin-top: 1.5px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
   }
 
-  .sigil-meta-row {
-    font-size: 8px !important;
-    line-height: 1 !important;
-    white-space: nowrap !important;
+  .sigil-role-label {
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    margin-top: 1px !important;
+    white-space: nowrap !important;
+    max-width: 85px !important;
+    color: #94a3b8 !important;
   }
 
-  /* Tier 3: Dossiê Holográfico com Carrossel de 3 Slides & Catalisador de Despertar */
+  .sigil-diff-pips {
+    font-size: 7.5px !important;
+    letter-spacing: 0.5px !important;
+    color: #ffd166 !important;
+    opacity: 0.85 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Tier 3: Bottom Sheet Rúnico Ancorado na Base */
+  .char-dossier-wing.mobile-bottom-sheet,
   .char-dossier-wing {
-    order: 3 !important;
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
     width: 100% !important;
+    z-index: 40 !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
-    padding: 6px 10px max(env(safe-area-inset-bottom, 12px), 12px) 10px !important;
-    background: rgba(8, 14, 28, 0.94) !important;
-    backdrop-filter: blur(24px) !important;
-    -webkit-backdrop-filter: blur(24px) !important;
-    border-radius: 16px 16px 0 0 !important;
+    padding: 0 10px max(env(safe-area-inset-bottom, 12px), 12px) 10px !important;
+    background: linear-gradient(180deg, rgba(8, 14, 28, 0.96) 0%, rgba(4, 7, 16, 0.98) 100%) !important;
+    backdrop-filter: blur(28px) !important;
+    -webkit-backdrop-filter: blur(28px) !important;
+    border-radius: 22px 22px 0 0 !important;
     border: 1.2px solid rgba(0, 245, 212, 0.22) !important;
     border-bottom: none !important;
     box-sizing: border-box !important;
-    box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.85) !important;
+    box-shadow: 0 -8px 36px rgba(0, 0, 0, 0.92), 0 0 20px var(--showcase-color, rgba(0, 245, 212, 0.15)) !important;
+    transition: height 0.38s cubic-bezier(0.16, 1, 0.3, 1), 
+                max-height 0.38s cubic-bezier(0.16, 1, 0.3, 1), 
+                box-shadow 0.3s ease, 
+                border-color 0.3s ease !important;
+    contain: paint !important;
+  }
+
+  /* Alça Rúnica de Arraste e Indicador de Expansão (Mobile) */
+  .sheet-drag-handle-zone {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    padding: 6px 0 3px 0 !important;
+    cursor: grab !important;
+    user-select: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: none !important;
+    gap: 3px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .sheet-drag-pill-notch {
+    width: 36px !important;
+    height: 4px !important;
+    border-radius: 3px !important;
+    background: rgba(255, 255, 255, 0.32) !important;
+    box-shadow: 0 0 6px var(--showcase-color, rgba(0, 245, 212, 0.3)) !important;
+    transition: width 0.25s ease, background-color 0.25s ease !important;
+  }
+
+  .sheet-drag-handle-zone:hover .sheet-drag-pill-notch,
+  .sheet-drag-handle-zone:active .sheet-drag-pill-notch {
+    width: 48px !important;
+    background: var(--showcase-color, #00f5d4) !important;
+    box-shadow: 0 0 10px var(--showcase-color, #00f5d4) !important;
+  }
+
+  .sheet-drag-sigil-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    font-size: 8px !important;
+    font-family: var(--font-heading) !important;
+    letter-spacing: 1.5px !important;
+    color: #64748b !important;
+    text-transform: uppercase !important;
+    transition: color 0.25s ease !important;
+  }
+
+  .sheet-sigil-dot {
+    font-size: 7px !important;
+    color: var(--showcase-color, #00f5d4) !important;
+    opacity: 0.65 !important;
+    transition: transform 0.25s ease, opacity 0.25s ease !important;
+  }
+
+  .sheet-expand-chevron {
+    font-size: 8px !important;
+    color: var(--showcase-color, #00f5d4) !important;
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    display: inline-block !important;
+  }
+
+  /* Estado 1: Peek (Recolhido / Modo Arena ~168px a 176px + safe-area) */
+  .mobile-bottom-sheet[data-sheet-state="peek"] {
+    height: calc(168px + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(176px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* Estado 2: Half / Expandido (Patamar Único ~52% da tela - sem abertura dupla) */
+  .mobile-bottom-sheet[data-sheet-state="half"],
+  .mobile-bottom-sheet[data-sheet-state="expanded"] {
+    height: clamp(340px, 52vh, 440px) !important;
+    height: clamp(340px, 52dvh, 440px) !important;
+    max-height: 55vh !important;
+    max-height: 55dvh !important;
+    border-color: var(--showcase-color, #00f5d4) !important;
+    box-shadow: 0 -12px 42px rgba(0, 0, 0, 0.95), 0 0 24px var(--showcase-color, rgba(0, 245, 212, 0.28)) !important;
+  }
+
+  .mobile-bottom-sheet[data-sheet-state="half"] .sheet-expand-chevron,
+  .mobile-bottom-sheet[data-sheet-state="expanded"] .sheet-expand-chevron {
+    transform: none !important;
+  }
+
+  /* Controle de Visibilidade dos Slides no Estado Peek */
+  .mobile-bottom-sheet[data-sheet-state="peek"] .mobile-slide-pills {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border: none !important;
+  }
+
+  .mobile-bottom-sheet[data-sheet-state="peek"] .mobile-slides-track {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Em estado Half e Expanded, o trilho de slides tem visibilidade e rolagem liberadas */
+  .mobile-bottom-sheet[data-sheet-state="half"] .mobile-slides-track,
+  .mobile-bottom-sheet[data-sheet-state="expanded"] .mobile-slides-track {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    max-height: none !important;
+    transition: opacity 0.3s ease 0.08s !important;
+  }
+
+  .mobile-bottom-sheet[data-sheet-state="expanded"] .char-hologram-dossier,
+  .mobile-bottom-sheet[data-sheet-state="expanded"] .mobile-slide-pane {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Recolhimento suave da esteira de heróis quando o Bottom Sheet sobe */
+  .mobile-bottom-sheet[data-sheet-state="half"] ~ .char-roster-wing,
+  .mobile-bottom-sheet[data-sheet-state="expanded"] ~ .char-roster-wing,
+  .char-panoramic-stage:has(.mobile-bottom-sheet[data-sheet-state="half"]) .char-roster-wing,
+  .char-panoramic-stage:has(.mobile-bottom-sheet[data-sheet-state="expanded"]) .char-roster-wing {
+    opacity: 0 !important;
+    transform: translateY(12px) scale(0.96) !important;
+    pointer-events: none !important;
+  }
+
+  /* Staggered Slide-Up dos Cards de Habilidades */
+  .mobile-bottom-sheet[data-sheet-state="half"] .loadout-entry,
+  .mobile-bottom-sheet[data-sheet-state="expanded"] .loadout-entry {
+    animation: sheetCardSlideUp 0.36s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  }
+
+  .mobile-bottom-sheet[data-sheet-state="half"] .loadout-entry:nth-child(1),
+  .mobile-bottom-sheet[data-sheet-state="expanded"] .loadout-entry:nth-child(1) {
+    animation-delay: 0.04s !important;
+  }
+
+  .mobile-bottom-sheet[data-sheet-state="half"] .loadout-entry:nth-child(2),
+  .mobile-bottom-sheet[data-sheet-state="expanded"] .loadout-entry:nth-child(2) {
+    animation-delay: 0.09s !important;
+  }
+
+  .mobile-bottom-sheet[data-sheet-state="half"] .loadout-entry:nth-child(3),
+  .mobile-bottom-sheet[data-sheet-state="expanded"] .loadout-entry:nth-child(3) {
+    animation-delay: 0.14s !important;
+  }
+
+  @keyframes sheetCardSlideUp {
+    0% {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .mobile-bottom-sheet.is-dragging {
+    transition: none !important;
   }
 
   .char-dossier-wing::-webkit-scrollbar {
@@ -750,6 +1016,22 @@
     flex-shrink: 0 !important;
   }
 
+  .skill-aoe-cluster {
+    padding: 2px 4px !important;
+    gap: 1px !important;
+    border-radius: 5px !important;
+  }
+
+  .skill-aoe-reticle {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .skill-aoe-tag {
+    font-size: 6px !important;
+    letter-spacing: 0.4px !important;
+  }
+
   .loadout-icon-box {
     width: clamp(20px, 2.4vh, 25px) !important;
     height: clamp(20px, 2.4vh, 25px) !important;
@@ -881,14 +1163,15 @@
   }
 
   .primordial-seal-banner {
-    padding: 7px 10px !important;
-    gap: 3px !important;
+    padding: 8px 11px !important;
+    gap: 5px !important;
     margin: 0 !important;
-    border-radius: 7px !important;
+    border-radius: 10px !important;
   }
 
   .seal-header {
     gap: 6px !important;
+    flex-wrap: wrap !important;
   }
 
   .seal-icon {
@@ -901,12 +1184,46 @@
   }
 
   .seal-name {
-    font-size: 11px !important;
+    font-size: 11.5px !important;
+  }
+
+  .seal-status-badge {
+    padding: 2px 7px !important;
+    gap: 4px !important;
+  }
+
+  .seal-status-dot {
+    width: 5px !important;
+    height: 5px !important;
+  }
+
+  .seal-status-text {
+    font-size: 7.5px !important;
+    letter-spacing: 0.8px !important;
+  }
+
+  .seal-status-ratio {
+    font-size: 8px !important;
+    padding: 0 4px !important;
   }
 
   .seal-desc {
-    font-size: 8px !important;
-    line-height: 1.25 !important;
+    font-size: 8.5px !important;
+    line-height: 1.3 !important;
+  }
+
+  .seal-progress-block {
+    padding: 5px 8px !important;
+    gap: 4px !important;
+    border-radius: 6px !important;
+  }
+
+  .seal-progress-label {
+    font-size: 7.5px !important;
+  }
+
+  .seal-progress-val {
+    font-size: 8.5px !important;
   }
 
   .seal-track {
@@ -949,19 +1266,35 @@
   .btn-ignition-catalyst {
     position: relative !important;
     bottom: auto !important;
-    height: clamp(38px, 4.8vh, 44px) !important;
-    min-height: 38px !important;
-    padding: 6px 16px !important;
-    font-size: clamp(11px, 1.3vh, 12.5px) !important;
-    letter-spacing: 1.4px !important;
-    margin-top: clamp(4px, 0.8vh, 8px) !important;
-    margin-bottom: 0 !important;
-    border-radius: 8px !important;
-    flex-shrink: 0 !important;
+    height: clamp(44px, 5.4vh, 48px) !important;
+    min-height: 44px !important;
+    padding: 0 20px !important;
+    display: inline-flex !important;
+    align-items: center !important;
     justify-content: center !important;
+    font-family: var(--font-heading, 'Cinzel', serif) !important;
+    font-size: clamp(12px, 1.45vh, 13.5px) !important;
+    font-weight: 900 !important;
+    letter-spacing: 2px !important;
+    margin-top: 6px !important;
+    margin-bottom: 2px !important;
+    border-radius: 24px !important;
+    flex-shrink: 0 !important;
     z-index: 20 !important;
     width: 100% !important;
     box-sizing: border-box !important;
+    background: linear-gradient(135deg, 
+      var(--showcase-color, #00f5d4) 0%, 
+      color-mix(in srgb, var(--showcase-color, #00f5d4) 75%, #000000) 50%, 
+      var(--showcase-color, #00f5d4) 100%
+    ) !important;
+    border: 1.5px solid var(--showcase-color, #00f5d4) !important;
+    color: #040508 !important;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7), 0 0 22px var(--showcase-color, rgba(0, 245, 212, 0.45)), inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+  }
+
+  .btn-ignition-catalyst .btn-arcane-flames {
+    border-radius: 26px !important;
   }
 
   .btn-hotkey-hint {
@@ -2970,27 +3303,29 @@
   /* 4. Calibração para Telas com Altura Ultracompacta (ex: Safari/Chrome com barras de UI abertas) */
   @media (max-height: 660px) {
     .char-stage-wing {
-      flex: 0 1 clamp(100px, 26vh, 150px) !important;
-      flex: 0 1 clamp(100px, 26dvh, 150px) !important;
-      min-height: 90px !important;
-      max-height: 28vh !important;
-      max-height: 28dvh !important;
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      max-height: none !important;
     }
 
-    .char-stage-main-title {
-      display: none !important;
+    .char-stage-viewport {
+      padding-bottom: 110px !important;
     }
 
-    .char-pedestal-console {
-      bottom: 2px !important;
-      padding: 1px 4px !important;
-      gap: 2px !important;
+    .char-pedestal-console,
+    #char-pedestal-console {
+      top: 48px !important;
+      right: 6px !important;
+      padding: 4px 3px !important;
+      gap: 4px !important;
     }
 
     .char-pedestal-console .console-action-btn,
     .char-pedestal-console .stage-pose-btn {
-      padding: 2px 4px !important;
-      font-size: 7.5px !important;
+      width: 30px !important;
+      height: 30px !important;
     }
 
     .char-sigil-item {

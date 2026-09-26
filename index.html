@@ -351,14 +351,32 @@
           <button id="open-bestiary-btn" class="char-relic-btn relic-bestiary" title="Códice do Bestiário">
             <svg viewBox="0 0 24 24" class="relic-icon"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><circle cx="12" cy="9" r="2" fill="currentColor"/></svg>
             <span class="relic-label">BESTIÁRIO</span>
+            <span class="relic-notification-pip pip-bestiary" id="pip-bestiary" aria-label="Novos monstros descobertos" style="display:none;">
+              <span class="pip-pulse-ring"></span>
+              <span class="pip-glyph-body">
+                <svg viewBox="0 0 24 24" class="pip-micro-icon"><polygon points="12,2 15,9 22,12 15,15 12,22 9,15 2,12 9,9" fill="currentColor"/></svg>
+              </span>
+            </span>
           </button>
           <button id="open-achievements-btn" class="char-relic-btn relic-achievements" title="Grimório de Conquistas">
             <svg viewBox="0 0 24 24" class="relic-icon"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
             <span class="relic-label">CONQUISTAS</span>
+            <span class="relic-notification-pip pip-achievements" id="pip-achievements" aria-label="Conquistas concluídas" style="display:none;">
+              <span class="pip-pulse-ring"></span>
+              <span class="pip-glyph-body">
+                <svg viewBox="0 0 24 24" class="pip-micro-icon"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="currentColor"/></svg>
+              </span>
+            </span>
           </button>
           <button id="open-talents-btn" class="char-relic-btn relic-talents" title="Astrolábio das Almas">
             <svg viewBox="0 0 24 24" class="relic-icon"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
             <span class="relic-label">ASTROLÁBIO</span>
+            <span class="relic-notification-pip pip-talents" id="pip-talents" aria-label="Almas suficientes para despertar talentos" style="display:none;">
+              <span class="pip-pulse-ring"></span>
+              <span class="pip-glyph-body">
+                <svg viewBox="0 0 24 24" class="pip-micro-icon"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>
+              </span>
+            </span>
           </button>
         </div>
       </div>
@@ -410,22 +428,27 @@
         </div>
 
         <!-- Controles Diegéticos de Pedestal (Preserva IDs e classes) -->
-        <div class="char-pedestal-console">
-          <button id="btn-preview-facing" class="console-action-btn" title="Inverter Orientação do Campeão">
-            <svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M20 12A8 8 0 1 1 17.5 6.3"/><polyline points="20 2 20 7 15 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        <div class="char-pedestal-console" id="char-pedestal-console">
+          <button id="btn-preview-facing" class="console-action-btn" title="Inverter Orientação do Campeão" aria-label="Girar Campeão">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <polyline points="3 3 3 8 8 8"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+              <polyline points="21 21 21 16 16 16"/>
+            </svg>
             <span>GIRAR</span>
           </button>
 
-          <div class="console-pose-cluster">
-            <button class="stage-pose-btn active" data-pose="idle" title="Postura de Repouso / Guarda">
+          <div class="console-pose-cluster" id="console-pose-cluster">
+            <button class="stage-pose-btn active" data-pose="idle" title="Postura Passiva / Guarda" aria-label="Postura Passiva">
               <svg viewBox="0 0 24 24" class="game-icon pose-btn-icon"><path d="M12 2L4 5v6c0 5.2 3.4 10.1 8 11.5 4.6-1.4 8-6.3 8-11.5V5L12 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="11" r="2.5" fill="currentColor"/></svg>
-              <span>REPOUSO</span>
+              <span>PASSIVO</span>
             </button>
-            <button class="stage-pose-btn" data-pose="combat" title="Postura de Ataque / Combate">
+            <button class="stage-pose-btn" data-pose="combat" title="Postura de Ataque / Combate" aria-label="Postura de Ataque">
               <svg viewBox="0 0 24 24" class="game-icon pose-btn-icon"><path d="M14.5 17.5L3 6V3h3l11.5 11.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 19l6 2 2-6-2.5-2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 17.5L21 6V3h-3L6.5 14.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="21" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="21" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
               <span>ATAQUE</span>
             </button>
-            <button class="stage-pose-btn" data-pose="skill" title="Postura de Poder / Habilidade Especial">
+            <button class="stage-pose-btn" data-pose="skill" title="Postura de Poder / Habilidade Especial" aria-label="Postura de Poder">
               <svg viewBox="0 0 24 24" class="game-icon pose-btn-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
               <span>PODER</span>
             </button>
@@ -434,7 +457,18 @@
       </section>
 
       <!-- Ala 3: Interface Contextual do Campeão (Preserva ID char-showcase) -->
-      <aside class="char-dossier-wing">
+      <aside class="char-dossier-wing mobile-bottom-sheet" id="char-dossier-wing" data-sheet-state="peek">
+        <!-- Alça Tátil de Arraste & Indicador Rúnico (Mobile Bottom Sheet) -->
+        <div class="sheet-drag-handle-zone" id="sheet-drag-handle-zone" role="button" aria-label="Expandir ou recolher informações do herói" tabindex="0">
+          <div class="sheet-drag-pill-notch"></div>
+          <div class="sheet-drag-sigil-bar">
+            <span class="sheet-sigil-dot left">✦</span>
+            <span class="sheet-sigil-hint" id="sheet-drag-hint-text">DETALHES DO ARQUÉTIPO</span>
+            <span class="sheet-expand-chevron" id="sheet-expand-chevron">▲</span>
+            <span class="sheet-sigil-dot right">✦</span>
+          </div>
+        </div>
+
         <div id="char-showcase" class="char-hologram-dossier"></div>
       </aside>
     </main>
@@ -489,7 +523,8 @@
             <h2 class="locked-hero-name" id="locked-hero-name">Ignis</h2>
             <div class="locked-status-pill">
               <span class="locked-pulse-dot"></span>
-              <span>SELO PRIMORDIAL ATIVO</span>
+              <span class="locked-status-text">SELO PRIMORDIAL ATIVO</span>
+              <span class="locked-status-ratio" id="locked-hero-status-ratio">0/1</span>
             </div>
           </div>
         </div>
