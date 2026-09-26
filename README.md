@@ -19,7 +19,8 @@ Sem frameworks, sem bibliotecas externas e sem assets de imagem ou áudio pré-g
 - **Motor Próprio em Vanilla JS**: Arquitetura modular orientada a subsistemas desacoplados em ES6 Modules, sem dependências circulares.
 - **Gerenciamento de Estado Centralizado (`src/state/`)**: Desacoplamento do loop principal através de módulos atômicos para estado de partida (`gameState.js`), coleções ativas na arena (`collections.js`) e despachador de eventos/causa mortis (`events.js`).
 - **Pipeline Gráfico com Múltiplos Canvas 2D**: Camada de jogo principal (`game-canvas`) combinada com camada de sobreposição (`banner-canvas`) para anúncios cinemáticos, banners de ondas e introduções de chefes sem sobreposição destrutiva. Suporte dinâmico a `devicePixelRatio` (limitado a 2.0x para nitidez e fluidez constante a 60 FPS).
-- **Otimizações Zero-GC & Offscreen Canvas Caching**: Ícones vetoriais de status (veneno, queimadura e congelamento) cacheados em telas offscreen de 24x24 (`ctx.drawImage`), eliminação de alocações com spread de objetos e transformações afins diretas em resíduos de morte.
+- **Introdução Cinematográfica Teatral (`matchIntro`)**: Abertura de partida com aproximação dramática de câmera (`2.2x -> 1.0x`) centrada no herói via curva cúbica (*smoothstep*), barras pretas com friso dourado (*letterbox*), vinheta teatral com foco de luz, cartão gótico de apresentação, revelação dinâmica de HUD e pré-aquecimento assíncrono de terreno sem engasgos.
+- **Otimizações Zero-GC & Offscreen Canvas Caching**: Atlas GPU de 256 células em ring buffer LRU (`spriteCache.js`) que substitui milhares de chamadas vetoriais procedurais por GPU blitting direto, ícones vetoriais de status (veneno, queimadura e congelamento) cacheados em telas offscreen de 24x24 (`ctx.drawImage`), eliminação de alocações com spread de objetos e transformações afins diretas em resíduos de morte.
 - **Spatial Hash Grid 2D**: Algoritmo de particionamento espacial em células de `75px` com chaves inteiras de 32-bit e pool estático de arrays para checagem otimizada de colisões entre centenas de entidades simultâneas com reuso total de memória (Zero Garbage Collection).
 - **Física de Multidão & Tokens de Ataque Melee**: Concorrência de golpes coordenada que limita o ataque simultâneo de hordas comuns a no máximo 6 monstros por frame (`MAX_MELEE_ATTACK_TOKENS`), prevenindo shotgunning injusto.
 - **Purga Dimensional & Fusão Dinâmica de Drops**: O Altar do Chefe Final condensa 100% das gemas de XP do mapa aberto em uma única Orbe Cósmica, resgata baús distantes e descarta detritos, poças e crateras. Abates contínuos contam com fusão de gemas de XP vizinhas (<38px) para eliminar picos de entidades.
@@ -28,7 +29,7 @@ Sem frameworks, sem bibliotecas externas e sem assets de imagem ou áudio pré-g
 - **HUD Grim Cyber-Gothic & Modais Diegéticos**: Interface responsiva de alta fidelidade com medalhões vetoriais em bronze e ouro antigo, barras dinâmicas de HP/XP, supressão coordenada de cards de onda (`banner-suppressed`), layout otimizado para desktop e botão de ULT calibrado para toque móvel.
 - **Subsistema Unificado de Meta-Progressão (`src/systems/progression.js`)**: Persistência no `localStorage` de ouro/almas, árvore de talentos do Astrolábio com 100% de reembolso, monumentos de melhor partida, biometria por herói, grimório de 25 conquistas e bestiário.
 - **Análise Forense de Causa Mortis & Dicas Táticas**: Rastreamento detalhado da causa da morte com identificação do agressor (Chefe, Miniboss, Elite, Horda, Perigo Ambiental ou Projétil), dano sofrido e dicas táticas contextuais específicas para cada ataque fatal.
-- **Eventos Mundiais & Pactos de Risco**: Altar de Sangue que surge proceduralmente com círculo ritual de contenção, acelerando a horda em 2.0x em troca de baús lendários garantidos.
+- **Eventos Mundiais & Pactos de Risco**: Altar de Sangue que surge proceduralmente com círculo ritual de contenção, acelerando a horda em 2.0x em troca de baús lendários garantidos, com expurgo visual e cancelamento automático e limpo (`dismissBloodAltar`) ao iniciar confrontos contra chefes.
 - **Skins Cosméticas & Customização Visual**: Sistema de skins alternativas por herói com desbloqueio progressivo, persistência no `localStorage`, paletas cromáticas substituíveis e preview em tempo real no pedestal e miniaturas.
 - **Transição Elemental Cinética (Hero Shifting)**: Coreografia animada de dissolução e materialização ao trocar de herói, com FSM de timing (0-500ms), temas elementais por classe, God Rays, screen shake, partículas gravitacionais e fast-switching.
 - **Trilhas Musicais Procedurais por Herói**: 5 faixas temáticas únicas (120s loop) sintetizadas em tempo real via Web Audio API, refletindo a identidade sonora de cada sobrevivente na tela de seleção.
@@ -166,8 +167,8 @@ Hord-Slayer/
     │
     ├── state/                  # Gerenciamento de estado global desacoplado (Zero Circular Imports)
     │   ├── collections.js      # Coleções ativas na arena (inimigos, projéteis, poças, gemas, baús)
-    │   ├── events.js           # Despacho de notificações, screen shake e rastreamento de causa mortis
-    │   └── gameState.js        # Estado central da partida, câmera, viewport, zoom e cronômetros
+    │   ├── events.js           # Despacho de notificações, controle seguro de screen shake e causa mortis
+    │   └── gameState.js        # Estado central da partida, câmera, viewport, matchIntro, zoom e cronômetros
     │
     ├── config/                 # Catálogos de dados, balanceamento e lore
     │   ├── achievements.js     # Catálogo de 25 conquistas e mapa de desbloqueio de heróis
@@ -210,6 +211,7 @@ Hord-Slayer/
     │   │   └── abyssSovereign/ # Módulo do Soberano do Abismo (Boss 4: FSM, física chicote, intro e render)
     │   │
     │   ├── enemies/            # Spawners e máquinas de estados de inimigos
+    │   │   ├── crawlerLocomotion.js # Locomoção ondulatória e cinemática de vermes/rastejantes (Stalker, Splitter)
     │   │   ├── minibossAI.js   # Fachada de retrocompatibilidade para controladores dos 16 minibosses
     │   │   ├── minibosses/     # Módulos atômicos e FSM individuais para cada um dos 16 minibosses
     │   │   └── spawner.js      # Spawner de hordas, esquadrões e monstros comuns
@@ -228,6 +230,10 @@ Hord-Slayer/
     │   ├── desktopHeroStage.js # Pedestal 3D procedural, iluminação reativa a áudio e palco cinético no desktop
     │   ├── enemiesRenderer.js  # Fachada de retrocompatibilidade para monstros comuns e elites
     │   ├── enemies/            # Renderizadores procedurais dedicados para cada criatura comum
+    │   │   ├── deathEffects.js    # Resíduos cadavéricos, desintegração e física de estilhaços
+    │   │   ├── enemyDecorators.js # Adornos vetoriais procedurais (espinhos, auras de elite e olhos)
+    │   │   ├── spriteCache.js     # Baking dinâmico de sprites em atlas com ring buffer de 256 slots (GPU blit)
+    │   │   └── index.js           # Fachada e tabela de despacho O(1) dos renderizadores de criaturas
     │   ├── environment.js      # Fachada e orquestrador de solo, transições de biomas e atmosfera
     │   ├── groundCracks.js     # Fissuras de impacto, crateras e fendas de magma no solo
     │   ├── heroTransition.js   # Transição elemental cinética entre heróis (dissolução e materialização)
@@ -239,6 +245,7 @@ Hord-Slayer/
     │   ├── kragdorUlt.js       # Onda de choque sonora da ULT Rugido Ancestral de Kragdor
     │   ├── minibossesRenderer.js # Fachada de retrocompatibilidade para os 16 minibosses
     │   ├── minibosses/         # Renderizadores procedurais dedicados para cada um dos 16 minibosses
+    │   │   └── threatGlyph.js     # Glifo de alerta e telegrafia de ameaça de minibosses
     │   ├── playerRenderer.js   # Fachada e renderização de auras sagradas, orbitais e machados
     │   ├── renderer.js         # Orquestrador gráfico principal (câmera, shake, camadas e partículas)
     │   ├── rolandUlt.js        # Efeitos de rastro consagrado da Investida Sagrada de Roland
@@ -253,7 +260,7 @@ Hord-Slayer/
     │   │
     │   ├── environment/        # Módulos especializados de cenários e arenas surreais
     │   │   ├── abyssArena.js   # Renderizador surreal do Altar do Vazio e Soberano do Abismo
-    │   │   ├── naturalTerrain.js # Terreno procedural, biomas naturais e cache de texturas
+    │   │   ├── naturalTerrain.js # Terreno procedural Perlin, pré-aquecimento, prefetch adaptativo e cache
     │   │   └── biomeProps/     # Despacho O(1) e desenho procedural de props por bioma
     │   │       ├── ivoryOssuary.js    # Candelabros tombados, mosaicos e anjos decapitados
     │   │       ├── crimsonSalt.js     # Espículas salinas, fontes eólicas e salmoura carmesim
@@ -301,7 +308,7 @@ Hord-Slayer/
     │   ├── projectiles.js      # Balística, projéteis teleguiados e regras de adrenalina melee
     │   ├── ui.js               # Fachada de interface para retrocompatibilidade
     │   ├── waves.js            # Cronograma temporal de ondas, esquadrões e gatilhos de chefes
-    │   └── worldEvents.js      # Eventos mundiais dinâmicos (Altar de Sangue e pactos rituais)
+    │   └── worldEvents.js      # Eventos mundiais dinâmicos (Altar de Sangue, pactos e expurgo em chefes)
     │
     └── ui/                     # Componentes e controladores de interface
         ├── cardIcons.js        # Gerador procedural de glifos para as cartas de Tarô e armas
