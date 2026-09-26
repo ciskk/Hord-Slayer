@@ -2,15 +2,16 @@
  * src/ui/modals/achievementsModal.js
  * Grimório de Conquistas Heroicas e Monumento da Maior Jornada.
  */
-import { closeCharSelectModal, openCharacterSelect, isMobileScreen } from './characterSelectModal.js';
+import { closeCharSelectModal, openCharacterSelect, isMobileScreen, updateRelicNotificationPips } from './characterSelectModal.js';
 import { 
   getUnlockedAchievementIds, 
   ACHIEVEMENTS, 
-  getAchievementStatus,
+  getAchievementStatus, 
   getAchievementsSummary,
   getLifetimeStats,
   getBestRun 
 } from '../../config/achievements.js';
+import { markUnlockedAchievementsAsSeen } from '../../systems/progression.js';
 import { 
   startBestRunTarot, 
   stopBestRunTarot,
@@ -429,6 +430,9 @@ export function openAchievementsModal() {
 
   renderAchievementsRoster('JOURNEY');
   renderAchievementDossier('JOURNEY');
+
+  markUnlockedAchievementsAsSeen();
+  updateRelicNotificationPips();
 
   playSfx('level');
 }

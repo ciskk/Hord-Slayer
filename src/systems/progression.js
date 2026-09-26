@@ -697,8 +697,94 @@ export function resetBestiary() {
   markDirty(BESTIARY_STORAGE_KEY);
   try {
     localStorage.removeItem(BESTIARY_STORAGE_KEY);
+    localStorage.removeItem(SEEN_BESTIARY_STORAGE_KEY);
     playSfx('hit');
     triggerHaptic('light');
   } catch (e) {}
   return true;
+}
+
+// ============================================================================
+// 4. SINALIZADORES DE NOTIFICAÇÃO NAS RELÍQUIAS (NOTIFICATION PIPS)
+// ============================================================================
+
+export const SEEN_BESTIARY_STORAGE_KEY = 'hord_bestiary_seen_v1';
+export const SEEN_ACHIEVEMENTS_STORAGE_KEY = 'hord_achievements_seen_v1';
+
+export function getUnseenDiscoveredCreaturesCount() {
+  ensureStoreInitialized();
+  let seen = [];
+  try {
+    const raw = localStorage.getItem(SEEN_BESTIARY_STORAGE_KEY);
+    seen = raw ? (JSON.parse(raw) || []) : [];
+  } catch (e) {
+    seen = [];
+  }
+
+  const discovered = BESTIARY_ENTRIES.filter(entry => isCreatureDiscovered(entry.id));
+  const unseen = discovered.filter(entry => !seen.includes(entry.id));
+  return unseen.length;
+}
+
+export function markDiscoveredCreaturesAsSeen() {
+  try {
+    const discoveredIds = BESTIARY_ENTRIES
+      .filter(entry => isCreatureDiscovered(entry.id))
+      .map(entry => entry.id);
+    localStorage.setItem(SEEN_BESTIARY_STORAGE_KEY, JSON.stringify(discoveredIds));
+  } catch (e) {
+    console.warn('Erro ao salvar criaturas visualizadas no Bestiário:', e);
+  }
+}
+
+export function getUnseenUnlockedAchievementsCount() {
+  ensureStoreInitialized();
+  let seen = [];
+  try {
+    const raw = localStorage.getItem(SEEN_ACHIEVEMENTS_STORAGE_KEY);
+    seen = raw ? (JSON.parse(raw) || []) : [];
+  } catch (e) {
+    seen = [];
+  }
+
+  const unlocked = getUnlockedAchievementIds();
+  const unseen = unlocked.filter(id => !seen.includes(id));
+  return unseen.length;
+}
+
+export function markUnlockedAchievementsAsSeen() {
+  try {
+    const unlocked = getUnlockedAchievementIds();
+    localStorage.setItem(SEEN_ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(unlocked));
+  } catch (e) {
+    console.warn('Erro ao salvar conquistas visualizadas:', e);
+  }
+}
+
+export function canAffordAnyMetaUpgrade() {
+  ensureStoreInitialized();
+  const gold = getPersistentGold();
+  if (gold <= 0) return false;
+  const levels = getMetaLevels();
+  return META_TALENTS.some(talent => {
+    const curLvl = levels[talent.id] || 0;
+    if (curLvl >= talent.maxLvl) return false;
+    if (talent.parent && (levels[talent.parent] || 0) < 1) return false;
+    const cost = getMetaUpgradeCost(talent.id, curLvl);
+    return gold >= cost;
+  });
+}
+
+export function getAffordableMetaUpgradesCount() {
+  ensureStoreInitialized();
+  const gold = getPersistentGold();
+  if (gold <= 0) return 0;
+  const levels = getMetaLevels();
+  return META_TALENTS.filter(talent => {
+    const curLvl = levels[talent.id] || 0;
+    if (curLvl >= talent.maxLvl) return false;
+    if (talent.parent && (levels[talent.parent] || 0) < 1) return false;
+    const cost = getMetaUpgradeCost(talent.id, curLvl);
+    return gold >= cost;
+  }).length;
 }

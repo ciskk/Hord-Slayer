@@ -2,13 +2,14 @@
  * src/ui/modals/bestiaryModal.js
  * Códice do Bestiário das Trevas e Preview Procedural de Criaturas.
  */
-import { closeCharSelectModal, openCharacterSelect, isMobileScreen } from './characterSelectModal.js';
+import { closeCharSelectModal, openCharacterSelect, isMobileScreen, updateRelicNotificationPips } from './characterSelectModal.js';
 import { 
   BESTIARY_ENTRIES, 
   isCreatureDiscovered, 
   getCreatureKills, 
   isLoreUnlocked 
 } from '../../config/bestiary.js';
+import { markDiscoveredCreaturesAsSeen } from '../../systems/progression.js';
 import { 
   startBestiaryPreview, 
   stopBestiaryPreview 
@@ -64,6 +65,9 @@ export function openBestiaryModal() {
 
   renderBestiaryRoster(currentBestiaryCategory);
   renderBestiaryDossier(selectedCreatureId);
+
+  markDiscoveredCreaturesAsSeen();
+  updateRelicNotificationPips();
 
   playSfx('level');
 }

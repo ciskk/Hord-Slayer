@@ -376,3 +376,104 @@ export const PASSIVE_ICONS = {
   magnet: 'magnet',
   heal: 'heal'
 };
+
+/**
+ * Padrões Geométricos de Área de Impacto das Habilidades dos Campeões (Skill Area Indicators)
+ */
+export const SKILL_AOE_PATTERNS = {
+  KNIGHT: {
+    type: 'CONE',
+    tag: 'CONE FRONTAL',
+    title: 'Cone Frontal 60°',
+    desc: 'Impacto direcional em cone expansivo frontal com abertura de 60° e avanço penetrante.',
+    svg: `
+      <svg viewBox="0 0 32 32" class="skill-aoe-svg" fill="none">
+        <circle cx="16" cy="24" r="18" stroke="currentColor" stroke-width="0.7" stroke-dasharray="2,2" opacity="0.25"/>
+        <circle cx="16" cy="24" r="10" stroke="currentColor" stroke-width="0.7" stroke-dasharray="2,2" opacity="0.3"/>
+        <line x1="16" y1="24" x2="16" y2="4" stroke="currentColor" stroke-width="0.6" stroke-dasharray="1.5,1.5" opacity="0.35"/>
+        <path d="M 16 24 L 5 7 A 20 20 0 0 1 27 7 Z" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        <path d="M 16 21 L 9 11" stroke="currentColor" stroke-width="0.8" opacity="0.5"/>
+        <path d="M 16 21 L 23 11" stroke="currentColor" stroke-width="0.8" opacity="0.5"/>
+        <polyline points="13 13 16 9 19 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="16" cy="24" r="2.2" fill="#ffffff" stroke="currentColor" stroke-width="1"/>
+      </svg>
+    `
+  },
+  MAGE: {
+    type: 'EXPANDING_RING',
+    tag: 'ANEL 360°',
+    title: 'Anel Expansivo 360°',
+    desc: 'Onda de choque térmica concêntrica irradiando uniformemente em 360° a partir do núcleo.',
+    svg: `
+      <svg viewBox="0 0 32 32" class="skill-aoe-svg" fill="none">
+        <line x1="16" y1="3" x2="16" y2="29" stroke="currentColor" stroke-width="0.6" stroke-dasharray="1.5,1.5" opacity="0.25"/>
+        <line x1="3" y1="16" x2="29" y2="16" stroke="currentColor" stroke-width="0.6" stroke-dasharray="1.5,1.5" opacity="0.25"/>
+        <circle cx="16" cy="16" r="6" stroke="currentColor" stroke-width="0.9" stroke-dasharray="2,2" opacity="0.45"/>
+        <circle cx="16" cy="16" r="11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M 16 4.5 A 11.5 11.5 0 1 0 16 27.5 A 11.5 11.5 0 1 0 16 4.5 M 16 10 A 6 6 0 1 1 16 22 A 6 6 0 1 1 16 10 Z" fill="currentColor" fill-opacity="0.22" fill-rule="evenodd"/>
+        <polyline points="16 2.5 14 5 18 5" fill="currentColor" stroke="none"/>
+        <polyline points="16 29.5 14 27 18 27" fill="currentColor" stroke="none"/>
+        <polyline points="2.5 16 5 14 5 18" fill="currentColor" stroke="none"/>
+        <polyline points="29.5 16 27 14 27 18" fill="currentColor" stroke="none"/>
+        <circle cx="16" cy="16" r="2.2" fill="#ffffff" stroke="currentColor" stroke-width="1"/>
+      </svg>
+    `
+  },
+  ROGUE: {
+    type: 'PIERCING_LINE',
+    tag: 'FEIXE LINEAR',
+    title: 'Feixe Linear Perfurante',
+    desc: 'Vetor retilíneo de alta perfuração que rasga e transpõe fileiras de alvos em linha reta.',
+    svg: `
+      <svg viewBox="0 0 32 32" class="skill-aoe-svg" fill="none">
+        <line x1="8" y1="16" x2="24" y2="16" stroke="currentColor" stroke-width="0.6" stroke-dasharray="1.5,1.5" opacity="0.25"/>
+        <line x1="16" y1="28" x2="16" y2="4" stroke="currentColor" stroke-width="0.7" opacity="0.3"/>
+        <rect x="13" y="5" width="6" height="21" rx="3" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.3"/>
+        <polyline points="12 11 16 5 20 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="13 17 16 12 19 17" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/>
+        <line x1="7" y1="13" x2="10" y2="13" stroke="currentColor" stroke-width="0.9" opacity="0.5"/>
+        <line x1="22" y1="13" x2="25" y2="13" stroke="currentColor" stroke-width="0.9" opacity="0.5"/>
+        <line x1="9" y1="19" x2="11" y2="19" stroke="currentColor" stroke-width="0.8" opacity="0.4"/>
+        <line x1="21" y1="19" x2="23" y2="19" stroke="currentColor" stroke-width="0.8" opacity="0.4"/>
+        <circle cx="16" cy="26" r="2.2" fill="#ffffff" stroke="currentColor" stroke-width="1"/>
+      </svg>
+    `
+  },
+  BARBARIAN: {
+    type: 'RADIAL_SHOCKWAVE',
+    tag: 'ONDA RADIAL',
+    title: 'Onda Radial 360°',
+    desc: 'Ruptura sísmica omnidirecional com picos concêntricos de estilhaçamento ao redor do campeão.',
+    svg: `
+      <svg viewBox="0 0 32 32" class="skill-aoe-svg" fill="none">
+        <circle cx="16" cy="16" r="13" stroke="currentColor" stroke-width="0.6" stroke-dasharray="2,2" opacity="0.3"/>
+        <polygon points="16,3 19,11 28,7 23,15 29,21 20,21 19,29 14,23 5,26 9,18 3,12 12,12" fill="currentColor" fill-opacity="0.22" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        <line x1="16" y1="16" x2="16" y2="6" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+        <line x1="16" y1="16" x2="25" y2="16" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+        <line x1="16" y1="16" x2="16" y2="26" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+        <line x1="16" y1="16" x2="7" y2="16" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+        <circle cx="16" cy="16" r="2.5" fill="#ffffff" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+    `
+  },
+  ALCHEMIST: {
+    type: 'GROUND_ZONE',
+    tag: 'ZONA DE POÇA',
+    title: 'Zona Circular Contínua',
+    desc: 'Área de efeito persistente em forma de poça volátil que infesta o piso com névoa transmutativa.',
+    svg: `
+      <svg viewBox="0 0 32 32" class="skill-aoe-svg" fill="none">
+        <ellipse cx="16" cy="18" rx="14" ry="9" stroke="currentColor" stroke-width="0.6" stroke-dasharray="2,2" opacity="0.25"/>
+        <ellipse cx="16" cy="18" rx="11" ry="6.5" fill="currentColor" fill-opacity="0.24" stroke="currentColor" stroke-width="1.3"/>
+        <circle cx="12" cy="16" r="1.4" fill="currentColor" opacity="0.8"/>
+        <circle cx="19" cy="17" r="1.6" fill="currentColor" opacity="0.8"/>
+        <circle cx="15" cy="19.5" r="1.2" fill="currentColor" opacity="0.9"/>
+        <circle cx="16" cy="11" r="1.5" stroke="currentColor" stroke-width="0.9" fill="none" opacity="0.75"/>
+        <circle cx="21" cy="13" r="1.2" stroke="currentColor" stroke-width="0.8" fill="none" opacity="0.6"/>
+        <circle cx="11" cy="12" r="1.0" stroke="currentColor" stroke-width="0.8" fill="none" opacity="0.6"/>
+        <path d="M 16 13 Q 15 10 16 7" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" opacity="0.5"/>
+        <circle cx="16" cy="18" r="2" fill="#ffffff" stroke="currentColor" stroke-width="1"/>
+      </svg>
+    `
+  }
+};

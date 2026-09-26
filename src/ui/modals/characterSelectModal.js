@@ -11,7 +11,11 @@ import {
   getAchievementStatus,
   getHeroRecord,
   getPersistentGold,
-  evaluateAchievements
+  evaluateAchievements,
+  getUnseenDiscoveredCreaturesCount,
+  getUnseenUnlockedAchievementsCount,
+  canAffordAnyMetaUpgrade,
+  getAffordableMetaUpgradesCount
 } from '../../systems/progression.js';
 import { 
   startPreview, 
@@ -35,7 +39,7 @@ import { layoutMetrics, updateAllAutoFit, onLayoutChange } from '../../core/resp
 import { gameState } from '../../state/gameState.js';
 import { resetGame, terminateMatch } from '../../main.js';
 
-import { renderIcon, WEAPON_ICONS } from '../icons.js';
+import { renderIcon, WEAPON_ICONS, SKILL_AOE_PATTERNS } from '../icons.js';
 import { closeDeathModal } from './gameOverModal.js';
 import { applyHeroVisuals } from '../hudController.js';
 
@@ -131,10 +135,14 @@ export function openLockedHeroModal(heroKey) {
   // 4. Barra de Progresso Cósmico
   const progValEl = document.getElementById('locked-progress-val');
   const progFillEl = document.getElementById('locked-progress-fill');
+  const statusRatioEl = document.getElementById('locked-hero-status-ratio');
   if (status) {
     const cur = status.current ?? 0;
     const tgt = status.target ?? 1;
     const pct = status.pct ?? 0;
+    if (statusRatioEl) {
+      statusRatioEl.innerText = `${cur}/${tgt}`;
+    }
     if (progValEl) {
       progValEl.innerHTML = `<span class="prog-cur-tgt">${cur.toLocaleString('pt-BR')} / ${tgt.toLocaleString('pt-BR')}</span> <span class="prog-pct-pill">${pct}%</span>`;
     }
@@ -142,6 +150,9 @@ export function openLockedHeroModal(heroKey) {
       progFillEl.style.width = `${pct}%`;
     }
   } else {
+    if (statusRatioEl) {
+      statusRatioEl.innerText = '0/1';
+    }
     if (progValEl) {
       progValEl.innerHTML = `<span class="prog-cur-tgt">0 / 1</span> <span class="prog-pct-pill">0%</span>`;
     }
@@ -228,6 +239,226 @@ export function closeCharSelectModal() {
   }
 }
 
+export function updateRelicNotificationPips() {
+  try {
+    // 1. Bestiário (Códice): monstros derrotados recém-descobertos
+    const unseenBestiary = getUnseenDiscoveredCreaturesCount();
+    const pipBestiary = document.getElementById('pip-bestiary');
+    if (pipBestiary) {
+      if (unseenBestiary > 0) {
+        pipBestiary.style.display = 'flex';
+        pipBestiary.setAttribute('title', `${unseenBestiary} nova(s) criatura(s) descoberta(s) pronta(s) para consulta`);
+      } else {
+        pipBestiary.style.display = 'none';
+        pipBestiary.removeAttribute('title');
+      }
+    }
+
+    // 2. Conquistas (Grimório): conquistas concluídas pendentes de consulta
+    const unseenAch = getUnseenUnlockedAchievementsCount();
+    const pipAch = document.getElementById('pip-achievements');
+    if (pipAch) {
+      if (unseenAch > 0) {
+        pipAch.style.display = 'flex';
+        pipAch.setAttribute('title', `${unseenAch} conquista(s) concluída(s) pronta(s) para consulta`);
+      } else {
+        pipAch.style.display = 'none';
+        pipAch.removeAttribute('title');
+      }
+    }
+
+    // 3. Astrolábio (Talentos): almas suficientes para desbloquear ou aprimorar talentos
+    const canAffordTalents = canAffordAnyMetaUpgrade();
+    const affordableCount = getAffordableMetaUpgradesCount();
+    const pipTalents = document.getElementById('pip-talents');
+    if (pipTalents) {
+      if (canAffordTalents) {
+        pipTalents.style.display = 'flex';
+        pipTalents.setAttribute('title', `${affordableCount} talento(s) pronto(s) para despertar com suas almas`);
+      } else {
+        pipTalents.style.display = 'none';
+        pipTalents.removeAttribute('title');
+      }
+    }
+  } catch (err) {
+    console.warn('Erro ao atualizar pips de notificação das relíquias:', err);
+  }
+}
+
+export let currentSheetState = 'peek'; // 'peek' | 'half'
+
+export function setBottomSheetState(newState, triggerEffects = true) {
+  const sheet = document.getElementById('char-dossier-wing') || document.querySelector('.mobile-bottom-sheet');
+  if (!sheet) return;
+
+  // Apenas 2 patamares permitidos: 'peek' (recolhido) e 'half' (expandido para visualização de detalhes)
+  const validState = newState === 'half' || newState === 'expanded' ? 'half' : 'peek';
+  currentSheetState = validState;
+  sheet.setAttribute('data-sheet-state', validState);
+  sheet.classList.remove('is-dragging');
+  sheet.style.removeProperty('height');
+
+  const chevron = document.getElementById('sheet-expand-chevron');
+  const hintText = document.getElementById('sheet-drag-hint-text');
+  if (chevron) {
+    chevron.innerText = validState === 'peek' ? '▲' : '▼';
+  }
+  if (hintText) {
+    hintText.innerText = 'DETALHES DO ARQUÉTIPO';
+  }
+
+  if (triggerEffects) {
+    try { triggerHaptic('light'); } catch (e) {}
+    try { playSfx('card_hover'); } catch (e) {}
+  }
+
+  if (typeof requestAnimationFrame !== 'undefined') {
+    requestAnimationFrame(() => {
+      resizePreviewCanvas();
+      updateAllAutoFit();
+    });
+  }
+}
+
+export function initBottomSheetGestures() {
+  const sheet = document.getElementById('char-dossier-wing') || document.querySelector('.mobile-bottom-sheet');
+  const handleZone = document.getElementById('sheet-drag-handle-zone') || document.querySelector('.sheet-drag-handle-zone');
+  if (!sheet || sheet._hasBottomSheetAttached) return;
+  sheet._hasBottomSheetAttached = true;
+
+  let touchStartY = 0;
+  let touchStartX = 0;
+  let touchStartTime = 0;
+  let startHeight = 0;
+  let isDragging = false;
+  let isHorizontalSlide = false;
+
+  const startDrag = (clientY, clientX) => {
+    touchStartY = clientY;
+    touchStartX = clientX;
+    touchStartTime = Date.now();
+    startHeight = sheet.getBoundingClientRect().height;
+    isDragging = true;
+    isHorizontalSlide = false;
+  };
+
+  const moveDrag = (clientY, clientX, e) => {
+    if (!isDragging) return;
+    const deltaY = clientY - touchStartY;
+    const deltaX = clientX - touchStartX;
+
+    // Se o movimento for predominantemente horizontal, não intercepta (permite navegar nos slides)
+    if (!isHorizontalSlide && Math.abs(deltaX) > Math.abs(deltaY) * 1.3 && Math.abs(deltaX) > 10) {
+      isHorizontalSlide = true;
+      sheet.classList.remove('is-dragging');
+      sheet.style.removeProperty('height');
+      return;
+    }
+    if (isHorizontalSlide) return;
+
+    // Arrasto vertical 1:1 acompanhando o dedo (limitado ao patamar half)
+    if (Math.abs(deltaY) > 5) {
+      sheet.classList.add('is-dragging');
+      const maxH = Math.min(window.innerHeight * 0.55, 450);
+      const minH = 155;
+      const newHeight = Math.max(minH, Math.min(maxH, startHeight - deltaY));
+      sheet.style.height = `${newHeight}px`;
+      if (e.cancelable) e.preventDefault();
+    }
+  };
+
+  const endDrag = (clientY, clientX) => {
+    if (!isDragging) return;
+    isDragging = false;
+    sheet.classList.remove('is-dragging');
+    sheet.style.removeProperty('height');
+
+    if (isHorizontalSlide) return;
+
+    const deltaY = clientY - touchStartY;
+    const deltaTime = Math.max(1, Date.now() - touchStartTime);
+    const velocity = deltaY / deltaTime; // negativo = puxou pra cima, positivo = puxou pra baixo
+
+    // 1. Toque rápido sem arrasto -> Alterna diretamente entre peek e half
+    if (Math.abs(deltaY) < 10 && deltaTime < 300) {
+      if (currentSheetState === 'peek') {
+        setBottomSheetState('half');
+      } else {
+        setBottomSheetState('peek');
+      }
+      return;
+    }
+
+    // 2. Gesto rápido (Flick / Swipe com inércia)
+    if (Math.abs(velocity) > 0.28 || Math.abs(deltaY) > 40) {
+      if (velocity < 0 || deltaY < -40) {
+        // Puxou para cima -> abre patamar único half
+        setBottomSheetState('half');
+      } else {
+        // Puxou para baixo -> recolhe para peek
+        setBottomSheetState('peek');
+      }
+      return;
+    }
+
+    // 3. Arraste lento: snap único entre peek e half (sem expansão dupla)
+    const finalHeight = startHeight - deltaY;
+    if (finalHeight < 240) {
+      setBottomSheetState('peek');
+    } else {
+      setBottomSheetState('half');
+    }
+  };
+
+  // Event listeners na alça de arraste
+  if (handleZone) {
+    handleZone.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches[0]) {
+        startDrag(e.touches[0].clientY, e.touches[0].clientX);
+      }
+    }, { passive: false });
+
+    handleZone.addEventListener('touchmove', (e) => {
+      if (e.touches && e.touches[0]) {
+        moveDrag(e.touches[0].clientY, e.touches[0].clientX, e);
+      }
+    }, { passive: false });
+
+    handleZone.addEventListener('touchend', (e) => {
+      if (e.changedTouches && e.changedTouches[0]) {
+        endDrag(e.changedTouches[0].clientY, e.changedTouches[0].clientX);
+      }
+    }, { passive: true });
+
+    // Suporte a clique direto na alça (Desktop / Touch Emulation)
+    handleZone.onclick = (e) => {
+      e.stopPropagation();
+      if (currentSheetState === 'peek') setBottomSheetState('half');
+      else setBottomSheetState('peek');
+    };
+  }
+
+  // Toque na identidade do campeão no modo peek também abre para o modo half
+  sheet.addEventListener('click', (e) => {
+    if (currentSheetState === 'peek') {
+      const monolith = e.target.closest('.char-identity-monolith');
+      if (monolith) {
+        setBottomSheetState('half');
+      }
+    }
+  });
+
+  // Fechar ao clicar/tocar fora do card quando expandido (Item 3)
+  document.addEventListener('pointerdown', (e) => {
+    if (currentSheetState !== 'half') return;
+    const currentSheet = document.getElementById('char-dossier-wing') || document.querySelector('.mobile-bottom-sheet');
+    if (!currentSheet) return;
+    if (!currentSheet.contains(e.target)) {
+      setBottomSheetState('peek');
+    }
+  }, { passive: true });
+}
+
 export function openCharacterSelect() {
   if (gameState.isInMatch) {
     terminateMatch();
@@ -235,6 +466,7 @@ export function openCharacterSelect() {
   gameState.isPaused = false;
   resetDeathAudioFilter();
   evaluateAchievements();
+  updateRelicNotificationPips();
 
   const hud = document.getElementById('hud');
   if (hud) {
@@ -380,6 +612,7 @@ export function openCharacterSelect() {
     activeShowcaseHeroKey = heroKey;
     const char = CHARACTERS[heroKey] || CHARACTERS.KNIGHT;
     const profile = CHARACTER_PROFILES[heroKey] || CHARACTER_PROFILES.KNIGHT;
+    const aoeInfo = SKILL_AOE_PATTERNS[heroKey] || SKILL_AOE_PATTERNS.KNIGHT;
     const unlocked = isHeroUnlocked(heroKey);
     const achId = HERO_UNLOCK_MAP[heroKey];
     const status = achId ? getAchievementStatus(achId) : null;
@@ -515,7 +748,7 @@ export function openCharacterSelect() {
               </div>
 
               <!-- Entrada 2: Poder Ancestral -->
-              <div class="loadout-entry">
+              <div class="loadout-entry loadout-entry-skill">
                 <div class="loadout-entry-main">
                   <div class="loadout-icon-box" style="--icon-accent: ${profile.themeColor};">
                     ${renderIcon('damage', { size: 14, color: profile.themeColor })}
@@ -528,6 +761,12 @@ export function openCharacterSelect() {
                       </span>
                     </div>
                     <div class="loadout-entry-title" style="color: ${profile.themeColor};">${char.skill?.name || 'Habilidade'}</div>
+                  </div>
+                  <div class="skill-aoe-cluster" title="Padrão Geométrico: ${aoeInfo.title}&#10;${aoeInfo.desc}" style="--aoe-accent: ${profile.themeColor};">
+                    <div class="skill-aoe-reticle">
+                      ${aoeInfo.svg}
+                    </div>
+                    <span class="skill-aoe-tag">${aoeInfo.tag}</span>
                   </div>
                 </div>
                 <div class="loadout-entry-desc">${char.skill?.desc || ''}</div>
@@ -635,8 +874,13 @@ export function openCharacterSelect() {
                   <div class="seal-header">
                     <span class="seal-icon">${renderIcon('lock', { size: 14, color: '#ff7675' })}</span>
                     <div class="seal-titles">
-                      <span class="seal-eyebrow">SELO PRIMORDIAL • REQUISITO DE DESBLOQUEIO</span>
+                      <span class="seal-eyebrow">REQUISITO DE DESBLOQUEIO</span>
                       <span class="seal-name">${status.title}</span>
+                    </div>
+                    <div class="seal-status-badge">
+                      <span class="seal-status-dot"></span>
+                      <span class="seal-status-text">SELO PRIMORDIAL ATIVO</span>
+                      <span class="seal-status-ratio">${status.current}/${status.target}</span>
                     </div>
                   </div>
                   <div class="seal-desc">${status.desc}</div>
@@ -675,17 +919,35 @@ export function openCharacterSelect() {
         ${unlocked ? `
           <button class="btn-ignition-catalyst" id="confirm-hero-btn" type="button" aria-label="Iniciar Batalha">
             <div class="btn-shimmer-sweep"></div>
+            <div class="btn-arcane-flames" aria-hidden="true"></div>
+            <div class="btn-corner-sparks" aria-hidden="true">
+              <span class="corner-spark top-left">✦</span>
+              <span class="corner-spark top-right">✦</span>
+              <span class="corner-spark bottom-left">✦</span>
+              <span class="corner-spark bottom-right">✦</span>
+            </div>
+            <div class="btn-ember-drift" aria-hidden="true">
+              <span class="ember-spark ember-1"></span>
+              <span class="ember-spark ember-2"></span>
+              <span class="ember-spark ember-3"></span>
+              <span class="ember-spark ember-4"></span>
+            </div>
             <span class="btn-catalyst-glow"></span>
             <span class="btn-catalyst-content">
-              ${renderIcon('damage', { size: 15, style: 'margin-right:6px; vertical-align:middle;' })}
               DESPERTAR NO VÁCUO
-              ${renderIcon('damage', { size: 15, style: 'margin-left:6px; vertical-align:middle;' })}
             </span>
             <span class="btn-hotkey-hint">ESPAÇO</span>
           </button>
         ` : `
           <button class="btn-ignition-catalyst is-locked" id="confirm-hero-btn" type="button" aria-label="Herói Bloqueado • Instruções do Selo Primordial">
             <div class="btn-shimmer-sweep"></div>
+            <div class="btn-arcane-flames" aria-hidden="true"></div>
+            <div class="btn-corner-sparks" aria-hidden="true">
+              <span class="corner-spark top-left">✦</span>
+              <span class="corner-spark top-right">✦</span>
+              <span class="corner-spark bottom-left">✦</span>
+              <span class="corner-spark bottom-right">✦</span>
+            </div>
             <span class="btn-catalyst-content">
               ${renderIcon('lock', { size: 14, color: '#ff7675', style: 'margin-right:8px; vertical-align:middle;' })}
               SELO PRIMORDIAL ATIVO
@@ -820,6 +1082,22 @@ export function openCharacterSelect() {
       b.classList.toggle('active', b.getAttribute('data-hero') === heroKey);
     });
 
+    // Mantém o estado do Bottom Sheet sem saltos bruscos na troca de herói
+    if (isMobile) {
+      const sheet = document.getElementById('char-dossier-wing');
+      if (sheet) {
+        sheet.setAttribute('data-sheet-state', currentSheetState);
+        const chevron = document.getElementById('sheet-expand-chevron');
+        const hintText = document.getElementById('sheet-drag-hint-text');
+        if (chevron) {
+          chevron.innerText = currentSheetState === 'peek' ? '▲' : '▼';
+        }
+        if (hintText) {
+          hintText.innerText = 'DETALHES DO ARQUÉTIPO';
+        }
+      }
+    }
+
     // Dispara recálculo de auto-fit proporcional adaptativo
     updateAllAutoFit();
   }
@@ -859,6 +1137,16 @@ export function openCharacterSelect() {
     sigil.style.setProperty('--showcase-color', unlocked ? profile.themeColor : '#57606f');
     sigil.innerHTML = `
       <div class="sigil-focus-needle"></div>
+      <div class="sigil-runic-circuit" aria-hidden="true">
+        <svg class="runic-circuit-svg" viewBox="0 0 200 64" fill="none" preserveAspectRatio="none">
+          <path class="circuit-path-base" d="M 80 2 L 140 2 L 160 18 L 198 18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path class="circuit-path-branch" d="M 125 2 L 138 14 L 138 46 L 152 62 L 198 62" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle class="circuit-node" cx="198" cy="18" r="2" fill="currentColor"/>
+          <circle class="circuit-node" cx="198" cy="62" r="2" fill="currentColor"/>
+          <circle class="circuit-node" cx="80" cy="2" r="1.5" fill="currentColor"/>
+          <path class="circuit-rune-glyph" d="M 175 42 L 180 37 L 185 42 L 180 47 Z" stroke="currentColor" stroke-width="0.8" fill="none"/>
+        </svg>
+      </div>
       <div class="sigil-crest-disc" style="--disc-accent: ${unlocked ? profile.themeColor : '#4b5563'};">
         ${profile.emblemSvg}
         ${!unlocked ? `<div class="sigil-lock-marker">${renderIcon('lock', { size: 9, color: '#ff7675' })}</div>` : ''}
@@ -960,11 +1248,19 @@ export function openCharacterSelect() {
       pBtn.classList.add('active');
       const pose = pBtn.getAttribute('data-pose');
       setPreviewPose(pose);
+      try { triggerHaptic('light'); } catch(e) {}
+      try { playSfx('card_hover'); } catch(e) {}
     };
   });
 
   renderShowcase(activeShowcaseHeroKey);
   charModal.style.display = 'flex';
+
+  // Inicializa gestos táteis e ancora o Bottom Sheet rúnico
+  initBottomSheetGestures();
+  if (isMobile) {
+    setBottomSheetState(currentSheetState || 'peek', false);
+  }
 
   // Sincronização garantida de layout, canvas e auto-fit pós-exibição do modal
   if (typeof requestAnimationFrame !== 'undefined') {
