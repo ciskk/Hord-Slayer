@@ -3,10 +3,10 @@ import {
   bloodSplats, frameCount
 } from '../main.js';
 import { NATURAL_ARENAS, ARENA_ALIASES, resolveArenaTheme } from '../config/arenas.js';
-import { renderNaturalTerrain, clearNaturalTerrainCache, prefetchArenaTheme, terrainHash } from './environment/naturalTerrain.js';
+import { renderNaturalTerrain, clearNaturalTerrainCache, prefetchArenaTheme, warmupStartingTerrain, terrainHash } from './environment/naturalTerrain.js';
 import { renderSurrealAbyssArena, getAbyssArenaState, resetAbyssArena } from './environment/abyssArena.js';
 
-export { renderSurrealAbyssArena, getAbyssArenaState, resetAbyssArena };
+export { renderSurrealAbyssArena, getAbyssArenaState, resetAbyssArena, warmupStartingTerrain };
 // Mantidos para consumidores antigos dos renderizadores de decoração.
 export { renderArenaProps, BIOME_PROP_RENDERERS } from './environment/biomeProps/index.js';
 export const tileHash = terrainHash;
@@ -55,7 +55,7 @@ export function resetEnvironment() {
   transitionDuration = 150;
   lastEnvironmentFrame = frameCount;
   setCurrentArenaTheme('CEMETERY');
-  clearNaturalTerrainCache();
+  clearNaturalTerrainCache('CEMETERY');
   resetAbyssArena();
   transitionCanvas = null;
 }

@@ -73,7 +73,7 @@ import {
   presentDeferredLevelUpModal
 } from './systems/ui.js';
 import { render } from './render/renderer.js';
-import { transitionToArenaTheme, resetEnvironment } from './render/environment.js';
+import { transitionToArenaTheme, resetEnvironment, warmupStartingTerrain } from './render/environment.js';
 import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
 import { initResponsive, layoutMetrics, GRAPHICS_QUALITY, getGraphicsQuality, setGraphicsQuality, resolveTargetDpr } from './core/responsive.js';
 import { clearSpriteCache } from './render/enemies/spriteCache.js';
@@ -137,6 +137,7 @@ import {
   setCurrentArenaTheme,
   setIsWavePaused,
   triggerShake,
+  resetScreenShake,
   decayScreenShake,
   setFrameCount,
   advanceFrameCount,
@@ -235,6 +236,7 @@ export {
   setCurrentArenaTheme,
   setIsWavePaused,
   triggerShake,
+  resetScreenShake,
   enemies,
   props,
   drops,
@@ -362,7 +364,7 @@ export function terminateMatch() {
 
   setFrameCount(0);
   setSpawnTimer(0);
-  triggerShake(0);
+  resetScreenShake();
   setFreezeTimer(0);
 
   // Limpa os canvas do jogo para não exibir a arena ou banners atrás do menu
@@ -564,6 +566,9 @@ export function resetGame() {
   // Spawna a horda inicial ativa imediatamente nas bordas da arena
   spawnInitialHorde();
 
+  // Pré-aquece antecipadamente o terreno da arena para evitar engasgos durante o zoom-out
+  warmupStartingTerrain('CEMETERY');
+
   // Inicia a introdução cinematográfica com câmera aproximada no herói
   startMatchIntro();
 
@@ -663,6 +668,7 @@ function update(dt) {
 
     // Cronômetro exclusivo da introdução cinematográfica
     matchIntro.timer += matchIntro.skipped ? dt * 3.5 : dt;
+    decayScreenShake(dt);
 
     const zoomPhase = Math.max(1, matchIntro.duration - matchIntro.holdDuration);
     const elapsedZoom = Math.max(0, matchIntro.timer - matchIntro.holdDuration);
@@ -1751,6 +1757,18 @@ function startApplication() {
     openCharacterSelect();
   } catch (err) {
     console.error('Erro crítico ao abrir seletor de personagens:', err);
+  }
+
+  // Pré-aquece antecipadamente o terreno da arena inicial em background ocioso
+  if (typeof window !== 'undefined') {
+    const warmupTask = () => {
+      try { warmupStartingTerrain('CEMETERY'); } catch (_) {}
+    };
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(warmupTask, { timeout: 1200 });
+    } else {
+      setTimeout(warmupTask, 150);
+    }
   }
 
   requestAnimationFrame(loop);

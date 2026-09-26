@@ -77,16 +77,18 @@ export function updateSkillUI() {
       if (_cachedSkillRing) _cachedSkillRing.style.strokeDashoffset = '0';
       _cachedSkillContainer.classList.add('ready');
 
-      // Feedback acústico e haptics personalizados por herói
-      const activeKey = _lastHeroKey || selectedHeroKey || 'KNIGHT';
-      const profile = (CHARACTER_PROFILES && CHARACTER_PROFILES[activeKey]) || CHARACTER_PROFILES.KNIGHT;
-      const readySfx = (profile && profile.ultProfile && profile.ultProfile.readySfx) ? profile.ultProfile.readySfx : 'holy_ready';
-      const hapticType = (profile && profile.ultProfile && profile.ultProfile.haptic) ? profile.ultProfile.haptic : 'medium';
+      // Feedback acústico e haptics personalizados por herói (suprimido durante a intro)
+      if (!matchIntro || !matchIntro.active) {
+        const activeKey = _lastHeroKey || selectedHeroKey || 'KNIGHT';
+        const profile = (CHARACTER_PROFILES && CHARACTER_PROFILES[activeKey]) || CHARACTER_PROFILES.KNIGHT;
+        const readySfx = (profile && profile.ultProfile && profile.ultProfile.readySfx) ? profile.ultProfile.readySfx : 'holy_ready';
+        const hapticType = (profile && profile.ultProfile && profile.ultProfile.haptic) ? profile.ultProfile.haptic : 'medium';
 
-      try {
-        playSfx(readySfx);
-        triggerHaptic(hapticType);
-      } catch (_) {}
+        try {
+          playSfx(readySfx);
+          triggerHaptic(hapticType);
+        } catch (_) {}
+      }
     }
   } else {
     if (_lastSkillReady !== false) {
@@ -336,6 +338,10 @@ export function resetHUD(initialHp = 120) {
   _lastTimerSeconds = null;
   _lastBossTimerRemaining = null;
   _lastHeroKey = null;
+  _lastSkillReady = true;
+  _lastSkillDeg = 0;
+  _lastSkillOffset = 0;
+  _lastSkillTextStr = '';
 
   if (hudDom && hudDom.waveCard) {
     hudDom.waveCard.classList.remove('banner-suppressed');

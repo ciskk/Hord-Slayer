@@ -4,7 +4,7 @@
  * Desacoplado de main.js para eliminar dependências circulares.
  */
 
-export { triggerShake } from './gameState.js';
+export { triggerShake, resetScreenShake } from './gameState.js';
 import { activeBoss } from './collections.js';
 
 

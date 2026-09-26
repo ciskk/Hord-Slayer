@@ -1,5 +1,6 @@
 import { NATURAL_ARENAS, resolveArenaTheme } from '../../config/arenas.js';
 import { perfMetrics } from '../../core/perfMetrics.js';
+import { matchIntro, baseCameraZoom, viewW, viewH } from '../../state/gameState.js';
 
 // Chunks são apenas cache: relevo, caminhos e objetos usam coordenadas mundiais.
 // ~36 MiB em telas comuns. Em telas grandes, comporta duas vistas completas
@@ -584,31 +585,93 @@ function getChunk(theme, cx, cy, limit) {
   return canvas;
 }
 
-export function clearNaturalTerrainCache() {
-  sceneryCache.clear();
+export function clearNaturalTerrainCache(preserveTheme = null) {
+  if (preserveTheme) {
+    for (const key of Array.from(sceneryCache.keys())) {
+      if (!key.startsWith(`${preserveTheme}:`)) {
+        sceneryCache.delete(key);
+      }
+    }
+  } else {
+    sceneryCache.clear();
+  }
   prefetchQueue.length = 0;
   prefetchQueuedKeys.clear();
 }
 
 /**
+ * Pré-aquece antecipadamente os chunks centrais da arena inicial (Cemitério)
+ * em momento ocioso para que a partida nunca sofra travamento durante o zoom-out.
+ */
+export function warmupStartingTerrain(targetTheme = 'CEMETERY') {
+  const theme = resolveArenaTheme(targetTheme);
+  if (!NATURAL_ARENAS[theme]) return;
+  const zoom = baseCameraZoom || 1.25;
+  const w = (viewW || 960) / zoom;
+  const h = (viewH || 640) / zoom;
+  const halfW = w / 2;
+  const halfH = h / 2;
+  const left = Math.floor(-halfW / CHUNK) - 1;
+  const top = Math.floor(-halfH / CHUNK) - 1;
+  const right = Math.floor(halfW / CHUNK) + 1;
+  const bottom = Math.floor(halfH / CHUNK) + 1;
+  const limit = Math.max(CACHE_LIMIT, (right - left + 1) * (bottom - top + 1) * 2 + 16);
+
+  // 1. Gera imediatamente os 4 chunks centrais mais imediatos ao redor do nascimento do herói (0,0)
+  for (let y = -1; y <= 0; y++) {
+    for (let x = -1; x <= 0; x++) {
+      const key = `${theme}:${x}:${y}`;
+      if (!sceneryCache.has(key)) {
+        const canvas = buildChunk(theme, x, y);
+        sceneryCache.set(key, canvas);
+      }
+    }
+  }
+
+  // 2. Enfileira o anel estendido para o prefetcher completar sem engasgos
+  for (let y = top; y <= bottom; y++) {
+    for (let x = left; x <= right; x++) {
+      const key = `${theme}:${x}:${y}`;
+      if (!sceneryCache.has(key) && !prefetchQueuedKeys.has(key)) {
+        const distSq = x * x + y * y;
+        prefetchQueue.push({ theme, cx: x, cy: y, distSq });
+        prefetchQueuedKeys.add(key);
+      }
+    }
+  }
+}
+
+/**
  * Enfileira e constrói preventivamente chunks vizinhos ao redor da câmera
- * com orçamento rigoroso de no máximo 1 chunk construído por quadro (time-slicing).
+ * com orçamento controlado por quadro (time-slicing).
+ * Leva em consideração o afastamento de câmera da intro para evitar soluços no zoom-out.
  */
 function updateTerrainPrefetch(theme, camera, width, height, limit) {
-  const left = Math.floor(camera.x / CHUNK);
-  const top = Math.floor(camera.y / CHUNK);
-  const right = Math.floor((camera.x + width) / CHUNK);
-  const bottom = Math.floor((camera.y + height) / CHUNK);
+  const isIntro = !!(matchIntro && matchIntro.active);
+  const effectiveW = isIntro ? (viewW / (baseCameraZoom || 1.25)) : width;
+  const effectiveH = isIntro ? (viewH / (baseCameraZoom || 1.25)) : height;
+  const camX = isIntro ? (camera.x - (effectiveW - width) / 2) : camera.x;
+  const camY = isIntro ? (camera.y - (effectiveH - height) / 2) : camera.y;
+
+  const left = Math.floor(camX / CHUNK);
+  const top = Math.floor(camY / CHUNK);
+  const right = Math.floor((camX + effectiveW) / CHUNK);
+  const bottom = Math.floor((camY + effectiveH) / CHUNK);
+
+  const curLeft = Math.floor(camera.x / CHUNK);
+  const curTop = Math.floor(camera.y / CHUNK);
+  const curRight = Math.floor((camera.x + width) / CHUNK);
+  const curBottom = Math.floor((camera.y + height) / CHUNK);
 
   const camCenterX = (left + right) / 2;
   const camCenterY = (top + bottom) / 2;
 
-  // Anel preventivo de 1 chunk de margem ao redor da viewport visível
+  // Anel preventivo ao redor da viewport visível ou projetada do zoom-out
   const margin = 1;
   for (let y = top - margin; y <= bottom + margin; y++) {
     for (let x = left - margin; x <= right + margin; x++) {
-      // Pula os que já estão visíveis no quadro
-      if (x >= left && x <= right && y >= top && y <= bottom) continue;
+      // Pula os que já estão visíveis no quadro atual
+      if (x >= curLeft && x <= curRight && y >= curTop && y <= curBottom) continue;
 
       const key = `${theme}:${x}:${y}`;
       if (!sceneryCache.has(key) && !prefetchQueuedKeys.has(key)) {
@@ -620,16 +683,18 @@ function updateTerrainPrefetch(theme, camera, width, height, limit) {
   }
 
   // Limita o tamanho máximo da fila descartando os mais distantes
-  if (prefetchQueue.length > 20) {
+  if (prefetchQueue.length > 36) {
     prefetchQueue.sort((a, b) => a.distSq - b.distSq);
-    while (prefetchQueue.length > 12) {
+    while (prefetchQueue.length > 24) {
       const removed = prefetchQueue.pop();
       prefetchQueuedKeys.delete(`${removed.theme}:${removed.cx}:${removed.cy}`);
     }
   }
 
-  // Orçamento: constrói preventivamente no máximo 1 chunk por quadro
-  if (prefetchQueue.length > 0) {
+  // Orçamento: durante a fase parada da intro (holdDuration), permite 2 chunks por quadro;
+  // em gameplay normal, mantém o teto de 1 chunk por quadro.
+  const budget = (isIntro && matchIntro.timer < matchIntro.holdDuration) ? 2 : 1;
+  for (let b = 0; b < budget && prefetchQueue.length > 0; b++) {
     const next = prefetchQueue.shift();
     const key = `${next.theme}:${next.cx}:${next.cy}`;
     prefetchQueuedKeys.delete(key);

@@ -80,6 +80,7 @@ export const matchIntro = {
 };
 
 export function startMatchIntro() {
+  resetScreenShake();
   baseCameraZoom = calculateCameraZoom(viewW, viewH);
   matchIntro.active = true;
   matchIntro.timer = 0;
@@ -158,6 +159,7 @@ export function setSpawnTimer(val) { spawnTimer = val; }
 export function setCurrentArenaTheme(theme) { currentArenaTheme = theme; }
 export function setIsWavePaused(val) { gameState.isWavePaused = val; }
 export function triggerShake(intensity) { screenShake = Math.max(screenShake, intensity); }
+export function resetScreenShake() { screenShake = 0; }
 export function decayScreenShake(dt) { if (screenShake > 0) screenShake = Math.max(0, screenShake - 0.7 * dt); }
 export function setFrameCount(val) { frameCount = val; }
 export function advanceFrameCount(dt) { frameCount += dt; }
