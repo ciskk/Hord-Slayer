@@ -58,6 +58,8 @@ export function drawKragdorAxes(c, state) {
     c.save();
     c.translate(ax, ay);
     c.rotate(angle + Math.PI / 2);
+    const aScale = state.axeScale || 1.0;
+    if (aScale !== 1.0) c.scale(aScale, aScale);
     c.drawImage(axeSprite, -32, -24, 64, 64);
     c.restore();
   }

@@ -21,9 +21,17 @@ import { generateGroundCracks, drawDetailedGroundCracks } from './groundCracks.j
 import { CHARACTERS } from '../config/characters.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { layoutMetrics } from '../core/responsive.js';
-import { drawDesktopStageBackground, drawDesktopDais, drawDesktopGroundMist } from './desktopHeroStage.js';
+import { drawDesktopStageBackground, drawDesktopDais, drawDesktopGroundMist, drawArcaneRosette, drawDesktopFloorRunes } from './desktopHeroStage.js';
+import { 
+  heroTransition, 
+  renderHeroDissolution, 
+  renderHeroVacuum, 
+  renderHeroImpactDescend, 
+  renderHeroMaterialization 
+} from './heroTransition.js';
 
 let previewCanvas = null;
+
 let previewCtx = null;
 let animFrameId = null;
 let isRunning = false;
@@ -38,6 +46,13 @@ let previewTime = 0;
 let shockwaves = [];
 let particles = [];
 let surgeTimer = 0;
+const MAX_SURGE_TIMER = 30;
+
+// Matriz de Micro-Parallax 2.5D
+let targetParallaxX = 0;
+let targetParallaxY = 0;
+let currentParallaxX = 0;
+let currentParallaxY = 0;
 
 // Sistema de Animação de Ataque Real com Armas
 let attackTimer = 0;
@@ -108,6 +123,10 @@ export function initPreviewCanvas(canvasElement) {
   if (!canvasElement) return false;
   previewCanvas = canvasElement;
   previewCtx = previewCanvas.getContext('2d', { alpha: true });
+  if (previewCtx) {
+    previewCtx.imageSmoothingEnabled = true;
+    previewCtx.imageSmoothingQuality = 'high';
+  }
 
   if (typeof ResizeObserver !== 'undefined') {
     if (previewResizeObserver) {
@@ -174,7 +193,50 @@ export function initPreviewCanvas(canvasElement) {
       }
     });
 
+    // Rastreamento suave do cursor para Micro-Parallax 2.5D
+    const parallaxTarget = previewCanvas.parentElement || previewCanvas;
+    parallaxTarget.addEventListener('mousemove', (e) => {
+      const rect = previewCanvas.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        targetParallaxX = Math.max(-1, Math.min(1, (mx - rect.width / 2) / (rect.width / 2)));
+        targetParallaxY = Math.max(-1, Math.min(1, (my - rect.height / 2) / (rect.height / 2)));
+      }
+    }, { passive: true });
+
+    parallaxTarget.addEventListener('mouseleave', () => {
+      targetParallaxX = 0;
+      targetParallaxY = 0;
+    });
+
     previewCanvas.style.cursor = 'grab';
+  }
+
+  // Suporte a Touch Drag para rotação contínua e toque rápido no Canvas (Mobile)
+  if (previewCanvas && !previewCanvas._hasTouchDragAttached) {
+    previewCanvas._hasTouchDragAttached = true;
+    let touchStartX = 0;
+    let lastFacingX = 0;
+
+    previewCanvas.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches[0]) {
+        touchStartX = e.touches[0].clientX;
+        lastFacingX = touchStartX;
+      }
+    }, { passive: true });
+
+    previewCanvas.addEventListener('touchmove', (e) => {
+      if (!e.touches || !e.touches[0]) return;
+      const curX = e.touches[0].clientX;
+      const dxFromLast = curX - lastFacingX;
+      if (Math.abs(dxFromLast) > 22) {
+        setPreviewFacing(dxFromLast > 0 ? 1 : -1);
+        lastFacingX = curX;
+        const facingBtn = document.getElementById('btn-preview-facing');
+        if (facingBtn) facingBtn.classList.toggle('flipped', currentFacing === -1);
+      }
+    }, { passive: true });
   }
 
   resizePreviewCanvas();
@@ -182,12 +244,21 @@ export function initPreviewCanvas(canvasElement) {
   return true;
 }
 
+let cachedClientW = 0;
+let cachedClientH = 0;
+let cachedDpr = 1;
+
 export function resizePreviewCanvas() {
   if (!previewCanvas || !previewCtx) return;
   const rect = previewCanvas.getBoundingClientRect();
-  const dpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 2);
+  const targetDpr = layoutMetrics.dpr || window.devicePixelRatio || 1;
+  const dpr = Math.min(Math.max(1, targetDpr), 2.0);
   const w = previewCanvas.clientWidth || rect.width || 0;
   const h = previewCanvas.clientHeight || rect.height || 0;
+
+  cachedClientW = w;
+  cachedClientH = h;
+  cachedDpr = dpr;
 
   if (w > 0 && h > 0) {
     const targetW = Math.round(w * dpr);
@@ -200,6 +271,8 @@ export function resizePreviewCanvas() {
 
   previewCtx.setTransform(1, 0, 0, 1, 0, 0);
   previewCtx.scale(dpr, dpr);
+  previewCtx.imageSmoothingEnabled = true;
+  previewCtx.imageSmoothingQuality = 'high';
 }
 
 /**
@@ -223,18 +296,23 @@ function initParticles() {
 }
 
 /**
- * Define o herói atualmente exibido no palco de evocação.
+ * Define o herói atualmente exibido no palco de evocação via Transição Elemental Cinética.
  */
 export function setPreviewHero(heroKey) {
   if (!CHARACTERS[heroKey]) return;
-  if (currentHeroKey !== heroKey) {
-    currentHeroKey = heroKey;
+  if (currentHeroKey !== heroKey || (heroTransition.isTransitionActive() && heroTransition.toHeroKey !== heroKey)) {
     attackTimer = 0;
     previewAxeAngle = 0;
     previewSkillAge = 0;
-    triggerHeroSurge(false);
+
+    const scale = computeHeroScale(previewCanvas?.clientWidth || 280, previewCanvas?.clientHeight || 320).heroScale;
+    heroTransition.start(currentHeroKey, heroKey, currentFacing, scale, (newHeroKey) => {
+      currentHeroKey = newHeroKey;
+      triggerHeroSurge(false);
+    });
   }
 }
+
 
 /**
  * Alterna a orientação (espelhamento horizontal) do personagem.
@@ -255,6 +333,7 @@ export function setPreviewFacing(dir) {
 export function triggerHeroAttack(playSound = true) {
   attackTimer = 0;
   previewAxeAngle = 0;
+  surgeTimer = MAX_SURGE_TIMER;
   triggerHaptic('medium');
 
   if (playSound) {
@@ -340,7 +419,7 @@ export function triggerHeroSurge(playSound = true) {
     });
   }
 
-  surgeTimer = 25;
+  surgeTimer = MAX_SURGE_TIMER;
   if (playSound) {
     try {
       playSfx('charge');
@@ -377,6 +456,10 @@ export function stopPreview() {
     cancelAnimationFrame(animFrameId);
     animFrameId = null;
   }
+  targetParallaxX = 0;
+  targetParallaxY = 0;
+  currentParallaxX = 0;
+  currentParallaxY = 0;
 }
 
 /**
@@ -394,6 +477,9 @@ function renderLoop(timestamp) {
     ? Math.min(3, (timestamp - lastPreviewFrameTime) / (1000 / 60)) : 1;
   lastPreviewFrameTime = timestamp ?? null;
   if (!reducedMotion?.matches) atmosphereTime += dt / 60;
+  heroTransition.update(dt / 60);
+  if (surgeTimer > 0) surgeTimer = Math.max(0, surgeTimer - dt);
+
   if (currentHeroKey === 'BARBARIAN' && currentPose === 'skill') {
     previewSkillAge = (previewSkillAge + dt) % (KRAGDOR_ULT.duration + 36);
   }
@@ -432,10 +518,18 @@ function renderLoop(timestamp) {
 function syncCanvasDimensions() {
   if (!previewCanvas || !previewCtx) return { width: 280, height: 320, dpr: 1, skipFrame: true };
 
-  const rect = previewCanvas.getBoundingClientRect();
-  const clientW = previewCanvas.clientWidth || rect.width || 0;
-  const clientH = previewCanvas.clientHeight || rect.height || 0;
-  const dpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 2);
+  const curW = previewCanvas.clientWidth || 0;
+  const curH = previewCanvas.clientHeight || 0;
+  const targetDpr = Math.min(Math.max(1, layoutMetrics.dpr || window.devicePixelRatio || 1), 2.0);
+
+  if (cachedClientW <= 0 || cachedClientH <= 0 ||
+      (curW > 0 && curH > 0 && (Math.abs(curW - cachedClientW) > 1 || Math.abs(curH - cachedClientH) > 1 || Math.abs(targetDpr - cachedDpr) > 0.05))) {
+    resizePreviewCanvas();
+  }
+
+  const clientW = cachedClientW;
+  const clientH = cachedClientH;
+  const dpr = cachedDpr;
 
   if (clientW <= 0 || clientH <= 0) {
     return {
@@ -446,14 +540,6 @@ function syncCanvasDimensions() {
     };
   }
 
-  const targetW = Math.round(clientW * dpr);
-  const targetH = Math.round(clientH * dpr);
-
-  if (previewCanvas.width !== targetW || previewCanvas.height !== targetH) {
-    previewCanvas.width = targetW;
-    previewCanvas.height = targetH;
-  }
-
   return {
     width: clientW,
     height: clientH,
@@ -462,31 +548,31 @@ function syncCanvasDimensions() {
   };
 }
 
-function isDesktopStage() {
-  return layoutMetrics.isLandscape && layoutMetrics.viewH > 520 && layoutMetrics.viewW > 850;
+function isLandscapeStage() {
+  return layoutMetrics.isLandscape;
 }
 
 /**
- * Amplia o conjunto herói/pedestal em 25% no desktop, respeitando o espaço do canvas.
+ * Mantém a presença do herói em paisagem, inclusive em Full HD e telas baixas.
  */
 function computeHeroScale(width, height) {
   const isCompact = height < 250 || width < 250;
   const isTall = height >= 310;
+  const isDesktop = isLandscapeStage();
 
-  // Escala dobrada para presença monumental do campeão (de 3.35 para 6.6)
+  // Escala adaptativa para presença monumental do campeão
   const targetScale = isCompact ? 4.8 : (isTall ? 6.6 : 5.8);
 
   // Proteção adaptativa proporcional às dimensões reais do canvas
   const maxSafeScaleH = (height * 0.72) / 44;
-  const maxSafeScaleW = (width * 0.82) / 70;
-  const safeScale = Math.min(targetScale, Math.max(3.2, Math.min(maxSafeScaleH, maxSafeScaleW)));
+  const maxSafeScaleW = isDesktop ? (width * 0.82) / 70 : (width * 0.92) / 62;
+  const safeScale = Math.min(targetScale, Math.max(3.4, Math.min(maxSafeScaleH, maxSafeScaleW)));
 
-  const isDesktop = isDesktopStage();
-  // O degrau inferior mede 2 * 24.2 * 1.45 por unidade de escala.
-  // Reserva uma margem nas janelas estreitas sem alterar o enquadramento mobile.
+  // O primeiro plano pode sair do quadro; o personagem e sua arma ficam dentro dele.
   const heroScale = isDesktop
-    ? Math.min(safeScale * 1.25, (width * 0.96) / (2 * 24.2 * 1.45), (height * 0.88) / 44)
-    : safeScale;
+    ? Math.min(safeScale * 1.25 * Math.max(1, height / 700),
+      (width * .96) / 70, (height * .60) / 44)
+    : Math.min(safeScale * 1.15, (width * 0.94) / 52, (height * 0.55) / 44);
   return { heroScale, isCompact, isTall };
 }
 
@@ -503,124 +589,297 @@ function renderStage() {
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.scale(dpr, dpr);
 
-  const desktop = isDesktopStage();
+  const desktop = isLandscapeStage();
   // O cenário passa por trás do console; mantém a área anterior para enquadrar o herói.
-  const heroHeight = desktop ? Math.max(180, height - 76) : height;
+  const stageInset = desktop ? Math.min(32, height * .065) : 0;
+  const heroHeight = desktop ? Math.max(80, height - Math.min(76, height * .20)) : height;
   const { heroScale, isCompact, isTall } = computeHeroScale(width, heroHeight);
   const centerX = width / 2;
-  const centerY = (desktop ? 32 : 0) + (isCompact ? heroHeight * 0.52 : (isTall ? heroHeight * 0.46 : heroHeight * 0.48));
+  const centerY = stageInset + (desktop
+    ? (isCompact ? heroHeight * 0.52 : (isTall ? heroHeight * 0.46 : heroHeight * 0.48))
+    : Math.round(isCompact ? heroHeight * 0.50 : (isTall ? heroHeight * 0.47 : heroHeight * 0.48)));
   const footY = centerY + Math.round(13.2 * heroScale);
 
-  const colors = THEME_COLORS[currentHeroKey] || THEME_COLORS.KNIGHT;
+  const isTransitioning = heroTransition.isTransitionActive();
+  const transitionPhase = heroTransition.getPhase();
+  const activeColorKey = (isTransitioning && (transitionPhase === 'descend' || transitionPhase === 'materialization'))
+    ? heroTransition.toHeroKey : currentHeroKey;
+  const colors = THEME_COLORS[activeColorKey] || THEME_COLORS.KNIGHT;
 
-  // 1. Limpeza do Canvas
-  c.clearRect(0, 0, width, height);
-  if (desktop) drawDesktopStageBackground(c, width, height, colors, atmosphereTime, dpr);
-
-  // 2. Pedestal de pedra estilizado com runas arcanas (escala dobrada)
-  drawHeroPedestal(c, centerX, footY, colors, isCompact, width, heroScale,
-    desktop ? { height, dpr, time: atmosphereTime * 60 } : null);
-  if (desktop) drawDesktopGroundMist(c, width, height, footY, colors, atmosphereTime);
-
-  // 3. Ondas de choque cinéticas sobre o pedestal
-  drawShockwaves(c, centerX, footY, colors);
-
-  // 4. Sombra de contato e oclusão de ambiente sob as botas
-  drawSimpleHeroShadow(c, centerX, footY, isCompact, heroScale);
-
-  if (currentHeroKey === 'BARBARIAN' && currentPose === 'skill') {
-    drawKragdorRoar(c, {
-      x: centerX, y: centerY, age: previewSkillAge,
-      radius: Math.min(KRAGDOR_ULT.radius * heroScale, width * 0.46, height * 0.40)
-    });
+  // Interpolação suave do Micro-Parallax 2.5D (Lerp a 60 FPS no Desktop e Mobile)
+  if (!reducedMotion?.matches) {
+    const lerp = 0.07;
+    currentParallaxX += (targetParallaxX - currentParallaxX) * lerp;
+    currentParallaxY += (targetParallaxY - currentParallaxY) * lerp;
+  } else {
+    currentParallaxX = 0;
+    currentParallaxY = 0;
   }
 
-  if (currentHeroKey === 'MAGE' && currentPose === 'skill') {
-    // Stateless preview: never emits into the arena pools or creates another loop.
-    const age = previewSkillAge % 100;
-    c.save(); c.translate(centerX, centerY); c.scale(heroScale, heroScale);
-    const origin = -currentFacing * 9, arrival = currentFacing * 9;
-    c.save(); c.translate(origin, 12); c.scale(.5, .5);
-    drawIgnisHeatRing(c, 0, 0, age); c.restore();
-    drawIgnisStepBurst(c, origin, 0, age, false, currentFacing);
-    if (age >= 22) {
-      c.save(); c.translate(arrival, 12); c.scale(.5, .5);
-      drawIgnisHeatRing(c, 0, 0, age - 22, true); c.restore();
-      c.save(); c.translate(arrival, 0); c.scale(.65, .65);
-      drawIgnisStepBurst(c, 0, 0, age - 22, true, currentFacing); c.restore();
+  // Offsets de profundidade por plano
+  const bgOffX = -currentParallaxX * 3.2;
+  const bgOffY = -currentParallaxY * 2.0;
+
+  const rosetteOffX = -currentParallaxX * 6.5;
+  const rosetteOffY = -currentParallaxY * 4.0;
+
+  const fgOffX = currentParallaxX * 1.6;
+  const fgOffY = currentParallaxY * 1.0;
+
+  const surgeProgress = surgeTimer > 0 ? (1 - surgeTimer / MAX_SURGE_TIMER) : 0;
+
+  // Screen shake local da transição e impacto
+  const { sx: shakeX, sy: shakeY } = heroTransition.getShakeOffset();
+  c.save();
+  if (shakeX !== 0 || shakeY !== 0) {
+    c.translate(shakeX, shakeY);
+  }
+
+  // Posições ancoradas do primeiro plano
+  const fgCenterX = centerX + fgOffX;
+  const fgCenterY = centerY + fgOffY;
+  const fgFootY = footY + fgOffY;
+
+  // 1. Limpeza do Canvas e Cenário Cósmico Monumental (PC e Mobile unificados)
+  c.clearRect(0, 0, width, height);
+  const flashAlpha = heroTransition.getAtmosphericFlashAlpha();
+  drawDesktopStageBackground(c, width, height, colors, atmosphereTime, dpr, activeColorKey, bgOffX, bgOffY, flashAlpha);
+  const rosetteRadius = Math.round(Math.max(60, Math.min(width * (desktop ? 0.22 : 0.36), height * 0.26, heroScale * 17.0)));
+  const rosetteCenterY = centerY - Math.round(heroScale * 2.2);
+  const rosetteRecoil = heroTransition.getRosetteRecoil();
+  drawArcaneRosette(c, centerX + rosetteOffX, rosetteCenterY + rosetteOffY, rosetteRadius, colors, atmosphereTime, activeColorKey, rosetteRecoil);
+
+  // 2. Pedestal de pedra esculpido com degraus em perspectiva, runas vivas e ley-lines
+  const runeOverload = heroTransition.getRuneOverloadProgress();
+  drawHeroPedestal(c, fgCenterX, fgFootY, colors, isCompact, width, heroScale,
+    { height, dpr, time: atmosphereTime * 60, heroKey: activeColorKey, surgeProgress, runeOverload, baseX: centerX, baseY: footY });
+
+  // Reação Dinâmica: Expulsão e Retorno da Névoa (2 segundos de retorno rastejante)
+  const mistDisp = heroTransition.getMistDisplacement();
+  drawDesktopGroundMist(c, width, height, fgFootY, colors, atmosphereTime, mistDisp);
+
+  // 3. Ondas de choque cinéticas sobre o pedestal
+  drawShockwaves(c, fgCenterX, fgFootY, colors);
+
+  // 4. Sombra de contato e oclusão de ambiente sob as botas (oculta no vácuo e descida pré-impacto)
+  if (!isTransitioning || transitionPhase === 'dissolution' || transitionPhase === 'materialization') {
+    c.save();
+    if (isTransitioning && transitionPhase === 'dissolution') {
+      c.globalAlpha = Math.max(0, 1 - heroTransition.elapsedMs / 140);
+    } else if (isTransitioning && transitionPhase === 'materialization') {
+      c.globalAlpha = Math.min(1, Math.max(0, (heroTransition.elapsedMs - 260) / 100));
     }
-    if (age < 68) {
-      c.globalAlpha *= Math.min(1, (68 - age) / 24);
-      for (let i = 0; i < 4; i++) {
-        if (age < i * 5) break;
-        drawIgnisFlame(c, origin + currentFacing * i * 6, 14, 3, 6 + Math.sin(age * .2 + i) * 2, Math.sin(age * .3 + i), '#ffad54');
-      }
-    }
+    drawSimpleHeroShadow(c, fgCenterX, fgCenterY, isCompact, heroScale, colors);
     c.restore();
   }
 
-  if (currentHeroKey === 'ROGUE' && currentPose === 'skill') {
-    drawKaelPreviewStage(c, centerX, centerY, heroScale, previewSkillAge, currentFacing);
+  // 5. Renderização da Transição Elemental Cinética vs Modo Normal
+  if (isTransitioning) {
+    if (transitionPhase === 'dissolution') {
+      renderHeroDissolution(c, fgCenterX, fgCenterY, heroScale, currentFacing, colors);
+    } else if (transitionPhase === 'vacuum') {
+      renderHeroVacuum(c, fgCenterX, fgCenterY, heroScale, colors);
+    } else if (transitionPhase === 'descend') {
+      renderHeroImpactDescend(c, width, height, fgCenterX, fgCenterY, fgFootY, heroScale, colors);
+    } else if (transitionPhase === 'materialization') {
+      renderHeroImpactDescend(c, width, height, fgCenterX, fgCenterY, fgFootY, heroScale, colors);
+      renderHeroMaterialization(c, fgCenterX, fgCenterY, fgFootY, heroScale, currentFacing, colors);
+    }
+  } else {
+    if (currentHeroKey === 'BARBARIAN' && currentPose === 'skill') {
+      drawKragdorRoar(c, {
+        x: fgCenterX, y: fgCenterY, age: previewSkillAge,
+        radius: Math.min(KRAGDOR_ULT.radius * heroScale, width * 0.46, height * 0.40)
+      });
+    }
+
+    if (currentHeroKey === 'MAGE' && currentPose === 'skill') {
+      // Stateless preview: never emits into the arena pools or creates another loop.
+      const age = previewSkillAge % 100;
+      c.save(); c.translate(fgCenterX, fgCenterY); c.scale(heroScale, heroScale);
+      const origin = -currentFacing * 9, arrival = currentFacing * 9;
+      c.save(); c.translate(origin, 12); c.scale(.5, .5);
+      drawIgnisHeatRing(c, 0, 0, age); c.restore();
+      drawIgnisStepBurst(c, origin, 0, age, false, currentFacing);
+      if (age >= 22) {
+        c.save(); c.translate(arrival, 12); c.scale(.5, .5);
+        drawIgnisHeatRing(c, 0, 0, age - 22, true); c.restore();
+        c.save(); c.translate(arrival, 0); c.scale(.65, .65);
+        drawIgnisStepBurst(c, 0, 0, age - 22, true, currentFacing); c.restore();
+      }
+      if (age < 68) {
+        c.globalAlpha *= Math.min(1, (68 - age) / 24);
+        for (let i = 0; i < 4; i++) {
+          if (age < i * 5) break;
+          drawIgnisFlame(c, origin + currentFacing * i * 6, 14, 3, 6 + Math.sin(age * .2 + i) * 2, Math.sin(age * .3 + i), '#ffad54');
+        }
+      }
+      c.restore();
+    }
+
+    if (currentHeroKey === 'ROGUE' && currentPose === 'skill') {
+      drawKaelPreviewStage(c, fgCenterX, fgCenterY, heroScale, previewSkillAge, currentFacing);
+    }
+
+    // Renderização do Modelo do Herói em escala ampliada
+    drawHeroInstance(c, fgCenterX, fgCenterY, colors, heroScale);
   }
 
-  // 5. Renderização do Modelo do Herói em escala ampliada
-  drawHeroInstance(c, centerX, centerY, colors, heroScale);
-
   // 6. Partículas atmosféricas elementais
-  if (!desktop || !reducedMotion?.matches) {
-    drawAtmosphericParticles(c, centerX, centerY + Math.round(10 * heroScale), colors, desktop ? 10 : particles.length);
+  if (!reducedMotion?.matches) {
+    drawAtmosphericParticles(c, fgCenterX, fgCenterY + Math.round(10 * heroScale), colors, desktop ? 10 : 16);
   }
 
   // 7. Efeitos Visuais Cinéticos de Ataque e Empunhadura de Armas Reais
-  if (currentHeroKey === 'BARBARIAN' && currentPose !== 'idle') {
-    // Enquadra apenas o efeito orbital; herói e pedestal mantêm a escala dos demais campeões.
-    const orbitExtent = AXE_BASE_RADIUS + 30;
-    const orbitScale = Math.min(heroScale, width * 0.46 / orbitExtent, height * 0.40 / orbitExtent);
+  if (!isTransitioning && currentHeroKey === 'BARBARIAN' && currentPose !== 'idle') {
+    // O machado orbita majestosamente ao redor do corpo de Kragdor em escala proporcional real (heroScale)
+    const t = previewTime;
+    const bobFactor = currentPose === 'combat' ? 1.2 : 1.0;
+    const breathBob = Math.sin(t * 0.06) * 2.8 * bobFactor;
+    // Ancorado exatamente no centro de gravidade do tórax de Kragdor (-2 unidades do modelo)
+    const orbitCenterY = fgCenterY + breathBob - Math.round(2 * heroScale);
+    const orbitRadius = 52; // Distância ampla que orbita fora do corpo, ombros e chifres
+
     c.save();
-    c.translate(centerX, centerY);
-    c.scale(orbitScale, orbitScale);
+    c.translate(fgCenterX, orbitCenterY);
+    c.scale(heroScale, heroScale);
     drawKragdorAxes(c, {
-      x: 0, y: 0, axeCount: 1, axeAngle: previewAxeAngle,
+      x: 0,
+      y: 0,
+      axeCount: 1,
+      axeRadius: orbitRadius,
+      axeScale: 1.15,
+      axeAngle: previewAxeAngle,
       berserkTimer: getPreviewBerserkTimer()
     });
     c.restore();
-  } else if (currentPose === 'combat') {
-    drawHeroWeaponAttack(c, centerX, centerY, currentHeroKey, currentFacing, heroScale, attackTimer, colors);
+  } else if (!isTransitioning && currentPose === 'combat') {
+    drawHeroWeaponAttack(c, fgCenterX, fgCenterY, currentHeroKey, currentFacing, heroScale, attackTimer, colors);
   }
+
+  c.restore(); // Restaura contexto com screen shake
 }
 
+
 /**
- * Desenha uma sombra realista de contato e oclusão de ambiente (AO) diretamente sobre as lajotas da arena real.
+ * Métricas anatômicas e offsets de sola para ancoragem precisa do modelo no solo por arquétipo.
+ * Mapeadas diretamente das geometrias de sabatons/botas em cada renderer de herói.
  */
-function drawSimpleHeroShadow(c, x, y, isCompact = false, heroScale = 6.6) {
-  const rx = Math.round(heroScale * 14.5);
-  const ry = Math.round(heroScale * 3.6);
+const HERO_FOOT_METRICS = {
+  KNIGHT:    { soleY: 16.0, leftX: -2.8, rightX: 4.0, bootRx: 3.2, bootRy: 0.85 },
+  MAGE:      { soleY: 15.5, leftX: -3.5, rightX: 3.1, bootRx: 2.7, bootRy: 0.78 },
+  ROGUE:     { soleY: 15.2, leftX: -3.1, rightX: 4.0, bootRx: 2.8, bootRy: 0.75 },
+  BARBARIAN: { soleY: 16.5, leftX: -5.0, rightX: 4.5, bootRx: 3.6, bootRy: 0.95 },
+  ALCHEMIST: { soleY: 16.0, leftX: -3.7, rightX: 3.7, bootRx: 2.8, bootRy: 0.80 }
+};
+
+/**
+ * Desenha uma projeção de sombra fisicamente desacoplada em duas camadas:
+ * 1. Penumbra Difusa e Oclusão de Solo: Gradiente suave volumétrico projetado sobre o mármore/obsidiana do altar.
+ * 2. Oclusão de Contato Direta (Contact AO): Elipses ultra-escuras (92% de opacidade) coladas milimetricamente
+ *    às solas das botas, eliminando a sensação de flutuação sobre os degraus de cantaria.
+ */
+function drawSimpleHeroShadow(c, x, y, isCompact = false, heroScale = 6.6, colors = null) {
+  const isSkill = currentPose === 'skill';
+  const isCombat = currentPose === 'combat';
+  const t = previewTime;
+  const bobFactor = isCombat ? 1.2 : 1.0;
+  const breathBob = Math.sin(t * 0.06) * 2.8 * bobFactor;
+  const bob = isCombat ? 0 : Math.sin(t * 0.05) * 0.8;
+
+  // Centro e deslocamento do herói em cena (mesma translação de drawHeroInstance)
+  const heroOriginX = x + (isSkill && currentHeroKey === 'MAGE' ? currentFacing * (-9 + Math.min(1, (previewSkillAge % 100) / 22) * 18) * heroScale : 0);
+  const heroOriginY = y + breathBob;
+
+  // Métricas anatômicas do arquétipo ativo
+  const metrics = HERO_FOOT_METRICS[currentHeroKey] || HERO_FOOT_METRICS.KNIGHT;
+  const soleY = heroOriginY + (metrics.soleY + bob) * heroScale;
+
+  const footLeftX = heroOriginX + currentFacing * metrics.leftX * heroScale;
+  const footRightX = heroOriginX + currentFacing * metrics.rightX * heroScale;
+
+  // Opacidade de camuflagem/invisibilidade (Rogue Phasing)
+  let shadowAlpha = 1.0;
+  if (isSkill && currentHeroKey === 'ROGUE' && previewSkillAge < KAEL_ULT.duration) {
+    shadowAlpha = Math.max(0.20, 1 - (previewSkillAge / 18) * 0.8);
+  }
+
   c.save();
+  c.globalAlpha = shadowAlpha;
 
-  // 1. Sombra Difusa Geral do Corpo no Solo da Arena Real
-  const grad = c.createRadialGradient(x, y + 4, 0, x, y + 4, rx);
-  grad.addColorStop(0, 'rgba(0, 0, 0, 0.76)');
-  grad.addColorStop(0.45, 'rgba(0, 0, 0, 0.35)');
-  grad.addColorStop(0.8, 'rgba(0, 0, 0, 0.09)');
-  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  c.fillStyle = grad;
+  // =========================================================================
+  // CAMADA 1: PENUMBRA DIFUSA E SOMBRA PROJETADA DO CORPO (Soft Ambient Penumbra)
+  // =========================================================================
+  const penumbraRx = Math.round(heroScale * 14.5);
+  const penumbraRy = Math.round(heroScale * 4.2);
+  const penumbraCenterY = soleY - Math.round(heroScale * 0.5);
+
+  // 1.1 Gradiente radial multi-stop de dispersão suave
+  const bodyGrad = c.createRadialGradient(heroOriginX, penumbraCenterY, 0, heroOriginX, penumbraCenterY, penumbraRx);
+  bodyGrad.addColorStop(0, 'rgba(2, 4, 10, 0.74)');
+  bodyGrad.addColorStop(0.28, 'rgba(4, 7, 16, 0.52)');
+  bodyGrad.addColorStop(0.58, 'rgba(6, 10, 22, 0.24)');
+  bodyGrad.addColorStop(0.84, 'rgba(8, 12, 26, 0.07)');
+  bodyGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+  c.fillStyle = bodyGrad;
   c.beginPath();
-  c.ellipse(x, y + 4, rx, ry, 0, 0, Math.PI * 2);
+  c.ellipse(heroOriginX, penumbraCenterY, penumbraRx, penumbraRy, 0, 0, Math.PI * 2);
   c.fill();
 
-  // 2. Oclusão de Ambiente Direta sob as Botas (ancoragem física perfeita no mármore)
-  const footSpacing = Math.round(heroScale * 4.2);
-  const bootRx = Math.round(heroScale * 3.6);
-  const bootRy = Math.round(heroScale * 1.35);
-  c.fillStyle = 'rgba(0, 0, 0, 0.92)';
+  // 1.2 Ponte de Oclusão Intermediária entre as Pernas (Pelvis/Mid-leg ambient occlusion)
+  const midFootX = (footLeftX + footRightX) / 2;
+  const legSpan = Math.abs(footRightX - footLeftX);
+  const bridgeRx = Math.max(legSpan * 0.72, heroScale * 3.8);
+  const bridgeRy = Math.round(heroScale * 1.6);
+  const bridgeGrad = c.createRadialGradient(midFootX, soleY - Math.round(heroScale * 0.3), 0, midFootX, soleY - Math.round(heroScale * 0.3), bridgeRx);
+  bridgeGrad.addColorStop(0, 'rgba(0, 0, 0, 0.58)');
+  bridgeGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0.28)');
+  bridgeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
+  c.fillStyle = bridgeGrad;
   c.beginPath();
-  c.ellipse(x - footSpacing * currentFacing, y, bootRx, bootRy, 0, 0, Math.PI * 2);
+  c.ellipse(midFootX, soleY - Math.round(heroScale * 0.3), bridgeRx, bridgeRy, 0, 0, Math.PI * 2);
   c.fill();
 
-  c.beginPath();
-  c.ellipse(x + footSpacing * currentFacing, y, bootRx, bootRy, 0, 0, Math.PI * 2);
-  c.fill();
+  // =========================================================================
+  // CAMADA 2: OCLUSÃO DE CONTATO DIRETA DAS BOTAS (Contact AO - 92% Opacity)
+  // =========================================================================
+  const bootRx = Math.round(heroScale * metrics.bootRx);
+  const bootRy = Math.max(1.8, Math.round(heroScale * metrics.bootRy));
+  const contactY = soleY - Math.max(0.5, heroScale * 0.12);
+
+  const feet = [footLeftX, footRightX];
+
+  for (let i = 0; i < feet.length; i++) {
+    const fx = feet[i];
+
+    // 2.1 Halo imediato de vinco (Crease Gradient)
+    const creaseGrad = c.createRadialGradient(fx, contactY, 0, fx, contactY, bootRx * 1.15);
+    creaseGrad.addColorStop(0, 'rgba(0, 0, 0, 0.92)');
+    creaseGrad.addColorStop(0.55, 'rgba(0, 0, 0, 0.82)');
+    creaseGrad.addColorStop(0.85, 'rgba(0, 0, 0, 0.32)');
+    creaseGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    c.fillStyle = creaseGrad;
+    c.beginPath();
+    c.ellipse(fx, contactY, bootRx * 1.15, bootRy * 1.25, 0, 0, Math.PI * 2);
+    c.fill();
+
+    // 2.2 Núcleo de oclusão 100% ancorado (Ultra-escuro, fino e colado na sola)
+    c.fillStyle = 'rgba(0, 0, 0, 0.92)';
+    c.beginPath();
+    c.ellipse(fx, contactY, bootRx * 0.88, bootRy * 0.72, 0, 0, Math.PI * 2);
+    c.fill();
+
+    // 2.3 Linha de micro-contato físico rasante no solo (Shadow Slit / PBR Crease)
+    c.strokeStyle = 'rgba(0, 0, 0, 0.94)';
+    c.lineWidth = Math.max(1.0, heroScale * 0.28);
+    c.beginPath();
+    c.moveTo(fx - bootRx * 0.65, soleY);
+    c.lineTo(fx + bootRx * 0.65, soleY);
+    c.stroke();
+  }
 
   c.restore();
 }
@@ -775,12 +1034,25 @@ function drawHeroPedestal(c, x, y, colors, isCompact, width, heroScale = 6.6, de
   // 1. Névoa abissal rasteira sutil ao nível do piso
   if (!desktopStage) drawSubtleGroundMist(c, x, y, rx, ry, stoneH, t);
 
-  // 2. Três degraus monumentais de cantaria gótica
+  // 2. Três degraus monumentais de cantaria gótica e runas vivas no piso
   if (desktopStage) {
-    drawDesktopDais(c, width, desktopStage.height, x, y, rx, ry, colors, desktopStage.dpr);
+    drawDesktopDais(c, width, desktopStage.height, x, y, rx, ry, colors, desktopStage.dpr, desktopStage.baseX, desktopStage.baseY);
+    drawDesktopFloorRunes(c, width, desktopStage.height, x, y, rx, ry, colors, t * 0.016, desktopStage.surgeProgress || 0, desktopStage.heroKey || currentHeroKey, desktopStage.runeOverload || 0);
+    return;
   } else {
     drawTieredDais(c, x, y, rx, ry, stoneH, colors, isCompact, t);
+    const overload = heroTransition.getRuneOverloadProgress();
+    if (overload > 0) {
+      c.save();
+      c.globalAlpha = Math.sin(overload * Math.PI) * 0.65;
+      c.fillStyle = colors.primary;
+      c.beginPath();
+      c.ellipse(x, y, rx * 0.95, ry * 0.95, 0, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
+    }
   }
+
 
   c.save();
 
@@ -995,7 +1267,6 @@ function drawHeroInstance(c, x, y, colors, heroScale = 6.6) {
 
   // Pulso de energia da aura na habilidade
   const showSurge = surgeTimer > 0;
-  if (surgeTimer > 0) surgeTimer--;
   if ((isSkill || showSurge) && !(isSkill && (currentHeroKey === 'BARBARIAN' || currentHeroKey === 'MAGE' || currentHeroKey === 'ALCHEMIST' || currentHeroKey === 'ROGUE'))) {
     const pulseRadius = Math.round(heroScale * 11.5) + Math.sin(t * 0.2) * 8;
     c.save();
