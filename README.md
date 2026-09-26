@@ -24,11 +24,15 @@ Sem frameworks, sem bibliotecas externas e sem assets de imagem ou áudio pré-g
 - **Física de Multidão & Tokens de Ataque Melee**: Concorrência de golpes coordenada que limita o ataque simultâneo de hordas comuns a no máximo 6 monstros por frame (`MAX_MELEE_ATTACK_TOKENS`), prevenindo shotgunning injusto.
 - **Purga Dimensional & Fusão Dinâmica de Drops**: O Altar do Chefe Final condensa 100% das gemas de XP do mapa aberto em uma única Orbe Cósmica, resgata baús distantes e descarta detritos, poças e crateras. Abates contínuos contam com fusão de gemas de XP vizinhas (<38px) para eliminar picos de entidades.
 - **Códice do Bestiário (45 Criaturas Catalogadas)**: 10 monstros comuns de horda, 15 monstros expandidos, 16 minibosses com inteligência artificial e máquinas de estados finitos (FSM) exclusivas, além de 4 chefes monumentais com múltiplas fases de combate e falas cinemáticas dinâmicas (*Boss Barks*).
-- **Áudio Sintetizado em Tempo Real (Web Audio API)**: Efeitos sonoros procedurais gerados via osciladores, filtros em cascata e ruído branco, com auto-desbloqueio em qualquer primeiro gesto do usuário, restauração dinâmica pós-morte/stasis e escala harmônica na coleta de gemas, somado a feedback tátil (Vibration API).
+- **Áudio Sintetizado em Tempo Real (Web Audio API)**: ~64 sintetizadores procedurais (SFX + trilhas musicais) gerados via osciladores, filtros em cascata e ruído branco, com auto-desbloqueio em qualquer primeiro gesto do usuário, restauração dinâmica pós-morte/stasis, escala harmônica na coleta de gemas, 5 trilhas musicais temáticas por herói na tela de seleção (120s loop cada), 11 SFX de transição elemental cinética (*Hero Shifting*) com filtro de vácuo suspensivo, e feedback tátil (Vibration API).
 - **HUD Grim Cyber-Gothic & Modais Diegéticos**: Interface responsiva de alta fidelidade com medalhões vetoriais em bronze e ouro antigo, barras dinâmicas de HP/XP, supressão coordenada de cards de onda (`banner-suppressed`), layout otimizado para desktop e botão de ULT calibrado para toque móvel.
 - **Subsistema Unificado de Meta-Progressão (`src/systems/progression.js`)**: Persistência no `localStorage` de ouro/almas, árvore de talentos do Astrolábio com 100% de reembolso, monumentos de melhor partida, biometria por herói, grimório de 25 conquistas e bestiário.
 - **Análise Forense de Causa Mortis & Dicas Táticas**: Rastreamento detalhado da causa da morte com identificação do agressor (Chefe, Miniboss, Elite, Horda, Perigo Ambiental ou Projétil), dano sofrido e dicas táticas contextuais específicas para cada ataque fatal.
 - **Eventos Mundiais & Pactos de Risco**: Altar de Sangue que surge proceduralmente com círculo ritual de contenção, acelerando a horda em 2.0x em troca de baús lendários garantidos.
+- **Skins Cosméticas & Customização Visual**: Sistema de skins alternativas por herói com desbloqueio progressivo, persistência no `localStorage`, paletas cromáticas substituíveis e preview em tempo real no pedestal e miniaturas.
+- **Transição Elemental Cinética (Hero Shifting)**: Coreografia animada de dissolução e materialização ao trocar de herói, com FSM de timing (0-500ms), temas elementais por classe, God Rays, screen shake, partículas gravitacionais e fast-switching.
+- **Trilhas Musicais Procedurais por Herói**: 5 faixas temáticas únicas (120s loop) sintetizadas em tempo real via Web Audio API, refletindo a identidade sonora de cada sobrevivente na tela de seleção.
+- **Notification Pips & Sinalizadores de Relíquias**: Sistema de notificações visuais para criaturas recém-descobertas no Bestiário, conquistas desbloqueadas e talentos compráveis, com consumo ao abrir os respectivos modais.
 - **Controles Híbridos & Modos de Joystick**: Suporte responsivo com alternância dinâmica para teclado/mouse (Desktop) e Joystick virtual analógico (Mobile nos modos *Flutuante* e *Dinâmico*).
 
 ---
@@ -130,7 +134,12 @@ Interface monumental com navegação pan & zoom interativa, anéis de armilar e 
 - **Catalogação Diegética de 45 Criaturas**: Registro em tempo real de abates individuais, grau de letalidade, atributos biológicos, táticas recomendadas e inscrições de lore gótica.
 
 ### 🏆 Monumento da Melhor Run & Biometria de Campeões
-- Exibição destacada na tela de seleção da maior sobrevivência histórica da conta, além de estatísticas individuais gravadas por herói: tempo recorde, vitórias consagradas, abates e total de partidas disputadas.
+- Exibição destacada na tela de seleção da maior sobrevivência histórica da conta, além de estatísticas individuais gravadas por herói: tempo recorde, vitórias consagradas, abates, total de partidas disputadas, maior onda alcançada, dano total causado, dano total recebido, chefes derrotados e ouro acumulado.
+
+### 🎨 Skins Cosméticas & Customização Visual
+- **Sistema de Skins Persistente**: Seleção e desbloqueio progressivo de skins alternativas por herói, com persistência individual no `localStorage` (chave `hord_skin_{heroId}`).
+- **Preview em Tempo Real**: Visualização instantânea da skin selecionada no pedestal 3D e no grid de miniaturas da tela de seleção.
+- **Paletas Cromáticas Alternativas**: Cada skin substitui dinamicamente as cores primárias, secundárias e de detalhes sem alterar os renderers base dos heróis.
 
 ---
 
@@ -180,7 +189,7 @@ Hord-Slayer/
     ├── core/                   # Infraestrutura base e utilitários de engine
     │   ├── audio.js            # Orquestrador do motor de áudio procedural Web Audio API e filtros
     │   ├── audio/              # Tabela declarativa O(1) de sintetizadores e cooldowns
-    │   │   └── sfxRegistry.js  # Catálogo com 48 sintetizadores sonoros procedurais
+    │   │   └── sfxRegistry.js  # Catálogo com ~64 sintetizadores sonoros procedurais e trilhas musicais
     │   ├── input.js            # Mapeamento unificado de teclado, mouse, touch e joysticks móveis
     │   ├── math.js             # Funções vetoriais, interpolação, ângulos e colisões
     │   ├── perfMetrics.js      # Telemetria em tempo real, monitoramento zero-GC e baseline de FPS
@@ -213,14 +222,15 @@ Hord-Slayer/
     ├── render/                 # Pipeline gráfico em Canvas 2D
     │   ├── bestRunPreview.js   # Renderização procedural do monumento da melhor partida
     │   ├── bestiaryPreview.js  # Desenho dinâmico das criaturas no códice do bestiário
-    │   ├── characterPreview.js # Desenho procedural dos heróis e armas na tela de seleção
+    │   ├── characterPreview.js # Desenho procedural dos heróis, skins e armas na tela de seleção
     │   ├── creatureStyle.js    # Estilo base, deformações cinemáticas e renderização de morte
     │   ├── deathAnimation.js   # Sequência cinematográfica de morte do herói e necrofiltro
-    │   ├── desktopHeroStage.js # Pedestal 3D procedural e iluminação de palco no desktop
+    │   ├── desktopHeroStage.js # Pedestal 3D procedural, iluminação reativa a áudio e palco cinético no desktop
     │   ├── enemiesRenderer.js  # Fachada de retrocompatibilidade para monstros comuns e elites
     │   ├── enemies/            # Renderizadores procedurais dedicados para cada criatura comum
     │   ├── environment.js      # Fachada e orquestrador de solo, transições de biomas e atmosfera
     │   ├── groundCracks.js     # Fissuras de impacto, crateras e fendas de magma no solo
+    │   ├── heroTransition.js   # Transição elemental cinética entre heróis (dissolução e materialização)
     │   ├── ignisUlt.js         # Efeitos de fogo e labaredas da ULT Passo Ígneo de Ignis
     │   ├── joystickRenderer.js # Desenho do joystick virtual analógico e botões de toque móvel
     │   ├── kaelRenderer.js     # Fachada de compatibilidade para o renderer de Kael
