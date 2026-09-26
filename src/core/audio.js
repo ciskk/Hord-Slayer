@@ -45,8 +45,20 @@ const soundCooldowns = {
   bell_toll: 0,
   death_collapse: 0,
   death_evaporate: 0,
-  death_nova: 0
+  death_nova: 0,
+  altar_stone_thud: 0,
+  altar_dissolve_knight: 0,
+  altar_materialize_knight: 0,
+  altar_dissolve_mage: 0,
+  altar_materialize_mage: 0,
+  altar_dissolve_rogue: 0,
+  altar_materialize_rogue: 0,
+  altar_dissolve_barbarian: 0,
+  altar_materialize_barbarian: 0,
+  altar_dissolve_alchemist: 0,
+  altar_materialize_alchemist: 0
 };
+
 
 // Gerador procedural de ruído para transientes, vento de lâmina, estilhaço vítreo e detonações
 let noiseBuffer = null;
@@ -177,6 +189,22 @@ export function resetStasisAudioFilter() {
   masterFilterNode.frequency.setValueAtTime(22000, t);
   masterFilterNode.frequency.setTargetAtTime(22000, t, 0.02);
 }
+
+/**
+ * Filtro de Vácuo Suspenso (Hero Shifting):
+ * Corta abruptamente frequências agudas por ~80ms (efeito de abafamento e despressurização
+ * diegética que prepara o cérebro para o impacto vertical da invocação).
+ */
+export function applyVacuumAudioFilter(durationMs = 80) {
+  if (!audioCtx || !masterFilterNode) return;
+  const t = audioCtx.currentTime;
+  masterFilterNode.frequency.cancelScheduledValues(t);
+  masterFilterNode.frequency.setValueAtTime(320, t);
+  const restoreT = t + (durationMs / 1000);
+  masterFilterNode.frequency.setValueAtTime(320, restoreT);
+  masterFilterNode.frequency.setTargetAtTime(22000, restoreT, 0.025);
+}
+
 
 /**
  * Despacho O(1) de efeitos sonoros procedurais via tabela declarativa SFX_REGISTRY.

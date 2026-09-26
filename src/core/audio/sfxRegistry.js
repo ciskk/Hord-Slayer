@@ -1210,5 +1210,329 @@ export const SFX_REGISTRY = {
     });
 
     if (typeof haptic === 'function') haptic('medium');
+  },
+
+  // =========================================================================
+  // TRANSIÇÃO ELEMENTAL CINÉTICA (HERO SHIFTING & MATERIALIZATION)
+  // Ritual diegético de evocação ancestral no Altar dos Condenados
+  // =========================================================================
+
+  // Impacto cavernoso na laje de basalto
+  altar_stone_thud: ({ t, osc, gain, filter, playNoise, haptic, volumeMult = 1.0 }) => {
+    filter.frequency.setValueAtTime(360, t);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(95, t);
+    osc.frequency.exponentialRampToValueAtTime(26, t + 0.32);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(0.36 * volumeMult, t + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+    osc.start(t);
+    osc.stop(t + 0.32);
+
+    playNoise({
+      filterType: 'lowpass',
+      filterFreq: 420,
+      rampFreq: 90,
+      startGain: 0.28 * volumeMult,
+      duration: 0.18,
+      decay: 0.18
+    });
+    if (typeof haptic === 'function') haptic('heavy');
+  },
+
+  // Roland: Dissolução (Prisma Sagrado & Poeira Dourada)
+  altar_dissolve_knight: ({ ctx, t, masterGainNode, playNoise, volumeMult = 1.0 }) => {
+    playNoise({
+      filterType: 'bandpass',
+      filterFreq: 2200,
+      rampFreq: 3800,
+      startGain: 0.15 * volumeMult,
+      duration: 0.18,
+      decay: 0.18
+    });
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(987.77, t); // B5
+    o.frequency.exponentialRampToValueAtTime(1567.98, t + 0.14); // G6
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.linearRampToValueAtTime(0.10 * volumeMult, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    o.connect(g);
+    g.connect(masterGainNode);
+    o.start(t);
+    o.stop(t + 0.16);
+  },
+
+  // Roland: Materialização (Relâmpago Solar, Escudos de Fé e Pulso de Martelo)
+  altar_materialize_knight: ({ ctx, t, masterGainNode, playNoise, volumeMult = 1.0, haptic }) => {
+    // Trovão solar puro
+    const oThunder = ctx.createOscillator();
+    const gThunder = ctx.createGain();
+    oThunder.type = 'triangle';
+    oThunder.frequency.setValueAtTime(260, t);
+    oThunder.frequency.exponentialRampToValueAtTime(65, t + 0.28);
+    gThunder.gain.setValueAtTime(0.001, t);
+    gThunder.gain.linearRampToValueAtTime(0.26 * volumeMult, t + 0.015);
+    gThunder.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+    oThunder.connect(gThunder);
+    gThunder.connect(masterGainNode);
+    oThunder.start(t);
+    oThunder.stop(t + 0.28);
+
+    // Acorde ressonante de fé (Dourado / Sagrado)
+    [659.25, 880.0, 1318.5].forEach((freq, idx) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      const st = t + 0.02 + idx * 0.03;
+      g.gain.setValueAtTime(0.0001, st);
+      g.gain.linearRampToValueAtTime(0.12 * volumeMult, st + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, st + 0.35);
+      o.connect(g);
+      g.connect(masterGainNode);
+      o.start(st);
+      o.stop(st + 0.35);
+    });
+
+    playNoise({
+      filterType: 'bandpass',
+      filterFreq: 1800,
+      rampFreq: 900,
+      startGain: 0.14 * volumeMult,
+      duration: 0.25,
+      decay: 0.25
+    });
+    if (typeof haptic === 'function') haptic('heavy');
+  },
+
+  // Ignis: Dissolução (Combustão Interna, Labaredas em Vórtice e Cinzas)
+  altar_dissolve_mage: ({ ctx, t, masterGainNode, playNoise, volumeMult = 1.0 }) => {
+    playNoise({
+      filterType: 'bandpass',
+      filterFreq: 650,
+      rampFreq: 1900,
+      startGain: 0.20 * volumeMult,
+      duration: 0.20,
+      decay: 0.20
+    });
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(140, t);
+    o.frequency.exponentialRampToValueAtTime(420, t + 0.16);
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.linearRampToValueAtTime(0.08 * volumeMult, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.connect(g);
+    g.connect(masterGainNode);
+    o.start(t);
+    o.stop(t + 0.18);
+  },
+
+  // Ignis: Materialização (Gota de Fogo Líquido e Erupção em Asas de Fênix)
+  altar_materialize_mage: ({ ctx, t, masterGainNode, playNoise, volumeMult = 1.0, haptic }) => {
+    // Rasgo da gota de fogo líquido
+    const oDrop = ctx.createOscillator();
+    const gDrop = ctx.createGain();
+    oDrop.type = 'sine';
+    oDrop.frequency.setValueAtTime(880, t);
+    oDrop.frequency.exponentialRampToValueAtTime(240, t + 0.09);
+    gDrop.gain.setValueAtTime(0.001, t);
+    gDrop.gain.linearRampToValueAtTime(0.18 * volumeMult, t + 0.01);
+    gDrop.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+    oDrop.connect(gDrop);
+    gDrop.connect(masterGainNode);
+    oDrop.start(t);
+    oDrop.stop(t + 0.09);
+
+    // Coluna de chamas e asas de fênix
+    playNoise({
+      filterType: 'bandpass',
+      filterFreq: 850,
+      rampFreq: 2400,
+      startGain: 0.24 * volumeMult,
+      duration: 0.32,
+      decay: 0.32
+    });
+
+    const oRoar = ctx.createOscillator();
+    const gRoar = ctx.createGain();
+    oRoar.type = 'triangle';
+    oRoar.frequency.setValueAtTime(160, t + 0.06);
+    oRoar.frequency.exponentialRampToValueAtTime(80, t + 0.30);
+    gRoar.gain.setValueAtTime(0.001, t + 0.06);
+    gRoar.gain.linearRampToValueAtTime(0.20 * volumeMult, t + 0.09);
+    gRoar.gain.exponentialRampToValueAtTime(0.001, t + 0.30);
+    oRoar.connect(gRoar);
+    gRoar.connect(masterGainNode);
+    oRoar.start(t + 0.06);
+    oRoar.stop(t + 0.30);
+
+    if (typeof haptic === 'function') haptic('heavy');
+  },
+
+  // Kael: Dissolução (Tinta Negra na Água & Revoada de Corvos de Sombra)
+  altar_dissolve_rogue: ({ t, playNoise, volumeMult = 1.0 }) => {
+    playNoise({
+      filterType: 'highpass',
+      filterFreq: 1400,
+      rampFreq: 400,
+      startGain: 0.16 * volumeMult,
+      duration: 0.18,
+      decay: 0.18
+    });
+  },
+
+  // Kael: Materialização (Fenda Dimensional e Lâminas Cruzadas no Abismo)
+  altar_materialize_rogue: ({ ctx, t, masterGainNode, playNoise, volumeMult = 1.0, haptic }) => {
+    // Rasgo dimensional
+    const oRift = ctx.createOscillator();
+    const gRift = ctx.createGain();
+    oRift.type = 'sawtooth';
+    oRift.frequency.setValueAtTime(260, t);
+    oRift.frequency.exponentialRampToValueAtTime(90, t + 0.24);
+    gRift.gain.setValueAtTime(0.001, t);
+    gRift.gain.linearRampToValueAtTime(0.18 * volumeMult, t + 0.015);
+    gRift.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+    oRift.connect(gRift);
+    gRift.connect(masterGainNode);
+    oRift.start(t);
+    oRift.stop(t + 0.24);
+
+    // Brilho metálico e estalido das adagas cruzadas
+    const oClash = ctx.createOscillator();
+    const gClash = ctx.createGain();
+    oClash.type = 'sine';
+    oClash.frequency.setValueAtTime(1864, t + 0.07);
+    oClash.frequency.exponentialRampToValueAtTime(1420, t + 0.28);
+    gClash.gain.setValueAtTime(0.001, t + 0.07);
+    gClash.gain.linearRampToValueAtTime(0.16 * volumeMult, t + 0.08);
+    gClash.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+    oClash.connect(gClash);
+    gClash.connect(masterGainNode);
+    oClash.start(t + 0.07);
+    oClash.stop(t + 0.28);
+
+    playNoise({
+      filterType: 'bandpass',
+      filterFreq: 1600,
+      rampFreq: 3200,
+      startGain: 0.14 * volumeMult,
+      duration: 0.22,
+      decay: 0.22
+    });
+    if (typeof haptic === 'function') haptic('heavy');
+  },
+
+  // Kragdor: Dissolução (Estilhaços de Ferro Forjado e Ruptura de Rocha)
+  altar_dissolve_barbarian: ({ ctx, t, masterGainNode, playNoise, volumeMult = 1.0 }) => {
+    playNoise({
+      filterType: 'lowpass',
+      filterFreq: 680,
+      rampFreq: 180,
+      startGain: 0.24 * volumeMult,
+      duration: 0.20,
+      decay: 0.20
+    });
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(110, t);
+    o.frequency.exponentialRampToValueAtTime(38, t + 0.16);
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.linearRampToValueAtTime(0.20 * volumeMult, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+    o.connect(g);
+    g.connect(masterGainNode);
+    o.start(t);
+    o.stop(t + 0.16);
+  },
+
+  // Kragdor: Materialização (Estrondo de Meteoro Brutal e Tremor Sísmico)
+  altar_materialize_barbarian: ({ ctx, t, masterGainNode, playNoise, volumeMult = 1.0, haptic }) => {
+    // Detonação sísmica colossal
+    const oMeteo = ctx.createOscillator();
+    const gMeteo = ctx.createGain();
+    oMeteo.type = 'triangle';
+    oMeteo.frequency.setValueAtTime(180, t);
+    oMeteo.frequency.exponentialRampToValueAtTime(24, t + 0.38);
+    gMeteo.gain.setValueAtTime(0.001, t);
+    gMeteo.gain.linearRampToValueAtTime(0.38 * volumeMult, t + 0.015);
+    gMeteo.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+    oMeteo.connect(gMeteo);
+    gMeteo.connect(masterGainNode);
+    oMeteo.start(t);
+    oMeteo.stop(t + 0.38);
+
+    playNoise({
+      filterType: 'lowpass',
+      filterFreq: 520,
+      rampFreq: 120,
+      startGain: 0.32 * volumeMult,
+      duration: 0.28,
+      decay: 0.28
+    });
+    if (typeof haptic === 'function') haptic('heavy');
+  },
+
+  // Valeria: Dissolução (Efervescência Química e Vapores Esmeralda)
+  altar_dissolve_alchemist: ({ ctx, t, masterGainNode, playNoise, volumeMult = 1.0 }) => {
+    playNoise({
+      filterType: 'highpass',
+      filterFreq: 1800,
+      rampFreq: 3200,
+      startGain: 0.16 * volumeMult,
+      duration: 0.18,
+      decay: 0.18
+    });
+    [0.0, 0.04, 0.09].forEach((off, idx) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      const bt = t + off;
+      o.frequency.setValueAtTime(480 + idx * 110, bt);
+      o.frequency.exponentialRampToValueAtTime(1100 + idx * 120, bt + 0.035);
+      g.gain.setValueAtTime(0.001, bt);
+      g.gain.linearRampToValueAtTime(0.08 * volumeMult, bt + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, bt + 0.04);
+      o.connect(g);
+      g.connect(masterGainNode);
+      o.start(bt);
+      o.stop(bt + 0.04);
+    });
+  },
+
+  // Valeria: Materialização (Queda e Impacto dos 3 Frascos + Névoa Luminescente)
+  altar_materialize_alchemist: ({ ctx, t, masterGainNode, playNoise, volumeMult = 1.0, haptic }) => {
+    // Quebra dos três frascos vítreos em arpeggio milimétrico
+    [0.0, 0.025, 0.055].forEach((off, idx) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'triangle';
+      const st = t + off;
+      o.frequency.setValueAtTime(1200 + idx * 280, st);
+      o.frequency.exponentialRampToValueAtTime(320, st + 0.06);
+      g.gain.setValueAtTime(0.001, st);
+      g.gain.linearRampToValueAtTime(0.14 * volumeMult, st + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, st + 0.07);
+      o.connect(g);
+      g.connect(masterGainNode);
+      o.start(st);
+      o.stop(st + 0.07);
+    });
+
+    // Descompressão do gás denso esmeralda
+    playNoise({
+      filterType: 'bandpass',
+      filterFreq: 1100,
+      rampFreq: 2600,
+      startGain: 0.20 * volumeMult,
+      duration: 0.28,
+      decay: 0.28
+    });
+    if (typeof haptic === 'function') haptic('heavy');
   }
 };
+
