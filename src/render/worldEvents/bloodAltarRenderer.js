@@ -10,10 +10,11 @@
  */
 import { frameCount } from '../../main.js';
 import { player } from '../../entities/player.js';
+import { activeBoss } from '../../state/collections.js';
 import { getActiveBloodAltar } from '../../systems/worldEvents.js';
 
 export function drawBloodAltarWorld(ctx, altar = getActiveBloodAltar()) {
-  if (!altar) return;
+  if (!altar || activeBoss) return;
 
   ctx.save();
   if (altar.fadeTimer !== undefined && altar.fadeAlpha !== undefined) {

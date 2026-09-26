@@ -13,7 +13,7 @@ import { addDamageText, createHitParticles, addBloodSplat, clearCombatVisuals } 
 import { addXP } from '../entities/player.js';
 import { transitionToArenaTheme } from '../render/environment.js';
 import { getHordeArenaTheme } from './waves.js';
-import { onAltarChestCollected } from './worldEvents.js';
+import { onAltarChestCollected, dismissBloodAltar } from './worldEvents.js';
 import { lastAttackerName, deathContext } from '../state/events.js';
 import { gems, props, drops, chests, acidPuddles } from '../state/collections.js';
 import { clearGroundCraters } from '../render/groundCracks.js';
@@ -382,6 +382,7 @@ export function updatePickups(dt, {
  */
 export function purgeWorldForFinalBoss(boss, player) {
   if (!boss) return;
+  dismissBloodAltar();
 
   const cx = boss.arenaCenterX !== undefined ? boss.arenaCenterX : boss.x;
   const cy = boss.arenaCenterY !== undefined ? boss.arenaCenterY : boss.y;

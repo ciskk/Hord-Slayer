@@ -10,6 +10,7 @@
 
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { addDamageText, createHitParticles } from './combat.js';
+import { activeBoss } from '../state/collections.js';
 
 export const BLOOD_ALTAR_PACTS = [
   {
@@ -67,11 +68,12 @@ function setAltarStatus(status, markup, restartAnimation = false) {
 }
 
 export function getActiveBloodAltar() {
+  if (activeBoss) return null;
   return activeBloodAltar;
 }
 
 export function isBossBlockedByWorldEvent() {
-  return Boolean(isAltarBlockingBoss || (activeBloodAltar && activeBloodAltar.state === 'ACTIVE'));
+  return false;
 }
 
 export function onAltarChestCollected() {
@@ -96,6 +98,37 @@ export function setPlayerChannelingAltar(val) {
   isPlayerChanneling = !!val;
 }
 
+/**
+ * Remove imediatamente o Altar de Sangue da arena e limpa seus elementos visuais e de interface.
+ * Deve ser invocado sempre que o jogador entrar em batalha com um chefe.
+ */
+export function dismissBloodAltar() {
+  if (activeBloodAltar) {
+    try {
+      createHitParticles(activeBloodAltar.x, activeBloodAltar.y, '#ff3838', 14);
+    } catch (_) {}
+  }
+  activeBloodAltar = null;
+  isAltarBlockingBoss = false;
+  isPlayerChanneling = false;
+  updateBloodAltarHUD(null);
+
+  const touchBtn = document.getElementById('blood-altar-touch-btn');
+  if (touchBtn) {
+    touchBtn.style.display = 'none';
+    touchBtn.classList.remove('is-channeling');
+  }
+  const channelBtn = document.getElementById('blood-altar-channel-btn');
+  if (channelBtn) channelBtn.style.display = 'none';
+  const banner = document.getElementById('blood-altar-hud');
+  if (banner) {
+    banner.style.display = 'none';
+    clearAltarStates(banner);
+  }
+  const hud = document.getElementById('hud');
+  if (hud) setAltarClass(hud, 'altar-active', false);
+}
+
 export function resetWorldEvents() {
   activeBloodAltar = null;
   isAltarBlockingBoss = false;
@@ -105,6 +138,7 @@ export function resetWorldEvents() {
 }
 
 export function spawnBloodAltar(player, pactIndex = 0, customDist = null) {
+  if (activeBoss) return;
   const pact = BLOOD_ALTAR_PACTS[pactIndex] || BLOOD_ALTAR_PACTS[0];
   const angle = Math.random() * Math.PI * 2;
   const dist = customDist !== null ? customDist : (580 + Math.random() * 140); // ~600px de distância por padrão
@@ -147,6 +181,17 @@ export function updateWorldEvents(dt, {
   setLastAttackerName
 }) {
   const currentSeconds = Math.floor(frameCount / 60);
+
+  // Ao entrar em uma batalha com boss, o altar de sangue deve sumir da arena
+  if (activeBoss) {
+    if (activeBloodAltar) {
+      dismissBloodAltar();
+    }
+    if (currentSeconds >= nextAltarSpawnSeconds - 60) {
+      nextAltarSpawnSeconds = currentSeconds + 85 + Math.floor(Math.random() * 35);
+    }
+    return;
+  }
 
   // 1. Spawner de Altares Dinâmicos
   if (!activeBloodAltar && !activeBoss && gameState.isInMatch && !gameState.isDead && !gameState.isWon) {

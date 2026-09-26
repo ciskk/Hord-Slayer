@@ -31,6 +31,7 @@ import { initBoss } from '../bosses/bossRegistry.js';
 import { transitionToArenaTheme } from '../../render/environment.js';
 import { triggerBossBark, triggerMiniBossBark } from '../../systems/barks.js';
 import { purgeWorldForFinalBoss } from '../../systems/pickups.js';
+import { dismissBloodAltar } from '../../systems/worldEvents.js';
 
 export const MAX_ENEMIES = 150;
 
@@ -558,6 +559,9 @@ export function triggerBossEncounter(bossId) {
   bossTelegraphs.length = 0;
   bossShockwaves.length = 0;
   voidVortices.length = 0;
+
+  // Ao entrar em uma batalha com boss, o altar de sangue deve sumir da arena
+  dismissBloodAltar();
 
   // 2. Bloqueia o spawn de qualquer criatura comum
   setIsWavePaused(true);

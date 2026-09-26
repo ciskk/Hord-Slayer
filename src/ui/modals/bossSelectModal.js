@@ -16,6 +16,7 @@ import { playSfx } from '../../core/audio.js';
 import { closeCharSelectModal } from './characterSelectModal.js';
 import { triggerBossEncounter, spawnMiniBoss } from '../../entities/enemies.js';
 import { queueManualLevelUps } from './upgradeModal.js';
+import { dismissBloodAltar } from '../../systems/worldEvents.js';
 
 export function isBossSelectAllowed() {
   if (gameState.isDead || gameState.isWon) return false;
@@ -76,6 +77,7 @@ export function launchBossTest(bossId, levelCount = 0) {
   setActiveBoss(null);
   bossShockwaves.length = 0;
   voidVortices.length = 0;
+  dismissBloodAltar();
 
   triggerBossEncounter(bossId);
 
