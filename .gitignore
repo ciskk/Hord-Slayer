@@ -1,4 +1,24 @@
-*.bat
-*.py
-*.txt
-scratch/
+# Dependencias e arquivos gerados
+node_modules/
+/www/
+/dist/
+/temp-desktop/
+/scratch/
+*.log
+
+# Configuracao local do Android (demais regras em android/.gitignore)
+/android/.idea/
+/android/.gradle/
+/android/local.properties
+
+# Pacotes e assinatura privada
+*.apk
+*.aab
+*.jks
+*.keystore
+key.properties
+keystore.properties
+
+# Migracoes pontuais ja aplicadas; nao sao ferramentas de manutencao
+/scripts/update-card-effects.mjs
+/scripts/update-card-copy.mjs
