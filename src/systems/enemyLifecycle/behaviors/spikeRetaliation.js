@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/spikeRetaliation.js
  * IA da Donzela das Agulhas — Retaliação espinhosa de 8 projéteis.
@@ -34,7 +35,7 @@ export function spikeRetaliationBehavior(e, dt, angle, curSpeed, ctx) {
       }
       createHitParticles(e.x, e.y, '#8e44ad', 12);
       createHitParticles(e.x, e.y, '#dfe4ea', 6);
-      addDamageText(e.x, e.y, "ESPÍCULAS!", false, '#e056fd');
+      addDamageText(e.x, e.y, matchText('match.combat.spikes'), false, '#e056fd');
     }
   }
 }

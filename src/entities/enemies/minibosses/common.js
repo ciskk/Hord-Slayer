@@ -4,6 +4,9 @@
  * Utilitários compartilhados para controladores de Minibosses.
  */
 import { playSfx, triggerHaptic } from '../../../core/audio.js';
+import { t as matchText } from '../../../i18n/index.js';
+
+export { matchText };
 
 export function safePlaySfx(name) {
   try { playSfx(name); } catch (e) {}
@@ -15,7 +18,7 @@ export function checkEnrage(e, context) {
     e.hitFlash = 6;
     safePlaySfx('boss');
     if (context.triggerShake) context.triggerShake(7);
-    if (context.addDamageText) context.addDamageText(e.x, e.y - 24, "FÚRIA!", true, '#e74c3c');
+    if (context.addDamageText) context.addDamageText(e.x, e.y - 24, matchText('match.combat.fury'), true, '#e74c3c');
     if (context.createHitParticles) context.createHitParticles(e.x, e.y, '#e74c3c', 16);
   }
 }

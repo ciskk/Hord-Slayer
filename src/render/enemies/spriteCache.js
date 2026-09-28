@@ -11,13 +11,13 @@
  * - Gerenciado por Ring Buffer de 64 slots (8x8) para consumo ultrabaixo de memória RAM (~6-10MB).
  */
 
-import { ctx, setMainCtx, frameCount, setFrameCount } from '../../state/gameState.js';
+import { ctx, setMainCtx, frameCount, setFrameCount, baseCameraZoom } from '../../state/gameState.js';
 import { layoutMetrics } from '../../core/responsive.js';
 import { isCrawler, crawlPhase } from '../../entities/enemies/crawlerLocomotion.js';
 import { perfMetrics } from '../../core/perfMetrics.js';
 
-const BASE_CELL_SIZE = 92;
-const BASE_HALF_CELL = 46;
+const BASE_CELL_SIZE = 96;
+const BASE_HALF_CELL = 48;
 const ATLAS_COLS = 16;
 const ATLAS_ROWS = 16;
 const MAX_SLOTS = ATLAS_COLS * ATLAS_ROWS; // 256 slots (comporta todas as animações e variantes)
@@ -39,8 +39,26 @@ const CACHEABLE_TYPES = new Set([
   'SPLITTER', 'SPLITTER_MINI', 'TRAIL_CRAWLER', 'MAIDEN_THORNS'
 ]);
 
+export function getCurrentCacheDpr() {
+  return currentCacheDpr;
+}
+
+export function getAtlasDimensions() {
+  return {
+    cellPixelSize,
+    cols: ATLAS_COLS,
+    rows: ATLAS_ROWS,
+    width: atlasCanvas ? atlasCanvas.width : 0,
+    height: atlasCanvas ? atlasCanvas.height : 0
+  };
+}
+
 function ensureAtlas() {
-  const targetDpr = Math.min(2.5, Math.max(1, (layoutMetrics && layoutMetrics.dpr) ? layoutMetrics.dpr : 1));
+  // Compensa o zoom estável da câmera (baseCameraZoom) para que cada pixel do sprite
+  // assado no atlas mapeie 1:1 com os pixels físicos da tela, eliminando qualquer borrão bilinear.
+  const zoom = (typeof baseCameraZoom !== 'undefined' && baseCameraZoom) ? baseCameraZoom : 1.25;
+  const dpr = (layoutMetrics && layoutMetrics.dpr) ? layoutMetrics.dpr : 1;
+  const targetDpr = Math.min(2.5, Math.max(1, Math.round(dpr * zoom * 100) / 100));
 
   if (atlasCanvas && atlasCtx && currentCacheDpr === targetDpr) return;
   if (typeof document === 'undefined') return;

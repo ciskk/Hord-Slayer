@@ -155,11 +155,16 @@ function getBookSprite(isEvolved) {
   if (bookSpriteCache[key]) return bookSpriteCache[key];
 
   const off = document.createElement('canvas');
-  off.width = 64;
-  off.height = 64;
+  off.width = 128;
+  off.height = 128;
   const c = off.getContext('2d');
+  if (c) {
+    c.imageSmoothingEnabled = true;
+    c.imageSmoothingQuality = 'high';
+  }
   
   c.save();
+  c.scale(2, 2);
   c.translate(32, 32);
 
   const bookW = isEvolved ? 26 : 22;
@@ -322,7 +327,7 @@ export function drawPlayerOrbitals() {
     ctx.save();
     ctx.translate(ox, oy);
     ctx.rotate(angle + Math.PI / 2);
-    ctx.drawImage(bookSprite, -32, -32);
+    ctx.drawImage(bookSprite, -32, -32, 64, 64);
     ctx.restore();
   }
 }
@@ -399,6 +404,9 @@ export function drawPlayerCharacter() {
     staffCastTimer: (isIntro || isDying) ? 0 : player.staffCastTimer,
     isPhasing: (isIntro || isDying) ? false : player.isPhasing,
     evolvedPotion: player.evolvedPotion,
+    evolvedAxe: player.evolvedAxe,
+    evolvedStaff: player.evolvedStaff,
+    evolvedSword: player.evolvedSword,
     iFrames: (isIntro || isDying) ? 0 : player.iFrames,
     isRetaliating: (isIntro || isDying) ? false : undefined,
     isDashing: (isIntro || isDying) ? false : undefined,

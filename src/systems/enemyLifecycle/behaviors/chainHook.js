@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/chainHook.js
  * IA do Flagelador de Correntes — Projétil de arpão/corrente.
@@ -31,7 +32,7 @@ export function chainHookBehavior(e, dt, angle, curSpeed, ctx) {
       parentY: e.y,
       color: '#b33939'
     });
-    addDamageText(e.x, e.y, "CORRENTE!", false, '#e74c3c');
+    addDamageText(e.x, e.y, matchText('match.combat.chain'), false, '#e74c3c');
   } else {
     if (e.hookThrowTimer > 0) e.hookThrowTimer -= dt;
     e.x += Math.cos(angle) * curSpeed * dt;

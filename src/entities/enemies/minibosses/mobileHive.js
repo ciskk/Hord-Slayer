@@ -3,7 +3,7 @@
  * 
  * Controlador e FSM do Miniboss Ninho Móvel (MOBILE_HIVE).
  */
-import { safePlaySfx } from './common.js';
+import { safePlaySfx, matchText } from './common.js';
 
 export const mobileHiveHandler = {
 init(e) {
@@ -26,7 +26,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionMaxTimer = 22;
         e.aimAngle = angle;
         safePlaySfx('boss');
-        ctx.addDamageText(e.x, e.y, "ENXAME!", true, '#16a085');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.swarm'), true, '#16a085');
       } else {
         e.currentSkill = 'SMOG_CLOUD';
         e.actionState = 'WINDUP';

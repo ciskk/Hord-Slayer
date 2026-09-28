@@ -1,59 +1,63 @@
+import { applyUpgradeEffect, hasteImprovesCooldown } from './upgradeEffects.js';
+import { getUpgradePresentation } from '../i18n/upgradePresentation.js';
+import { t } from '../i18n/index.js';
 import { AXE_MAX_COUNT } from './axes.js';
 import { player, selectedHeroKey, registerWeaponInInventory, registerPassiveInInventory, addPersistentGold, getNextLevelXp } from '../entities/player.js';
 import { getAvailableSynergies } from './items.js';
+
+function applyCardEffect(id, state) {
+  const pactEffects = id.startsWith('destiny_')
+    ? getUpgradePresentation(id, state).effects.map(({ text, ...effect }) => effect)
+    : null;
+  applyUpgradeEffect(id, state);
+  if (pactEffects) state.destinyPacts.at(-1).effects = pactEffects;
+}
 
 export const upgradesPool = [
   // --- Aprimoramentos do Machado (Kragdor) ---
   {
     id: 'axe_speed',
-    title: "Turbilhão Violento",
+    category: 'WEAPON',
+    get title() { return t('upgrades.axe_speed.title'); },
     rarity: "card-rare",
-    badge: "Machado",
-    desc: "Acelera sutilmente a órbita do machado e reforça o fio da lâmina",
-    getStat: () => `+0.005 Vel Órbita / +4% Dano • Nv. ${((player.axeSpeedCount || 0) + 1)}`,
-    stat: "+0.005 Vel Órbita / +4% Dano",
+    get badge() { return t('upgrades.axe_speed.badge'); },
+    get desc() { return t('upgrades.axe_speed.description'); },
+    getStat: () => getUpgradePresentation('axe_speed', player).summary,
+    get stat() { return getUpgradePresentation('axe_speed', player).summary; },
+    getPresentation: () => getUpgradePresentation('axe_speed', player),
     apply: () => {
-      player.axeSpeedCount = (player.axeSpeedCount || 0) + 1;
-      player.axeSpinSpeed = (player.axeSpinSpeed || 0.085) + 0.005;
-      player.axeDamageMult = (player.axeDamageMult || 1) + 0.04;
+      applyCardEffect('axe_speed', player);
     },
     isAvailable: () => !player.evolvedAxe && player.axeCount > 0
   },
   {
     id: 'axe_extra',
-    title: "Machado Adicional",
+    category: 'WEAPON',
+    get title() { return t('upgrades.axe_extra.title'); },
     rarity: "card-legendary",
-    badge: "Machado",
-    desc: "Adiciona +1 machado ao anel orbital que translada ao redor do bárbaro",
-    getStat: () => {
-      const cur = player.axeCount || 1;
-      const next = Math.min(AXE_MAX_COUNT, cur + 1);
-      return next >= AXE_MAX_COUNT
-        ? `+1 Machado no Anel • ${cur} → ${AXE_MAX_COUNT}/${AXE_MAX_COUNT} (MÁX)`
-        : `+1 Machado no Anel • ${cur} → ${next}/${AXE_MAX_COUNT}`;
-    },
-    stat: `+1 Machado no Anel (Máx: ${AXE_MAX_COUNT})`,
+    get badge() { return t('upgrades.axe_extra.badge'); },
+    get desc() { return t('upgrades.axe_extra.description'); },
+    getStat: () => getUpgradePresentation('axe_extra', player).summary,
+    get stat() { return getUpgradePresentation('axe_extra', player).summary; },
+    getPresentation: () => getUpgradePresentation('axe_extra', player),
     apply: () => {
-      if (player.evolvedAxe || (player.axeCount || 0) <= 0) return;
-      player.axeCount = Math.min(AXE_MAX_COUNT, (player.axeCount || 1) + 1);
+      applyCardEffect('axe_extra', player);
       registerWeaponInInventory('AXE', player.axeCount);
     },
     isAvailable: () => !player.evolvedAxe && (player.axeCount || 0) > 0 && (player.axeCount || 0) < AXE_MAX_COUNT
   },
   {
     id: 'axe_radius',
-    title: "Gume Pesado",
+    category: 'WEAPON',
+    get title() { return t('upgrades.axe_radius.title'); },
     rarity: "card-rare",
-    badge: "Machado",
-    desc: "Amplia o raio orbital do machado e o dano de impacto",
-    getStat: () => (player.axeRadius || 56) < 120 ? `+6px Raio / +10% Dano • Nv. ${((player.axeRadiusCount || 0) + 1)}` : `+10% Dano do Machado • Nv. ${((player.axeRadiusCount || 0) + 1)}`,
-    stat: "+6px Raio / +10% Dano",
+    get badge() { return t('upgrades.axe_radius.badge'); },
+    get desc() { return t('upgrades.axe_radius.description'); },
+    getStat: () => getUpgradePresentation('axe_radius', player).summary,
+    get stat() { return getUpgradePresentation('axe_radius', player).summary; },
+    getPresentation: () => getUpgradePresentation('axe_radius', player),
     apply: () => {
-      player.axeRadiusCount = (player.axeRadiusCount || 0) + 1;
-      if ((player.axeRadius || 56) < 120) {
-        player.axeRadius = Math.min(120, (player.axeRadius || 56) + 6);
-      }
-      player.axeDamageMult = (player.axeDamageMult || 1) + 0.10;
+      applyCardEffect('axe_radius', player);
     },
     isAvailable: () => !player.evolvedAxe && player.axeCount > 0
   },
@@ -61,26 +65,17 @@ export const upgradesPool = [
   // --- Aprimoramentos das Poções (Valéria) ---
   {
     id: 'potion_volley',
-    title: "Salvo Alquímico",
+    category: 'WEAPON',
+    get title() { return t('upgrades.potion_volley.title'); },
     rarity: "card-legendary",
-    badge: "Poção",
-    desc: "Arremessa +1 frasco cáustico extra rigorosamente no mesmo epicentro da poça gigante",
-    getStat: () => {
-      const w = player.weapons.find(wp => wp.type === 'POTION');
-      const cur = w ? (w.count || 1) : 1;
-      const next = Math.min(4, cur + 1);
-      return next >= 4
-        ? `+1 Frasco Concentrado • ${cur} → 4/4 (MÁX)`
-        : `+1 Frasco Concentrado • ${cur} → ${next}/4`;
-    },
-    stat: "+1 Frasco Concentrado (Máx: 4)",
+    get badge() { return t('upgrades.potion_volley.badge'); },
+    get desc() { return t('upgrades.potion_volley.description'); },
+    getStat: () => getUpgradePresentation('potion_volley', player).summary,
+    get stat() { return getUpgradePresentation('potion_volley', player).summary; },
+    getPresentation: () => getUpgradePresentation('potion_volley', player),
     apply: () => {
-      const w = player.weapons.find(wp => wp.type === 'POTION');
-      if (w) {
-        w.count = Math.min(4, (w.count || 1) + 1);
-        player.projectiles = w.count;
-        registerWeaponInInventory('POTION', w.count);
-      }
+      applyCardEffect('potion_volley', player);
+      registerWeaponInInventory('POTION', player.weapons.find(w => w.type === 'POTION').count);
     },
     isAvailable: () => {
       const w = player.weapons.find(wp => wp.type === 'POTION');
@@ -89,19 +84,16 @@ export const upgradesPool = [
   },
   {
     id: 'potion_potency',
-    title: "Superposição Cáustica",
+    category: 'WEAPON',
+    get title() { return t('upgrades.potion_potency.title'); },
     rarity: "card-rare",
-    badge: "Poção",
-    desc: "Aumenta o dano corrosivo e a área de contaminação das poças ácidas",
-    getStat: () => `+5% Dano & +3% Área • Nv. ${((player.weapons.find(wp => wp.type === 'POTION')?.potencyCount || 0) + 1)}`,
-    stat: "+5% Dano & +3% Área",
+    get badge() { return t('upgrades.potion_potency.badge'); },
+    get desc() { return t('upgrades.potion_potency.description'); },
+    getStat: () => getUpgradePresentation('potion_potency', player).summary,
+    get stat() { return getUpgradePresentation('potion_potency', player).summary; },
+    getPresentation: () => getUpgradePresentation('potion_potency', player),
     apply: () => {
-      const w = player.weapons.find(wp => wp.type === 'POTION');
-      if (w) {
-        w.damageMult += 0.05;
-        w.potencyCount = (w.potencyCount || 0) + 1;
-        w.areaBonus = (w.areaBonus || 1.0) + 0.03;
-      }
+      applyCardEffect('potion_potency', player);
     },
     isAvailable: () => !player.evolvedPotion && player.weapons.some(w => w.type === 'POTION')
   },
@@ -109,25 +101,17 @@ export const upgradesPool = [
   // --- Aprimoramentos do Cajado (Ignis) ---
   {
     id: 'staff_projectiles',
-    title: "Cajado da Tormenta",
+    category: 'WEAPON',
+    get title() { return t('upgrades.staff_projectiles.title'); },
     rarity: "card-rare",
-    badge: "Cajado",
-    desc: "+1 Esfera mágica concentrada canalizada contra os alvos avistados",
-    getStat: () => {
-      const w = player.weapons.find(wp => wp.type === 'STAFF');
-      const cur = w ? (w.count || 1) : 1;
-      const next = Math.min(5, cur + 1);
-      return next >= 5
-        ? `+1 Orbe Místico • ${cur} → 5/5 (MÁX)`
-        : `+1 Orbe Místico • ${cur} → ${next}/5`;
-    },
-    stat: "+1 Orbe Místico (Máx: 5)",
+    get badge() { return t('upgrades.staff_projectiles.badge'); },
+    get desc() { return t('upgrades.staff_projectiles.description'); },
+    getStat: () => getUpgradePresentation('staff_projectiles', player).summary,
+    get stat() { return getUpgradePresentation('staff_projectiles', player).summary; },
+    getPresentation: () => getUpgradePresentation('staff_projectiles', player),
     apply: () => {
-      const w = player.weapons.find(wp => wp.type === 'STAFF');
-      if (w) {
-        w.count = Math.min(5, (w.count || 1) + 1);
-        registerWeaponInInventory('STAFF', w.count);
-      }
+      applyCardEffect('staff_projectiles', player);
+      registerWeaponInInventory('STAFF', player.weapons.find(w => w.type === 'STAFF').count);
     },
     isAvailable: () => {
       const w = player.weapons.find(wp => wp.type === 'STAFF');
@@ -136,22 +120,16 @@ export const upgradesPool = [
   },
   {
     id: 'staff_pierce',
-    title: "Poder da Fênix",
+    category: 'WEAPON',
+    get title() { return t('upgrades.staff_pierce.title'); },
     rarity: "card-rare",
-    badge: "Cajado",
-    desc: "As esferas do cajado perfuram +1 inimigo e ampliam o rastro de queimadura",
-    getStat: () => {
-      const cur = player.staffPierceBonus || 0;
-      const next = Math.min(3, cur + 1);
-      return next >= 3
-        ? `+1 Perfuração Arcana • Nv. ${cur} → 3/3 (MÁX)`
-        : `+1 Perfuração Arcana • Nv. ${cur} → ${next}/3`;
-    },
-    stat: "+1 Perfuração Arcana (Máx: 3)",
+    get badge() { return t('upgrades.staff_pierce.badge'); },
+    get desc() { return t('upgrades.staff_pierce.description'); },
+    getStat: () => getUpgradePresentation('staff_pierce', player).summary,
+    get stat() { return getUpgradePresentation('staff_pierce', player).summary; },
+    getPresentation: () => getUpgradePresentation('staff_pierce', player),
     apply: () => {
-      player.staffPierceBonus = Math.min(3, (player.staffPierceBonus || 0) + 1);
-      const w = player.weapons.find(wp => wp.type === 'STAFF');
-      if (w) w.damageMult += 0.08;
+      applyCardEffect('staff_pierce', player);
     },
     isAvailable: () => !player.evolvedStaff && player.weapons.some(w => w.type === 'STAFF') && (player.staffPierceBonus || 0) < 3
   },
@@ -159,26 +137,17 @@ export const upgradesPool = [
   // --- Aprimoramentos das Espadas (Kael) ---
   {
     id: 'sword_extra',
-    title: "Lâminas Espirituais",
+    category: 'WEAPON',
+    get title() { return t('upgrades.sword_extra.title'); },
     rarity: "card-rare",
-    badge: "Lâminas",
-    desc: "+1 Espada espectral adicional arremessada contra oponentes avistados",
-    getStat: () => {
-      const w = player.weapons.find(wp => wp.type === 'SWORD');
-      const cur = w ? (w.count || 1) : 1;
-      const next = Math.min(5, cur + 1);
-      return next >= 5
-        ? `+1 Lâmina Espectral • ${cur} → 5/5 (MÁX)`
-        : `+1 Lâmina Espectral • ${cur} → ${next}/5`;
-    },
-    stat: "+1 Lâmina Espectral (Máx: 5)",
+    get badge() { return t('upgrades.sword_extra.badge'); },
+    get desc() { return t('upgrades.sword_extra.description'); },
+    getStat: () => getUpgradePresentation('sword_extra', player).summary,
+    get stat() { return getUpgradePresentation('sword_extra', player).summary; },
+    getPresentation: () => getUpgradePresentation('sword_extra', player),
     apply: () => {
-      const w = player.weapons.find(wp => wp.type === 'SWORD');
-      if (w) {
-        w.count = Math.min(5, (w.count || 1) + 1);
-        player.projectiles = w.count;
-        registerWeaponInInventory('SWORD', w.count);
-      }
+      applyCardEffect('sword_extra', player);
+      registerWeaponInInventory('SWORD', player.weapons.find(w => w.type === 'SWORD').count);
     },
     isAvailable: () => {
       const w = player.weapons.find(wp => wp.type === 'SWORD');
@@ -187,19 +156,16 @@ export const upgradesPool = [
   },
   {
     id: 'sword_speed',
-    title: "Gume Astral",
+    category: 'WEAPON',
+    get title() { return t('upgrades.sword_speed.title'); },
     rarity: "card-rare",
-    badge: "Lâminas",
-    desc: "+6% de velocidade de voo e +8% de dano letal para as espadas teleguiadas",
-    getStat: () => `+6% Voo & +8% Dano • Nv. ${((player.weapons.find(wp => wp.type === 'SWORD')?.swordSpeedCount || 0) + 1)}`,
-    stat: "+6% Voo & +8% Dano",
+    get badge() { return t('upgrades.sword_speed.badge'); },
+    get desc() { return t('upgrades.sword_speed.description'); },
+    getStat: () => getUpgradePresentation('sword_speed', player).summary,
+    get stat() { return getUpgradePresentation('sword_speed', player).summary; },
+    getPresentation: () => getUpgradePresentation('sword_speed', player),
     apply: () => {
-      const w = player.weapons.find(wp => wp.type === 'SWORD');
-      if (w) {
-        w.damageMult += 0.08;
-        w.swordSpeedCount = (w.swordSpeedCount || 0) + 1;
-        w.flightSpeedBonus = (w.flightSpeedBonus || 1.0) + 0.06;
-      }
+      applyCardEffect('sword_speed', player);
     },
     isAvailable: () => !player.evolvedSword && player.weapons.some(w => w.type === 'SWORD')
   },
@@ -207,26 +173,17 @@ export const upgradesPool = [
   // --- Aprimoramentos do Martelo (Sir Roland) ---
   {
     id: 'hammer_crush',
-    title: "Fenda Sísmica",
+    category: 'WEAPON',
+    get title() { return t('upgrades.hammer_crush.title'); },
     rarity: "card-rare",
-    badge: "Martelo",
-    desc: "Propaga as fissuras +48px mais longe no solo, intensifica o esmagamento na base e amplia o dano",
-    getStat: () => {
-      const w = player.weapons.find(wp => wp.type === 'HAMMER');
-      const cur = w ? (w.count || 1) : 1;
-      const next = Math.min(4, cur + 1);
-      return next >= 4
-        ? `+48px Alcance da Fenda • ${cur} → 4/4 (MÁX)`
-        : `+48px Alcance da Fenda • ${cur} → ${next}/4`;
-    },
-    stat: "+48px Alcance da Fenda (Máx: 4)",
+    get badge() { return t('upgrades.hammer_crush.badge'); },
+    get desc() { return t('upgrades.hammer_crush.description'); },
+    getStat: () => getUpgradePresentation('hammer_crush', player).summary,
+    get stat() { return getUpgradePresentation('hammer_crush', player).summary; },
+    getPresentation: () => getUpgradePresentation('hammer_crush', player),
     apply: () => {
-      const w = player.weapons.find(wp => wp.type === 'HAMMER');
-      if (w) {
-        w.count = Math.min(4, (w.count || 1) + 1);
-        w.damageMult += 0.30;
-        registerWeaponInInventory('HAMMER', w.count);
-      }
+      applyCardEffect('hammer_crush', player);
+      registerWeaponInInventory('HAMMER', player.weapons.find(w => w.type === 'HAMMER').count);
     },
     isAvailable: () => {
       const w = player.weapons.find(wp => wp.type === 'HAMMER');
@@ -235,18 +192,16 @@ export const upgradesPool = [
   },
   {
     id: 'hammer_impact',
-    title: "Golpe Demolidor",
+    category: 'WEAPON',
+    get title() { return t('upgrades.hammer_impact.title'); },
     rarity: "card-rare",
-    badge: "Martelo",
-    desc: "O martelo golpeia com +12% de dano de esmagamento no epicentro e fissuras frontais",
-    getStat: () => `+12% Dano Esmagador • Nv. ${((player.weapons.find(wp => wp.type === 'HAMMER')?.impactCount || 0) + 1)}`,
-    stat: "+12% Dano Esmagador",
+    get badge() { return t('upgrades.hammer_impact.badge'); },
+    get desc() { return t('upgrades.hammer_impact.description'); },
+    getStat: () => getUpgradePresentation('hammer_impact', player).summary,
+    get stat() { return getUpgradePresentation('hammer_impact', player).summary; },
+    getPresentation: () => getUpgradePresentation('hammer_impact', player),
     apply: () => {
-      const w = player.weapons.find(wp => wp.type === 'HAMMER');
-      if (w) {
-        w.damageMult += 0.12;
-        w.impactCount = (w.impactCount || 0) + 1;
-      }
+      applyCardEffect('hammer_impact', player);
     },
     isAvailable: () => !player.evolvedHammer && player.weapons.some(w => w.type === 'HAMMER')
   },
@@ -254,201 +209,177 @@ export const upgradesPool = [
   // --- Passivas Universais de Atributos (Infinitas na Run) ---
   {
     id: 'frost_passive',
-    title: "Golpe Criogênico",
+    category: 'PASSIVE',
+    get title() { return t('upgrades.frost_passive.title'); },
     rarity: "card-rare",
-    badge: "Passiva",
-    desc: "Aumenta a chance e a duração do congelamento que desacelera monstros atingidos",
-    getStat: () => {
-      const isMaxSlow = (player.slowChance || 0) >= 0.75;
-      return isMaxSlow
-        ? `Lentidão 75% (TETO) / +0.25s Duração • Nv. ${((player.frostCardCount || 0) + 1)}`
-        : `+6% Lentidão / +0.25s • Nv. ${((player.frostCardCount || 0) + 1)}`;
-    },
-    stat: "+6% Lentidão / +0.25s",
+    get badge() { return t('upgrades.frost_passive.badge'); },
+    get desc() { return t('upgrades.frost_passive.description'); },
+    getStat: () => getUpgradePresentation('frost_passive', player).summary,
+    get stat() { return getUpgradePresentation('frost_passive', player).summary; },
+    getPresentation: () => getUpgradePresentation('frost_passive', player),
     apply: () => {
-      player.frostCardCount = (player.frostCardCount || 0) + 1;
-      player.slowChance = Math.min(0.75, (player.slowChance || 0) + 0.06);
-      player.slowDurationBonus = (player.slowDurationBonus || 0) + 0.25;
+      applyCardEffect('frost_passive', player);
       registerPassiveInInventory('frost_passive', 1, { stacks: player.frostCardCount });
     },
     isAvailable: () => true
   },
   {
     id: 'dmg',
-    title: "Poder Bruto",
+    category: 'PASSIVE',
+    get title() { return t('upgrades.dmg.title'); },
     rarity: "card-common",
-    badge: "Passiva",
-    desc: "Aumenta o dano global de todas as armas e habilidades do herói em +5%",
-    getStat: () => `+5% Dano Global • Nv. ${((player.damageCardCount || 0) + 1)}`,
-    stat: "+5% Dano Global",
-    apply: () => { 
-      player.damagePercentBonus = (player.damagePercentBonus || 0) + 0.05;
-      player.damageCardCount = (player.damageCardCount || 0) + 1;
-      player.hasPowerPassive = true; 
+    get badge() { return t('upgrades.dmg.badge'); },
+    get desc() { return t('upgrades.dmg.description'); },
+    getStat: () => getUpgradePresentation('dmg', player).summary,
+    get stat() { return getUpgradePresentation('dmg', player).summary; },
+    getPresentation: () => getUpgradePresentation('dmg', player),
+    apply: () => {
+      applyCardEffect('dmg', player);
       registerPassiveInInventory('dmg', 1, { stacks: player.damageCardCount });
     },
     isAvailable: () => true
   },
   {
     id: 'haste',
-    title: "Fúria Rápida",
+    category: 'PASSIVE',
+    get title() { return t('upgrades.haste.title'); },
     rarity: "card-rare",
-    badge: "Passiva",
-    desc: "Acelera a cadência de ataque reduzindo a recarga das armas (ou converte em dano ao atingir o teto)",
-    getStat: () => (player.cooldownReduction || 0) < 0.55 ? `-5% Recarga • Nv. ${((player.hasteCardCount || 0) + 1)}` : `+6% Dano de Armas • Nv. ${((player.hasteCardCount || 0) + 1)}`,
-    stat: "-5% Recarga",
+    get badge() { return t('upgrades.haste.badge'); },
+    get desc() { return t(hasteImprovesCooldown(player) ? 'upgrades.haste.description' : 'cards.hasteDamage'); },
+    getStat: () => getUpgradePresentation('haste', player).summary,
+    get stat() { return getUpgradePresentation('haste', player).summary; },
+    getPresentation: () => getUpgradePresentation('haste', player),
     apply: () => {
-      player.hasteCardCount = (player.hasteCardCount || 0) + 1;
-      if ((player.cooldownReduction || 0) < 0.55) {
-        player.cooldownReduction = Math.min(0.55, (player.cooldownReduction || 0) + 0.05);
-        player.attackCooldown = Math.max(10, Math.floor(player.attackCooldown * 0.95));
-        player.weapons.forEach(w => {
-          w.cooldown = Math.max(10, Math.floor(w.cooldown * 0.95));
-        });
-      } else {
-        player.weapons.forEach(w => {
-          w.damageMult += 0.06;
-        });
-      }
+      applyCardEffect('haste', player);
       registerPassiveInInventory('haste', 1, { stacks: player.hasteCardCount });
     },
     isAvailable: () => selectedHeroKey !== 'BARBARIAN'
   },
   {
     id: 'ult_cooldown',
-    title: "Ímpeto Supremo",
+    category: 'PASSIVE',
+    get title() { return t('upgrades.ult_cooldown.title'); },
     rarity: "card-rare",
-    badge: "Passiva",
-    desc: "Acelera a convergência astral, reduzindo o tempo de recarga da habilidade suprema (ULT) em 5%",
-    getStat: () => `-5% Recarga ULT • Nv. ${((player.ultCooldownCount || 0) + 1)}`,
-    stat: "-5% Recarga ULT",
+    get badge() { return t('upgrades.ult_cooldown.badge'); },
+    get desc() { return t('upgrades.ult_cooldown.description'); },
+    getStat: () => getUpgradePresentation('ult_cooldown', player).summary,
+    get stat() { return getUpgradePresentation('ult_cooldown', player).summary; },
+    getPresentation: () => getUpgradePresentation('ult_cooldown', player),
     apply: () => {
-      player.ultCooldownCount = (player.ultCooldownCount || 0) + 1;
-      player.skillMaxCd = Math.max(60, Math.round(player.skillMaxCd * 0.95));
-      player.skillCd = Math.min(player.skillCd, player.skillMaxCd);
+      applyCardEffect('ult_cooldown', player);
       registerPassiveInInventory('ult_cooldown', 1, { stacks: player.ultCooldownCount });
     },
     isAvailable: () => (player.skillMaxCd || 420) > 60
   },
   {
     id: 'wings',
-    title: "Asas do Vento",
+    category: 'PASSIVE',
+    get title() { return t('upgrades.wings.title'); },
     rarity: "card-common",
-    badge: "Passiva",
-    desc: "Acelera a locomoção do herói de forma suave e controlada",
-    getStat: () => `+0.18 Velocidade • Nv. ${((player.wingsCardCount || 0) + 1)}`,
-    stat: "+0.18 Velocidade",
-    apply: () => { 
-      player.wingsCardCount = (player.wingsCardCount || 0) + 1;
-      player.baseSpeed += 0.18; 
-      player.speed = player.invisTimer > 0 ? player.baseSpeed * 2 : player.baseSpeed; 
-      player.hasWingsPassive = true; 
+    get badge() { return t('upgrades.wings.badge'); },
+    get desc() { return t('upgrades.wings.description'); },
+    getStat: () => getUpgradePresentation('wings', player).summary,
+    get stat() { return getUpgradePresentation('wings', player).summary; },
+    getPresentation: () => getUpgradePresentation('wings', player),
+    apply: () => {
+      applyCardEffect('wings', player);
       registerPassiveInInventory('wings', 1, { stacks: player.wingsCardCount });
     },
     isAvailable: () => true
   },
   {
     id: 'crit',
-    title: "Foco Letal",
+    category: 'PASSIVE',
+    get title() { return t('upgrades.crit.title'); },
     rarity: "card-rare",
-    badge: "Passiva",
-    desc: "Aumenta as chances e o multiplicador de dano dos acertos críticos",
-    getStat: () => {
-      const isMaxCrit = (player.critChance || 0) >= 0.85;
-      return isMaxCrit
-        ? `Crítico 85% (TETO) / +0.10 Mult • Nv. ${((player.critCardCount || 0) + 1)}`
-        : `+4% Chance / +0.10 Mult • Nv. ${((player.critCardCount || 0) + 1)}`;
-    },
-    stat: "+4% Chance / +0.10 Mult",
-    apply: () => { 
-      player.critCardCount = (player.critCardCount || 0) + 1;
-      player.critChance = Math.min(0.85, player.critChance + 0.04); 
-      player.critMult += 0.10; 
+    get badge() { return t('upgrades.crit.badge'); },
+    get desc() { return t('upgrades.crit.description'); },
+    getStat: () => getUpgradePresentation('crit', player).summary,
+    get stat() { return getUpgradePresentation('crit', player).summary; },
+    getPresentation: () => getUpgradePresentation('crit', player),
+    apply: () => {
+      applyCardEffect('crit', player);
       registerPassiveInInventory('crit', 1, { stacks: player.critCardCount });
     },
     isAvailable: () => true
   },
   {
     id: 'magnet',
-    title: "Ímã Titânico",
+    category: 'PASSIVE',
+    get title() { return t('upgrades.magnet.title'); },
     rarity: "card-common",
-    badge: "Passiva",
-    desc: "Aumenta o alcance de atração gravitacional de gemas e tesouros",
-    getStat: () => `+30px Raio de Atração • Nv. ${((player.magnetCardCount || 0) + 1)}`,
-    stat: "+30px Raio de Atração",
+    get badge() { return t('upgrades.magnet.badge'); },
+    get desc() { return t('upgrades.magnet.description'); },
+    getStat: () => getUpgradePresentation('magnet', player).summary,
+    get stat() { return getUpgradePresentation('magnet', player).summary; },
+    getPresentation: () => getUpgradePresentation('magnet', player),
     apply: () => {
-      player.magnetCardCount = (player.magnetCardCount || 0) + 1;
-      player.magnet += 30;
+      applyCardEffect('magnet', player);
       registerPassiveInInventory('magnet', 1, { stacks: player.magnetCardCount });
     },
     isAvailable: () => true
   },
   {
     id: 'aura',
-    title: "Aura Sagrada",
+    category: 'WEAPON',
+    get title() { return t('upgrades.aura.title'); },
     rarity: "card-rare",
-    badge: "Passiva",
-    desc: "Campo sagrado de dano constante ao redor do herói",
-    getStat: () => {
-      const cur = player.auraLvl || 0;
-      const next = Math.min(5, cur + 1);
-      if (cur === 0) return `Desbloquear Aura • Nv. 1/5`;
-      if (next >= 5) return `+1 Nível de Aura • Nv. ${cur} → 5/5 (MÁX)`;
-      return `+1 Nível de Aura • Nv. ${cur} → ${next}/5`;
-    },
-    stat: "+1 Nível de Aura (Máx: 5)",
+    get badge() { return t('upgrades.aura.badge'); },
+    get desc() { return t('upgrades.aura.description'); },
+    getStat: () => getUpgradePresentation('aura', player).summary,
+    get stat() { return getUpgradePresentation('aura', player).summary; },
+    getPresentation: () => getUpgradePresentation('aura', player),
     apply: () => {
-      player.auraLvl = Math.min(5, (player.auraLvl || 0) + 1);
+      applyCardEffect('aura', player);
       registerWeaponInInventory('aura', player.auraLvl);
     },
     isAvailable: () => (player.auraLvl || 0) < 5 && !player.evolvedAura
   },
   {
     id: 'orbitals',
-    title: "Bíblias Protetoras",
+    category: 'WEAPON',
+    get title() { return t('upgrades.orbitals.title'); },
     rarity: "card-rare",
-    badge: "Passiva",
-    desc: "Tomos celestiais giram em órbita protetora repelindo oponentes com impacto suave",
-    getStat: () => {
-      const cur = player.orbitals || 0;
-      const next = Math.min(3, cur + 1);
-      if (cur === 0) return `Desbloquear Tomos • 1/3 Tomos`;
-      if (next >= 3) return `+1 Tomo Orbital • ${cur} → 3/3 Tomos (MÁX)`;
-      return `+1 Tomo Orbital • ${cur} → ${next}/3 Tomos`;
-    },
-    stat: "+1 Tomo Orbital (Máx: 3)",
+    get badge() { return t('upgrades.orbitals.badge'); },
+    get desc() { return t('upgrades.orbitals.description'); },
+    getStat: () => getUpgradePresentation('orbitals', player).summary,
+    get stat() { return getUpgradePresentation('orbitals', player).summary; },
+    getPresentation: () => getUpgradePresentation('orbitals', player),
     apply: () => {
-      player.orbitals = Math.min(3, (player.orbitals || 0) + 1);
+      applyCardEffect('orbitals', player);
       registerWeaponInInventory('orbitals', player.orbitals);
     },
     isAvailable: () => (player.orbitals || 0) < 3 && !player.evolvedOrbitals
   },
   {
     id: 'armor',
-    title: "Armadura Rúnica",
+    category: 'PASSIVE',
+    get title() { return t('upgrades.armor.title'); },
     rarity: "card-common",
-    badge: "Passiva",
-    desc: "Reforça a carcaça, eleva a vitalidade máxima e recupera a mesma quantia de vida",
-    getStat: () => `+30 HP Máximo • Nv. ${((player.armorCardCount || 0) + 1)}`,
-    stat: "+30 HP Máximo",
-    apply: () => { 
-      player.armorCardCount = (player.armorCardCount || 0) + 1;
-      player.maxHp += 30; 
-      player.hp += 30; 
-      player.hasArmorPassive = true; 
+    get badge() { return t('upgrades.armor.badge'); },
+    get desc() { return t('upgrades.armor.description'); },
+    getStat: () => getUpgradePresentation('armor', player).summary,
+    get stat() { return getUpgradePresentation('armor', player).summary; },
+    getPresentation: () => getUpgradePresentation('armor', player),
+    apply: () => {
+      applyCardEffect('armor', player);
       registerPassiveInInventory('armor', 1, { stacks: player.armorCardCount });
     },
     isAvailable: () => true
   },
   {
     id: 'heal',
-    title: "Poção Alquímica",
+    category: 'UTILITY',
+    get title() { return t('upgrades.heal.title'); },
     rarity: "card-common",
-    badge: "Utilidade",
-    desc: "Recupera imediatamente parte vital das feridas",
-    getStat: () => "Cura 65% do HP",
-    stat: "Cura 65% do HP",
-    apply: () => player.hp = Math.min(player.maxHp, player.hp + player.maxHp * 0.65 * (player.healingMultiplier !== undefined ? player.healingMultiplier : 1.0)),
+    get badge() { return t('upgrades.heal.badge'); },
+    get desc() { return t('upgrades.heal.description'); },
+    getStat: () => getUpgradePresentation('heal', player).summary,
+    get stat() { return getUpgradePresentation('heal', player).summary; },
+    getPresentation: () => getUpgradePresentation('heal', player),
+    apply: () => {
+      applyCardEffect('heal', player);
+    },
     isAvailable: () => player.hp < player.maxHp * 0.95
   }
 ];
@@ -459,187 +390,145 @@ export const upgradesPool = [
 export const destinyCardsPool = [
   {
     id: 'destiny_berserker',
+    category: 'PACT',
     isDestinyCard: true,
-    title: "Pacto do Berserker",
+    get title() { return t('upgrades.destiny_berserker.title'); },
     rarity: "card-cursed",
-    badge: "Pacto Proibido",
-    desc: "Sacrifica metade da vitalidade máxima em troca de fúria ofensiva avassaladora.",
-    bonusText: "+65% Dano Global",
-    penaltyText: "Vida Máxima reduzida em 50%",
-    stat: "+65% Dano | -50% HP Máx",
+    get badge() { return t('upgrades.destiny_berserker.badge'); },
+    get desc() { return t('upgrades.destiny_berserker.description'); },
+    get bonusText() { return t('upgrades.destiny_berserker.bonusText'); },
+    get penaltyText() { return t('upgrades.destiny_berserker.penaltyText'); },
+    getStat: () => getUpgradePresentation('destiny_berserker', player).summary,
+    get stat() { return getUpgradePresentation('destiny_berserker', player).summary; },
+    getPresentation: () => getUpgradePresentation('destiny_berserker', player),
     apply: () => {
-      player.damagePercentBonus = (player.damagePercentBonus || 0) + 0.65;
-      player.maxHp = Math.max(35, Math.round(player.maxHp * 0.50));
-      player.hp = Math.min(player.hp, player.maxHp);
-      player.destinyPacts = player.destinyPacts || [];
-      player.destinyPacts.push({
-        id: 'destiny_berserker',
-        title: "Pacto do Berserker",
-        bonus: "+65% Dano Global",
-        penalty: "Vida Máxima -50%"
-      });
+      applyCardEffect('destiny_berserker', player);
     },
     isAvailable: () => !player.destinyPacts || !player.destinyPacts.some(p => p.id === 'destiny_berserker')
   },
   {
     id: 'destiny_titan',
+    category: 'PACT',
     isDestinyCard: true,
-    title: "Coração de Titã",
+    get title() { return t('upgrades.destiny_titan.title'); },
     rarity: "card-cursed",
-    badge: "Pacto Proibido",
-    desc: "Forja um corpo maciço e impenetrável que se arrasta pesadamente pela arena.",
-    bonusText: "+195 HP Máximo",
-    penaltyText: "-30% Velocidade de Movimento",
-    stat: "+195 HP Máx | -30% Velocidade",
+    get badge() { return t('upgrades.destiny_titan.badge'); },
+    get desc() { return t('upgrades.destiny_titan.description'); },
+    get bonusText() { return t('upgrades.destiny_titan.bonusText'); },
+    get penaltyText() { return t('upgrades.destiny_titan.penaltyText'); },
+    getStat: () => getUpgradePresentation('destiny_titan', player).summary,
+    get stat() { return getUpgradePresentation('destiny_titan', player).summary; },
+    getPresentation: () => getUpgradePresentation('destiny_titan', player),
     apply: () => {
-      player.maxHp += 195;
-      player.hp += 195;
-      player.baseSpeed = Math.max(1.2, player.baseSpeed * 0.70);
-      player.speed = player.invisTimer > 0 ? player.baseSpeed * 2 : player.baseSpeed;
-      player.destinyPacts = player.destinyPacts || [];
-      player.destinyPacts.push({
-        id: 'destiny_titan',
-        title: "Coração de Titã",
-        bonus: "+195 HP Máximo",
-        penalty: "-30% Velocidade"
-      });
+      applyCardEffect('destiny_titan', player);
     },
     isAvailable: () => !player.destinyPacts || !player.destinyPacts.some(p => p.id === 'destiny_titan')
   },
   {
     id: 'destiny_arcane_frenzy',
+    category: 'PACT',
     isDestinyCard: true,
-    title: "Tormenta Arcana",
+    get title() { return t('upgrades.destiny_arcane_frenzy.title'); },
     rarity: "card-cursed",
-    badge: "Pacto Proibido",
-    desc: "Armas atacam com velocidade frenética, mas o tempo de invulnerabilidade após sofrer dano cai pela metade e os inimigos causam mais dano.",
-    bonusText: "-30% Recarga de Armas",
-    penaltyText: "Tempo de Invulnerabilidade pós-dano -50% & Inimigos causam +25% Dano",
-    stat: "-30% Recarga | Invulnerabilidade pós-dano -50% & Inimigos +25% Dano",
+    get badge() { return t('upgrades.destiny_arcane_frenzy.badge'); },
+    get desc() { return t('upgrades.destiny_arcane_frenzy.description'); },
+    get bonusText() { return t('upgrades.destiny_arcane_frenzy.bonusText'); },
+    get penaltyText() { return t('upgrades.destiny_arcane_frenzy.penaltyText'); },
+    getStat: () => getUpgradePresentation('destiny_arcane_frenzy', player).summary,
+    get stat() { return getUpgradePresentation('destiny_arcane_frenzy', player).summary; },
+    getPresentation: () => getUpgradePresentation('destiny_arcane_frenzy', player),
     apply: () => {
-      player.cooldownReduction = Math.min(0.65, (player.cooldownReduction || 0) + 0.15);
-      player.attackCooldown = Math.max(8, Math.floor(player.attackCooldown * 0.70));
-      player.weapons.forEach(w => { w.cooldown = Math.max(8, Math.floor(w.cooldown * 0.70)); });
-      player.iFramesDurationMult = (player.iFramesDurationMult || 1.0) * 0.5;
-      player.damageTakenMultiplier = (player.damageTakenMultiplier || 1.0) * 1.25;
-      player.destinyPacts = player.destinyPacts || [];
-      player.destinyPacts.push({
-        id: 'destiny_arcane_frenzy',
-        title: "Tormenta Arcana",
-        bonus: "-30% Recarga de Armas",
-        penalty: "Tempo de Invulnerabilidade pós-dano -50% & Inimigos +25% Dano"
-      });
+      applyCardEffect('destiny_arcane_frenzy', player);
     },
     isAvailable: () => !player.destinyPacts || !player.destinyPacts.some(p => p.id === 'destiny_arcane_frenzy')
   },
   {
     id: 'destiny_midas',
+    category: 'PACT',
     isDestinyCard: true,
-    title: "Cobiça Maldita de Midas",
+    get title() { return t('upgrades.destiny_midas.title'); },
     rarity: "card-cursed",
-    badge: "Pacto Proibido",
-    desc: "Multiplica o tesouro colhido e atrai essências de longe, mas os monstros atacam com ferocidade.",
-    bonusText: "+100% Ouro & +150px Raio de Atração",
-    penaltyText: "Monstros causam +30% de Dano",
-    stat: "+100% Ouro & +150px Ímã | Inimigos +30% Dano",
+    get badge() { return t('upgrades.destiny_midas.badge'); },
+    get desc() { return t('upgrades.destiny_midas.description'); },
+    get bonusText() { return t('upgrades.destiny_midas.bonusText'); },
+    get penaltyText() { return t('upgrades.destiny_midas.penaltyText'); },
+    getStat: () => getUpgradePresentation('destiny_midas', player).summary,
+    get stat() { return getUpgradePresentation('destiny_midas', player).summary; },
+    getPresentation: () => getUpgradePresentation('destiny_midas', player),
     apply: () => {
-      player.goldMultiplier = (player.goldMultiplier || 1.0) * 2.0;
-      player.magnet += 150;
-      player.damageTakenMultiplier = (player.damageTakenMultiplier || 1.0) * 1.30;
-      player.destinyPacts = player.destinyPacts || [];
-      player.destinyPacts.push({
-        id: 'destiny_midas',
-        title: "Cobiça Maldita de Midas",
-        bonus: "+100% Ouro & +150px Ímã",
-        penalty: "Inimigos +30% Dano"
-      });
+      applyCardEffect('destiny_midas', player);
     },
     isAvailable: () => !player.destinyPacts || !player.destinyPacts.some(p => p.id === 'destiny_midas')
   },
   {
     id: 'destiny_executioner',
+    category: 'PACT',
     isDestinyCard: true,
-    title: "Olho do Algoz",
+    get title() { return t('upgrades.destiny_executioner.title'); },
     rarity: "card-cursed",
-    badge: "Pacto Proibido",
-    desc: "Acertos críticos tornam-se devastadores, mas ataques não-críticos perdem potência.",
-    bonusText: "+35% Chance Crítica & +0.70x Mult Crítico",
-    penaltyText: "Dano não-crítico reduzido em 40%",
-    stat: "+35% Crítico & +0.7x Mult | Dano Comum -40%",
+    get badge() { return t('upgrades.destiny_executioner.badge'); },
+    get desc() { return t('upgrades.destiny_executioner.description'); },
+    get bonusText() { return t('upgrades.destiny_executioner.bonusText'); },
+    get penaltyText() { return t('upgrades.destiny_executioner.penaltyText'); },
+    getStat: () => getUpgradePresentation('destiny_executioner', player).summary,
+    get stat() { return getUpgradePresentation('destiny_executioner', player).summary; },
+    getPresentation: () => getUpgradePresentation('destiny_executioner', player),
     apply: () => {
-      player.critChance = Math.min(0.95, (player.critChance || 0.15) + 0.35);
-      player.critMult = (player.critMult || 1.5) + 0.70;
-      player.nonCritDamageMult = (player.nonCritDamageMult || 1.0) * 0.60;
-      player.destinyPacts = player.destinyPacts || [];
-      player.destinyPacts.push({
-        id: 'destiny_executioner',
-        title: "Olho do Algoz",
-        bonus: "+35% Crítico & +0.7x Mult",
-        penalty: "Golpes Comuns -40%"
-      });
+      applyCardEffect('destiny_executioner', player);
     },
     isAvailable: () => !player.destinyPacts || !player.destinyPacts.some(p => p.id === 'destiny_executioner')
   },
   {
     id: 'destiny_spectral',
+    category: 'PACT',
     isDestinyCard: true,
-    title: "Dança Espectral",
+    get title() { return t('upgrades.destiny_spectral.title'); },
     rarity: "card-cursed",
-    badge: "Pacto Proibido",
-    desc: "Passos velozes e ágeis para desviar da horda, ao custo da eficácia de curas na arena.",
-    bonusText: "+35% Velocidade de Movimento",
-    penaltyText: "Cura de itens e poções reduzida em 60%",
-    stat: "+35% Velocidade | Curas do Mapa -60%",
+    get badge() { return t('upgrades.destiny_spectral.badge'); },
+    get desc() { return t('upgrades.destiny_spectral.description'); },
+    get bonusText() { return t('upgrades.destiny_spectral.bonusText'); },
+    get penaltyText() { return t('upgrades.destiny_spectral.penaltyText'); },
+    getStat: () => getUpgradePresentation('destiny_spectral', player).summary,
+    get stat() { return getUpgradePresentation('destiny_spectral', player).summary; },
+    getPresentation: () => getUpgradePresentation('destiny_spectral', player),
     apply: () => {
-      player.baseSpeed = player.baseSpeed * 1.35;
-      player.speed = player.invisTimer > 0 ? player.baseSpeed * 2 : player.baseSpeed;
-      player.healingMultiplier = (player.healingMultiplier || 1.0) * 0.40;
-      player.destinyPacts = player.destinyPacts || [];
-      player.destinyPacts.push({
-        id: 'destiny_spectral',
-        title: "Dança Espectral",
-        bonus: "+35% Velocidade",
-        penalty: "Curas do Mapa -60%"
-      });
+      applyCardEffect('destiny_spectral', player);
     },
     isAvailable: () => !player.destinyPacts || !player.destinyPacts.some(p => p.id === 'destiny_spectral')
   },
   {
     id: 'destiny_temporal_rift',
+    category: 'PACT',
     isDestinyCard: true,
-    title: "Pacto da Fenda Temporal",
+    get title() { return t('upgrades.destiny_temporal_rift.title'); },
     rarity: "card-cursed",
-    badge: "Pacto Proibido",
-    desc: "Dobra o fluxo temporal para recuperar sua habilidade suprema em ritmo vertiginoso, ao custo da potência destrutiva de todas as suas armas convencionais.",
-    bonusText: "-40% Tempo de Recarga da ULT",
-    penaltyText: "-25% Dano das Armas Convencionais",
-    stat: "-40% Recarga ULT | Armas -25% Dano",
+    get badge() { return t('upgrades.destiny_temporal_rift.badge'); },
+    get desc() { return t('upgrades.destiny_temporal_rift.description'); },
+    get bonusText() { return t('upgrades.destiny_temporal_rift.bonusText'); },
+    get penaltyText() { return t('upgrades.destiny_temporal_rift.penaltyText'); },
+    getStat: () => getUpgradePresentation('destiny_temporal_rift', player).summary,
+    get stat() { return getUpgradePresentation('destiny_temporal_rift', player).summary; },
+    getPresentation: () => getUpgradePresentation('destiny_temporal_rift', player),
     apply: () => {
-      player.skillMaxCd = Math.max(120, Math.round(player.skillMaxCd * 0.60));
-      player.skillCd = Math.min(player.skillCd, player.skillMaxCd);
-      player.damagePercentBonus = (player.damagePercentBonus || 0) - 0.25;
-      player.destinyPacts = player.destinyPacts || [];
-      player.destinyPacts.push({
-        id: 'destiny_temporal_rift',
-        title: "Pacto da Fenda Temporal",
-        bonus: "-40% Recarga da ULT",
-        penalty: "Armas -25% Dano"
-      });
+      applyCardEffect('destiny_temporal_rift', player);
     },
-    isAvailable: () => !player.destinyPacts || !player.destinyPacts.some(p => p.id === 'destiny_temporal_rift')
+    isAvailable: () => player.skillMaxCd > 120 && (!player.destinyPacts || !player.destinyPacts.some(p => p.id === 'destiny_temporal_rift'))
   }
 ];
 
 export const BLESSING_UPGRADE = {
   id: 'blessing',
-  title: "Bênção da Fortuna",
+  category: 'UTILITY',
+  get title() { return t('upgrades.blessing.title'); },
   rarity: "card-legendary",
-  badge: "Recompensa",
-  desc: "Todos os poderes conhecidos atingiram o apogeu! Recupera vitalidade e concede ouro da arena.",
-  stat: "Cura 35% HP & +15 Ouro",
+  get badge() { return t('upgrades.blessing.badge'); },
+  get desc() { return t('upgrades.blessing.description'); },
+  getStat: () => getUpgradePresentation('blessing', player).summary,
+  get stat() { return getUpgradePresentation('blessing', player).summary; },
+  getPresentation: () => getUpgradePresentation('blessing', player),
   apply: () => {
-    player.hp = Math.min(player.maxHp, player.hp + player.maxHp * 0.35);
-    addPersistentGold(15);
+    applyCardEffect('blessing', player);
+    addPersistentGold(15, player.goldMultiplier ?? 1);
   },
   isAvailable: () => true
 };

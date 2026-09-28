@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/stoneTurtle.js
  * IA da Gárgula de Basalto — Petrificação defensiva ao sofrer dano.
@@ -22,7 +23,7 @@ export function stoneTurtleBehavior(e, dt, angle, curSpeed, ctx) {
       playSfx('hit');
       triggerShake(2);
       createHitParticles(e.x, e.y, '#95a5a6', 10);
-      addDamageText(e.x, e.y, "PETRIFICAÇÃO!", false, '#bdc3c7');
+      addDamageText(e.x, e.y, matchText('match.combat.petrify'), false, '#bdc3c7');
     }
   }
 }

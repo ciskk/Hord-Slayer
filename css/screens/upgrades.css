@@ -551,6 +551,9 @@
   letter-spacing: 0.8px;
   text-transform: uppercase;
   line-height: 1.25;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .card-rarity-badge-mini {
@@ -571,6 +574,9 @@
   flex: 1;
   position: relative;
   z-index: 2;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .card-stat-pill {
@@ -587,7 +593,16 @@
   position: relative;
   z-index: 2;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
+
+.card-effect-row + .card-effect-row { margin-top: 4px; }
+.card-effect-row { line-height: 1.4; }
+.card-effect-label { display: block; margin-bottom: 5px; font-size: 0.9em; }
+.card-progress-text { margin-top: 6px; font: 11px var(--font-body); color: #b5bfd2; }
+.upgrade-duration-note { margin: 8px auto 0; max-width: 70ch; color: #b5bfd2; font: 11px/1.4 var(--font-body); text-align: center; }
+.chest-card-stat { white-space: pre-line; }
 
 /* ======================================================== */
 /* 6. HIERARQUIA DE RARIDADES (COMUM, RARO, LENDÁRIO)       */
@@ -869,13 +884,22 @@
   }
 
   .card-header-bar {
+    width: 100%;
+    flex: 0 0 100%;
     margin-bottom: 2px;
+  }
+
+  .synergy-indicator-tag {
+    margin: 0;
+    padding: 2px 6px;
+    font-size: 8.5px;
   }
 
   .card-icon-pedestal {
     width: 44px;
     height: 44px;
     margin: 0;
+    flex-shrink: 0;
   }
 
   .card-title-group {
@@ -886,11 +910,24 @@
 
   .card-desc-text {
     width: 100%;
+    flex: 0 0 100%;
     margin: 4px 0 6px 0;
+    line-height: 1.35;
+  }
+
+  .card-tradeoff-group {
+    width: 100%;
+    flex: 0 0 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 2px;
   }
 
   .card-stat-pill {
     width: 100%;
+    flex: 0 0 100%;
+    box-sizing: border-box;
     margin-top: 2px;
   }
 

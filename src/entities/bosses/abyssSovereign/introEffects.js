@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 import { SOVEREIGN_CONFIG } from './constants.js';
 
 const TAU = Math.PI * 2;
@@ -389,7 +390,7 @@ export function drawSovereignIntroTitle(ctx, width, height, progress) {
 
   ctx.font = `${compact ? 8 : 10}px monospace`;
   ctx.fillStyle = '#a3c8ce';
-  ctx.fillText('C A T A C L I S M A  I V', x, y - (compact ? 19 : 24), available);
+  ctx.fillText(matchText('match.canvas.cataclysm'), x, y - (compact ? 19 : 24), available);
 
   const title = 'SOBERANO DO ABISMO';
   let fontSize = compact ? 24 : 32;
@@ -403,6 +404,6 @@ export function drawSovereignIntroTitle(ctx, width, height, progress) {
   ctx.fillStyle = lettering; ctx.fillText(title, x, y, available);
   ctx.font = `italic ${compact ? 10 : 12}px "Cinzel", Georgia, serif`;
   ctx.fillStyle = '#cebfa6';
-  ctx.fillText('Senhor do Vazio Primordial', x, y + (compact ? 20 : 27), available);
+  ctx.fillText(matchText('match.canvas.voidLord'), x, y + (compact ? 20 : 27), available);
   ctx.restore();
 }

@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/bosses/abyssSovereign/attacks.js
  * Arsenal de combate, seleção de habilidades, windups e feixes estelares do Soberano do Abismo.
@@ -428,7 +429,7 @@ export function startSkillCast(boss, context) {
       if (context.triggerShake) context.triggerShake(14);
       if (context.addDamageText) {
         const primaryCol = boss.phase === 3 ? '#00cec9' : (boss.phase === 2 ? '#e84393' : '#8e44ad');
-        context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 22, "TURBILHÃO ABISSAL!", true, primaryCol);
+        context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 22, matchText('match.combat.whirlwind'), true, primaryCol);
       }
       break;
     }
@@ -443,7 +444,7 @@ export function startSkillCast(boss, context) {
       if (context.triggerShake) context.triggerShake(12);
       if (context.addDamageText) {
         const primaryCol = boss.phase === 3 ? '#00cec9' : (boss.phase === 2 ? '#e84393' : '#8e44ad');
-        context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 22, "ESPIRAL DOS QUATRO HORIZONTES!", true, primaryCol);
+        context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 22, matchText('match.combat.fourHorizons'), true, primaryCol);
       }
       break;
     }
@@ -499,7 +500,7 @@ export function spawnThresholdBeams(boss, context) {
   triggerHaptic('heavy');
   if (context.triggerShake) context.triggerShake(10);
   if (context.addDamageText) {
-    context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 20, "FEIXES DO LIMIAR!", true, primaryCol);
+    context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 20, matchText('match.combat.threshold'), true, primaryCol);
   }
 }
 
@@ -582,7 +583,7 @@ export function startInexorableHarvest(boss, context) {
   triggerHaptic('heavy');
   if (context.triggerShake) context.triggerShake(12);
   if (context.addDamageText) {
-    context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 22, "COLHEITA INEVITÁVEL!", true, primaryCol);
+    context.addDamageText(boss.x, boss.y - (boss.radius || 40) - 22, matchText('match.combat.inevitable'), true, primaryCol);
   }
 }
 

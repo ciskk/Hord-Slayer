@@ -7,6 +7,7 @@ import { acidPuddles, setLastAttackerName, canSpawnEnemyBullet } from '../../../
 import { selectedHeroKey } from '../../player.js';
 import { triggerDeath } from '../../../systems/ui.js';
 import { VAMPIRE_STATES, VAMPIRE_SKILLS } from './constants.js';
+import { t as matchText } from '../../../i18n/index.js';
 
 function triggerRepulsionSkill(e, player, bossTelegraphs) {
   const isEnraged = e.isEnraged;
@@ -302,7 +303,7 @@ function executePreparedSkill(e, context) {
       e.repulsionCooldown = 180; // 3 segundos de recarga anti-spam
       e.actionState = 'CHASE';
       e.skillCooldown = e.isEnraged ? 25 : 40;
-      addDamageText(e.x, e.y - 18, "REPULSÃO!", true, '#ff1744');
+      addDamageText(e.x, e.y - 18, matchText('match.combat.repulsion'), true, '#ff1744');
       break;
     }
 
@@ -342,7 +343,7 @@ function executePreparedSkill(e, context) {
       e.actionState = 'RECOVERY';
       e.recoveryTimer = e.isEnraged ? 60 : 80; // 1.0s a 1.33s imóvel
       e.isVulnerable = true;
-      addDamageText(e.x, e.y, "BRECHA!", false, '#f1c40f');
+      addDamageText(e.x, e.y, matchText('match.combat.vampireBreach'), false, '#f1c40f');
       break;
     }
 

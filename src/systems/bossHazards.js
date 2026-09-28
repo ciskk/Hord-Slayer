@@ -1,3 +1,4 @@
+import { t as matchText } from '../i18n/index.js';
 /**
  * src/systems/bossHazards.js
  * Subsistema de Perigos de Arena e Mecânicas de Combate dos Chefes:
@@ -27,7 +28,7 @@ export function applyHazardDamage(player, rawDamage, selectedHeroKey, defaultIFr
     const absorb = Math.min(player.tempShield, finalDmg);
     player.tempShield -= absorb;
     finalDmg -= absorb;
-    addDamageText(player.x, player.y - 35, `ESCUDO ABSORVEU -${absorb}`, true, '#a29bfe');
+    addDamageText(player.x, player.y - 35, matchText('match.combat.shield', { amount: absorb }), true, '#a29bfe');
     if (player.tempShield <= 0) player.tempShieldTimer = 0;
   }
 
@@ -35,7 +36,7 @@ export function applyHazardDamage(player, rawDamage, selectedHeroKey, defaultIFr
   player.bossIFrames = ospTriggered ? 36 : defaultIFrames;
   if (ospTriggered) {
     player.iFrames = Math.max(player.iFrames || 0, 36);
-    addDamageText(player.x, player.y - 25, "PROTEÇÃO DE SOBREVIDA!", true, '#2ecc71');
+    addDamageText(player.x, player.y - 25, matchText('match.combat.protection'), true, '#2ecc71');
   }
   return { finalDmg, ospTriggered };
 }

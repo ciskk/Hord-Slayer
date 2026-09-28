@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/bosses/supremeReaper/attacks.js
  * Arsenal de habilidades, seleção de skills e disparo de ataques do Ceifador Supremo.
@@ -419,7 +420,7 @@ export function executeReaperSkill(e, context) {
       e.tetherTimer = 160;
       e.actionState = REAPER_STATES.CHASE;
       e.skillCooldown = 18;
-      addDamageText(player.x, player.y, "VÍNCULO DAS ALMAS!", true, '#00cec9');
+      addDamageText(player.x, player.y, matchText('match.combat.soulLink'), true, '#00cec9');
       break;
     }
 
@@ -430,7 +431,7 @@ export function executeReaperSkill(e, context) {
       e.scytheTargetAngle = 0;
       e.actionState = REAPER_STATES.VORTEX_HARVEST;
       e.actionTimer = e.isEnraged ? 75 : 95;
-      addDamageText(e.x, e.y - 45, "COLHEITA DO CREPÚSCULO!", true, e.isEnraged ? '#ff4757' : '#00cec9');
+      addDamageText(e.x, e.y - 45, matchText('match.combat.twilight'), true, e.isEnraged ? '#ff4757' : '#00cec9');
       break;
     }
 
@@ -467,7 +468,7 @@ export function executeReaperSkill(e, context) {
 
       e.actionState = REAPER_STATES.BOOMERANG_ACTIVE;
       e.actionTimer = 180;
-      addDamageText(e.x, e.y - 45, "FOICE DO DESTINO!", true, '#00cec9');
+      addDamageText(e.x, e.y - 45, matchText('match.combat.scythe'), true, '#00cec9');
       break;
     }
 
@@ -522,7 +523,7 @@ export function executeReaperSkill(e, context) {
       }
 
       playSfx('singularity');
-      addDamageText(e.x, e.y - 45, "CHAMAS SEPULCRAIS!", true, '#00cec9');
+      addDamageText(e.x, e.y - 45, matchText('match.combat.flames'), true, '#00cec9');
       e.actionState = REAPER_STATES.POST_ATTACK_RECOVERY;
       e.actionTimer = 16;
       break;
@@ -574,7 +575,7 @@ export function executeReaperSkill(e, context) {
         boss: e
       });
 
-      addDamageText(centerPlayerX, centerPlayerY - 45, "TRÍADE DA MORTE!", true, '#ff4757');
+      addDamageText(centerPlayerX, centerPlayerY - 45, matchText('match.combat.triad'), true, '#ff4757');
       e.actionState = REAPER_STATES.POST_ATTACK_RECOVERY;
       e.actionTimer = 18;
       break;
@@ -605,7 +606,7 @@ export function executeReaperSkill(e, context) {
         bellScale: 1.0
       };
 
-      addDamageText(e.x, e.y - 50, "O SINO DA MORTE!", true, '#81ecec');
+      addDamageText(e.x, e.y - 50, matchText('match.combat.deathBell'), true, '#81ecec');
       e.actionState = REAPER_STATES.DEATH_TOLL_ACTIVE;
       e.actionTimer = chimes * interval + Math.ceil((REAPER_CONFIG.DEATH_TOLL_RING_MAX_RADIUS || 680) / (REAPER_CONFIG.DEATH_TOLL_RING_SPEED || 4.03)) + 30;
       break;
@@ -645,7 +646,7 @@ export function executeReaperSkill(e, context) {
         });
       }
 
-      addDamageText(e.x, e.y - 45, isX ? "RASGO DIMENSIONAL EM X!" : "RASGO DO VÉU!", true, '#00cec9');
+      addDamageText(e.x, e.y - 45, isX ? matchText('match.combat.xRift') : matchText('match.combat.veil'), true, '#00cec9');
       e.actionState = REAPER_STATES.POST_ATTACK_RECOVERY;
       e.actionTimer = 18;
       break;
@@ -728,7 +729,7 @@ export function executeReaperSkill(e, context) {
         timer: REAPER_CONFIG.CHAINS_MAX_DURATION || 720
       };
 
-      addDamageText(e.x, e.y - 65, "CORRENTES DO PURGATÓRIO!", true, '#8e44ad');
+      addDamageText(e.x, e.y - 65, matchText('match.combat.purgatory'), true, '#8e44ad');
       e.actionState = REAPER_STATES.PURGATORY_CHAINS_ACTIVE;
       e.actionTimer = REAPER_CONFIG.CHAINS_MAX_DURATION || 720;
       break;
@@ -784,7 +785,7 @@ export function executeReaperSkill(e, context) {
         bladeCooldown: 30
       };
 
-      addDamageText(e.x, e.y - 75, "MARCHA DOS CONDENADOS!", true, '#ff4757');
+      addDamageText(e.x, e.y - 75, matchText('match.combat.march'), true, '#ff4757');
       e.actionState = REAPER_STATES.WALL_OF_RESTLESS_ACTIVE;
       e.actionTimer = Math.round(1400 / spd) + 50;
       break;

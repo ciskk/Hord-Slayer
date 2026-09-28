@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/groundSlam.js
  * IA do Demolidor Sísmico — Impacto sísmico + onda de choque.
@@ -24,6 +25,6 @@ export function groundSlamBehavior(e, dt, angle, curSpeed, ctx) {
       damage: e.damage,
       hitPlayer: false
     });
-    addDamageText(e.x, e.y, "IMPACTO SÍSMICO!", false, '#95a5a6');
+    addDamageText(e.x, e.y, matchText('match.combat.impact'), false, '#95a5a6');
   }
 }

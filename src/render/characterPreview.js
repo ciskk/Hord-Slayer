@@ -8,6 +8,7 @@
  * dinâmico de ataque realista com armas empunhadas e efeitos de combate autênticos.
  */
 
+import { perfMetrics } from '../core/perfMetrics.js';
 import { AXE_BASE_RADIUS, AXE_SPIN_DIRECTION, getAxeSpinSpeed } from '../config/axes.js';
 import { drawKragdorAxes } from './kragdorAxes.js';
 import { drawKragdorRoar } from './kragdorUlt.js';
@@ -451,6 +452,7 @@ export function startPreview(heroKey) {
  * Interrompe a renderização para poupar recursos durante o gameplay.
  */
 export function stopPreview() {
+  perfMetrics.resetPreview();
   isRunning = false;
   if (animFrameId) {
     cancelAnimationFrame(animFrameId);
@@ -473,6 +475,7 @@ function renderLoop(timestamp) {
     return;
   }
 
+  const measuredStart = perfMetrics.isEnabled() ? performance.now() : null;
   const dt = timestamp !== undefined && lastPreviewFrameTime !== null
     ? Math.min(3, (timestamp - lastPreviewFrameTime) / (1000 / 60)) : 1;
   lastPreviewFrameTime = timestamp ?? null;
@@ -512,6 +515,7 @@ function renderLoop(timestamp) {
   }
 
   renderStage();
+  if (measuredStart !== null) perfMetrics.recordPreview(timestamp ?? measuredStart, performance.now() - measuredStart);
   animFrameId = requestAnimationFrame(renderLoop);
 }
 

@@ -1,3 +1,5 @@
+import { t as matchText } from '../../i18n/index.js';
+import { effectiveDamage, potionRadius, swordFlightSpeed } from '../../config/upgradeEffects.js';
 import { AXE_BASE_RADIUS, AXE_SPIN_DIRECTION, getAxeCount, getAxeSpinSpeed } from '../../config/axes.js';
 /**
  * src/entities/player/weapons.js
@@ -9,13 +11,11 @@ import { bullets, enemyBullets, enemies } from '../../state/collections.js';
 import { triggerShake, cameraViewW, cameraViewH } from '../../state/gameState.js';
 import { getNeighborIndices } from '../../core/spatialGrid.js';
 import { distToSegment } from '../../core/math.js';
-import { getMetaBonuses } from '../../systems/progression.js';
 import { getBossPhaseDefeatDamage } from '../../systems/devtools.js';
 import { player, selectedHeroKey } from './player.js';
 
 export function calculateEffectiveDamage() {
-  const meta = getMetaBonuses();
-  return Math.round((player.baseDamage || 0) * (1 + (player.damagePercentBonus || 0)) * meta.damageMult);
+  return effectiveDamage(player);
 }
 
 
@@ -180,7 +180,7 @@ export function updateSpinningAxes(dt) {
           e.speed *= 1.35;
           triggerShake(15);
           playSfx('boss');
-          addDamageText(e.x, e.y, "EM FÚRIA!", true, '#e74c3c');
+          addDamageText(e.x, e.y, matchText('match.combat.enraged'), true, '#e74c3c');
         }
       }
     }
@@ -266,8 +266,8 @@ export function fireWeapons() {
           type: 'SWORD',
           x: player.x,
           y: player.y,
-          vx: Math.cos(angle) * (player.evolvedSword ? 12 : 9.2),
-          vy: Math.sin(angle) * (player.evolvedSword ? 12 : 9.2),
+          vx: Math.cos(angle) * swordFlightSpeed(w, player.evolvedSword),
+          vy: Math.sin(angle) * swordFlightSpeed(w, player.evolvedSword),
           angle: angle,
           radius: player.evolvedSword ? 9 : 5,
           damage: player.damage * w.damageMult * (player.evolvedSword ? 1.6 : 1.1),
@@ -336,7 +336,6 @@ export function fireWeapons() {
       const dx = targetX - player.x;
       const dy = targetY - player.y;
       const count = player.evolvedPotion ? Math.max(w.count, 5) : w.count;
-      const potencyMult = 1 + (w.potencyCount || 0) * 0.05;
       const gravity = 0.24;
 
       // Dano base de impacto químico suave (alquimia foca em veneno e DoT, não em impacto físico maciço)
@@ -360,7 +359,7 @@ export function fireWeapons() {
           damage: basePotionDmg * volleyMult,
           life: flightFrames,
           angle: i * 0.4,
-          puddleRadius: 42 * potencyMult,
+          puddleRadius: potionRadius(w),
           puddleDuration: player.evolvedPotion ? 340 : 280,
           isEvolved: player.evolvedPotion,
           trail: []

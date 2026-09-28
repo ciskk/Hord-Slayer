@@ -1313,8 +1313,13 @@ body:has(#bestiary-modal.active) #skill-btn-container {
 
 /* Em Cooldown: Frio / Dessaturado */
 #skill-btn-container:not(.ready) .skill-emblem-wrap {
-  opacity: 0.42;
-  filter: grayscale(0.85) brightness(0.65);
+  opacity: 0.38;
+  color: #64748b !important;
+  filter: grayscale(1) brightness(0.6);
+}
+
+#skill-btn-container:not(.ready) .skill-emblem-wrap svg {
+  color: #64748b !important;
 }
 
 #skill-btn-container:not(.ready) .skill-bracket {
@@ -1474,8 +1479,14 @@ body:has(#bestiary-modal.active) #skill-btn-container {
 
 #skill-btn-container.ready .skill-emblem-wrap {
   opacity: 1;
-  filter: drop-shadow(0 0 10px var(--skill-theme-color));
+  color: var(--skill-theme-color, #ffd166) !important;
+  filter: drop-shadow(0 0 10px var(--skill-theme-color)) brightness(1.25);
   animation: ultEmblemReadyPulse 2.4s infinite ease-in-out;
+}
+
+#skill-btn-container.ready .skill-emblem-wrap svg {
+  color: var(--skill-theme-color, #ffd166) !important;
+  filter: drop-shadow(0 0 6px var(--skill-theme-color));
 }
 
 @keyframes ultRingReadyPulse {
@@ -1492,9 +1503,11 @@ body:has(#bestiary-modal.active) #skill-btn-container {
 @keyframes ultEmblemReadyPulse {
   0%, 100% {
     transform: translate(-50%, -50%) scale(1);
+    filter: drop-shadow(0 0 8px var(--skill-theme-color)) brightness(1.2);
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.10);
+    transform: translate(-50%, -50%) scale(1.14);
+    filter: drop-shadow(0 0 18px var(--skill-theme-color)) drop-shadow(0 0 6px #fff) brightness(1.5);
   }
 }
 

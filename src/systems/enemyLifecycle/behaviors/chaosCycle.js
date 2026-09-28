@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/chaosCycle.js
  * IA do Arauto do Caos — Ciclo de 3 fases: espiral, carga e colapso.
@@ -55,7 +56,7 @@ export function chaosCycleBehavior(e, dt, angle, curSpeed, ctx) {
         hitPlayer: false
       });
       createHitParticles(e.x, e.y, '#e74c3c', 16);
-      addDamageText(e.x, e.y, "COLAPSO DO CAOS!", true, '#c0392b');
+      addDamageText(e.x, e.y, matchText('match.combat.chaosCollapse'), true, '#c0392b');
     }
   }
   if (e.cycleTimer >= 90) {

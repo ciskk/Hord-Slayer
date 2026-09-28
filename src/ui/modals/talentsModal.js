@@ -1,3 +1,5 @@
+import { t as tr, formatNumber, onLanguageChange } from '../../i18n/index.js';
+import { htmlT, translateDOM } from '../../i18n/dom.js';
 /**
  * src/ui/modals/talentsModal.js
  * Astrolábio Cósmico e Forja do Destino: Árvore de Meta-Progressão Rúnica, Constelações e Resumo de Bênçãos.
@@ -435,6 +437,7 @@ export function openTalentsModal() {
   closeCharSelectModal();
 
   const modal = document.getElementById('talents-modal');
+  translateDOM(modal);
   const nodesContainer = document.getElementById('astrolabe-nodes-container');
   const filamentsSvg = document.getElementById('astrolabe-filaments-svg');
   const goldVal = document.getElementById('talents-gold-val');
@@ -527,9 +530,9 @@ export function openTalentsModal() {
 
   function renderAstrolabe() {
     const currentGold = getPersistentGold();
-    if (goldVal) goldVal.innerText = currentGold.toLocaleString('pt-BR');
+    if (goldVal) goldVal.innerText = formatNumber(currentGold);
     const coreGold = document.getElementById('talents-core-gold-val');
-    if (coreGold) coreGold.innerText = currentGold.toLocaleString('pt-BR');
+    if (coreGold) coreGold.innerText = formatNumber(currentGold);
     nodesContainer.innerHTML = '';
 
     const levels = getMetaLevels();
@@ -572,7 +575,7 @@ export function openTalentsModal() {
         const max = cTalents.reduce((acc, t) => acc + t.maxLvl, 0);
         const countSpan = btn.querySelector('.tab-prog-badge');
         if (countSpan) {
-          countSpan.innerText = isMobileNow ? `${spent}/${max}` : `${spent}/${max} Níveis`;
+          countSpan.innerText = isMobileNow ? `${spent}/${max}` : `${tr('contentUI.levels', { value1: spent, value2: max })}`;
         }
       }
     });
@@ -580,12 +583,12 @@ export function openTalentsModal() {
     const stageBadge = document.getElementById('astrolabe-active-const-badge');
     if (stageBadge) {
       const badgeNames = {
-        all: 'PLANETÁRIO CELESTE',
-        guerra: 'CONSTELAÇÃO DA GUERRA',
-        egide: 'CONSTELAÇÃO DA ÉGIDE',
-        destino: 'CONSTELAÇÃO DO DESTINO'
+        all: tr('contentUI.planetarium'),
+        guerra: tr('contentUI.warConstellation'),
+        egide: tr('contentUI.aegisConstellation'),
+        destino: tr('contentUI.destinyConstellation')
       };
-      stageBadge.innerText = badgeNames[activeConstellationFilter] || 'PLANETÁRIO CELESTE';
+      stageBadge.innerText = badgeNames[activeConstellationFilter] || tr('contentUI.planetarium');
       const badgeColors = {
         all: '#00f5d4',
         guerra: '#e74c3c',
@@ -662,7 +665,7 @@ export function openTalentsModal() {
       node.innerHTML = `
         ${runeSvg}
         <div class="node-lvl-pip">${isLocked ? renderIcon('lock', { size: 10, color: '#8c94a8' }) : `${curLvl}/${t.maxLvl}`}</div>
-        ${t.isKeystone ? '<div class="keystone-crown-glow"></div>' : ''}
+        ${t.isKeystone ? `<div class="keystone-crown-glow"></div>` : ''}
       `;
 
       node.onclick = (e) => {
@@ -719,9 +722,9 @@ export function openTalentsModal() {
     const buyBtn = document.getElementById('forge-buy-btn');
 
     if (constBadge) {
-      const names = { guerra: 'CONSTELAÇÃO DA GUERRA', egide: 'CONSTELAÇÃO DA ÉGIDE', destino: 'CONSTELAÇÃO DO DESTINO' };
+      const names = { guerra: tr('contentUI.warConstellation'), egide: tr('contentUI.aegisConstellation'), destino: tr('contentUI.destinyConstellation') };
       const iconKey = activeTalent.constellation === 'guerra' ? 'constellation_guerra' : (activeTalent.constellation === 'egide' ? 'constellation_egide' : 'constellation_destino');
-      constBadge.innerHTML = `${renderIcon(iconKey, { size: 13, style: 'margin-right:5px;' })} ${names[activeTalent.constellation] || 'CONSTELAÇÃO ASTRAL'}`;
+      constBadge.innerHTML = `${renderIcon(iconKey, { size: 13, style: 'margin-right:5px;' })} ${names[activeTalent.constellation] || tr('contentUI.astralConstellation')}`;
       constBadge.className = `showcase-archetype-pill badge-${activeTalent.constellation}`;
       constBadge.style.color = activeColor;
       constBadge.style.borderColor = activeColor;
@@ -729,20 +732,20 @@ export function openTalentsModal() {
 
     if (tierBadge) {
       tierBadge.innerHTML = activeTalent.isKeystone 
-        ? `${renderIcon('keystone', { size: 12, color: '#f1c40f', style: 'margin-right:4px;' })} TALENTO MESTRE` 
-        : `TIER ${activeTalent.tier}`;
+        ? `${renderIcon('keystone', { size: 12, color: '#f1c40f', style: 'margin-right:4px;' })} ${tr('contentUI.keystone')}`
+        : `${tr('contentUI.tier', { value1: activeTalent.tier })}`;
       tierBadge.style.color = activeTalent.isKeystone ? '#ffd166' : '#00f5d4';
       tierBadge.style.borderColor = activeTalent.isKeystone ? 'rgba(255, 209, 102, 0.5)' : 'rgba(0, 245, 212, 0.4)';
     }
 
     if (statBadge) {
-      statBadge.innerText = activeTalent.statLabel ? activeTalent.statLabel.toUpperCase() : 'BÊNÇÃO';
+      statBadge.innerText = activeTalent.statLabel ? activeTalent.statLabel.toUpperCase() : tr('contentUI.blessing');
       statBadge.style.color = activeColor;
       statBadge.style.borderColor = `${activeColor}66`;
     }
 
     if (levelLabel) {
-      levelLabel.innerText = isMax ? 'APOGEU (MÁX)' : `NÍVEL ${curLvl}/${activeTalent.maxLvl}`;
+      levelLabel.innerText = isMax ? tr('contentUI.peak') : `${tr('contentUI.levelProgress', { value1: curLvl, value2: activeTalent.maxLvl })}`;
       levelLabel.style.color = isMax ? '#ffd166' : '#00f5d4';
     }
 
@@ -755,14 +758,14 @@ export function openTalentsModal() {
     }
 
     if (compCur) compCur.innerText = activeTalent.formatVal(curLvl);
-    if (compNext) compNext.innerText = isMax ? 'MÁX' : activeTalent.formatVal(curLvl + 1);
+    if (compNext) compNext.innerText = isMax ? tr('contentUI.max') : activeTalent.formatVal(curLvl + 1);
 
     if (meterElem) {
-      let meterHtml = '<div class="segmented-meter">';
+      let meterHtml = `<div class="segmented-meter">`;
       for (let i = 1; i <= activeTalent.maxLvl; i++) {
         meterHtml += `<div class="segment-cell ${i <= curLvl ? 'filled' : ''}"></div>`;
       }
-      meterHtml += '</div>';
+      meterHtml += `</div>`;
       meterElem.innerHTML = meterHtml;
     }
 
@@ -774,7 +777,7 @@ export function openTalentsModal() {
         buyBtn.innerHTML = `
           <div class="btn-shimmer-sweep"></div>
           <span class="btn-forge-content">
-            ${renderIcon('lock', { size: 13, style: 'margin-right:4px;' })} REQUER ${parentT ? parentT.name.toUpperCase() : 'NÓ ANTECESSOR'}
+            ${renderIcon('lock', { size: 13, style: 'margin-right:4px;' })} ${htmlT('contentUI.requires', { value1: parentT ? parentT.name.toUpperCase() : tr('contentUI.parentNode') })}
           </span>
         `;
       } else if (isMax) {
@@ -782,7 +785,7 @@ export function openTalentsModal() {
         buyBtn.innerHTML = `
           <div class="btn-shimmer-sweep"></div>
           <span class="btn-forge-content">
-            ${renderIcon('sparkle', { size: 13, style: 'margin-right:4px;' })} APOGEU ESTELAR ALCANÇADO ${renderIcon('sparkle', { size: 13, style: 'margin-left:4px;' })}
+            ${renderIcon('sparkle', { size: 13, style: 'margin-right:4px;' })} ${htmlT('contentUI.peakReached')} ${renderIcon('sparkle', { size: 13, style: 'margin-left:4px;' })}
           </span>
         `;
       } else {
@@ -791,13 +794,13 @@ export function openTalentsModal() {
           ? `
             <div class="btn-shimmer-sweep"></div>
             <span class="btn-forge-content">
-              ${renderIcon('damage', { size: 14, style: 'margin-right:5px; vertical-align: middle;' })} FUNDIR ALMAS • ${renderIcon('soul_coin', { size: 13, color: '#3d1e00', style: 'margin-right:2px; vertical-align: middle;' })} ${cost}
+              ${renderIcon('damage', { size: 14, style: 'margin-right:5px; vertical-align: middle;' })} ${htmlT('contentUI.forgeSoulsBullet')} ${renderIcon('soul_coin', { size: 13, color: '#3d1e00', style: 'margin-right:2px; vertical-align: middle;' })} ${cost}
             </span>
           `
           : `
             <div class="btn-shimmer-sweep"></div>
             <span class="btn-forge-content">
-              ${renderIcon('soul_coin', { size: 12, color: '#ffd166', style: 'margin-right:2px;' })} ${cost} (FALTAM ${cost - getPersistentGold()} ALMAS)
+              ${renderIcon('soul_coin', { size: 12, color: '#ffd166', style: 'margin-right:2px;' })} ${htmlT('contentUI.missingSouls', { value1: cost, value2: cost - getPersistentGold() })}
             </span>
           `;
         buyBtn.onclick = () => {
@@ -841,9 +844,9 @@ export function renderBlessingsSummary() {
   const levels = getMetaLevels();
 
   const constInfo = {
-    guerra: { name: 'OFENSIVA & GUERRA', color: '#e74c3c' },
-    egide: { name: 'DEFESA & ÉGIDE', color: '#2ecc71' },
-    destino: { name: 'ALQUIMIA & DESTINO', color: '#a855f7' }
+    guerra: { name: tr('contentUI.offense'), color: '#e74c3c' },
+    egide: { name: tr('contentUI.defense'), color: '#2ecc71' },
+    destino: { name: tr('contentUI.alchemy'), color: '#a855f7' }
   };
 
   const iconMap = {
@@ -875,7 +878,7 @@ export function renderBlessingsSummary() {
         <div class="blessing-info">
           <div class="blessing-label" title="${t.name}">${t.name}</div>
           <div class="blessing-val" style="color: ${isInvested ? cInfo.color : '#64748b'};">
-            ${isInvested ? t.formatVal(lvl) : 'Inativo'}
+            ${isInvested ? t.formatVal(lvl) : tr('contentUI.inactive')}
             <small style="font-size: 8.5px; color: #64748b; margin-left: 4px; font-weight: normal;">(${lvl}/${t.maxLvl})</small>
           </div>
         </div>
@@ -901,37 +904,37 @@ export function renderDesktopBlessingsCodex() {
 
   if (summaryStrip) {
     summaryStrip.innerHTML = `
-      <div class="summary-stat-chip stat-dmg" title="Bônus de Dano Global">
+      <div class="summary-stat-chip stat-dmg" title="${htmlT('contentUI.globalDamage')}">
         <svg class="game-icon icon-xs" viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="currentColor"/></svg>
-        <span>DANO: +${dmgLvl * 5}%</span>
+        <span>${htmlT('contentUI.damageBonus', { value1: dmgLvl * 5 })}</span>
       </div>
-      <div class="summary-stat-chip stat-dmg" title="Chance de Acerto Crítico">
+      <div class="summary-stat-chip stat-dmg" title="${htmlT('contentUI.criticalChance')}">
         <svg class="game-icon icon-xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
-        <span>CRÍT: +${critLvl * 2}%</span>
+        <span>${htmlT('contentUI.critBonus', { value1: critLvl * 2 })}</span>
       </div>
-      <div class="summary-stat-chip stat-hp" title="Vida Máxima Adicional">
+      <div class="summary-stat-chip stat-hp" title="${htmlT('contentUI.extraHealth')}">
         <svg class="game-icon icon-xs" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-        <span>VIDA: +${hpLvl * 10}</span>
+        <span>${htmlT('contentUI.hpBonus', { value1: hpLvl * 4 })}</span>
       </div>
-      <div class="summary-stat-chip stat-hp" title="Redução de Dano">
+      <div class="summary-stat-chip stat-hp" title="${htmlT('contentUI.damageReduction')}">
         <svg class="game-icon icon-xs" viewBox="0 0 24 24"><polygon points="12,2 20,5 20,11 12,21 4,11 4,5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-        <span>ARMADURA: +${armorLvl * 1}</span>
+        <span>${htmlT('contentUI.armorBonus', { value1: armorLvl * 1 })}</span>
       </div>
-      <div class="summary-stat-chip stat-spd" title="Velocidade de Movimento">
+      <div class="summary-stat-chip stat-spd" title="${htmlT('contentUI.movementSpeed')}">
         <svg class="game-icon icon-xs" viewBox="0 0 24 24"><path fill="currentColor" d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/></svg>
-        <span>VELOCIDADE: +${speedLvl * 3}%</span>
+        <span>${htmlT('contentUI.speedBonus', { value1: speedLvl * 2.5 })}</span>
       </div>
-      <div class="summary-stat-chip stat-util" title="Multiplicador de Almas">
+      <div class="summary-stat-chip stat-util" title="${htmlT('contentUI.soulMultiplier')}">
         <svg class="game-icon icon-xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="900" fill="currentColor">✦</text></svg>
-        <span>ALMAS: +${goldLvl * 5}%</span>
+        <span>${htmlT('contentUI.soulBonus', { value1: goldLvl * 5 })}</span>
       </div>
     `;
   }
 
   const constellations = [
-    { id: 'guerra', name: 'CONSTELAÇÃO DA GUERRA', color: '#e74c3c' },
-    { id: 'egide', name: 'CONSTELAÇÃO DA ÉGIDE', color: '#2ecc71' },
-    { id: 'destino', name: 'CONSTELAÇÃO DO DESTINO', color: '#a855f7' }
+    { id: 'guerra', name: tr('contentUI.warConstellation'), color: '#e74c3c' },
+    { id: 'egide', name: tr('contentUI.aegisConstellation'), color: '#2ecc71' },
+    { id: 'destino', name: tr('contentUI.destinyConstellation'), color: '#a855f7' }
   ];
 
   let totalActive = 0;
@@ -967,8 +970,8 @@ export function renderDesktopBlessingsCodex() {
             </div>
           </div>
           <div class="blessing-card-right">
-            <span class="blessing-level-pill">Nv ${lvl}/${t.maxLvl}</span>
-            <button class="btn-locate-node" title="Localizar e Focar no Astrolábio" data-locate="${t.id}" aria-label="Localizar">
+            <span class="blessing-level-pill">${htmlT('contentUI.compactLevelProgress', { value1: lvl, value2: t.maxLvl })}</span>
+            <button class="btn-locate-node" title="${htmlT('contentUI.locateHint')}" data-locate="${t.id}" aria-label="${htmlT('contentUI.locate')}">
               <svg viewBox="0 0 24 24" class="game-icon icon-xs"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><line x1="12" y1="2" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="2" y1="12" x2="6" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             </button>
           </div>
@@ -983,8 +986,8 @@ export function renderDesktopBlessingsCodex() {
     html = `
       <div class="blessings-empty-notice">
         <svg class="game-icon icon-lg" viewBox="0 0 24 24"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
-        <div><strong>Nenhuma bênção ativa consagrada ainda.</strong></div>
-        <div>Forje runas no Astrolábio para despertar poderes cósmicos permanentes na sua linhagem.</div>
+        <div><strong>${htmlT('contentUI.noBlessings')}</strong></div>
+        <div>${htmlT('contentUI.forgeHint')}</div>
       </div>
     `;
   }
@@ -1006,3 +1009,11 @@ export function renderDesktopBlessingsCodex() {
     };
   });
 }
+
+onLanguageChange(() => {
+  const modal = document.getElementById('talents-modal');
+  if (!modal?.classList.contains('active')) return;
+  translateDOM(modal);
+  activeRenderAstrolabe?.();
+  renderBlessingsSummary();
+});

@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/shooter.js
  * IA do Autômato Artilheiro — Aero-Dash de recuo + Rajada Tática Tripla.
@@ -21,7 +22,7 @@ export function shooterBehavior(e, dt, angle, curSpeed, ctx) {
       e.y -= Math.sin(angle) * 70;
       playSfx('warp');
       createHitParticles(e.x, e.y, '#00cec9', 10);
-      addDamageText(e.x, e.y, "RECUO A JATO!", false, '#00cec9');
+      addDamageText(e.x, e.y, matchText('match.combat.jet'), false, '#00cec9');
     } else if (distToPlayerSq < 170 * 170) {
       e.x -= Math.cos(angle) * curSpeed * dt;
       e.y -= Math.sin(angle) * curSpeed * dt;

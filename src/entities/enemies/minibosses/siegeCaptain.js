@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/enemies/minibosses/siegeCaptain.js
  * 
@@ -31,14 +32,14 @@ update(e, dt, ctx, dist, angle) {
         e.actionMaxTimer = 18;
         e.aimAngle = angle;
         safePlaySfx('charge');
-        ctx.addDamageText(e.x, e.y, "METRANCAS!", true, '#b71540');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.guns'), true, '#b71540');
       } else {
         e.currentSkill = 'MORTAR_BARRAGE';
         e.actionState = 'WINDUP';
         e.actionTimer = 26;
         e.actionMaxTimer = 26;
         safePlaySfx('shoot');
-        ctx.addDamageText(e.x, e.y, "BOMBARDEIO!", true, '#b71540');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.barrage'), true, '#b71540');
 
         for (let m = 0; m < 3; m++) {
           const mAng = (m * Math.PI * 2 / 3) + Math.random() * 0.4;

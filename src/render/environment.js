@@ -6,7 +6,7 @@ import { NATURAL_ARENAS, ARENA_ALIASES, resolveArenaTheme } from '../config/aren
 import { renderNaturalTerrain, clearNaturalTerrainCache, prefetchArenaTheme, warmupStartingTerrain, terrainHash } from './environment/naturalTerrain.js';
 import { renderSurrealAbyssArena, getAbyssArenaState, resetAbyssArena } from './environment/abyssArena.js';
 
-export { renderSurrealAbyssArena, getAbyssArenaState, resetAbyssArena, warmupStartingTerrain };
+export { renderSurrealAbyssArena, getAbyssArenaState, resetAbyssArena, warmupStartingTerrain, clearNaturalTerrainCache };
 // Mantidos para consumidores antigos dos renderizadores de decoração.
 export { renderArenaProps, BIOME_PROP_RENDERERS } from './environment/biomeProps/index.js';
 export const tileHash = terrainHash;

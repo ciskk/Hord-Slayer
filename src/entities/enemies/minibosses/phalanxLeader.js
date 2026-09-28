@@ -3,7 +3,7 @@
  * 
  * Controlador e FSM do Miniboss Centurião da Guarda (PHALANX_LEADER).
  */
-import { safePlaySfx } from './common.js';
+import { safePlaySfx, matchText } from './common.js';
 import { triggerHaptic } from '../../../core/audio.js';
 import { vecDist } from '../../../core/math.js';
 import { spawnMobCluster } from '../spawner.js';
@@ -21,7 +21,7 @@ update(e, dt, ctx, dist, angle) {
   if (e.enraged && !e.hasSpawnedGuards && e.actionState === 'CHASE') {
     e.hasSpawnedGuards = true;
     safePlaySfx('boss');
-    ctx.addDamageText(e.x, e.y, "FORMAÇÃO!", true, '#f1c40f');
+    ctx.addDamageText(e.x, e.y, matchText('match.combat.formation'), true, '#f1c40f');
     spawnMobCluster('SHIELDED', 2);
   }
 

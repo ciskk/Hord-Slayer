@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/enemies/minibosses/broodMatriarch.js
  * 
@@ -29,7 +30,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionMaxTimer = 22;
         e.aimAngle = angle;
         safePlaySfx('charge');
-        ctx.addDamageText(e.x, e.y, "CUSPE ÁCIDO!", true, '#00cec9');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.acid'), true, '#00cec9');
 
         bossTelegraphs.push({
           x: ctx.player.x,
@@ -48,7 +49,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionMaxTimer = 26;
         e.isSpawningEggs = true;
         safePlaySfx('boss');
-        ctx.addDamageText(e.x, e.y, "INCUBAÇÃO!", true, '#2ecc71');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.incubation'), true, '#2ecc71');
       }
     }
   } else if (e.actionState === 'WINDUP') {

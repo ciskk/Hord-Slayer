@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/enemies/minibosses/zombieAlpha.js
  * 
@@ -28,7 +29,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionMaxTimer = 17;
         e.pounceAngle = angle;
         safePlaySfx('charge');
-        ctx.addDamageText(e.x, e.y, "BOTE!", true, '#27ae60');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.pounce'), true, '#27ae60');
       } else {
         // Rugido de Guerra Alfa
         e.currentSkill = 'HOWL';
@@ -36,7 +37,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionTimer = 25;
         e.actionMaxTimer = 25;
         safePlaySfx('boss');
-        ctx.addDamageText(e.x, e.y, "RUGIDO ALFA!", true, '#2ecc71');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.alpha'), true, '#2ecc71');
       }
     }
   } else if (e.actionState === 'WINDUP') {

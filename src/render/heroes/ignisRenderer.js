@@ -118,9 +118,9 @@ export function drawIgnisModel(c, charDef, state, {
     const flameTip = cCol.flameTip || '#ffffff';
     const orbCore = cCol.orbCore || '#ffffff';
     const orbGlow = cCol.orbGlow || 'rgba(243, 156, 18, 0.65)';
-    const staffWood = cCol.staffWood || '#1c1417';
-    const staffGold = cCol.staffGold || '#f1c40f';
-    const coronaCol = cCol.staffCorona || '#f39c12';
+    const staffWood = state.evolvedStaff ? '#581c18' : (cCol.staffWood || '#1c1417');
+    const staffGold = state.evolvedStaff ? '#ff7675' : (cCol.staffGold || '#f1c40f');
+    const coronaCol = state.evolvedStaff ? '#e74c3c' : (cCol.staffCorona || '#f39c12');
     const isDetailed = scale >= 1.5;
     const volcanicSilk = skinGradient(c, -12, bob, 22, 10, robeDark, '#342337', '#674050');
     const copperMetal = skinGradient(c, -6, -5+bob, 14, 9, '#542936', '#a76240', '#efb978');

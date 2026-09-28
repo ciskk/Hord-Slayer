@@ -1,3 +1,4 @@
+import { t, formatNumber } from '../i18n/index.js';
 /**
  * src/systems/barks.js
  * Sistema de Citações e Provocações dos Chefes e Elites durante o combate (Boss Barks).
@@ -10,10 +11,10 @@ let barkTimeout = null;
 let currentBarkBossId = null;
 
 const PHASE_LABELS = {
-  SPAWN: 'SURGIMENTO',
-  ENRAGE: 'FÚRIA DESATADA (50% HP)',
-  DEFEAT: 'ÚLTIMO SUSPIRO',
-  MINIBOSS: 'AMEAÇA DE ELITE'
+  SPAWN: 'match.bark.spawn',
+  ENRAGE: 'match.bark.enrage',
+  DEFEAT: 'match.bark.defeat',
+  MINIBOSS: 'match.bark.mini'
 };
 
 const PHASE_COLORS = {
@@ -69,7 +70,8 @@ export function triggerMiniBossBark(miniBossType) {
  * Renderiza o widget de citação no DOM com animação suave
  */
 function displayBarkUI(speaker, quote, eventType, themeColor) {
-  if (typeof document !== 'undefined' && document.body && document.body.classList.contains('boss-defeat-cinematic')) {
+  if (typeof document === 'undefined') return;
+  if (document.body && document.body.classList.contains('boss-defeat-cinematic')) {
     return;
   }
 
@@ -89,7 +91,7 @@ function displayBarkUI(speaker, quote, eventType, themeColor) {
   speakerEl.style.color = themeColor;
 
   if (phaseTagEl) {
-    phaseTagEl.innerText = PHASE_LABELS[eventType] || 'AVISO';
+    phaseTagEl.innerText = t(PHASE_LABELS[eventType] || 'match.bark.warning');
     phaseTagEl.style.color = PHASE_COLORS[eventType] || '#ffd166';
     phaseTagEl.style.borderColor = `${PHASE_COLORS[eventType] || '#ffd166'}55`;
   }

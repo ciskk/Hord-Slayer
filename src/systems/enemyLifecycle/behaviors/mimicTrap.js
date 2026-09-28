@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/mimicTrap.js
  * IA do Mímico de Éter — Camuflagem de baú mímico dormente até ativação.
@@ -16,7 +17,7 @@ export function mimicTrapBehavior(e, dt, angle, curSpeed, ctx) {
       playSfx('boss');
       triggerShake(6);
       createHitParticles(e.x, e.y, '#e056fd', 12);
-      addDamageText(e.x, e.y, "MÍMICO DESPERTO!", true, '#e056fd');
+      addDamageText(e.x, e.y, matchText('match.combat.mimic'), true, '#e056fd');
     }
   } else {
     curSpeed = e.speed * 1.2;

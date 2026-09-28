@@ -111,7 +111,7 @@ export function drawKragdorModel(c, charDef, state, {
       c.save();
       c.translate(-3, -2 + bob);
       c.rotate(-0.55);
-      drawKragdorAxe(c, cCol);
+      drawKragdorAxe(c, cCol, { isEvolved: !!state.evolvedAxe, isBerserk });
       c.restore();
     }
 

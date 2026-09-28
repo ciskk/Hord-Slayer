@@ -1,3 +1,9 @@
+import { frameCount } from '../../state/gameState.js';
+import { activeBoss } from '../../state/collections.js';
+import { getCurrentWave, getEffectiveHordeSeconds } from '../../systems/waves.js';
+import { t, formatNumber, getLanguage }  from '../../i18n/index.js';
+import { initPauseLanguageControl, closePauseLanguageControl } from '../pauseLanguageControl.js';
+import { getPactPresentation } from '../../i18n/contentPresentation.js';
 /**
  * src/ui/modals/pauseModal.js
  * Grimório de Estase Astral: Cronostase Rúnica, Biometria do Sobrevivente,
@@ -22,29 +28,14 @@ let pauseKeydownHandler = null;
  */
 export function renderPauseInventory() {
   // 1. Metadados do Topo (Tempo, Onda e Almas)
-  const timerElem = document.getElementById('timer-val');
-  const survivalTime = (timerElem && typeof timerElem.innerText === 'string' && timerElem.innerText.trim()) ? timerElem.innerText.trim() : '00:00';
+  const seconds = Math.max(0, Math.floor(frameCount / 60));
   const pauseTimer = document.getElementById('pause-timer-val');
-  if (pauseTimer) pauseTimer.innerText = survivalTime;
-
-  const waveElem = document.getElementById('wave-banner');
-  const rawWaveStr = (waveElem && typeof waveElem.innerText === 'string') ? waveElem.innerText : '';
-  const rawWaveText = rawWaveStr.includes(':') ? rawWaveStr.split(':')[0].trim() : (rawWaveStr.trim() || 'Onda 1');
-  const isNumericWave = /^onda\s*\d+/i.test(rawWaveText);
-
-  let waveBadgeText = '1';
-  let eyebrowText = 'ESTÁSE TEMPORAL • ONDA 1';
-
-  if (isNumericWave) {
-    waveBadgeText = rawWaveText.replace(/onda\s*:?\s*/i, '').trim() || '1';
-    eyebrowText = `ESTÁSE TEMPORAL • ONDA ${waveBadgeText}`;
-  } else if (gameState.activeBoss) {
-    waveBadgeText = 'CHEFE';
-    eyebrowText = 'ESTÁSE TEMPORAL • CONFRONTO DE CHEFE';
-  } else {
-    waveBadgeText = rawWaveText.length > 12 ? rawWaveText.substring(0, 10) + '..' : rawWaveText;
-    eyebrowText = `ESTÁSE TEMPORAL • ${waveBadgeText.toUpperCase()}`;
-  }
+  if (pauseTimer) pauseTimer.innerText = String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
+  const wave = getCurrentWave(getEffectiveHordeSeconds(seconds));
+  const waveBadgeText = activeBoss ? t('match.common.boss') : formatNumber(wave.index);
+  const eyebrowText = activeBoss ? t('match.pause.boss') : t('match.pause.wave', { number: formatNumber(wave.index) });
+  const languageSelect = document.getElementById('pause-language-select');
+  if (languageSelect) languageSelect.value = getLanguage();
 
   const pauseWave = document.getElementById('pause-wave-badge');
   if (pauseWave) pauseWave.innerText = waveBadgeText;
@@ -58,13 +49,13 @@ export function renderPauseInventory() {
   // 2. Pilar 1: Dossiê do Herói e Biometria Cósmica
   const heroProfile = CHARACTERS[selectedHeroKey] || CHARACTERS.PALADIN || CHARACTERS.KNIGHT;
   const heroBadge = document.getElementById('pause-hero-badge');
-  if (heroBadge) heroBadge.innerText = (heroProfile.title || 'O SOBREVIVENTE').toUpperCase();
+  if (heroBadge) heroBadge.innerText = t(`heroes.${selectedHeroKey}.title`).toUpperCase();
 
   const heroNameElem = document.getElementById('pause-hero-name');
   if (heroNameElem) heroNameElem.innerText = heroProfile.name || 'Campeão Arcano';
 
   const heroLvlElem = document.getElementById('pause-hero-lvl-label');
-  if (heroLvlElem) heroLvlElem.innerText = `Nível ${player.level} de Ascensão`;
+  if (heroLvlElem) heroLvlElem.innerText = t('match.pause.level', { number: formatNumber(player.level) });
 
   const heroEmblemWrap = document.getElementById('pause-hero-emblem-wrap');
   if (heroEmblemWrap) {
@@ -83,39 +74,39 @@ export function renderPauseInventory() {
   // Grid Biométrico (Status Numéricos)
   const statsGrid = document.getElementById('pause-stats-grid');
   if (statsGrid) {
-    const totalDmg = Math.round(player.damage * (1 + (player.damagePercentBonus || 0)));
+    const totalDmg = player.damage;
     const bonusDmgPct = Math.round((player.damagePercentBonus || 0) * 100);
     const critPct = Math.round(player.critChance * 100);
-    const cdrPct = Math.round((player.cooldownReduction || 0) * 100);
+    const weaponCooldown = player.weapons[0]?.cooldown;
 
     statsGrid.innerHTML = `
       <div class="pause-stat-card card-stat-damage">
-        <span class="pause-stat-label">${renderIcon('damage', { size: 10, color: '#e74c3c' })} Dano</span>
+        <span class="pause-stat-label">${renderIcon('damage', { size: 10, color: '#e74c3c' })} ${t('match.stat.damage')}</span>
         <span class="pause-stat-val highlight-ruby">${totalDmg} <small style="font-size:8.5px; color:#8c94a8;">(+${bonusDmgPct}%)</small></span>
       </div>
 
       <div class="pause-stat-card card-stat-crit">
-        <span class="pause-stat-label">${renderIcon('crit', { size: 10, color: '#f39c12' })} Crítico</span>
+        <span class="pause-stat-label">${renderIcon('crit', { size: 10, color: '#f39c12' })} ${t('match.stat.crit')}</span>
         <span class="pause-stat-val highlight-gold">${critPct}%</span>
       </div>
 
       <div class="pause-stat-card card-stat-speed">
-        <span class="pause-stat-label">${renderIcon('boot', { size: 10, color: '#00f5d4' })} Velocidade</span>
+        <span class="pause-stat-label">${renderIcon('boot', { size: 10, color: '#00f5d4' })} ${t('match.stat.speed')}</span>
         <span class="pause-stat-val highlight-cyan">${player.speed.toFixed(1)}</span>
       </div>
 
       <div class="pause-stat-card card-stat-cdr">
-        <span class="pause-stat-label">${renderIcon('cooldown', { size: 10, color: '#a29bfe' })} CDR</span>
-        <span class="pause-stat-val">-${cdrPct}%</span>
+        <span class="pause-stat-label">${renderIcon('cooldown', { size: 10, color: '#a29bfe' })} ${t('cards.effect.weaponCooldown')}</span>
+        <span class="pause-stat-val">${weaponCooldown ? formatNumber(weaponCooldown / 60, { maximumFractionDigits: 2 }) + ' s' : '—'}</span>
       </div>
 
       <div class="pause-stat-card card-stat-magnet">
-        <span class="pause-stat-label">${renderIcon('magnet', { size: 10, color: '#9b59b6' })} Ímã</span>
+        <span class="pause-stat-label">${renderIcon('magnet', { size: 10, color: '#9b59b6' })} ${t('match.stat.magnet')}</span>
         <span class="pause-stat-val">${player.magnet}px</span>
       </div>
 
       <div class="pause-stat-card card-stat-souls">
-        <span class="pause-stat-label">${renderIcon('gold', { size: 10, color: '#ffd166' })} Almas</span>
+        <span class="pause-stat-label">${renderIcon('gold', { size: 10, color: '#ffd166' })} ${t('match.stat.souls')}</span>
         <span class="pause-stat-val highlight-gold">${getPersistentGold()}</span>
       </div>
     `;
@@ -123,7 +114,7 @@ export function renderPauseInventory() {
 
   // 3. Pilar 2: Arsenal Arcano & Pips de Energia
   const weaponsCountBadge = document.getElementById('pause-weapons-count');
-  if (weaponsCountBadge) weaponsCountBadge.innerText = `${player.weapons.length} ARMAS`;
+  if (weaponsCountBadge) weaponsCountBadge.innerText = t('match.pause.weapons', { count: player.weapons.length });
 
   const buildList = document.getElementById('pause-build-list');
   if (buildList) {
@@ -151,7 +142,7 @@ export function renderPauseInventory() {
           <span class="weapon-title">${weaponDisplayName}</span>
         </div>
         <div class="weapon-pips-col">
-          <span class="weapon-lvl-tag">Nv ${weaponLvl}</span>
+          <span class="weapon-lvl-tag">${t('match.common.level', { number: weaponLvl })}</span>
           <div class="weapon-energy-pips">
             ${pipsHtml}
           </div>
@@ -168,40 +159,40 @@ export function renderPauseInventory() {
     const passives = [];
 
     if (player.damageCardCount) {
-      passives.push({ icon: 'damage', label: 'Poder Bruto', val: `+${Math.round((player.damagePercentBonus || 0) * 100)}% (Nv. ${player.damageCardCount})`, color: '#e74c3c' });
+      passives.push({ icon: 'damage', label: ITEMS.DMG.name, val: `+${player.damageCardCount * 5}% (${t('match.common.level', { number: player.damageCardCount })})`, color: '#e74c3c' });
     }
     if (player.armorCardCount || player.hasArmorPassive) {
-      passives.push({ icon: 'armor', label: 'Armadura Rúnica', val: `+${(player.armorCardCount || 1) * 30} HP (Nv. ${player.armorCardCount || 1})`, color: '#3498db' });
+      passives.push({ icon: 'armor', label: ITEMS.ARMOR.name, val: `+${(player.armorCardCount || 1) * 30} HP (${t('match.common.level', { number: player.armorCardCount || 1 })})`, color: '#3498db' });
     }
     if (player.wingsCardCount || player.hasWingsPassive) {
-      passives.push({ icon: 'wings', label: 'Asas do Vento', val: `+${player.speed.toFixed(1)} Vel (Nv. ${player.wingsCardCount || 1})`, color: '#00cec9' });
+      passives.push({ icon: 'wings', label: ITEMS.WINGS.name, val: `${formatNumber(player.baseSpeed, { maximumFractionDigits: 2 })} ${t('match.stat.speed')} (${t('match.common.level', { number: player.wingsCardCount || 1 })})`, color: '#00cec9' });
     }
     if (player.frostCardCount || (player.slowChance || 0) > 0) {
-      passives.push({ icon: 'frost', label: 'Golpe Criogênico', val: `${Math.round(player.slowChance * 100)}% Lento (Nv. ${player.frostCardCount || 1})`, color: '#74b9ff' });
+      passives.push({ icon: 'frost', label: ITEMS.FROST_PASSIVE.name, val: `${Math.round(player.slowChance * 100)}% ${t('cards.effect.slowChance')} (${t('match.common.level', { number: player.frostCardCount || 1 })})`, color: '#74b9ff' });
     }
     if (player.orbitals > 0) {
       const isMax = player.orbitals >= 3;
-      passives.push({ icon: 'orbitals', label: 'Bíblias Protetoras', val: `${player.orbitals}/3 Tomos${isMax ? ' (MÁX)' : ''} ${player.evolvedOrbitals ? '(Vórtice)' : ''}`.trim(), color: '#9b59b6' });
+      passives.push({ icon: 'orbitals', label: ITEMS.ORBITALS.name, val: `${player.orbitals}/3 ${t('match.stat.tomes')}${isMax ? ` (${t('match.stat.max')})` : ''} ${player.evolvedOrbitals ? `(${t('match.stat.vortex')})` : ''}`.trim(), color: '#9b59b6' });
     }
     if (player.auraLvl > 0) {
       const isMax = player.auraLvl >= 5;
-      passives.push({ icon: 'aura', label: 'Aura Sagrada', val: `Nv ${player.auraLvl}/5${isMax ? ' (MÁX)' : ''} ${player.evolvedAura ? '(Santuário)' : ''}`.trim(), color: '#f1c40f' });
+      passives.push({ icon: 'aura', label: ITEMS.AURA.name, val: `${t('match.common.level', { number: player.auraLvl })}/5${isMax ? ` (${t('match.stat.max')})` : ''} ${player.evolvedAura ? `(${t('match.stat.sanctuary')})` : ''}`.trim(), color: '#f1c40f' });
     }
     if (player.critCardCount || player.critChance > 0.05) {
-      passives.push({ icon: 'crit', label: 'Foco Letal', val: `${Math.round(player.critChance * 100)}% Crítico (Nv. ${player.critCardCount || 1})`, color: '#f39c12' });
+      passives.push({ icon: 'crit', label: ITEMS.CRIT.name, val: `${Math.round(player.critChance * 100)}% ${t('match.stat.crit')} (${t('match.common.level', { number: player.critCardCount || 1 })})`, color: '#f39c12' });
     }
     if (player.hasteCardCount || (player.cooldownReduction || 0) > 0) {
-      passives.push({ icon: 'cooldown', label: 'Fúria Rápida', val: `-${Math.round((player.cooldownReduction || 0) * 100)}% CDR (Nv. ${player.hasteCardCount || 1})`, color: '#e67e22' });
+      passives.push({ icon: 'cooldown', label: ITEMS.HASTE.name, val: `${t('cards.effect.weaponCooldown')}: ${formatNumber((player.weapons[0]?.cooldown || 0) / 60, { maximumFractionDigits: 2 })} s (${t('match.common.level', { number: player.hasteCardCount || 1 })})`, color: '#e67e22' });
     }
     if (player.ultCooldownCount) {
-      passives.push({ icon: 'ult_cooldown', label: 'Ímpeto Supremo', val: `-${player.ultCooldownCount * 5}% Recarga ULT (Nv. ${player.ultCooldownCount})`, color: '#c084fc' });
+      passives.push({ icon: 'ult_cooldown', label: ITEMS.ULT_COOLDOWN.name, val: `${t('cards.effect.ultimateCooldown')}: ${formatNumber(player.skillMaxCd / 60, { maximumFractionDigits: 2 })} s (${t('match.common.level', { number: player.ultCooldownCount })})`, color: '#c084fc' });
     }
     if (player.magnetCardCount) {
-      passives.push({ icon: 'magnet', label: 'Ímã Titânico', val: `+${player.magnetCardCount * 30}px (Nv. ${player.magnetCardCount})`, color: '#9b59b6' });
+      passives.push({ icon: 'magnet', label: ITEMS.MAGNET.name, val: `+${player.magnetCardCount * 30}px (${t('match.common.level', { number: player.magnetCardCount })})`, color: '#9b59b6' });
     }
 
     if (passives.length === 0) {
-      passivesFlow.innerHTML = `<span style="font-size:9.5px; color:#64748b; font-style:italic;">Nenhuma passiva ancestral consagrada ainda.</span>`;
+      passivesFlow.innerHTML = `<span style="font-size:9.5px; color:#64748b; font-style:italic;">${t('match.pause.empty')}</span>`;
     } else {
       passives.forEach(p => {
         const chip = document.createElement('div');
@@ -217,7 +208,8 @@ export function renderPauseInventory() {
 
     // Exibição de Pactos Amaldiçoados do Destino
     if (player.destinyPacts && player.destinyPacts.length > 0) {
-      player.destinyPacts.forEach(p => {
+      player.destinyPacts.forEach(saved => {
+        const p = getPactPresentation(saved);
         const chip = document.createElement('div');
         chip.className = 'pause-passive-chip';
         chip.style.borderColor = 'rgba(168, 85, 247, 0.7)';
@@ -246,11 +238,11 @@ export function renderPauseInventory() {
       if (s.isEvolved) {
         cardClass += ' is-evolved';
         statusColor = '#ffd166';
-        statusContent = `${renderIcon('star_evolution', { size: 9, color: '#ffd166' })} CONSAGRADO`;
+        statusContent = `${renderIcon('star_evolution', { size: 9, color: '#ffd166' })} ${t('match.pause.evolved')}`;
       } else if (s.isReady) {
         cardClass += ' is-ready';
         statusColor = '#00f5d4';
-        statusContent = `${renderIcon('check', { size: 9, color: '#00f5d4' })} PRONTO (ABRA BAÚ)`;
+        statusContent = `${renderIcon('check', { size: 9, color: '#00f5d4' })} ${t('match.pause.ready')}`;
       }
 
       return `
@@ -271,7 +263,7 @@ export function renderPauseInventory() {
   const btnDynamic = document.getElementById('btn-joy-dynamic');
 
   if (joyBadge) {
-    joyBadge.innerText = currentMode === JOYSTICK_MODES.DYNAMIC ? 'DINÂMICO' : 'FLUTUANTE';
+    joyBadge.innerText = currentMode === JOYSTICK_MODES.DYNAMIC ? t('match.settings.dynamic') : t('match.settings.floating');
   }
   if (btnFloating && btnDynamic) {
     const isDynamic = currentMode === JOYSTICK_MODES.DYNAMIC;
@@ -295,20 +287,21 @@ export function renderPauseInventory() {
   const bufferH = Math.floor((layoutMetrics.viewH || (typeof window !== 'undefined' ? window.innerHeight : 640)) * curDpr);
 
   if (gfxBadge) {
+    const scaleStr = formatNumber(curDpr, { minimumFractionDigits: 2 });
     if (currentGfx === GRAPHICS_QUALITY.NATIVE) {
-      gfxBadge.innerText = `NATIVA (${nativeDpr.toFixed(1)}x)`;
+      gfxBadge.innerText = `${t('match.settings.native')} (${scaleStr}x)`;
       gfxBadge.style.color = '#00f5d4';
     } else if (currentGfx === GRAPHICS_QUALITY.HIGH) {
-      gfxBadge.innerText = `ALTA (${curDpr.toFixed(1)}x)`;
+      gfxBadge.innerText = `${t('match.settings.high')} (${scaleStr}x)`;
       gfxBadge.style.color = '#ffd166';
     } else {
-      gfxBadge.innerText = `ECONÔMICA (${curDpr.toFixed(1)}x)`;
+      gfxBadge.innerText = `${t('match.settings.performance')} (${scaleStr}x)`;
       gfxBadge.style.color = '#ff9f43';
     }
   }
 
   if (gfxSubtext && bufferW > 0 && bufferH > 0) {
-    gfxSubtext.innerText = `Renderizando em ${bufferW} × ${bufferH} px (fator ${curDpr.toFixed(2)}x)`;
+    gfxSubtext.innerText = t('match.settings.rendering', { width: formatNumber(bufferW), height: formatNumber(bufferH), scale: formatNumber(curDpr, { minimumFractionDigits: 2 }) });
   }
 
   if (btnNative && btnHigh && btnPerf) {
@@ -327,6 +320,7 @@ export function renderPauseInventory() {
 function setupPauseKeydown() {
   cleanupPauseKeydown();
   pauseKeydownHandler = (e) => {
+    if (e.target.closest?.('select, input, textarea')) return;
     if (e.code === 'Escape' || e.code === 'KeyP' || e.code === 'Space') {
       e.preventDefault();
       closePause();
@@ -348,6 +342,8 @@ function cleanupPauseKeydown() {
 export function openPause() {
   if (!gameState.isInMatch || gameState.isDead || gameState.isWon || isTransitioning) return;
   if (gameState.isPaused) return;
+  initPauseLanguageControl();
+  closePauseLanguageControl();
 
   // 0. Limpeza defensiva de entradas de toque e teclado
   resetInput();
@@ -395,6 +391,7 @@ export function closePause() {
   if (!gameState.isInMatch || !gameState.isPaused || isTransitioning || !isPauseActive) return;
 
   isTransitioning = true;
+  closePauseLanguageControl();
   playSfx('stasis_exit');
 
   if (pauseModal) {
@@ -449,6 +446,7 @@ export function closePause() {
  * Fechamento de Emergência (Ao Abandonar Partida ou Resetar)
  */
 export function forceClosePause() {
+  closePauseLanguageControl();
   isTransitioning = false;
   cleanupPauseKeydown();
   resetInput();

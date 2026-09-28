@@ -2,7 +2,8 @@
  * src/entities/enemies/spawner.js
  * Fábrica de Inimigos, Mini-Chefes, Chefes e Objetos do Cenário (Fase 1).
  */
-import { ENEMY_TYPES, BOSS_TYPES, MINI_BOSS_TYPES } from '../../config/enemies.js';
+import { ENEMY_TYPES, BOSS_TYPES, MINI_BOSS_TYPES, FPS_HEAVY_ENEMY_TYPES, isFpsHeavyEnemyType } from '../../config/enemies.js';
+export { FPS_HEAVY_ENEMY_TYPES, isFpsHeavyEnemyType };
 import { STALKER_DASH } from '../../config/stalkerDash.js';
 import { getSquadDefinition } from '../../config/squads.js';
 import { player, selectedHeroKey } from '../player.js';
@@ -14,11 +15,14 @@ import {
   frameCount, 
   triggerShake,
   setCurrentArenaTheme,
+  currentArenaTheme,
+  gameState,
   setIsWavePaused
 } from '../../state/gameState.js';
 import {
   enemies, 
   props, 
+  activeBoss,
   setActiveBoss, 
   enemyBullets,
   bossTelegraphs,
@@ -32,8 +36,18 @@ import { transitionToArenaTheme } from '../../render/environment.js';
 import { triggerBossBark, triggerMiniBossBark } from '../../systems/barks.js';
 import { purgeWorldForFinalBoss } from '../../systems/pickups.js';
 import { dismissBloodAltar } from '../../systems/worldEvents.js';
+import { resolveArenaTheme } from '../../config/arenas.js';
 
-export const MAX_ENEMIES = 150;
+export const MAX_ENEMIES = 250;
+let enemyIdCounter = 0;
+
+/**
+ * Checa se o bioma atual da partida corresponde ao Deserto (Ruínas Soterradas / Crimson Salt).
+ * @returns {boolean}
+ */
+export function isDesertArena() {
+  return resolveArenaTheme(currentArenaTheme) === 'DESERT';
+}
 
 /**
  * Identifica se a espécie informada pertence à família dos Vermes/Parasitas rastejantes.
@@ -138,7 +152,9 @@ export function createEnemy(typeKey, x, y, isElite = false) {
   let hp = Math.round(def.hp * scaleFactor);
   let maxHp = hp;
   let damage = def.damage;
-  let speed = def.speed;
+  // Variação orgânica individual de velocidade (+/- 12%) para evitar marcha em bloco perfeitamente idêntica
+  const speedVariance = 0.88 + Math.random() * 0.24;
+  let speed = Math.round(def.speed * speedVariance * 100) / 100;
   let radius = def.radius;
   let xp = def.xp;
   let color = def.color;
@@ -212,7 +228,13 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     attackRange = Math.max(5, Math.min(9, Math.round(radius * 0.4)));
   }
 
+  const id = ++enemyIdCounter;
+  const isShielded = (typeKey === 'SHIELDED' || typeKey === 'PHALANX_LEADER' || !!def.hasFrontalShield);
+  const canFlank = !isShielded;
+  const flankBias = Math.random() < 0.5 ? 1 : -1;
+
   return {
+    id,
     x,
     y,
     baseType: typeKey,
@@ -228,6 +250,12 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     behavior: def.behavior,
     xp,
     facing: (player.x >= x ? 1 : -1),
+    canFlank,
+    flankBias,
+    flankDir: 0,
+    flankTimer: 0,
+    flankAngleOffset: 0,
+    flankCheckInterval: 8,
     hitFlash: 0,
     shieldBlockFlash: 0,
     orbitalHitCd: 0,
@@ -236,6 +264,11 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     stunTimer: 0,
     isElite: !!isElite,
     eliteMod,
+    // Biometria de Movimento Orgânico e Desincronização de Hordas
+    phaseOffset: Math.random() * Math.PI * 2,
+    wobbleFreq: typeKey === 'BAT' ? (0.09 + Math.random() * 0.06) : (0.06 + Math.random() * 0.05),
+    wobbleAmp: typeKey === 'BAT' ? (0.28 + Math.random() * 0.22) : (0.12 + Math.random() * 0.12),
+    diveThreshold: 110 + Math.random() * 45,
     // Emergência do Solo (Zumbis, Rastejadores e Vermes Terrestres)
     emergeTimer: (typeKey === 'ZOMBIE' || typeKey === 'SPLITTER' || typeKey === 'TRAIL_CRAWLER' || typeKey === 'SPLITTER_MINI') ? 34 : 0,
     emergeDuration: (typeKey === 'ZOMBIE' || typeKey === 'SPLITTER' || typeKey === 'TRAIL_CRAWLER' || typeKey === 'SPLITTER_MINI') ? 34 : 0,
@@ -334,16 +367,48 @@ export function createEnemy(typeKey, x, y, isElite = false) {
  */
 export function spawnMobCluster(typeKey, count, eliteChance = 0, forcedAngle = null) {
   if (isKaelInvisible() && isWormEnemyType(typeKey)) return;
-  // Não acumular emboscadas: apenas um Assassino Espectral vivo na arena.
+  // O Verme Sepulcral (STALKER) deve spawnar apenas na arena do deserto
   if (typeKey === 'STALKER') {
-    if (enemies.some(e => e.baseType === 'STALKER' && e.hp > 0)) return;
-    count = Math.min(count, 1);
+    if (!isDesertArena()) {
+      typeKey = 'ZOMBIE';
+    } else {
+      if (enemies.some(e => e.baseType === 'STALKER' && e.hp > 0)) return;
+      count = Math.min(count, 1);
+    }
   }
   // Redução de 50% na chance de spawn do Baú Mímico e limite de 1 por emboscada
   if (typeKey === 'CURSED_CHEST') {
     if (Math.random() < 0.50) return;
     count = Math.min(count, 1);
   }
+
+  // Tratamento de monstros com alto custo computacional/gráfico (projéteis e efeitos especiais pesados como o sino)
+  if (isFpsHeavyEnemyType(typeKey)) {
+    // 1. Redução de 70% na probabilidade de spawn de mobs pesados em FPS
+    if (Math.random() < 0.70) {
+      typeKey = 'ZOMBIE';
+    } else {
+      // 2. Não devem spawnar em horda muito grande (teto estrito de no máximo 2 unidades por grupo)
+      const MAX_HEAVY_CLUSTER_COUNT = 2;
+      let activeHeavy = 0;
+      for (let i = 0; i < enemies.length; i++) {
+        const en = enemies[i];
+        if (en && en.hp > 0 && isFpsHeavyEnemyType(en.baseType)) {
+          activeHeavy++;
+          if (activeHeavy >= 5) break;
+        }
+      }
+      if (activeHeavy >= 5) {
+        typeKey = 'ZOMBIE';
+      } else if (count > MAX_HEAVY_CLUSTER_COUNT) {
+        const overflow = count - MAX_HEAVY_CLUSTER_COUNT;
+        count = MAX_HEAVY_CLUSTER_COUNT;
+        // O restante do volume da horda é preservado como infantaria zumbi sem afetar FPS
+        spawnMobCluster('ZOMBIE', overflow, eliteChance, forcedAngle);
+      }
+    }
+  }
+
   const def = ENEMY_TYPES[typeKey] || ENEMY_TYPES.ZOMBIE;
   const minutes = frameCount / 3600;
   const scaleFactor = 1.0 + (minutes * 0.28);
@@ -396,45 +461,57 @@ export function spawnSquad(squadKey, eliteChance = 0, forcedAngle = null) {
 
   for (let i = 0; i < squadDef.members.length; i++) {
     const member = squadDef.members[i];
-    if (member.type === 'STALKER' && enemies.some(e => e.baseType === 'STALKER' && e.hp > 0)) {
-      continue;
+    let memberType = member.type;
+    if (memberType === 'STALKER') {
+      if (!isDesertArena()) {
+        memberType = 'ZOMBIE'; // O Verme Sepulcral só ataca no Deserto
+      } else if (enemies.some(e => e.baseType === 'STALKER' && e.hp > 0)) {
+        continue;
+      }
     }
-    if (isKaelInvisible() && isWormEnemyType(member.type)) {
+    if (isKaelInvisible() && isWormEnemyType(memberType)) {
       continue;
     }
     // Redução de 50% na chance de spawn do Baú Mímico na formação do esquadrão
-    if (member.type === 'CURSED_CHEST' && Math.random() < 0.50) {
+    if (memberType === 'CURSED_CHEST' && Math.random() < 0.50) {
       continue;
     }
-    const def = ENEMY_TYPES[member.type] || ENEMY_TYPES.ZOMBIE;
+    // Redução de 70% no spawn de monstros de alto custo em FPS (projéteis/efeitos visuais)
+    if (isFpsHeavyEnemyType(memberType)) {
+      if (Math.random() < 0.70) {
+        memberType = 'ZOMBIE'; // Converte em infantaria zumbi mantendo a densidade e formação
+      }
+    }
+    const def = ENEMY_TYPES[memberType] || ENEMY_TYPES.ZOMBIE;
     const minutes = frameCount / 3600;
     const scaleFactor = 1.0 + (minutes * 0.28);
     const scaledHp = Math.round(def.hp * scaleFactor);
 
     if (enemies.length >= MAX_ENEMIES) {
-      stackOffscreenMob(member.type, scaledHp, def.xp);
+      stackOffscreenMob(memberType, scaledHp, def.xp);
       continue;
     }
 
-    const fwd = member.offsetForward || 0;
-    const lat = member.offsetLateral || 0;
-    const stalkerPoint = member.type === 'STALKER' ? getStalkerSpawnPoint(forcedAngle) : null;
+    // Injeta leve dispersão orgânica nas posições para quebrar linhas geométricas rígidas
+    const jitterFwd = (Math.random() - 0.5) * 16;
+    const jitterLat = (Math.random() - 0.5) * 16;
+    const fwd = (member.offsetForward || 0) + jitterFwd;
+    const lat = (member.offsetLateral || 0) + jitterLat;
+    const stalkerPoint = memberType === 'STALKER' ? getStalkerSpawnPoint(forcedAngle) : null;
     const mx = stalkerPoint ? stalkerPoint.x : center.x + cosA * fwd - sinA * lat;
     const my = stalkerPoint ? stalkerPoint.y : center.y + sinA * fwd + cosA * lat;
 
-    const canBeElite = member.type !== 'BAT' && member.type !== 'EXPLODER';
+    const canBeElite = memberType !== 'BAT' && memberType !== 'EXPLODER';
     const isElite = canBeElite && (Math.random() < eliteChance);
 
-    enemies.push(createEnemy(member.type, mx, my, isElite));
+    enemies.push(createEnemy(memberType, mx, my, isElite));
   }
 }
 
 /**
  * Spawna a horda inicial no exato instante em que a partida começa (t = 0).
- * Posiciona a patrulha inaugural (HORDE_SCOUT) imediatamente abaixo da borda inferior
- * da tela (ao Sul: Math.PI / 2), já marchando em direção ao jogador.
- * Permite que o jogador a encontre imediatamente caso dê dash para baixo ou a veja surgir em ~0.4s.
- * Também gera um pequeno grupo ao norte para movimentar a arena.
+ * Cerca o jogador imediatamente nos 4 pontos cardeais (Sul, Norte, Leste, Oeste)
+ * para estabelecer pressão instantânea de horda com ~32 monstros ativos.
  */
 export function spawnInitialHorde() {
   // 1. Patrulha principal de reconhecimento logo abaixo (Sul: 90° / pi/2)
@@ -443,7 +520,33 @@ export function spawnInitialHorde() {
 
   // 2. Grupo secundário de avanço vindo de cima (Norte: -90° / -pi/2)
   const northAngle = -Math.PI / 2 + (Math.random() - 0.5) * 0.25;
-  spawnMobCluster('ZOMBIE', 3, 0, northAngle);
+  spawnMobCluster('ZOMBIE', 8, 0, northAngle);
+
+  // 3. Flancos Leste e Oeste para cerco imediato
+  const eastAngle = 0 + (Math.random() - 0.5) * 0.2;
+  const westAngle = Math.PI + (Math.random() - 0.5) * 0.2;
+  spawnMobCluster('ZOMBIE', 8, 0, eastAngle);
+  spawnMobCluster('TRAIL_CRAWLER', 6, 0, westAngle);
+}
+
+/**
+ * Spawna uma horda em anel concêntrico 360°, cercando o jogador de todas as direções.
+ * @param {string} typeKey Chave do tipo em ENEMY_TYPES.
+ * @param {number} count Quantidade total de monstros no anel.
+ * @param {number} eliteChance Probabilidade de elite.
+ */
+export function spawnEncirclementRing(typeKey, count = 18, eliteChance = 0) {
+  // Cerco concêntrico massivo de 360° deve usar exclusivamente infantaria sem projéteis/auras pesadas
+  if (isFpsHeavyEnemyType(typeKey)) {
+    typeKey = 'ZOMBIE';
+  }
+  if (isKaelInvisible() && isWormEnemyType(typeKey)) return;
+  const baseAngle = Math.random() * Math.PI * 2;
+  const step = (Math.PI * 2) / count;
+  for (let i = 0; i < count; i++) {
+    const angle = baseAngle + i * step + (Math.random() - 0.5) * 0.15;
+    spawnMobCluster(typeKey, 1, eliteChance, angle);
+  }
 }
 
 /**
@@ -452,6 +555,7 @@ export function spawnInitialHorde() {
  * @returns {Object|null}
  */
 export function spawnMiniBoss(miniBossType) {
+  if (activeBoss !== null || gameState.isWavePaused) return null;
   const def = MINI_BOSS_TYPES[miniBossType];
   if (!def) return null;
 

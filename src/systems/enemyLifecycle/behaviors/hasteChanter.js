@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/hasteChanter.js
  * IA do Arauto do Sino Fúnebre — Toque do sino fúnebre acelerando aliados.
@@ -44,6 +45,6 @@ export function hasteChanterBehavior(e, dt, angle, curSpeed, ctx) {
         }
       }
     }
-    addDamageText(e.x, e.y, "SINO FÚNEBRE!", false, '#f39c12');
+    addDamageText(e.x, e.y, matchText('match.combat.bell'), false, '#f39c12');
   }
 }

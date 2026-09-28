@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/longRangeSniper.js
  * IA do Atirador de Éter — Flecha de precisão de longo alcance.
@@ -40,7 +41,7 @@ export function longRangeSniperBehavior(e, dt, angle, curSpeed, ctx) {
         enemyType: e.baseType || 'SNIPER_CULTIST'
       });
       createHitParticles(e.x, e.y, '#9c88ff', 6);
-      addDamageText(e.x, e.y, "TIRO PRECISO!", false, '#9c88ff');
+      addDamageText(e.x, e.y, matchText('match.combat.shot'), false, '#9c88ff');
     }
   }
 }

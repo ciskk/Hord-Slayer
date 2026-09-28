@@ -1,3 +1,4 @@
+import { t, formatNumber } from '../i18n/index.js';
 /**
  * src/systems/waves.js
  * Gerenciamento de Ondas de Horda, Esquadrões Táticos e Agendamento de Chefes (Fase 4).
@@ -33,12 +34,15 @@ export function setFirstBossKilled(val) {
   firstBossKilled = val;
 }
 
+export let wavePauseStartTime = 0;
+
 export function resetBossSchedule() {
   currentBossIndex = 0;
   nextBossSpawnTime = BOSS_QUEUE.length > 0 ? BOSS_QUEUE[0].delay : 60;
   firstBossKilled = false;
   bossFightStartTime = 0;
   totalBossFightDuration = 0;
+  wavePauseStartTime = 0;
 }
 
 export const resetBossesDefeated = resetBossSchedule;
@@ -47,6 +51,7 @@ export function onBossDefeated(deathSeconds) {
   // Desloca o cronograma dos minibosses pendentes com base no tempo de duração da luta
   const bossDuration = Math.max(0, deathSeconds - bossFightStartTime);
   totalBossFightDuration += bossDuration;
+  wavePauseStartTime = deathSeconds;
 
   const beatenBossId = BOSS_QUEUE[currentBossIndex] ? BOSS_QUEUE[currentBossIndex].bossId : (currentBossIndex + 1);
   recordRunStats({ bossDefeated: beatenBossId });
@@ -65,6 +70,29 @@ export function onBossDefeated(deathSeconds) {
   } else {
     currentBossIndex = nextIndex;
     nextBossSpawnTime = Infinity;
+  }
+}
+
+/**
+ * Notifica que o baú dropado pelo chefe foi coletado, compensando o tempo
+ * em que a arena permaneceu em espera antes de retomar a horda.
+ * @param {number} currentSeconds Segundos atuais da partida.
+ */
+export function onBossChestCollected(currentSeconds) {
+  if (wavePauseStartTime > 0) {
+    const pauseDuration = Math.max(0, currentSeconds - wavePauseStartTime);
+    wavePauseStartTime = 0;
+    if (pauseDuration > 0) {
+      totalBossFightDuration += pauseDuration;
+      for (let i = 0; i < miniBossSchedule.length; i++) {
+        if (!miniBossSchedule[i].spawned) {
+          miniBossSchedule[i].time += pauseDuration;
+        }
+      }
+      if (nextBossSpawnTime !== Infinity) {
+        nextBossSpawnTime += pauseDuration;
+      }
+    }
   }
 }
 
@@ -117,8 +145,8 @@ export function resetMiniBossSchedule() {
 }
 
 export function checkMiniBossSchedule(seconds) {
-  // Impede a geração de novos minibosses enquanto houver um boss principal ativo
-  if (activeBoss !== null) return;
+  // Impede a geração de novos minibosses enquanto houver um boss principal ativo ou onda pausada
+  if (activeBoss !== null || gameState.isWavePaused) return;
 
   for (let i = 0; i < miniBossSchedule.length; i++) {
     const entry = miniBossSchedule[i];
@@ -133,7 +161,7 @@ export function checkMiniBossSchedule(seconds) {
 
 export function checkBossSchedule(seconds) {
   if (currentBossIndex >= BOSS_QUEUE.length) return;
-  if (activeBoss !== null) return;
+  if (activeBoss !== null || gameState.isWavePaused) return;
   if (isBossBlockedByWorldEvent()) return;
 
   if (seconds >= nextBossSpawnTime) {
@@ -155,101 +183,101 @@ export function getCurrentWave(seconds) {
   if (seconds < 25) {
     return {
       index: 1,
-      name: "Onda 1: Reconhecimento",
+      name: t('match.wave.1'),
       allowedSquads: ['HORDE_SCOUT'],
       types: ['ZOMBIE', 'TRAIL_CRAWLER'],
-      clusterSize: [4, 6],
-      rate: 110,
+      clusterSize: [8, 14],
+      rate: 48,
       eliteChance: 0
     };
   } else if (seconds < 55) {
     return {
       index: 2,
-      name: "Onda 2: Revoada Carmesim",
+      name: t('match.wave.2'),
       allowedSquads: ['HORDE_RUSH', 'SWARM_PINCER'],
       types: ['ZOMBIE', 'BAT', 'VOID_SCAVENGER', 'STALKER'],
-      clusterSize: [5, 8],
-      rate: 78,
+      clusterSize: [12, 18],
+      rate: 38,
       eliteChance: 0.06
     };
   } else if (seconds < 90) {
     return {
       index: 3,
-      name: "Onda 3: Batalhão Blindado",
+      name: t('match.wave.3'),
       allowedSquads: ['HORDE_RUSH', 'PHALANX', 'SWARM_PINCER'],
       types: ['ZOMBIE', 'SHIELDED', 'BAT', 'TOLL_BELLRINGER', 'STALKER'],
-      clusterSize: [6, 9],
-      rate: 68,
+      clusterSize: [14, 20],
+      rate: 32,
       eliteChance: 0.10
     };
   } else if (seconds < 130) {
     return {
       index: 4,
-      name: "Onda 4: Fogo Cruzado Industrial",
+      name: t('match.wave.4'),
       allowedSquads: ['PHALANX', 'DISRUPTION', 'EXECUTION_SQUAD'],
       types: ['SHIELDED', 'SHOOTER', 'EXPLODER', 'FORGE_PYREGUARD', 'CHAIN_FLAYER', 'STALKER'],
-      clusterSize: [6, 9],
-      rate: 66,
+      clusterSize: [14, 20],
+      rate: 30,
       eliteChance: 0.12
     };
   } else if (seconds < 170) {
     return {
       index: 5,
-      name: "Onda 5: Praga Rastejante",
+      name: t('match.wave.5'),
       allowedSquads: ['DISRUPTION', 'SIEGE_BATTERY', 'EXECUTION_SQUAD'],
       types: ['SPLITTER', 'CRYPT_WEAVER', 'BASALT_GARGOYLE', 'PLAGUE_APOTHECARY', 'STALKER'],
-      clusterSize: [6, 10],
-      rate: 58,
+      clusterSize: [16, 24],
+      rate: 26,
       eliteChance: 0.15
     };
   } else if (seconds < 210) {
     return {
       index: 6,
-      name: "Onda 6: Rito das Sombras",
+      name: t('match.wave.6'),
       allowedSquads: ['SIEGE_BATTERY', 'SNIPER_PINCER', 'DEATH_PROCESSION'],
       types: ['NECRO', 'SHOOTER', 'GOLEM', 'RUNE_SCRIBE', 'SNIPER_CULTIST', 'STALKER'],
-      clusterSize: [7, 10],
-      rate: 52,
+      clusterSize: [16, 24],
+      rate: 24,
       eliteChance: 0.18
     };
   } else if (seconds < 250) {
     return {
       index: 7,
-      name: "Onda 7: Cerco de Gigantes",
+      name: t('match.wave.7'),
       allowedSquads: ['DEATH_PROCESSION', 'EXECUTION_SQUAD', 'AMBUSH_COVEN'],
       types: ['GOLEM', 'BASALT_GARGOYLE', 'FORGE_PYREGUARD', 'MAIDEN_THORNS', 'DULLAHAN_VANGUARD', 'STALKER'],
-      clusterSize: [7, 11],
-      rate: 46,
+      clusterSize: [18, 26],
+      rate: 22,
       eliteChance: 0.22
     };
   } else if (seconds < 290) {
     return {
       index: 8,
-      name: "Onda 8: Enxame Aberrante",
+      name: t('match.wave.8'),
       allowedSquads: ['SNIPER_PINCER', 'AMBUSH_COVEN', 'SWARM_PINCER', 'DEATH_PROCESSION'],
       types: ['BAT', 'MIRROR_BANSHEE', 'SNIPER_CULTIST', 'GRAVE_GORGON', 'STALKER'],
-      clusterSize: [8, 12],
-      rate: 42,
+      clusterSize: [20, 28],
+      rate: 20,
       eliteChance: 0.25
     };
   } else if (seconds < 330) {
     return {
       index: 9,
-      name: "Onda 9: Tempestade do Vazio",
+      name: t('match.wave.9'),
       allowedSquads: ['AMBUSH_COVEN', 'DEATH_PROCESSION', 'EXECUTION_SQUAD', 'SNIPER_PINCER'],
       types: ['STALKER', 'DULLAHAN_VANGUARD', 'MAIDEN_THORNS', 'RUNE_SCRIBE', 'CURSED_CHEST'],
-      clusterSize: [8, 13],
-      rate: 36,
+      clusterSize: [20, 30],
+      rate: 18,
       eliteChance: 0.32
     };
   } else {
     return {
       index: 10,
-      name: "Onda 10: O Julgamento Final",
+      name: t('match.wave.10'),
       allowedSquads: ['AMBUSH_COVEN', 'DEATH_PROCESSION', 'EXECUTION_SQUAD', 'SNIPER_PINCER', 'PHALANX'],
       types: ['GOLEM', 'DULLAHAN_VANGUARD', 'GRAVE_GORGON', 'MAIDEN_THORNS', 'CURSED_CHEST', 'STALKER'],
-      clusterSize: [9, 14],
-      rate: 32,
+      clusterSize: [22, 32],
+      rate: 16,
       eliteChance: 0.40
     };
   }

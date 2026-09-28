@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/barrierLinker.js
  * IA do Escriba das Runas — Elo de barreira rúnica (+220 escudo).
@@ -26,7 +27,7 @@ export function barrierLinkerBehavior(e, dt, angle, curSpeed, ctx) {
         ally.maxShieldHp = 220;
         playSfx('shield');
         createHitParticles(ally.x, ally.y, '#0984e3', 6);
-        addDamageText(ally.x, ally.y, "BARREIRA RÚNICA!", false, '#74b9ff');
+        addDamageText(ally.x, ally.y, matchText('match.combat.barrier'), false, '#74b9ff');
         break;
       }
     }

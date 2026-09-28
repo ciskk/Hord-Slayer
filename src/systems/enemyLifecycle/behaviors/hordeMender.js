@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/hordeMender.js
  * IA do Boticário da Peste — Ungüento da peste curando aliados.
@@ -37,7 +38,7 @@ export function hordeMenderBehavior(e, dt, angle, curSpeed, ctx) {
       }
     }
     if (healedAny) {
-      addDamageText(e.x, e.y, "UNGUENTO DA PESTE!", false, '#27ae60');
+      addDamageText(e.x, e.y, matchText('match.combat.plague'), false, '#27ae60');
     }
   }
 }

@@ -12,11 +12,12 @@ import { triggerDeath, openChestModal } from './ui.js';
 import { addDamageText, createHitParticles, addBloodSplat, clearCombatVisuals } from './combat.js';
 import { addXP } from '../entities/player.js';
 import { transitionToArenaTheme } from '../render/environment.js';
-import { getHordeArenaTheme } from './waves.js';
+import { getHordeArenaTheme, onBossChestCollected } from './waves.js';
 import { onAltarChestCollected, dismissBloodAltar } from './worldEvents.js';
 import { lastAttackerName, deathContext } from '../state/events.js';
 import { gems, props, drops, chests, acidPuddles } from '../state/collections.js';
 import { clearGroundCraters } from '../render/groundCracks.js';
+import { t as matchText } from '../i18n/index.js';
 
 export function getGemConfig(xp) {
   if (xp >= 50) {
@@ -202,7 +203,7 @@ export function updatePickups(dt, {
       triggerShake(16);
       try { playSfx('warp'); } catch(e) {}
       triggerHaptic('heavy');
-      addDamageText(player.x, player.y, "RENASCIMENTO DA FÊNIX!", true, "#f1c40f");
+      addDamageText(player.x, player.y, matchText('match.combat.phoenix'), true, "#f1c40f");
       createHitParticles(player.x, player.y, "#f1c40f", 16);
 
       // Repele e danifica inimigos próximos
@@ -263,11 +264,11 @@ export function updatePickups(dt, {
         playSfx('gem');
       } else if (d.type === 'MAGNET') {
         gems.forEach(g => { g.forcedPull = true; });
-        addDamageText(player.x, player.y, "SUPER ÍMÃ!", true, "#00d2d3");
+        addDamageText(player.x, player.y, matchText('match.combat.magnet'), true, "#00d2d3");
         playSfx('chest');
       } else if (d.type === 'CLOCK') {
         setFreezeTimer(240);
-        addDamageText(player.x, player.y, "CONGELAMENTO!", true, "#3498db");
+        addDamageText(player.x, player.y, matchText('match.combat.freeze'), true, "#3498db");
         playSfx('freeze');
       }
       drops.splice(i, 1);
@@ -313,6 +314,7 @@ export function updatePickups(dt, {
           onAltarChestCollected();
         }
         if (tier === 'BOSS') {
+          onBossChestCollected(Math.floor((frameCount || 0) / 60));
           transitionToArenaTheme(getHordeArenaTheme(), 120);
           setIsWavePaused(false);
           resetSpawnTimer();
@@ -416,7 +418,7 @@ export function purgeWorldForFinalBoss(boss, player) {
       forcedPull: false
     });
 
-    addDamageText(targetX, targetY - 24, "ORBE CÓSMICA DE XP!", true, "#00cec9");
+    addDamageText(targetX, targetY - 24, matchText('match.combat.cosmicOrb'), true, "#00cec9");
     createHitParticles(targetX, targetY, '#00cec9', 18);
     createHitParticles(targetX, targetY, '#ffffff', 10);
     try { playSfx('warp'); } catch (e) {}

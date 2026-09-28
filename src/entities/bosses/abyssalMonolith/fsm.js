@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 import { isBossPhaseReady } from '../../../systems/bossPhaseCinematic.js';
 /**
  * src/entities/bosses/abyssalMonolith/fsm.js
@@ -188,7 +189,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
     triggerShake(18);
     triggerHaptic('heavy');
     playSfx('boss');
-    addDamageText(e.x, e.y, "SOBRECARGA MAGMÁTICA!", true, '#e74c3c');
+    addDamageText(e.x, e.y, matchText('match.combat.magma'), true, '#e74c3c');
 
     for (let p = 0; p < 35; p++) {
       createHitParticles(e.x, e.y, '#e74c3c', 1);
@@ -206,7 +207,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
     e.speed = MONOLITH_CONFIG.PHASE3_SPEED;
     triggerShake(15);
     playSfx('boss');
-    addDamageText(e.x, e.y, "FUSÃO CRÍTICA!", true, '#ff1744');
+    addDamageText(e.x, e.y, matchText('match.combat.fusion'), true, '#ff1744');
   }
 
   // Fagulhas e calor contínuo quando em fúria
@@ -328,7 +329,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
           playSfx('boss');
           triggerShake(24);
           triggerHaptic('heavy');
-          addDamageText(e.x, e.y - 50, "DESPERTAR TELÚRICO!", true, '#e67e22');
+          addDamageText(e.x, e.y - 50, matchText('match.combat.telluric'), true, '#e67e22');
 
           if (Array.isArray(bossShockwaves)) {
             bossShockwaves.push({
@@ -373,7 +374,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
           triggerShake(16);
           triggerHaptic('heavy');
           playSfx('boss');
-          addDamageText(e.x, e.y, "COLAPSO SÍSMICO!", true, '#f1c40f');
+          addDamageText(e.x, e.y, matchText('match.combat.seismicCollapse'), true, '#f1c40f');
         } else {
           e.actionState = MONOLITH_STATES.CHASE;
           e.isVulnerable = false;
@@ -418,7 +419,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
 
         triggerShake(10);
         playSfx('boss');
-        addDamageText(e.x, e.y, "SISTEMA RESTAURADO!", true, '#3498db');
+        addDamageText(e.x, e.y, matchText('match.combat.restored'), true, '#3498db');
       }
       return;
     }
@@ -684,7 +685,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
         if (dist >= MONOLITH_CONFIG.CHARGE_MIN_DISTANCE && e.chargeCooldown <= 0) {
           beginTectonicCharge(e, player);
           playSfx('charge');
-          addDamageText(e.x, e.y - 80, 'INVESTIDA TECTÔNICA!', true, '#ffb74d');
+          addDamageText(e.x, e.y - 80, matchText('match.combat.tectonic'), true, '#ffb74d');
         } else {
           selectNextSkill(e, dist, player);
         }

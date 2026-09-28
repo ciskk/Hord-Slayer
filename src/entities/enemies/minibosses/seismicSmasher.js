@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/enemies/minibosses/seismicSmasher.js
  * 
@@ -23,7 +24,7 @@ update(e, dt, ctx, dist, angle) {
       e.actionTimer = e.enraged ? 28 : 37;
       e.actionMaxTimer = e.actionTimer;
       safePlaySfx('charge');
-      ctx.addDamageText(e.x, e.y, "CARGA SÍSMICA!", true, '#95a5a6');
+      ctx.addDamageText(e.x, e.y, matchText('match.combat.seismic'), true, '#95a5a6');
 
       // Telégrafo circular de aviso no solo
       bossTelegraphs.push({

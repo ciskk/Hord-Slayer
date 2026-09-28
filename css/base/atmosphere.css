@@ -8,6 +8,7 @@
   pointer-events: none;
   background: radial-gradient(circle at center, transparent 55%, rgba(6, 8, 14, 0.22) 82%, rgba(2, 3, 6, 0.45) 100%);
   z-index: 6;
+  transform: translateZ(0);
   transition: background 0.8s ease;
 }
 

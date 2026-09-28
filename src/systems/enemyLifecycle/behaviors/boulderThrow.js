@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /** src/systems/enemyLifecycle/behaviors/boulderThrow.js — Rock throw with predictive aim */
 import { playSfx } from '../../../core/audio.js';
 import { inputX, inputY } from '../../../core/input.js';
@@ -27,6 +28,6 @@ export function boulderThrowBehavior(e, dt, angle, curSpeed, ctx) {
       damage: Math.round(e.damage * 1.3)
     });
     createHitParticles(e.x, e.y, '#d35400', 8);
-    addDamageText(e.x, e.y, "ARREMESSO DE ROCHA!", false, '#e67e22');
+    addDamageText(e.x, e.y, matchText('match.combat.rock'), false, '#e67e22');
   }
 }

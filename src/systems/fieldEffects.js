@@ -1,3 +1,4 @@
+import { t as matchText } from '../i18n/index.js';
 /**
  * src/systems/fieldEffects.js
  * Subsistema de Efeitos de Campo e Passivas Reativas de Combate:
@@ -85,7 +86,7 @@ export function updateFieldEffects(dt, {
             e.speed *= 1.35;
             triggerShake(15);
             playSfx('boss');
-            addDamageText(e.x, e.y, "EM FÚRIA!", true, '#e74c3c');
+            addDamageText(e.x, e.y, matchText('match.combat.enraged'), true, '#e74c3c');
           }
         }
       });
@@ -164,7 +165,7 @@ export function updateFieldEffects(dt, {
             e.speed *= 1.35;
             triggerShake(15);
             playSfx('boss');
-            addDamageText(e.x, e.y, "EM FÚRIA!", true, '#e74c3c');
+            addDamageText(e.x, e.y, matchText('match.combat.enraged'), true, '#e74c3c');
           }
         }
       });

@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /** src/systems/enemyLifecycle/behaviors/batSpawner.js — Spawns bat minions */
 import { playSfx } from '../../../core/audio.js';
 import { createHitParticles, addDamageText } from '../../combat.js';
@@ -12,17 +13,22 @@ export function batSpawnerBehavior(e, dt, angle, curSpeed, ctx) {
   if (e.hiveTimer >= 180 && !gameState.isWavePaused) {
     e.hiveTimer = 0;
     playSfx('boss');
-    addDamageText(e.x, e.y, "INVOQUE ENXAME!", false, '#16a085');
+    addDamageText(e.x, e.y, matchText('match.combat.swarm'), false, '#16a085');
     createHitParticles(e.x, e.y, '#16a085', 10);
     const batCount = Math.floor(Math.random() * 2) + 2;
     for (let k = 0; k < batCount; k++) {
       const batDef = ENEMY_TYPES.BAT;
+      const speedVariance = 0.88 + Math.random() * 0.24;
       enemies.push({
         x: e.x + (k - 0.5) * 24,
         y: e.y + (Math.random() - 0.5) * 18,
         baseType: 'BAT',
         radius: batDef.radius,
-        speed: batDef.speed,
+        speed: Math.round(batDef.speed * speedVariance * 100) / 100,
+        phaseOffset: Math.random() * Math.PI * 2,
+        wobbleFreq: 0.09 + Math.random() * 0.06,
+        wobbleAmp: 0.28 + Math.random() * 0.20,
+        diveThreshold: 110 + Math.random() * 45,
         hp: batDef.hp,
         maxHp: batDef.hp,
         color: batDef.color,

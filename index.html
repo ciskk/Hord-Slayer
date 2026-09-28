@@ -66,32 +66,32 @@
     <!-- 1. Linha de Topo: Badges de Combate + Banner de Onda e Selo de Pausa -->
     <div class="hud-top-bar">
       <div class="hud-meta-group left">
-        <div class="hud-badge hud-level-badge" title="Nível atual"><span class="hud-stat-label">NV</span><b id="lvl-val" class="hud-num">1</b></div>
-        <div class="hud-badge kills-badge" title="Inimigos abatidos">
+        <div class="hud-badge hud-level-badge" title="Nível atual" data-i18n-title="match.hud.levelTip"><span class="hud-stat-label" data-i18n="match.hud.levelShort">NV</span><b id="lvl-val" class="hud-num">1</b></div>
+        <div class="hud-badge kills-badge" title="Inimigos abatidos" data-i18n-title="match.hud.killsTip">
           <span class="hud-icon">
             <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color:#ff3838;"><path fill="currentColor" d="M12 2C7.6 2 4 5.6 4 10c0 2.8 1.4 5.3 3.6 6.8V20h8.8v-3.2c2.2-1.5 3.6-4 3.6-6.8 0-4.4-3.6-8-8-8zm-3 10a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zm6 0a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6z"/><line x1="10" y1="18" x2="10" y2="20" stroke="#121622" stroke-width="1.5"/><line x1="14" y1="18" x2="14" y2="20" stroke="#121622" stroke-width="1.5"/></svg>
           </span>
-          <span class="hud-stat-label">ABATES</span>
+          <span class="hud-stat-label"><span data-i18n="match.hud.kills">ABATES</span></span>
           <span class="hud-num" id="kills-val">0</span>
         </div>
-        <div class="hud-badge gold-badge" title="Ouro acumulado">
+        <div class="hud-badge gold-badge" title="Ouro acumulado" data-i18n-title="match.hud.goldTip">
           <span class="hud-icon">
             <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color:#f1c40f;"><polygon points="12,1 17,6 17,18 12,23 7,18 7,6" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="12,5 15,8 15,16 12,19 9,16 9,8" fill="currentColor"/></svg>
           </span>
-          <span class="hud-stat-label">OURO</span>
+          <span class="hud-stat-label"><span data-i18n="match.hud.gold">OURO</span></span>
           <span class="hud-num" id="gold-val">0</span>
         </div>
       </div>
 
       <!-- Cluster de Tempo & Selo de Pausa -->
       <div class="hud-top-cluster-right">
-        <div class="hud-badge timer-badge" title="Tempo de Sobrevivência">
+        <div class="hud-badge timer-badge" title="Tempo de Sobrevivência" data-i18n-title="match.hud.timerTip">
           <span class="hud-icon">
             <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color:#ffeaa7;"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 15 14" fill="none" stroke="currentColor" stroke-width="2"/></svg>
           </span>
           <span id="timer-val" class="hud-timer">00:00</span>
         </div>
-        <button id="pause-btn" class="hud-btn pause-hud-btn" aria-label="Pausar Batalha" title="Pausar Batalha [Esc]">
+        <button id="pause-btn" class="hud-btn pause-hud-btn" aria-label="Pausar Batalha" title="Pausar Batalha [Esc]" data-i18n-title="match.hud.pauseTip" data-i18n-aria-label="match.hud.pauseAria">
           <svg class="medallion-spikes-svg" viewBox="0 0 40 40">
             <polygon points="20.0,1.0 23.9,5.5 29.5,3.5 30.6,9.4 36.5,10.5 34.5,16.1 39.0,20.0 34.5,23.9 36.5,29.5 30.6,30.6 29.5,36.5 23.9,34.5 20.0,39.0 16.1,34.5 10.5,36.5 9.4,30.6 3.5,29.5 5.5,23.9 1.0,20.0 5.5,16.1 3.5,10.5 9.4,9.4 10.5,3.5 16.1,5.5" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="1.2"/>
             <circle cx="20" cy="20" r="14" fill="#080a10" stroke="url(#gothic-bronze-rim)" stroke-width="1.6"/>
@@ -109,7 +109,7 @@
     <div class="hud-vitals-container">
       <!-- Bloco 1: Barra de Vida com Medalhão do Coração -->
       <div class="hud-bar-row hp-bar-row" id="hp-container">
-        <div class="bar-medallion hp-medallion" title="Vitalidade">
+        <div class="bar-medallion hp-medallion" title="Vitalidade" data-i18n-title="match.hud.vitalityTip">
           <svg class="medallion-spikes-svg" viewBox="0 0 40 40">
             <polygon points="20.0,1.0 23.9,5.5 29.5,3.5 30.6,9.4 36.5,10.5 34.5,16.1 39.0,20.0 34.5,23.9 36.5,29.5 30.6,30.6 29.5,36.5 23.9,34.5 20.0,39.0 16.1,34.5 10.5,36.5 9.4,30.6 3.5,29.5 5.5,23.9 1.0,20.0 5.5,16.1 3.5,10.5 9.4,9.4 10.5,3.5 16.1,5.5" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="1.2"/>
             <circle cx="20" cy="20" r="14" fill="#080a10" stroke="url(#gothic-bronze-rim)" stroke-width="1.6"/>
@@ -130,7 +130,7 @@
             <span class="pip"></span><span class="pip"></span><span class="pip"></span>
             <span class="pip"></span><span class="pip"></span><span class="pip"></span>
           </div>
-          <span class="hud-bar-label">VIDA</span>
+          <span class="hud-bar-label" data-i18n="match.hud.health">VIDA</span>
           <div class="bar-readout hp-readout">
             <span id="hp-val">120</span> / <span id="hp-max-val">120</span>
             <span id="hp-pct-val" class="vial-pct" style="display:none;">100%</span>
@@ -140,7 +140,7 @@
 
       <!-- Bloco 2: Barra de Experiência com Medalhão da Estrela -->
       <div class="hud-bar-row xp-bar-row">
-        <div class="bar-medallion xp-medallion" title="Éter de Almas (XP)">
+        <div class="bar-medallion xp-medallion" title="Éter de Almas (XP)" data-i18n-title="match.hud.xpMedallionTip">
           <svg class="medallion-spikes-svg" viewBox="0 0 40 40">
             <polygon points="20.0,1.0 23.9,5.5 29.5,3.5 30.6,9.4 36.5,10.5 34.5,16.1 39.0,20.0 34.5,23.9 36.5,29.5 30.6,30.6 29.5,36.5 23.9,34.5 20.0,39.0 16.1,34.5 10.5,36.5 9.4,30.6 3.5,29.5 5.5,23.9 1.0,20.0 5.5,16.1 3.5,10.5 9.4,9.4 10.5,3.5 16.1,5.5" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="1.2"/>
             <circle cx="20" cy="20" r="14" fill="#080a10" stroke="url(#gothic-bronze-rim)" stroke-width="1.6"/>
@@ -161,7 +161,7 @@
             <span class="pip"></span><span class="pip"></span><span class="pip"></span>
             <span class="pip"></span><span class="pip"></span><span class="pip"></span>
           </div>
-          <span class="hud-bar-label">EXPERIÊNCIA</span>
+          <span class="hud-bar-label" data-i18n="match.hud.xp">EXPERIÊNCIA</span>
           <div class="bar-readout xp-readout">
             <span id="xp-val">0</span> / <span id="xp-next-val">20</span>
             <span id="xp-pct-val" class="vial-pct xp-pct" style="display:none;">0%</span>
@@ -178,7 +178,7 @@
         <div class="boss-hud-header">
           <div class="boss-name-group">
             <!-- Medalhão de Crânio Coroado / Chifres Demoníacos -->
-            <div class="boss-crest-medallion" title="Arquichefe">
+            <div class="boss-crest-medallion" title="Arquichefe" data-i18n-title="match.hud.bossCrestTip">
               <svg class="boss-crest-spikes-svg" viewBox="0 0 44 44">
                 <polygon points="22.0,1.0 26.2,6.0 32.4,3.8 33.6,10.3 40.1,11.5 37.9,17.7 42.9,22.0 37.9,26.3 40.1,32.5 33.6,33.7 32.4,40.2 26.2,38.0 22.0,43.0 17.8,38.0 11.6,40.2 10.4,33.7 3.9,32.5 6.1,26.3 1.1,22.0 6.1,17.7 3.9,11.5 10.4,10.3 11.6,3.8 17.8,6.0" fill="url(#gothic-bronze-spike)" stroke="#1a0f02" stroke-width="1.2"/>
                 <circle cx="22" cy="22" r="15.5" fill="#080a10" stroke="url(#gothic-bronze-rim)" stroke-width="1.8"/>
@@ -198,8 +198,8 @@
               </span>
             </div>
             <div class="boss-titles-cluster">
-              <span class="boss-title-tag">✦ ARQUICHEFE SUPREMO ✦</span>
-              <span id="boss-name">CHEFE</span>
+              <span class="boss-title-tag"><span data-i18n="match.hud.bossArch">✦ ARQUICHEFE SUPREMO ✦</span></span>
+              <span id="boss-name"><span data-i18n="match.common.boss">CHEFE</span></span>
             </div>
           </div>
           <div class="boss-hp-readout-group">
@@ -255,15 +255,15 @@
 
   <!-- Contexto da arena, separado dos vitais e controles. -->
   <div class="hud-context-row">
-    <div class="hud-badge boss-timer-badge" title="Tempo até o próximo chefe">
+    <div class="hud-badge boss-timer-badge" title="Tempo até o próximo chefe" data-i18n-title="match.hud.bossTimerTip">
           <span class="hud-icon">
             <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color:#ff3838;"><path class="skull-horns" fill="currentColor" d="M3 4c1 4 4 6 6 6-1-3-1-5-6-6zm18 0c-1 4-4 6-6 6 1-3 1-5 6-6z"/><path class="skull-head" fill="#f1f2f6" d="M12 3c-4.4 0-8 3.6-8 8 0 2.8 1.4 5.3 3.6 6.8V21h8.8v-3.2c2.2-1.5 3.6-4 3.6-6.8 0-4.4-3.6-8-8-8z"/><circle class="skull-eye left" cx="9.2" cy="11.5" r="1.6" fill="#ff1744"/><circle class="skull-eye right" cx="14.8" cy="11.5" r="1.6" fill="#ff1744"/><polygon points="12,13.5 11,15.5 13,15.5" fill="#1e272e"/><rect x="9.5" y="18" width="1.6" height="3" fill="#1e272e"/><rect x="11.2" y="18" width="1.6" height="3" fill="#1e272e"/><rect x="12.9" y="18" width="1.6" height="3" fill="#1e272e"/></svg>
           </span>
-          <span class="hud-stat-label">CHEFE</span>
+          <span class="hud-stat-label"><span data-i18n="match.common.boss">CHEFE</span></span>
           <span id="boss-timer-val" class="hud-timer">--:--</span>
         </div>
     <!-- 3. Card do Nome da Horda / Onda (No mobile: substitui o cartouche do herói abaixo das barras com largura estendida; no PC: centralizado no topo) -->
-  <div id="hud-wave-card" class="hud-wave-card hud-wave-pill" title="Horda em andamento">
+  <div id="hud-wave-card" class="hud-wave-card hud-wave-pill" title="Horda em andamento" data-i18n-title="match.hud.waveCardTip">
     <span class="wave-icon">
       <!-- Espadas cruzadas da referência de arte -->
       <svg viewBox="0 0 24 24" class="game-icon icon-xs" style="color:#f1c40f;"><path fill="currentColor" d="M19 3l-5 5 1.5 1.5 5-5-1.5-1.5z"/><path fill="currentColor" d="M5 19l-2 2 2 2 2-2-2-2z"/><path fill="currentColor" d="M12.5 9.5l-6 6-1.5-1.5 6-6 1.5 1.5z"/><path fill="currentColor" d="M5 3l5 5-1.5 1.5-5-5 1.5-1.5z"/><path fill="currentColor" d="M19 19l2 2-2 2-2-2 2-2z"/><path fill="currentColor" d="M11.5 9.5l6 6 1.5-1.5-6-6-1.5 1.5z"/></svg>
@@ -277,7 +277,7 @@
       <div class="boss-bark-speaker-row">
         <span class="boss-bark-emblem">💀</span>
         <span id="boss-bark-speaker" class="boss-bark-speaker">LORDE VAMPÍRICO</span>
-        <span id="boss-bark-phase-tag" class="boss-bark-phase-tag">SURGIMENTO</span>
+        <span id="boss-bark-phase-tag" class="boss-bark-phase-tag"><span data-i18n="match.bark.spawn">SURGIMENTO</span></span>
       </div>
       <div id="boss-bark-text" class="boss-bark-text">“A noite tem sede... e vosso sangue saciará o trono.”</div>
     </div>
@@ -291,7 +291,7 @@
         <div class="blood-altar-icon-wrap">
           <svg viewBox="0 0 24 24" class="altar-hud-icon icon-blood"><path fill="currentColor" d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
         </div>
-        <span class="blood-altar-title">ALTAR DE SANGUE</span>
+        <span class="blood-altar-title" data-i18n="match.hud.altarTitle">ALTAR DE SANGUE</span>
         <span class="altar-mod-pill danger">2.0x</span>
       </div>
 
@@ -331,47 +331,108 @@
           <div class="char-eyebrow-wrapper">
             <span class="char-eyebrow-line left"></span>
             <span class="char-brand-sigil">✦</span>
-            <span class="char-brand-eyebrow">SINTONIA ANCESTRAL</span>
+            <span class="char-brand-eyebrow" data-i18n="characterSelect.eyebrow">SINTONIA ANCESTRAL</span>
             <span class="char-eyebrow-line right"></span>
           </div>
-          <h1 class="char-brand-title">ALTAR DOS CONDENADOS</h1>
+          <h1 class="char-brand-title" data-i18n="characterSelect.title">ALTAR DOS CONDENADOS</h1>
         </div>
       </div>
 
       <div class="char-header-utilities">
+        <div class="char-language-widget" id="char-language-widget">
+          <button type="button" class="char-language-capsule char-language-control" id="char-language-btn" aria-haspopup="listbox" aria-expanded="false" title="Idioma / Language" data-i18n-title="settings.language.label">
+            <svg class="lang-globe-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <!-- Contorno do Balão de Diálogo com Globo (conforme referência) -->
+              <path d="M12 2A8.5 8.5 0 0 1 20.5 10.5C20.5 15.2 16.7 19 12 19c-1.3 0-2.5-.3-3.6-.8L4 21.5l1.2-5C4.1 15 3.5 12.8 3.5 10.5A8.5 8.5 0 0 1 12 2z"/>
+              <!-- Linha Central do Equador -->
+              <line x1="3.5" y1="10.5" x2="20.5" y2="10.5"/>
+              <!-- Meridiano Central Vertical -->
+              <line x1="12" y1="2" x2="12" y2="19"/>
+              <!-- Meridianos Curvos Laterais -->
+              <ellipse cx="12" cy="10.5" rx="4.5" ry="8.5"/>
+              <!-- Paralelo Superior Curvo -->
+              <path d="M5.5 6.5Q12 8.5 18.5 6.5"/>
+              <!-- Paralelo Inferior Curvo -->
+              <path d="M5.5 14.5Q12 12.5 18.5 14.5"/>
+            </svg>
+            <span class="lang-label-text" id="char-lang-text">Português</span>
+            <span class="lang-code-badge" id="char-lang-code">PT</span>
+            <svg class="lang-chevron-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+
+          <!-- Dropdown Gótico Flutuante (Animação Fluida Descendente) -->
+          <div class="char-language-dropdown" id="char-language-dropdown" role="listbox" aria-label="Idiomas disponíveis">
+            <div class="lang-dropdown-header">
+              <span class="lang-dropdown-sigil">✦</span>
+              <span class="lang-dropdown-title" data-i18n="settings.language.label">Idioma</span>
+            </div>
+            <div class="lang-dropdown-options" id="lang-dropdown-options">
+              <button type="button" class="lang-option-btn active" role="option" aria-selected="true" data-lang="pt-BR">
+                <span class="lang-opt-badge">PT</span>
+                <span class="lang-opt-name">Português</span>
+                <span class="lang-opt-sigil">✦</span>
+              </button>
+              <button type="button" class="lang-option-btn" role="option" aria-selected="false" data-lang="en">
+                <span class="lang-opt-badge">EN</span>
+                <span class="lang-opt-name">English</span>
+                <span class="lang-opt-sigil">✦</span>
+              </button>
+              <button type="button" class="lang-option-btn" role="option" aria-selected="false" data-lang="es">
+                <span class="lang-opt-badge">ES</span>
+                <span class="lang-opt-name">Español</span>
+                <span class="lang-opt-sigil">✦</span>
+              </button>
+              <button type="button" class="lang-option-btn" role="option" aria-selected="false" data-lang="fr">
+                <span class="lang-opt-badge">FR</span>
+                <span class="lang-opt-name">Français</span>
+                <span class="lang-opt-sigil">✦</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Select nativo invisível preservado para automação e acessibilidade -->
+          <select id="language-select" class="visually-hidden-select" data-i18n-aria-label="settings.language.ariaLabel" aria-label="Selecionar idioma" tabindex="-1" aria-hidden="true">
+            <option value="pt-BR" lang="pt-BR">Português</option>
+            <option value="en" lang="en">English</option>
+            <option value="es" lang="es">Español</option>
+            <option value="fr" lang="fr">Français</option>
+          </select>
+        </div>
         <!-- Cápsula de Almas (Preserva ID char-souls-val) -->
-        <div class="char-souls-capsule" title="Almas Cósmicas Disponíveis">
+        <div class="char-souls-capsule" title="Almas Cósmicas Disponíveis" data-i18n-title="characterSelect.soulsTitle">
           <svg class="char-header-icon" viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
-          <span class="souls-label">ALMAS</span>
+          <span class="souls-label" data-i18n="characterSelect.souls">ALMAS</span>
           <span id="char-souls-val">0</span>
         </div>
 
         <!-- Relíquias de Acesso Rápido (Preserva IDs open-bestiary-btn, open-achievements-btn, open-talents-btn) -->
         <div class="char-header-nav-cluster">
-          <button id="open-bestiary-btn" class="char-relic-btn relic-bestiary" title="Códice do Bestiário">
+          <button id="open-bestiary-btn" class="char-relic-btn relic-bestiary" title="Códice do Bestiário" data-i18n-title="characterSelect.bestiaryTitle">
             <svg viewBox="0 0 24 24" class="relic-icon"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><circle cx="12" cy="9" r="2" fill="currentColor"/></svg>
-            <span class="relic-label">BESTIÁRIO</span>
-            <span class="relic-notification-pip pip-bestiary" id="pip-bestiary" aria-label="Novos monstros descobertos" style="display:none;">
+            <span class="relic-label" data-i18n="characterSelect.bestiary">BESTIÁRIO</span>
+            <span class="relic-notification-pip pip-bestiary" id="pip-bestiary" aria-label="Novos monstros descobertos" data-i18n-aria-label="characterSelect.newCreatures" style="display:none;">
               <span class="pip-pulse-ring"></span>
               <span class="pip-glyph-body">
                 <svg viewBox="0 0 24 24" class="pip-micro-icon"><polygon points="12,2 15,9 22,12 15,15 12,22 9,15 2,12 9,9" fill="currentColor"/></svg>
               </span>
             </span>
           </button>
-          <button id="open-achievements-btn" class="char-relic-btn relic-achievements" title="Grimório de Conquistas">
+          <button id="open-achievements-btn" class="char-relic-btn relic-achievements" title="Grimório de Conquistas" data-i18n-title="characterSelect.achievementsTitle">
             <svg viewBox="0 0 24 24" class="relic-icon"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
-            <span class="relic-label">CONQUISTAS</span>
-            <span class="relic-notification-pip pip-achievements" id="pip-achievements" aria-label="Conquistas concluídas" style="display:none;">
+            <span class="relic-label" data-i18n="characterSelect.achievements">CONQUISTAS</span>
+            <span class="relic-notification-pip pip-achievements" id="pip-achievements" aria-label="Conquistas concluídas" data-i18n-aria-label="characterSelect.completedAchievements" style="display:none;">
               <span class="pip-pulse-ring"></span>
               <span class="pip-glyph-body">
                 <svg viewBox="0 0 24 24" class="pip-micro-icon"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="currentColor"/></svg>
               </span>
             </span>
           </button>
-          <button id="open-talents-btn" class="char-relic-btn relic-talents" title="Astrolábio das Almas">
+          <button id="open-talents-btn" class="char-relic-btn relic-talents" title="Astrolábio das Almas" data-i18n-title="characterSelect.talentsTitle">
             <svg viewBox="0 0 24 24" class="relic-icon"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
-            <span class="relic-label">ASTROLÁBIO</span>
-            <span class="relic-notification-pip pip-talents" id="pip-talents" aria-label="Almas suficientes para despertar talentos" style="display:none;">
+            <span class="relic-label" data-i18n="characterSelect.talents">ASTROLÁBIO</span>
+            <span class="relic-notification-pip pip-talents" id="pip-talents" aria-label="Almas suficientes para despertar talentos" data-i18n-aria-label="characterSelect.affordableTalents" style="display:none;">
               <span class="pip-pulse-ring"></span>
               <span class="pip-glyph-body">
                 <svg viewBox="0 0 24 24" class="pip-micro-icon"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>
@@ -387,13 +448,13 @@
       <!-- Ala 1: Seletor de Arquétipos (Preserva ID char-pedestals) -->
       <aside class="char-roster-wing">
         <div class="roster-wing-header">
-          <span class="roster-eyebrow">ARQUÉTIPOS</span>
+          <span class="roster-eyebrow" data-i18n="characterSelect.archetypes">ARQUÉTIPOS</span>
           <span class="roster-count-badge" id="roster-count-badge">5 DISPONÍVEIS</span>
           <span class="roster-accent-line"></span>
         </div>
         <div id="char-pedestals" class="char-sigil-pillar"></div>
         <div class="roster-wing-footer">
-          <span class="roster-key-hint">▲ ▼ Navegar</span>
+          <span class="roster-key-hint" data-i18n="characterSelect.navigate">▲ ▼ Navegar</span>
         </div>
       </aside>
 
@@ -407,50 +468,50 @@
           <div class="char-eyebrow-wrapper">
             <span class="char-eyebrow-line left"></span>
             <span class="char-brand-sigil">✦</span>
-            <span class="char-brand-eyebrow">SINTONIA ANCESTRAL</span>
+            <span class="char-brand-eyebrow" data-i18n="characterSelect.eyebrow">SINTONIA ANCESTRAL</span>
             <span class="char-eyebrow-line right"></span>
           </div>
-          <h2 class="char-brand-title">ALTAR DOS CONDENADOS</h2>
+          <h2 class="char-brand-title" data-i18n="characterSelect.title">ALTAR DOS CONDENADOS</h2>
         </div>
 
         <!-- Viewport Aberto (Preserva classe char-stage-viewport e ID char-preview-canvas) -->
         <div class="char-stage-viewport">
           <!-- Setas Minimalistas Flutuantes (Preserva IDs btn-stage-prev e btn-stage-next) -->
-          <button id="btn-stage-prev" class="stage-chevron-nav prev" aria-label="Herói Anterior" title="Herói Anterior [A / ←]">
+          <button id="btn-stage-prev" class="stage-chevron-nav prev" aria-label="Herói Anterior" data-i18n-aria-label="characterSelect.previous" title="Herói Anterior [A / ←]" data-i18n-title="characterSelect.previousTip">
             <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
           </button>
 
           <canvas id="char-preview-canvas" width="400" height="520"></canvas>
 
-          <button id="btn-stage-next" class="stage-chevron-nav next" aria-label="Próximo Herói" title="Próximo Herói [D / →]">
+          <button id="btn-stage-next" class="stage-chevron-nav next" aria-label="Próximo Herói" data-i18n-aria-label="characterSelect.next" title="Próximo Herói [D / →]" data-i18n-title="characterSelect.nextTip">
             <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </button>
         </div>
 
         <!-- Controles Diegéticos de Pedestal (Preserva IDs e classes) -->
         <div class="char-pedestal-console" id="char-pedestal-console">
-          <button id="btn-preview-facing" class="console-action-btn" title="Inverter Orientação do Campeão" aria-label="Girar Campeão">
+          <button id="btn-preview-facing" class="console-action-btn" title="Inverter Orientação do Campeão" data-i18n-title="characterSelect.rotateTip" aria-label="Girar Campeão" data-i18n-aria-label="characterSelect.rotateLabel">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
               <polyline points="3 3 3 8 8 8"/>
               <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
               <polyline points="21 21 21 16 16 16"/>
             </svg>
-            <span>GIRAR</span>
+            <span data-i18n="characterSelect.rotate">GIRAR</span>
           </button>
 
           <div class="console-pose-cluster" id="console-pose-cluster">
-            <button class="stage-pose-btn active" data-pose="idle" title="Postura Passiva / Guarda" aria-label="Postura Passiva">
+            <button class="stage-pose-btn active" data-pose="idle" title="Postura Passiva / Guarda" data-i18n-title="characterSelect.idleTip" aria-label="Postura Passiva" data-i18n-aria-label="characterSelect.idleLabel">
               <svg viewBox="0 0 24 24" class="game-icon pose-btn-icon"><path d="M12 2L4 5v6c0 5.2 3.4 10.1 8 11.5 4.6-1.4 8-6.3 8-11.5V5L12 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="11" r="2.5" fill="currentColor"/></svg>
-              <span>PASSIVO</span>
+              <span data-i18n="characterSelect.idle">PASSIVO</span>
             </button>
-            <button class="stage-pose-btn" data-pose="combat" title="Postura de Ataque / Combate" aria-label="Postura de Ataque">
+            <button class="stage-pose-btn" data-pose="combat" title="Postura de Ataque / Combate" data-i18n-title="characterSelect.attackTip" aria-label="Postura de Ataque" data-i18n-aria-label="characterSelect.attackLabel">
               <svg viewBox="0 0 24 24" class="game-icon pose-btn-icon"><path d="M14.5 17.5L3 6V3h3l11.5 11.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 19l6 2 2-6-2.5-2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 17.5L21 6V3h-3L6.5 14.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="21" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="21" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              <span>ATAQUE</span>
+              <span data-i18n="characterSelect.attack">ATAQUE</span>
             </button>
-            <button class="stage-pose-btn" data-pose="skill" title="Postura de Poder / Habilidade Especial" aria-label="Postura de Poder">
+            <button class="stage-pose-btn" data-pose="skill" title="Postura de Poder / Habilidade Especial" data-i18n-title="characterSelect.powerTip" aria-label="Postura de Poder" data-i18n-aria-label="characterSelect.powerLabel">
               <svg viewBox="0 0 24 24" class="game-icon pose-btn-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
-              <span>PODER</span>
+              <span data-i18n="characterSelect.power">PODER</span>
             </button>
           </div>
         </div>
@@ -459,11 +520,11 @@
       <!-- Ala 3: Interface Contextual do Campeão (Preserva ID char-showcase) -->
       <aside class="char-dossier-wing mobile-bottom-sheet" id="char-dossier-wing" data-sheet-state="peek">
         <!-- Alça Tátil de Arraste & Indicador Rúnico (Mobile Bottom Sheet) -->
-        <div class="sheet-drag-handle-zone" id="sheet-drag-handle-zone" role="button" aria-label="Expandir ou recolher informações do herói" tabindex="0">
+        <div class="sheet-drag-handle-zone" id="sheet-drag-handle-zone" role="button" aria-label="Expandir ou recolher informações do herói" data-i18n-aria-label="characterSelect.expand" tabindex="0">
           <div class="sheet-drag-pill-notch"></div>
           <div class="sheet-drag-sigil-bar">
             <span class="sheet-sigil-dot left">✦</span>
-            <span class="sheet-sigil-hint" id="sheet-drag-hint-text">DETALHES DO ARQUÉTIPO</span>
+            <span class="sheet-sigil-hint" id="sheet-drag-hint-text" data-i18n="characterSelect.details">DETALHES DO ARQUÉTIPO</span>
             <span class="sheet-expand-chevron" id="sheet-expand-chevron">▲</span>
             <span class="sheet-sigil-dot right">✦</span>
           </div>
@@ -486,7 +547,7 @@
     <div class="locked-card-glow-mesh"></div>
 
     <!-- Botão Fechar Rápido (X) no Canto Superior Direito -->
-    <button class="locked-close-btn" id="locked-hero-close-btn" type="button" aria-label="Fechar Janela" title="Fechar Janela [ESC]">
+    <button class="locked-close-btn" id="locked-hero-close-btn" type="button" aria-label="Fechar Janela" data-i18n-aria-label="characterSelect.close" title="Fechar Janela [ESC]" data-i18n-title="characterSelect.closeTip">
       <svg viewBox="0 0 24 24" class="locked-close-icon">
         <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
         <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
@@ -499,7 +560,7 @@
         <div class="locked-eyebrow-row">
           <span class="locked-eyebrow-line"></span>
           <span class="locked-eyebrow-sigil">✦</span>
-          <span class="locked-eyebrow-text">SELO PRIMORDIAL • REQUISITO DE DESPERTAR</span>
+          <span class="locked-eyebrow-text" data-i18n="characterSelect.sealHeading">SELO PRIMORDIAL • REQUISITO DE DESPERTAR</span>
           <span class="locked-eyebrow-sigil">✦</span>
           <span class="locked-eyebrow-line"></span>
         </div>
@@ -523,7 +584,7 @@
             <h2 class="locked-hero-name" id="locked-hero-name">Ignis</h2>
             <div class="locked-status-pill">
               <span class="locked-pulse-dot"></span>
-              <span class="locked-status-text">SELO PRIMORDIAL ATIVO</span>
+              <span class="locked-status-text" data-i18n="characterSelect.sealActive">SELO PRIMORDIAL ATIVO</span>
               <span class="locked-status-ratio" id="locked-hero-status-ratio">0/1</span>
             </div>
           </div>
@@ -541,7 +602,7 @@
               </svg>
             </span>
             <span class="locked-section-title" id="locked-achievement-title">CHAMA DESPERTA</span>
-            <span class="locked-tier-pill">HERÓICO</span>
+            <span class="locked-tier-pill" data-i18n="characterSelect.heroic">HERÓICO</span>
           </div>
           <div class="locked-mission-desc" id="locked-achievement-desc">
             Derrote o Lorde Vampírico (Chefe 1) para purificar suas cinzas e despertar a Piromante Ignis.
@@ -552,7 +613,7 @@
             <div class="locked-progress-labels">
               <span class="locked-prog-label">
                 <span class="locked-prog-spark">✦</span>
-                <span class="locked-prog-title">SINTONIA CÓSMICA</span>
+                <span class="locked-prog-title" data-i18n="characterSelect.attunement">SINTONIA CÓSMICA</span>
               </span>
               <span class="locked-prog-val" id="locked-progress-val">
                 <span class="prog-cur-tgt">0 / 1</span>
@@ -573,12 +634,12 @@
             <polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="2"/>
             <circle cx="12" cy="12" r="3" fill="currentColor"/>
           </svg>
-          <span>VER NO GRIMÓRIO</span>
+          <span data-i18n="characterSelect.viewCodex">VER NO GRIMÓRIO</span>
         </button>
 
         <button class="btn-locked-action btn-locked-confirm" id="locked-hero-ok-btn" type="button">
           <div class="btn-shimmer-sweep"></div>
-          <span>COMPREENDIDO</span>
+          <span data-i18n="characterSelect.understood">COMPREENDIDO</span>
           <span class="btn-hotkey-hint">[ESC]</span>
         </button>
       </div>
@@ -599,77 +660,77 @@
       <div class="astrolabe-eyebrow">
         <span class="astrolabe-eyebrow-line"></span>
         <span class="void-pulsing-node"></span>
-        <span class="astrolabe-eyebrow-text">MECANISMO CELESTE • FORJA RÚNICA DE META-PROGRESSÃO</span>
+        <span class="astrolabe-eyebrow-text"><span data-i18n="contentUI.talentsEyebrow">MECANISMO CELESTE • FORJA RÚNICA DE META-PROGRESSÃO</span></span>
         <span class="astrolabe-eyebrow-line"></span>
       </div>
 
-      <h1 class="astrolabe-monumental-title">ASTROLÁBIO DAS ALMAS</h1>
-      <div class="astrolabe-monumental-sub">Consagração permanente de essências cósmicas, alinhamento estelar e transcendência das almas</div>
+      <h1 class="astrolabe-monumental-title"><span data-i18n="contentUI.astrolabe">ASTROLÁBIO DAS ALMAS</span></h1>
+      <div class="astrolabe-monumental-sub"><span data-i18n="contentUI.astrolabeSubtitle">Consagração permanente de essências cósmicas, alinhamento estelar e transcendência das almas</span></div>
 
       <!-- Barra de Metadados Globais do Astrolábio -->
       <div class="astrolabe-meta-chips-row">
         <!-- Chip 1: Almas Disponíveis -->
-        <div class="astrolabe-meta-chip highlight-gold" title="Almas Cósmicas Disponíveis para Consagração">
+        <div class="astrolabe-meta-chip highlight-gold" title="Almas Cósmicas Disponíveis para Consagração" data-i18n-title="contentUI.availableSouls">
           <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#ffd166; margin-right:2px;">
             <polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="currentColor" stroke-width="2"/>
             <circle cx="12" cy="12" r="3" fill="currentColor"/>
           </svg>
-          <span class="chip-label">ALMAS</span>
+          <span class="chip-label"><span data-i18n="contentUI.souls"><span data-i18n="match.results.souls">ALMAS</span></span></span>
           <span id="talents-gold-val" class="chip-val">0</span>
         </div>
 
         <!-- Chip 2: Níveis / Ranks Totais Forjados -->
-        <div class="astrolabe-meta-chip highlight-cyan" title="Total de Ranks Consagrados em Todas as Constelações">
+        <div class="astrolabe-meta-chip highlight-cyan" title="Total de Ranks Consagrados em Todas as Constelações" data-i18n-title="contentUI.ranksHint">
           <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:2px;">
             <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
             <polygon points="12,6 13.5,10.5 18,12 13.5,13.5 12,18 10.5,13.5 6,12 10.5,10.5" fill="currentColor"/>
           </svg>
-          <span class="chip-label">CONSAGRAÇÃO</span>
+          <span class="chip-label"><span data-i18n="contentUI.consecration">CONSAGRAÇÃO</span></span>
           <span id="astrolabe-total-invested" class="chip-val">0 / 77</span>
         </div>
 
         <!-- Chip 3: Bênçãos Ativas -->
-        <div class="astrolabe-meta-chip highlight-purple" title="Bênçãos Ativas na Conta">
+        <div class="astrolabe-meta-chip highlight-purple" title="Bênçãos Ativas na Conta" data-i18n-title="contentUI.blessingsHint">
           <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#c084fc; margin-right:2px;">
             <polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="2"/>
             <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
           </svg>
-          <span class="chip-label">BÊNÇÃOS</span>
+          <span class="chip-label"><span data-i18n="contentUI.blessings">BÊNÇÃOS</span></span>
           <span id="astrolabe-active-blessings-count" class="chip-val">0 / 14</span>
         </div>
 
 
         <!-- Ação Rápida: Purificar Árvore (100%) -->
-        <button id="reset-talents-btn" class="astrolabe-action-chip btn-action-reset" title="Purificar árvore e reaver 100% das almas" aria-label="Purificar">
+        <button id="reset-talents-btn" class="astrolabe-action-chip btn-action-reset" title="Purificar árvore e reaver 100% das almas" data-i18n-title="contentUI.resetHint" aria-label="Purificar" data-i18n-aria-label="contentUI.purify">
           <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:4px;">
             <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M20 12A8 8 0 1 1 18 6.5"/>
             <polyline points="21 2 21 7 16 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           </svg>
-          <span class="btn-text-full">PURIFICAR (100%)</span>
+          <span class="btn-text-full"><span data-i18n="contentUI.reset">PURIFICAR (100%)</span></span>
         </button>
       </div>
     </div>
 
     <!-- Navegação Segmentada de Constelações (Estilo Conquistas / Bestiário) -->
     <div class="astrolabe-nav-container">
-      <div class="astrolabe-tabs-bar" id="astrolabe-constellation-tabs" role="tablist" aria-label="Filtro de Constelações">
+      <div class="astrolabe-tabs-bar" id="astrolabe-constellation-tabs" role="tablist" aria-label="Filtro de Constelações" data-i18n-aria-label="contentUI.constellationFilter">
         <button class="astrolabe-tab-btn constellation-tab active" data-constellation="all" role="tab" aria-selected="true">
           <span class="tab-indicator tab-indicator-all"></span>
-          <span class="tab-label"><span class="tab-text-desktop">PLANETÁRIO CELESTE</span><span class="tab-text-mobile">PLANETÁRIO</span></span>
+          <span class="tab-label"><span class="tab-text-desktop"><span data-i18n="contentUI.planetarium">PLANETÁRIO CELESTE</span></span><span class="tab-text-mobile"><span data-i18n="contentUI.planetariumShort">PLANETÁRIO</span></span></span>
         </button>
         <button class="astrolabe-tab-btn constellation-tab tab-guerra" data-constellation="guerra" role="tab" aria-selected="false">
           <span class="tab-indicator tab-indicator-guerra"></span>
-          <span class="tab-label">GUERRA</span>
+          <span class="tab-label"><span data-i18n="contentUI.war">GUERRA</span></span>
           <span class="tab-prog-badge">0/25</span>
         </button>
         <button class="astrolabe-tab-btn constellation-tab tab-egide" data-constellation="egide" role="tab" aria-selected="false">
           <span class="tab-indicator tab-indicator-egide"></span>
-          <span class="tab-label">ÉGIDE</span>
+          <span class="tab-label"><span data-i18n="contentUI.aegis">ÉGIDE</span></span>
           <span class="tab-prog-badge">0/27</span>
         </button>
         <button class="astrolabe-tab-btn constellation-tab tab-destino" data-constellation="destino" role="tab" aria-selected="false">
           <span class="tab-indicator tab-indicator-destino"></span>
-          <span class="tab-label">DESTINO</span>
+          <span class="tab-label"><span data-i18n="contentUI.destiny">DESTINO</span></span>
           <span class="tab-prog-badge">0/25</span>
         </button>
       </div>
@@ -681,8 +742,8 @@
       <!-- PILAR 1: O Palco do Planetário Cósmico -->
       <div class="astrolabe-pillar astrolabe-pillar-stage">
         <div class="pillar-header">
-          <span class="pillar-tag">MAPA ESTELAR DO DESTINO</span>
-          <span class="pillar-badge-hero" id="astrolabe-active-const-badge">PLANETÁRIO CELESTE</span>
+          <span class="pillar-tag"><span data-i18n="contentUI.starMap">MAPA ESTELAR DO DESTINO</span></span>
+          <span class="pillar-badge-hero" id="astrolabe-active-const-badge"><span data-i18n="contentUI.planetarium">PLANETÁRIO CELESTE</span></span>
         </div>
 
         <div class="astrolabe-viewport-wrap">
@@ -703,9 +764,9 @@
 
               <svg id="astrolabe-filaments-svg" class="astrolabe-filaments-layer"></svg>
 
-              <div id="astrolabe-core" class="astrolabe-core" title="Coração Astral do Astrolábio">
+              <div id="astrolabe-core" class="astrolabe-core" title="Coração Astral do Astrolábio" data-i18n-title="contentUI.astralCore">
                 <div class="core-rings"></div>
-                <div class="core-label">ESSÊNCIA</div>
+                <div class="core-label"><span data-i18n="contentUI.essence">ESSÊNCIA</span></div>
                 <div class="core-val">
                   <svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,2 21,8 21,16 12,22 3,16 3,8" fill="none" stroke="#f1c40f" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#f1c40f"/></svg>
                   <span id="talents-core-gold-val">0</span>
@@ -717,8 +778,8 @@
 
 
             <div class="astrolabe-stage-hint">
-              <span class="desktop-map-hint">✦ Arraste para mover • Scroll para zoom no cursor</span>
-              <span class="mobile-map-hint">✦ Arraste com 1 dedo • Pinça com 2 dedos para zoom</span>
+              <span class="desktop-map-hint"><span data-i18n="contentUI.desktopMapHint">✦ Arraste para mover • Scroll para zoom no cursor</span></span>
+              <span class="mobile-map-hint"><span data-i18n="contentUI.mobileMapHint">✦ Arraste com 1 dedo • Pinça com 2 dedos para zoom</span></span>
             </div>
           </div>
         </div>
@@ -727,18 +788,18 @@
       <!-- PILAR 2: Dossiê e Altar da Forja do Destino (Modo Dual: Forja & Códice de Bênçãos) -->
       <div class="astrolabe-pillar astrolabe-pillar-dossier" id="talent-forge-drawer">
         <div class="pillar-header">
-          <div class="pillar-tabs-group" id="pillar-mode-tabs" role="tablist" aria-label="Modo do Painel">
+          <div class="pillar-tabs-group" id="pillar-mode-tabs" role="tablist" aria-label="Modo do Painel" data-i18n-aria-label="contentUI.panelMode">
             <button class="pillar-mode-tab active" id="tab-pillar-forge" data-pillar-mode="forge" role="tab" aria-selected="true">
               <svg class="game-icon icon-xs" viewBox="0 0 24 24"><polygon points="13,1 4,14 11,14 9,23 20,9 13,9" fill="currentColor"/></svg>
-              <span>FORJA</span>
+              <span><span data-i18n="contentUI.forge">FORJA</span></span>
             </button>
             <button class="pillar-mode-tab" id="tab-pillar-blessings" data-pillar-mode="blessings" role="tab" aria-selected="false">
               <svg class="game-icon icon-xs" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H7a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM7 5h12v11H7a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><line x1="9" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="1.5"/><line x1="9" y1="11" x2="14" y2="11" stroke="currentColor" stroke-width="1.5"/></svg>
-              <span>BÊNÇÃOS</span>
+              <span><span data-i18n="contentUI.blessings">BÊNÇÃOS</span></span>
               <span id="pillar-blessings-badge" class="pillar-tab-badge">0/14</span>
             </button>
           </div>
-          <span class="pillar-badge-hero" id="forge-tier-badge">TIER 1</span>
+          <span class="pillar-badge-hero" id="forge-tier-badge"><span data-i18n="contentUI.tierOne">TIER 1</span></span>
         </div>
 
         <!-- MODO 1: Painel da Forja Rúnica -->
@@ -747,13 +808,13 @@
             <!-- Showcase Header da Runa com Vitral Místico -->
             <div class="forge-showcase-header">
               <div class="forge-showcase-topline">
-                <span id="forge-constellation-badge" class="showcase-archetype-pill">CONSTELAÇÃO DA GUERRA</span>
+                <span id="forge-constellation-badge" class="showcase-archetype-pill"><span data-i18n="contentUI.warConstellation">CONSTELAÇÃO DA GUERRA</span></span>
               </div>
               <div class="forge-showcase-main">
                 <div class="forge-node-icon-socket" id="forge-rune-preview"></div>
                 <div class="forge-node-titles">
-                  <h2 id="forge-node-name" class="forge-node-name">Selecione uma Runa</h2>
-                  <div id="forge-node-type" class="forge-node-type">Canalização Permanente da Alma</div>
+                  <h2 id="forge-node-name" class="forge-node-name"><span data-i18n="contentUI.selectRune">Selecione uma Runa</span></h2>
+                  <div id="forge-node-type" class="forge-node-type"><span data-i18n="contentUI.permanentChannel">Canalização Permanente da Alma</span></div>
                 </div>
               </div>
             </div>
@@ -763,29 +824,29 @@
               <!-- Card 1: Bênção Ativa e Efeito -->
               <div class="astrolabe-info-card astrolabe-card-effect">
                 <div class="astrolabe-card-header">
-                  <span class="astrolabe-card-title-tag">BÊNÇÃO CÓSMICA</span>
-                  <span class="astrolabe-stat-badge" id="forge-stat-badge">PODER</span>
+                  <span class="astrolabe-card-title-tag"><span data-i18n="contentUI.cosmicBlessing">BÊNÇÃO CÓSMICA</span></span>
+                  <span class="astrolabe-stat-badge" id="forge-stat-badge"><span data-i18n="contentUI.power"><span data-i18n="match.results.power">PODER</span></span></span>
                 </div>
-                <div class="astrolabe-card-desc" id="forge-node-desc">Toque em qualquer runa para forjar poder permanente.</div>
+                <div class="astrolabe-card-desc" id="forge-node-desc"><span data-i18n="contentUI.tapRune">Toque em qualquer runa para forjar poder permanente.</span></div>
               </div>
 
               <!-- Card 2: Comparativo Antes vs Depois (Transcendência) -->
               <div class="astrolabe-info-card astrolabe-card-progression">
                 <div class="astrolabe-card-header">
-                  <span class="astrolabe-card-title-tag">TRANSCENDÊNCIA</span>
-                  <span class="astrolabe-level-badge" id="forge-node-level-label">NÍVEL 0</span>
+                  <span class="astrolabe-card-title-tag"><span data-i18n="contentUI.transcendence">TRANSCENDÊNCIA</span></span>
+                  <span class="astrolabe-level-badge" id="forge-node-level-label"><span data-i18n="contentUI.levelZero">NÍVEL 0</span></span>
                 </div>
                 <div class="forge-comparison-box">
                   <div class="comparison-row">
                     <div class="comp-col comp-col-current">
-                      <span class="comp-label">ATUAL</span>
+                      <span class="comp-label"><span data-i18n="contentUI.current">ATUAL</span></span>
                       <span id="forge-comp-current" class="comp-val-cur">--</span>
                     </div>
                     <div class="comp-arrow-wrapper">
                       <svg class="game-icon icon-xs comp-arrow" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-5-5l5 5-5 5"/></svg>
                     </div>
                     <div class="comp-col comp-col-next">
-                      <span class="comp-label">PRÓXIMO</span>
+                      <span class="comp-label"><span data-i18n="contentUI.next">PRÓXIMO</span></span>
                       <span id="forge-comp-next" class="comp-val-next">--</span>
                     </div>
                   </div>
@@ -796,7 +857,7 @@
               <!-- Card 3: Inscrição de Lore Ancestral -->
               <div class="astrolabe-info-card astrolabe-card-lore" id="forge-node-lore-card">
                 <div class="astrolabe-card-header">
-                  <span class="astrolabe-card-title-tag">GRIMÓRIO DO VÁCUO</span>
+                  <span class="astrolabe-card-title-tag"><span data-i18n="contentUI.voidGrimoire">GRIMÓRIO DO VÁCUO</span></span>
                 </div>
                 <div id="forge-node-lore" class="showcase-lore-quote"></div>
               </div>
@@ -808,7 +869,7 @@
             <button id="forge-buy-btn" class="card-btn btn-summon-hero btn-forge-hero" disabled>
               <div class="btn-shimmer-sweep"></div>
               <span class="btn-forge-content">
-                <svg class="game-icon icon-sm" viewBox="0 0 24 24"><polygon points="13,1 4,14 11,14 9,23 20,9 13,9" fill="currentColor"/></svg> FUNDIR ALMAS
+                <svg class="game-icon icon-sm" viewBox="0 0 24 24"><polygon points="13,1 4,14 11,14 9,23 20,9 13,9" fill="currentColor"/></svg> <span data-i18n="contentUI.fuseSouls">FUNDIR ALMAS</span>
               </span>
             </button>
           </div>
@@ -818,9 +879,9 @@
         <div class="pillar-view-panel" id="astrolabe-blessings-panel" style="display: none;">
           <div class="desktop-blessings-scroll" id="desktop-blessings-scroll">
             <div class="desktop-blessings-header">
-              <div class="desktop-blessings-eyebrow">CÓDICE CELESTE</div>
-              <h3 class="desktop-blessings-title">BÊNÇÃOS ATIVAS</h3>
-              <p class="desktop-blessings-desc">Soma de todos os bônus cósmicos consagrados na conta</p>
+              <div class="desktop-blessings-eyebrow"><span data-i18n="contentUI.celestialCodex">CÓDICE CELESTE</span></div>
+              <h3 class="desktop-blessings-title"><span data-i18n="contentUI.activeBlessings">BÊNÇÃOS ATIVAS</span></h3>
+              <p class="desktop-blessings-desc"><span data-i18n="contentUI.bonusSum">Soma de todos os bônus cósmicos consagrados na conta</span></p>
             </div>
             
             <!-- Resumo Agregado de Modificadores Globais -->
@@ -836,11 +897,11 @@
 
     <!-- Barra de Ações de Comando no Rodapé (Idêntico a Conquistas & Bestiário) -->
     <div class="astrolabe-actions-bar">
-      <button class="btn-astrolabe-return" id="close-talents-btn" aria-label="Retornar ao Altar">
+      <button class="btn-astrolabe-return" id="close-talents-btn" aria-label="Retornar ao Altar" data-i18n-aria-label="contentUI.returnLabel">
         <div class="btn-shimmer-sweep"></div>
         <div class="btn-return-content">
           <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color: currentColor;"><polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="btn-text">RETORNAR AO ALTAR</span>
+          <span class="btn-text"><span data-i18n="contentUI.return">RETORNAR AO ALTAR</span></span>
         </div>
         <span class="astrolabe-hotkey-hint">[ESC]</span>
       </button>
@@ -852,17 +913,17 @@
   <div id="blessings-summary-drawer" class="blessings-summary-drawer modal-hidden" style="display: none;">
     <div class="blessings-drawer-content">
       <div class="blessings-drawer-header">
-        <div class="blessings-drawer-eyebrow">CÓDICE CELESTE</div>
+        <div class="blessings-drawer-eyebrow"><span data-i18n="contentUI.celestialCodex">CÓDICE CELESTE</span></div>
         <div class="blessings-drawer-title">
           <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="margin-right:6px;"><path fill="currentColor" d="M19 3H7a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM7 5h12v11H7a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><line x1="9" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="1.5"/><line x1="9" y1="11" x2="14" y2="11" stroke="currentColor" stroke-width="1.5"/></svg>
-          BÊNÇÃOS ATIVAS DA CONTA
+          <span data-i18n="contentUI.accountBlessings">BÊNÇÃOS ATIVAS DA CONTA</span>
         </div>
-        <div class="blessings-drawer-sub">Soma consolidada de todos os aprimoramentos consagrados no Astrolábio</div>
+        <div class="blessings-drawer-sub"><span data-i18n="contentUI.consolidatedSum">Soma consolidada de todos os aprimoramentos consagrados no Astrolábio</span></div>
       </div>
       <div id="blessings-summary-grid" class="blessings-summary-grid"></div>
       <div class="blessings-drawer-actions">
         <button id="close-blessings-drawer-btn" class="btn-astrolabe-return btn-close-blessings">
-          <span class="btn-text">FECHAR COMPÊNDIO</span>
+          <span class="btn-text"><span data-i18n="contentUI.closeCompendium">FECHAR COMPÊNDIO</span></span>
         </button>
       </div>
     </div>
@@ -880,17 +941,17 @@
       <div class="achievements-eyebrow">
         <span class="achievements-eyebrow-line"></span>
         <span class="void-pulsing-node"></span>
-        <span class="achievements-eyebrow-text">CÓDICE ANCESTRAL • REGISTRO DE GLÓRIAS & DESTINO</span>
+        <span class="achievements-eyebrow-text"><span data-i18n="contentUI.achievementsEyebrow">CÓDICE ANCESTRAL • REGISTRO DE GLÓRIAS & DESTINO</span></span>
         <span class="achievements-eyebrow-line"></span>
       </div>
 
-      <h1 class="achievements-monumental-title">GRIMÓRIO DE CONQUISTAS</h1>
-      <div class="achievements-monumental-sub">Façanhas míticas, purificação de soberanos e consagração do panteão de campeões</div>
+      <h1 class="achievements-monumental-title"><span data-i18n="contentUI.achievementGrimoire">GRIMÓRIO DE CONQUISTAS</span></h1>
+      <div class="achievements-monumental-sub"><span data-i18n="contentUI.achievementsSubtitle">Façanhas míticas, purificação de soberanos e consagração do panteão de campeões</span></div>
 
       <!-- Barra de Metadados Globais das Conquistas -->
       <div class="achievements-meta-chips-row">
         <div class="achievements-meta-chip">
-          <span class="chip-label">CONCLUÍDAS</span>
+          <span class="chip-label"><span data-i18n="contentUI.completedPlural">CONCLUÍDAS</span></span>
           <span class="chip-val"><span id="ach-unlocked-count">0</span> / <span id="ach-total-count">25</span></span>
           <!-- ID Legado compatível -->
           <span id="achievements-unlocked-count" style="display:none;">0</span>
@@ -898,16 +959,16 @@
         </div>
         <div class="achievements-meta-chip highlight-gold">
           <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#ffd166; margin-right:2px;"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
-          <span class="chip-label">ALMAS CONQUISTADAS</span>
+          <span class="chip-label"><span data-i18n="contentUI.earnedSouls">ALMAS CONQUISTADAS</span></span>
           <span id="ach-souls-val" class="chip-val">+0</span>
         </div>
         <div class="achievements-meta-chip highlight-purple">
-          <span class="chip-label">COMPLEÇÃO</span>
+          <span class="chip-label"><span data-i18n="contentUI.completion">COMPLEÇÃO</span></span>
           <span id="ach-completion-val" class="chip-val">0%</span>
         </div>
         <div class="achievements-meta-chip highlight-cyan">
           <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:2px;"><polygon points="12,3 15,9 21,5 19,17 5,17 3,5 9,9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
-          <span class="chip-label">HERÓIS DESPERTOS</span>
+          <span class="chip-label"><span data-i18n="contentUI.awakenedHeroes">HERÓIS DESPERTOS</span></span>
           <span id="ach-heroes-val" class="chip-val">1 / 5</span>
         </div>
       </div>
@@ -915,34 +976,34 @@
 
     <!-- Navegação Segmentada de Categorias -->
     <div class="achievements-nav-container">
-      <div class="achievements-tabs-bar" id="achievements-tabs-bar" role="tablist" aria-label="Filtro de Categorias de Conquistas">
+      <div class="achievements-tabs-bar" id="achievements-tabs-bar" role="tablist" aria-label="Filtro de Categorias de Conquistas" data-i18n-aria-label="contentUI.achievementFilter">
         <button class="achievements-tab-btn tab-journey active" data-cat="JOURNEY" role="tab" aria-selected="true">
           <span class="tab-indicator tab-indicator-gold"></span>
-          <span class="tab-label text-gold">MAIOR JORNADA</span>
+          <span class="tab-label text-gold"><span data-i18n="contentUI.greatestJourney">MAIOR JORNADA</span></span>
         </button>
         <button class="achievements-tab-btn" data-cat="ALL" role="tab" aria-selected="false">
           <span class="tab-indicator"></span>
-          <span class="tab-label">TODAS (25)</span>
+          <span class="tab-label"><span data-i18n="contentUI.allAchievements" data-i18n-params='{"value1":25}'>TODAS (25)</span></span>
         </button>
         <button class="achievements-tab-btn" data-cat="hero" role="tab" aria-selected="false">
           <span class="tab-indicator"></span>
-          <span class="tab-label">HERÓIS (5)</span>
+          <span class="tab-label"><span data-i18n="contentUI.heroes" data-i18n-params='{"value1":5}'>HERÓIS (5)</span></span>
         </button>
         <button class="achievements-tab-btn" data-cat="combat" role="tab" aria-selected="false">
           <span class="tab-indicator"></span>
-          <span class="tab-label">COMBATE (6)</span>
+          <span class="tab-label"><span data-i18n="contentUI.combatCount" data-i18n-params='{"value1":6}'>COMBATE (6)</span></span>
         </button>
         <button class="achievements-tab-btn" data-cat="boss" role="tab" aria-selected="false">
           <span class="tab-indicator"></span>
-          <span class="tab-label">CHEFES (6)</span>
+          <span class="tab-label"><span data-i18n="contentUI.bosses" data-i18n-params='{"value1":6}'>CHEFES (6)</span></span>
         </button>
         <button class="achievements-tab-btn" data-cat="arsenal" role="tab" aria-selected="false">
           <span class="tab-indicator"></span>
-          <span class="tab-label">ARSENAL (4)</span>
+          <span class="tab-label"><span data-i18n="contentUI.arsenalCount" data-i18n-params='{"value1":4}'>ARSENAL (4)</span></span>
         </button>
         <button class="achievements-tab-btn" data-cat="mastery" role="tab" aria-selected="false">
           <span class="tab-indicator"></span>
-          <span class="tab-label">CÓDICE (4)</span>
+          <span class="tab-label"><span data-i18n="contentUI.codexCount" data-i18n-params='{"value1":4}'>CÓDICE (4)</span></span>
         </button>
       </div>
     </div>
@@ -953,8 +1014,8 @@
       <!-- PILAR 1: Rol de Conquistas -->
       <div class="achievements-pillar achievements-pillar-roster">
         <div class="pillar-header">
-          <span class="pillar-tag">ROL DE GLÓRIAS & FEITOS</span>
-          <span id="achievements-filter-badge" class="pillar-badge-count">TODAS (25)</span>
+          <span class="pillar-tag"><span data-i18n="contentUI.gloryRoster">ROL DE GLÓRIAS & FEITOS</span></span>
+          <span id="achievements-filter-badge" class="pillar-badge-count"><span data-i18n="contentUI.allAchievements" data-i18n-params='{"value1":25}'>TODAS (25)</span></span>
         </div>
         <div class="achievements-roster-scroll">
           <div id="achievements-list-grid" class="achievements-cards-grid"></div>
@@ -964,8 +1025,8 @@
       <!-- PILAR 2: Altar da Conquista & Dossiê de Consagração -->
       <div class="achievements-pillar achievements-pillar-dossier">
         <div class="pillar-header">
-          <span class="pillar-tag" id="achievements-dossier-tag">ALTAR DE CONSAGRAÇÃO</span>
-          <span id="achievements-dossier-tier" class="pillar-badge-hero">HERÓICO</span>
+          <span class="pillar-tag" id="achievements-dossier-tag"><span data-i18n="contentUI.consecrationAltar">ALTAR DE CONSAGRAÇÃO</span></span>
+          <span id="achievements-dossier-tier" class="pillar-badge-hero"><span data-i18n="contentUI.heroic">HERÓICO</span></span>
         </div>
         <div class="achievements-dossier-scroll" id="achievements-dossier-panel">
           <!-- Renderizado dinamicamente por renderAchievementDossier() -->
@@ -976,11 +1037,11 @@
 
     <!-- Barra de Ações de Comando no Rodapé -->
     <div class="achievements-actions-bar">
-      <button class="btn-achievements-return" id="close-achievements-btn" aria-label="Retornar ao Altar">
+      <button class="btn-achievements-return" id="close-achievements-btn" aria-label="Retornar ao Altar" data-i18n-aria-label="contentUI.returnLabel">
         <div class="btn-shimmer-sweep"></div>
         <div class="btn-return-content">
           <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color: currentColor;"><polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="btn-text">RETORNAR AO ALTAR</span>
+          <span class="btn-text"><span data-i18n="contentUI.return">RETORNAR AO ALTAR</span></span>
         </div>
         <span class="achievements-hotkey-hint">[ESC]</span>
       </button>
@@ -1000,26 +1061,26 @@
       <div class="bestiary-eyebrow">
         <span class="bestiary-eyebrow-line"></span>
         <span class="void-pulsing-node"></span>
-        <span class="bestiary-eyebrow-text">CÓDICE ANCESTRAL • REGISTRO DE ABOMINAÇÕES</span>
+        <span class="bestiary-eyebrow-text"><span data-i18n="contentUI.bestiaryEyebrow">CÓDICE ANCESTRAL • REGISTRO DE ABOMINAÇÕES</span></span>
         <span class="bestiary-eyebrow-line"></span>
       </div>
 
-      <h1 class="bestiary-monumental-title">BESTIÁRIO DAS TREVAS</h1>
-      <div class="bestiary-monumental-sub">Anatomia, fraquezas táticas e origens profanas das abominações do Abismo</div>
+      <h1 class="bestiary-monumental-title"><span data-i18n="contentUI.darkBestiary">BESTIÁRIO DAS TREVAS</span></h1>
+      <div class="bestiary-monumental-sub"><span data-i18n="contentUI.bestiarySubtitle">Anatomia, fraquezas táticas e origens profanas das abominações do Abismo</span></div>
 
       <!-- Barra de Metadados Globais do Códice -->
       <div class="bestiary-meta-chips-row">
         <div class="bestiary-meta-chip">
-          <span class="chip-label">CATALOGADOS</span>
+          <span class="chip-label"><span data-i18n="contentUI.catalogued">CATALOGADOS</span></span>
           <span class="chip-val"><span id="bestiary-discovered-count">0</span> / <span id="bestiary-total-count">45</span></span>
         </div>
         <div class="bestiary-meta-chip highlight-gold">
           <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#ffd166; margin-right:2px;"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
-          <span class="chip-label">ABATES TOTAIS</span>
+          <span class="chip-label"><span data-i18n="contentUI.totalKills">ABATES TOTAIS</span></span>
           <span id="bestiary-total-kills-val" class="chip-val">0</span>
         </div>
         <div class="bestiary-meta-chip highlight-purple">
-          <span class="chip-label">COMPLEÇÃO</span>
+          <span class="chip-label"><span data-i18n="contentUI.completion">COMPLEÇÃO</span></span>
           <span id="bestiary-completion-val" class="chip-val">0%</span>
         </div>
       </div>
@@ -1027,22 +1088,22 @@
 
     <!-- Navegação Segmentada de Categorias -->
     <div class="bestiary-nav-container">
-      <div class="bestiary-tabs-bar" role="tablist" aria-label="Filtro de Categorias">
+      <div class="bestiary-tabs-bar" role="tablist" aria-label="Filtro de Categorias" data-i18n-aria-label="contentUI.categoryFilter">
         <button class="bestiary-tab-btn active" data-cat="ALL" role="tab" aria-selected="true">
           <span class="tab-indicator"></span>
-          <span class="tab-label">TODOS (45)</span>
+          <span class="tab-label"><span data-i18n="contentUI.allCreatures" data-i18n-params='{"value1":45}'>TODOS (45)</span></span>
         </button>
         <button class="bestiary-tab-btn" data-cat="HORDE" role="tab" aria-selected="false">
           <span class="tab-indicator"></span>
-          <span class="tab-label">HORDAS (25)</span>
+          <span class="tab-label"><span data-i18n="contentUI.hordes" data-i18n-params='{"value1":25}'>HORDAS (25)</span></span>
         </button>
         <button class="bestiary-tab-btn" data-cat="MINIBOSS" role="tab" aria-selected="false">
           <span class="tab-indicator"></span>
-          <span class="tab-label">MINI-CHEFES (16)</span>
+          <span class="tab-label"><span data-i18n="contentUI.minibosses" data-i18n-params='{"value1":16}'>MINI-CHEFES (16)</span></span>
         </button>
         <button class="bestiary-tab-btn" data-cat="BOSS" role="tab" aria-selected="false">
           <span class="tab-indicator"></span>
-          <span class="tab-label">CHEFES SUPREMOS (4)</span>
+          <span class="tab-label"><span data-i18n="contentUI.supremeBosses" data-i18n-params='{"value1":4}'>CHEFES SUPREMOS (4)</span></span>
         </button>
       </div>
     </div>
@@ -1053,8 +1114,8 @@
       <!-- PILAR 1: Rol de Espécimes -->
       <div class="bestiary-pillar bestiary-pillar-roster">
         <div class="pillar-header">
-          <span class="pillar-tag">ROL DE ESPÉCIMES</span>
-          <span id="bestiary-filter-badge" class="pillar-badge-count">TODOS (45)</span>
+          <span class="pillar-tag"><span data-i18n="contentUI.specimenRoster">ROL DE ESPÉCIMES</span></span>
+          <span id="bestiary-filter-badge" class="pillar-badge-count"><span data-i18n="contentUI.allCreatures" data-i18n-params='{"value1":45}'>TODOS (45)</span></span>
         </div>
         <div class="bestiary-roster-scroll">
           <div id="bestiary-roster-grid" class="bestiary-cards-grid"></div>
@@ -1064,8 +1125,8 @@
       <!-- PILAR 2: Dossiê e Altar de Inspeção do Espécime -->
       <div class="bestiary-pillar bestiary-pillar-dossier">
         <div class="pillar-header">
-          <span class="pillar-tag">DOSSIÊ DO ESPÉCIME</span>
-          <span id="bestiary-dossier-archetype" class="pillar-badge-hero">ESPÉCIME</span>
+          <span class="pillar-tag"><span data-i18n="contentUI.specimenDossier">DOSSIÊ DO ESPÉCIME</span></span>
+          <span id="bestiary-dossier-archetype" class="pillar-badge-hero"><span data-i18n="contentUI.specimen">ESPÉCIME</span></span>
         </div>
         <div class="bestiary-dossier-scroll" id="bestiary-dossier-panel">
           <!-- Renderizado dinamicamente por renderBestiaryDossier() -->
@@ -1076,11 +1137,11 @@
 
     <!-- Barra de Ações de Comando no Rodapé -->
     <div class="bestiary-actions-bar">
-      <button class="btn-bestiary-return" id="close-bestiary-btn" aria-label="Retornar ao Altar">
+      <button class="btn-bestiary-return" id="close-bestiary-btn" aria-label="Retornar ao Altar" data-i18n-aria-label="contentUI.returnLabel">
         <div class="btn-shimmer-sweep"></div>
         <div class="btn-return-content">
           <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color: currentColor;"><polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="btn-text">RETORNAR AO ALTAR</span>
+          <span class="btn-text"><span data-i18n="contentUI.return">RETORNAR AO ALTAR</span></span>
         </div>
         <span class="bestiary-hotkey-hint">[ESC]</span>
       </button>
@@ -1098,7 +1159,7 @@
     <div id="boss-reward-banner" class="boss-reward-banner" style="display: none;">
       <div class="boss-reward-badge">
         <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:4px;"><polygon points="12,4 16,9 21,5 19,18 5,18 3,5 8,9" fill="currentColor"/><rect x="5" y="19" width="14" height="2.5" rx="1" fill="currentColor"/></svg>
-        COLOSSO SUPREMO DERROTADO
+        <span data-i18n="match.upgrade.bossDefeated">COLOSSO SUPREMO DERROTADO</span>
       </div>
       <div id="boss-reward-title" class="boss-reward-title">VITÓRIA CONTRA O CHEFE!</div>
       <div id="boss-reward-counter" class="boss-reward-counter">+3 Upgrades Conquistados • Escolha 1 de 3</div>
@@ -1148,21 +1209,21 @@
       <div class="levelup-eyebrow">
         <span class="levelup-eyebrow-line"></span>
         <span class="void-pulsing-node" style="background: #ffd166; box-shadow: 0 0 8px #ffd166;"></span>
-        <span id="levelup-eyebrow-text" class="levelup-eyebrow-text">TRANSCENDÊNCIA DE NÍVEL • TARÔ ARCANO</span>
+        <span id="levelup-eyebrow-text" class="levelup-eyebrow-text"><span data-i18n="match.upgrade.eyebrow">TRANSCENDÊNCIA DE NÍVEL • TARÔ ARCANO</span></span>
         <span class="levelup-eyebrow-line"></span>
       </div>
 
-      <h1 class="levelup-monumental-title">ESCOLHA SEU DESTINO</h1>
-      <div id="levelup-monumental-sub" class="levelup-monumental-sub">Invoque uma bênção arcana para remodelar o combate</div>
+      <h1 class="levelup-monumental-title"><span data-i18n="match.upgrade.title">ESCOLHA SEU DESTINO</span></h1>
+      <div id="levelup-monumental-sub" class="levelup-monumental-sub"><span data-i18n="match.upgrade.sub">Invoque uma bênção arcana para remodelar o combate</span></div>
 
       <!-- Fila de Bênçãos e Chip de Nível -->
       <div class="levelup-meta-chips-row">
         <div class="levelup-meta-chip">
-          <span class="chip-label">ASCENSÃO</span>
+          <span class="chip-label"><span data-i18n="match.upgrade.ascension">ASCENSÃO</span></span>
           <span id="levelup-hero-level" class="chip-val">NV 1</span>
         </div>
         <div id="levelup-queue-chip" class="levelup-meta-chip highlight-gold" style="display: none;">
-          <span class="chip-label">FILA</span>
+          <span class="chip-label"><span data-i18n="match.upgrade.queue">FILA</span></span>
           <span id="levelup-queue-count" class="chip-val">1 Bênção</span>
         </div>
       </div>
@@ -1173,12 +1234,12 @@
 
     <!-- Botão de Reroll em Estilo Nobre CTA -->
     <div class="levelup-actions-bar">
-      <button id="reroll-btn" class="btn-levelup-reroll" style="display: none;" aria-label="Rolar Novas Cartas">
+      <button id="reroll-btn" class="btn-levelup-reroll" style="display: none;" aria-label="Rolar Novas Cartas" data-i18n-aria-label="match.upgrade.rerollAria">
         <div class="btn-shimmer-sweep"></div>
         <div class="btn-reroll-content">
           <svg class="game-icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/></svg>
-          <span class="reroll-label">ROLAR NOVAS CARTAS</span>
-          <span class="reroll-capsule-badge"><b id="reroll-count">0</b> restantes</span>
+          <span class="reroll-label"><span data-i18n="match.upgrade.reroll">ROLAR NOVAS CARTAS</span></span>
+          <span class="reroll-capsule-badge"><b id="reroll-count">0</b> <span data-i18n="match.upgrade.remaining">restantes</span></span>
         </div>
         <span class="reroll-hotkey-hint">[ R ]</span>
       </button>
@@ -1230,7 +1291,7 @@
       </div>
 
       <h1 class="chest-monumental-title" id="chest-modal-title">TESOURO DO CHEFE!</h1>
-      <div class="chest-monumental-sub" id="chest-modal-sub">A arena foi purificada. Recompensas lendárias concedidas:</div>
+      <div class="chest-monumental-sub" id="chest-modal-sub"><span data-i18n="match.chest.bossSub">A arena foi purificada. Recompensas lendárias concedidas:</span></div>
     </div>
 
     <!-- Lista de Recompensas em Cartas Bento/Dossiê -->
@@ -1238,13 +1299,13 @@
 
     <!-- Ação de Resgate com Botão de Alto Impacto -->
     <div class="chest-actions-bar">
-      <button class="btn-chest-claim" id="chest-claim-btn" disabled aria-label="Equipar Poderes e Continuar">
+      <button class="btn-chest-claim" id="chest-claim-btn" disabled aria-label="Equipar Poderes e Continuar" data-i18n-aria-label="match.chest.claim">
         <div class="btn-shimmer-sweep"></div>
         <div class="btn-claim-content">
           <svg class="game-icon icon-sm" viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="currentColor"/></svg>
           <span id="chest-claim-text" class="claim-label">Revelando Recompensas...</span>
         </div>
-        <span class="claim-hotkey-hint">[ ESPAÇO / ENTER ]</span>
+        <span class="claim-hotkey-hint"><span data-i18n="match.common.keys">[ ESPAÇO / ENTER ]</span></span>
       </button>
     </div>
   </div>
@@ -1308,17 +1369,17 @@
         <span class="pause-eyebrow-line"></span>
       </div>
 
-      <h1 class="pause-monumental-title">TEMPO SUSPENSO</h1>
-      <div class="pause-monumental-sub">O fluxo da arena cedeu perante a ressonância do Altar Astral</div>
+      <h1 class="pause-monumental-title"><span data-i18n="match.pause.title">TEMPO SUSPENSO</span></h1>
+      <div class="pause-monumental-sub"><span data-i18n="match.pause.sub">O fluxo da arena cedeu perante a ressonância do Altar Astral</span></div>
 
       <!-- Barra de Metadados da Partida -->
       <div class="pause-meta-chips-row">
         <div class="pause-meta-chip">
-          <span class="chip-label">TEMPO</span>
+          <span class="chip-label"><span data-i18n="match.common.time">TEMPO</span></span>
           <span id="pause-timer-val" class="chip-val">00:00</span>
         </div>
         <div class="pause-meta-chip">
-          <span class="chip-label">ONDA</span>
+          <span class="chip-label"><span data-i18n="match.common.wave">ONDA</span></span>
           <span id="pause-wave-badge" class="chip-val">1</span>
         </div>
         <div class="pause-meta-chip highlight-gold">
@@ -1328,13 +1389,74 @@
       </div>
     </div>
 
+        <div class="char-language-widget pause-language-control" id="pause-language-widget">
+          <button type="button" class="char-language-capsule char-language-control" id="pause-language-btn" aria-controls="pause-language-dropdown" aria-haspopup="listbox" aria-expanded="false" title="Idioma / Language" data-i18n-title="settings.language.label">
+            <svg class="lang-globe-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <!-- Contorno do Balão de Diálogo com Globo (conforme referência) -->
+              <path d="M12 2A8.5 8.5 0 0 1 20.5 10.5C20.5 15.2 16.7 19 12 19c-1.3 0-2.5-.3-3.6-.8L4 21.5l1.2-5C4.1 15 3.5 12.8 3.5 10.5A8.5 8.5 0 0 1 12 2z"/>
+              <!-- Linha Central do Equador -->
+              <line x1="3.5" y1="10.5" x2="20.5" y2="10.5"/>
+              <!-- Meridiano Central Vertical -->
+              <line x1="12" y1="2" x2="12" y2="19"/>
+              <!-- Meridianos Curvos Laterais -->
+              <ellipse cx="12" cy="10.5" rx="4.5" ry="8.5"/>
+              <!-- Paralelo Superior Curvo -->
+              <path d="M5.5 6.5Q12 8.5 18.5 6.5"/>
+              <!-- Paralelo Inferior Curvo -->
+              <path d="M5.5 14.5Q12 12.5 18.5 14.5"/>
+            </svg>
+            <span class="lang-label-text" id="pause-lang-text">Português</span>
+            <span class="lang-code-badge" id="pause-lang-code">PT</span>
+            <svg class="lang-chevron-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+
+          <!-- Dropdown Gótico Flutuante (Animação Fluida Descendente) -->
+          <div class="char-language-dropdown" id="pause-language-dropdown" role="listbox" data-i18n-aria-label="settings.language.ariaLabel" aria-label="Selecionar idioma">
+            <div class="lang-dropdown-header">
+              <span class="lang-dropdown-sigil">✦</span>
+              <span class="lang-dropdown-title" data-i18n="settings.language.label">Idioma</span>
+            </div>
+            <div class="lang-dropdown-options" id="pause-lang-options">
+              <button type="button" class="lang-option-btn active" role="option" aria-selected="true" data-lang="pt-BR">
+                <span class="lang-opt-badge">PT</span>
+                <span class="lang-opt-name">Português</span>
+                <span class="lang-opt-sigil">✦</span>
+              </button>
+              <button type="button" class="lang-option-btn" role="option" aria-selected="false" data-lang="en">
+                <span class="lang-opt-badge">EN</span>
+                <span class="lang-opt-name">English</span>
+                <span class="lang-opt-sigil">✦</span>
+              </button>
+              <button type="button" class="lang-option-btn" role="option" aria-selected="false" data-lang="es">
+                <span class="lang-opt-badge">ES</span>
+                <span class="lang-opt-name">Español</span>
+                <span class="lang-opt-sigil">✦</span>
+              </button>
+              <button type="button" class="lang-option-btn" role="option" aria-selected="false" data-lang="fr">
+                <span class="lang-opt-badge">FR</span>
+                <span class="lang-opt-name">Français</span>
+                <span class="lang-opt-sigil">✦</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Select nativo invisível preservado para automação e acessibilidade -->
+          <select id="pause-language-select" class="visually-hidden-select" data-i18n-aria-label="settings.language.ariaLabel" aria-label="Selecionar idioma" tabindex="-1" aria-hidden="true">
+            <option value="pt-BR" lang="pt-BR">Português</option>
+            <option value="en" lang="en">English</option>
+            <option value="es" lang="es">Español</option>
+            <option value="fr" lang="fr">Français</option>
+          </select>
+        </div>
     <!-- Layout Bento Modular de 3 Pilares -->
     <div class="pause-bento-grid">
       
       <!-- PILAR 1: O Campeão & Biometria Cósmica -->
       <div class="pause-pillar pause-pillar-survivor">
         <div class="pillar-header">
-          <span class="pillar-tag">ARQUÉTIPO & BIOMETRIA</span>
+          <span class="pillar-tag"><span data-i18n="match.pause.biometrics">ARQUÉTIPO & BIOMETRIA</span></span>
           <span id="pause-hero-badge" class="pillar-badge-hero">O PALADINO</span>
         </div>
 
@@ -1356,7 +1478,7 @@
         </div>
 
         <!-- Grid Biométrico: Status Numéricos -->
-        <div class="pillar-subheader">PARÂMETROS DE COMBATE</div>
+        <div class="pillar-subheader"><span data-i18n="match.pause.combat">PARÂMETROS DE COMBATE</span></div>
         <div id="pause-stats-grid" class="pause-stats-grid">
           <!-- Preenchido dinamicamente por renderPauseInventory() -->
         </div>
@@ -1365,7 +1487,7 @@
       <!-- PILAR 2: Arsenal Arcano & Bênçãos Ativas -->
       <div class="pause-pillar pause-pillar-arsenal">
         <div class="pillar-header">
-          <span class="pillar-tag">ARSENAL ADQUIRIDO</span>
+          <span class="pillar-tag"><span data-i18n="match.pause.arsenal">ARSENAL ADQUIRIDO</span></span>
           <span id="pause-weapons-count" class="pillar-badge-count">0 ARMAS</span>
         </div>
 
@@ -1375,7 +1497,7 @@
         </div>
 
         <!-- Relíquias e Bênçãos Passivas -->
-        <div class="pillar-subheader" style="margin-top: 10px;">BÊNÇÃOS & PASSIVAS</div>
+        <div class="pillar-subheader" style="margin-top: 10px;"><span data-i18n="match.pause.passives">BÊNÇÃOS & PASSIVAS</span></div>
         <div id="pause-passives-list" class="pause-passives-flow">
           <!-- Tags de passivas renderizadas dinamicamente -->
         </div>
@@ -1384,8 +1506,8 @@
       <!-- PILAR 3: Matriz de Transmutação & Comandos -->
       <div class="pause-pillar pause-pillar-actions">
         <div class="pillar-header">
-          <span class="pillar-tag">MATRIZ DE TRANSMUTAÇÃO</span>
-          <span class="pillar-badge-fusion">SINERGIAS</span>
+          <span class="pillar-tag"><span data-i18n="match.pause.matrix">MATRIZ DE TRANSMUTAÇÃO</span></span>
+          <span class="pillar-badge-fusion"><span data-i18n="match.pause.synergies">SINERGIAS</span></span>
         </div>
 
         <!-- Rastreador de Fusões (Evoluções de Armas) -->
@@ -1402,22 +1524,22 @@
                 <line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 <line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2"/>
               </svg>
-              RESOLUÇÃO DA TELA
+              <span data-i18n="match.settings.resolution">RESOLUÇÃO DA TELA</span>
             </span>
-            <span id="graphics-mode-badge" class="graphics-mode-badge">NATIVA</span>
+            <span id="graphics-mode-badge" class="graphics-mode-badge"><span data-i18n="match.settings.native">NATIVA</span></span>
           </div>
-          <div class="graphics-toggle-group" role="radiogroup" aria-label="Resolução Gráfica">
-            <button type="button" class="graphics-toggle-btn active" id="btn-gfx-native" data-mode="native" aria-pressed="true" title="Adaptação 1:1 aos pixels físicos da tela (máxima nitidez)">
+          <div class="graphics-toggle-group" role="radiogroup" aria-label="Resolução Gráfica" data-i18n-aria-label="match.settings.resolutionAria">
+            <button type="button" class="graphics-toggle-btn active" id="btn-gfx-native" data-mode="native" aria-pressed="true" title="Adaptação 1:1 aos pixels físicos da tela (resolução padrão)" data-i18n-title="match.settings.nativeTip">
               <span class="toggle-indicator"></span>
-              <span class="toggle-label">NATIVA</span>
+              <span class="toggle-label"><span data-i18n="match.settings.native">NATIVA</span></span>
             </button>
-            <button type="button" class="graphics-toggle-btn" id="btn-gfx-high" data-mode="high" aria-pressed="false" title="Alta fidelidade visual (limitada a 2.0x)">
+            <button type="button" class="graphics-toggle-btn" id="btn-gfx-high" data-mode="high" aria-pressed="false" title="Alta nitidez com super-amostragem (1.25x no PC / até 2.0x no mobile)" data-i18n-title="match.settings.highTip">
               <span class="toggle-indicator"></span>
-              <span class="toggle-label">ALTA</span>
+              <span class="toggle-label"><span data-i18n="match.settings.high">ALTA</span></span>
             </button>
-            <button type="button" class="graphics-toggle-btn" id="btn-gfx-performance" data-mode="performance" aria-pressed="false" title="Modo econômico / bateria">
+            <button type="button" class="graphics-toggle-btn" id="btn-gfx-performance" data-mode="performance" aria-pressed="false" title="Modo econômico e maior taxa de FPS (0.80x no PC / economia no mobile)" data-i18n-title="match.settings.powerTip">
               <span class="toggle-indicator"></span>
-              <span class="toggle-label">ECONÔMICA</span>
+              <span class="toggle-label"><span data-i18n="match.settings.performance">ECONÔMICA</span></span>
             </button>
           </div>
           <div class="graphics-subtext" id="graphics-subtext">Adaptação 1:1 aos pixels físicos da tela</div>
@@ -1430,18 +1552,18 @@
               <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:4px;">
                 <path fill="currentColor" d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/>
               </svg>
-              TIPO DE JOYSTICK
+              <span data-i18n="match.settings.joystick">TIPO DE JOYSTICK</span>
             </span>
-            <span id="joystick-mode-badge" class="joystick-mode-badge">FLUTUANTE</span>
+            <span id="joystick-mode-badge" class="joystick-mode-badge"><span data-i18n="match.settings.floating">FLUTUANTE</span></span>
           </div>
-          <div class="joystick-toggle-group" role="radiogroup" aria-label="Tipo de Joystick">
+          <div class="joystick-toggle-group" role="radiogroup" aria-label="Tipo de Joystick" data-i18n-aria-label="match.settings.joystickAria">
             <button type="button" class="joystick-toggle-btn active" id="btn-joy-floating" data-mode="floating" aria-pressed="true">
               <span class="toggle-indicator"></span>
-              <span class="toggle-label">FLUTUANTE</span>
+              <span class="toggle-label"><span data-i18n="match.settings.floating">FLUTUANTE</span></span>
             </button>
             <button type="button" class="joystick-toggle-btn" id="btn-joy-dynamic" data-mode="dynamic" aria-pressed="false">
               <span class="toggle-indicator"></span>
-              <span class="toggle-label">DINÂMICO</span>
+              <span class="toggle-label"><span data-i18n="match.settings.dynamic">DINÂMICO</span></span>
             </button>
           </div>
         </div>
@@ -1451,7 +1573,7 @@
           <div class="volume-header">
             <span class="volume-title">
               <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:4px;"><polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-              VOLUME GERAL
+              <span data-i18n="match.settings.volume">VOLUME GERAL</span>
             </span>
             <span id="volume-val" class="volume-num">50%</span>
           </div>
@@ -1463,18 +1585,18 @@
 
     <!-- Barra de Ações de Comando da Dimensão (Footer Dedicado & Anti-Corte) -->
     <div class="pause-actions-bar">
-      <button class="btn-pause-resume" id="resume-btn" aria-label="Retomar Combate">
+      <button class="btn-pause-resume" id="resume-btn" aria-label="Retomar Combate" data-i18n-aria-label="match.pause.resumeAria">
         <div class="btn-shimmer-sweep"></div>
         <div class="btn-resume-content">
           <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color:#040508;"><polygon points="6,4 20,12 6,20" fill="currentColor"/></svg>
-          <span class="resume-label">RETOMAR BATALHA</span>
+          <span class="resume-label"><span data-i18n="match.pause.resume">RETOMAR BATALHA</span></span>
         </div>
-        <span class="resume-hotkey-hint">[ ESC / ESPAÇO ]</span>
+        <span class="resume-hotkey-hint"><span data-i18n="match.pause.keys">[ ESC / ESPAÇO ]</span></span>
       </button>
 
-      <button class="btn-pause-abandon" id="abandon-btn" aria-label="Abandonar Arena">
+      <button class="btn-pause-abandon" id="abandon-btn" aria-label="Abandonar Arena" data-i18n-aria-label="match.pause.abandonAria">
         <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:6px;"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-        <span>ABANDONAR ARENA</span>
+        <span><span data-i18n="match.pause.abandon">ABANDONAR ARENA</span></span>
       </button>
     </div>
 
@@ -1557,7 +1679,7 @@
 
         <div class="cause-killer-details">
           <div class="cause-category-badge-row">
-            <span class="cause-category-badge" id="death-category-badge">ABOMINAÇÃO DA HORDA</span>
+            <span class="cause-category-badge" id="death-category-badge"><span data-i18n="match.death.abomination">ABOMINAÇÃO DA HORDA</span></span>
             <span class="cause-threat-indicator" id="death-threat-indicator">LETALIDADE MÁXIMA</span>
           </div>
 
@@ -1583,7 +1705,7 @@
           <div class="cause-tactic-box" id="death-tactic-box">
             <div class="tactic-box-header">
               <span class="tactic-icon"><svg class="game-icon" viewBox="0 0 24 24" width="14" height="14" style="color:#00f5d4;vertical-align:-2px;"><path fill="none" stroke="currentColor" stroke-width="2" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></span>
-              <span class="tactic-title">CONSELHO DO CÓDICE</span>
+              <span class="tactic-title"><span data-i18n="match.results.tactic">CONSELHO DO CÓDICE</span></span>
             </div>
             <div class="tactic-desc" id="death-tactic-text">
               Mantenha o campo sob controle com ataques em área para não ser encurralado pela massa de inimigos.
@@ -1602,7 +1724,7 @@
     <div class="death-arsenal-container" id="death-arsenal-container" style="display: none;">
       <div class="death-arsenal-header">
         <svg class="death-arsenal-icon" viewBox="0 0 24 24" width="12" height="12" fill="#ffd166"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        <span class="death-arsenal-label">ARSENAL DA QUEDA</span>
+        <span class="death-arsenal-label"><span data-i18n="match.results.fallenArsenal">ARSENAL DA QUEDA</span></span>
       </div>
       <div class="death-arsenal-strip" id="death-arsenal-strip"></div>
     </div>
@@ -1619,9 +1741,9 @@
             <path fill="currentColor" d="M12 2c-2 3-5 5-5 9a5 5 0 0 0 10 0c0-4-3-6-5-9zm0 13a2 2 0 0 1-2-2c0-1.5 1.5-2.5 2-4 .5 1.5 2 2.5 2 4a2 2 0 0 1-2 2z"/>
             <path fill="currentColor" d="M5 12c-2 0-3 1.5-3 3.5A4.5 4.5 0 0 0 6.5 20c.5-1.5 0-3-1.5-4.5 1 0 2 .5 2.5 1 .5-2 0-3.5-2.5-4.5zm14 0c2 0 3 1.5 3 3.5A4.5 4.5 0 0 1 17.5 20c-.5-1.5 0-3 1.5-4.5-1 0-2 .5-2.5 1-.5-2 0-3.5 2.5-4.5z"/>
           </svg>
-          <span class="rebirth-text">RENASCER NO ALTAR</span>
+          <span class="rebirth-text"><span data-i18n="match.results.rebirth">RENASCER NO ALTAR</span></span>
         </div>
-        <span class="rebirth-hotkey-hint">[ ESPAÇO / ENTER ]</span>
+        <span class="rebirth-hotkey-hint"><span data-i18n="match.common.keys">[ ESPAÇO / ENTER ]</span></span>
       </button>
     </div>
 
@@ -1665,54 +1787,54 @@
 
       <div class="victory-eyebrow">
         <span class="victory-eyebrow-line"></span>
-        <span class="victory-eyebrow-text">CONSAGRAÇÃO DA ALVORADA</span>
+        <span class="victory-eyebrow-text"><span data-i18n="match.results.dawn">CONSAGRAÇÃO DA ALVORADA</span></span>
         <span class="victory-eyebrow-line"></span>
       </div>
 
-      <h1 class="victory-monumental-title" id="victory-title">VITÓRIA SUPREMA</h1>
-      <p class="victory-subtitle" id="victory-subtitle">O Soberano do Abismo foi expurgado e as 10 ondas de trevas foram purificadas!</p>
+      <h1 class="victory-monumental-title" id="victory-title"><span data-i18n="match.results.victory">VITÓRIA SUPREMA</span></h1>
+      <p class="victory-subtitle" id="victory-subtitle"><span data-i18n="match.results.victorySub">O Soberano do Abismo foi expurgado e as 10 ondas de trevas foram purificadas!</span></p>
     </div>
 
     <!-- Bloco Central: Avaliação de Desempenho (Rank) & Extrato de Almas Ganhas -->
     <div class="victory-central-grid">
       <!-- Selo de Avaliação de Desempenho (Rank Stamped) -->
       <div class="victory-rank-card" id="victory-rank-card">
-        <div class="rank-card-header">DESEMPENHO DO HERÓI</div>
+        <div class="rank-card-header"><span data-i18n="match.results.performance">DESEMPENHO DO HERÓI</span></div>
         <div class="rank-stamp-wrap" id="victory-rank-stamp">
           <div class="rank-stamp-glow"></div>
           <span class="rank-grade-text" id="victory-rank-grade">S+</span>
           <div class="rank-stars" id="victory-rank-stars">★★★★★</div>
         </div>
-        <div class="rank-title-text" id="victory-rank-title">LENDA DO ABISMO</div>
-        <div class="victory-score-line"><strong id="victory-score">0</strong><span>/ 100 pontos</span></div>
+        <div class="rank-title-text" id="victory-rank-title"><span data-i18n="match.rank.Splus">LENDA DO ABISMO</span></div>
+        <div class="victory-score-line"><strong id="victory-score">0</strong><span><span data-i18n="match.results.points">/ 100 pontos</span></span></div>
       </div>
 
       <!-- Extrato de Almas e Recompensas Conquistadas -->
       <div class="victory-rewards-card" id="victory-rewards-card">
         <div class="rewards-card-header">
-          <span class="rewards-card-title">ESPÓLIOS DA VITÓRIA</span>
-          <span class="rewards-badge-run">NESTA PARTIDA</span>
+          <span class="rewards-card-title"><span data-i18n="match.results.spoils">ESPÓLIOS DA VITÓRIA</span></span>
+          <span class="rewards-badge-run"><span data-i18n="match.results.thisRun">NESTA PARTIDA</span></span>
         </div>
         <div class="rewards-breakdown">
           <div class="reward-item">
-            <span class="reward-item-label">Almas obtidas durante a partida</span>
+            <span class="reward-item-label"><span data-i18n="match.results.collected">Almas obtidas durante a partida</span></span>
             <span class="reward-item-val" id="victory-waves-souls">+500</span>
           </div>
           <div class="reward-item">
-            <span class="reward-item-label">Bônus de novas conquistas</span>
+            <span class="reward-item-label"><span data-i18n="match.results.bonus">Bônus de novas conquistas</span></span>
             <span class="reward-item-val" id="victory-kills-souls">+350</span>
           </div>
           <div class="reward-item highlight-boss-bonus">
-            <span class="reward-item-label">Triunfo sobre o Soberano</span>
+            <span class="reward-item-label"><span data-i18n="match.results.triumph">Triunfo sobre o Soberano</span></span>
             <span class="reward-item-val bonus-gold" id="victory-boss-souls">+1.500</span>
           </div>
           <div class="rewards-divider"></div>
           <div class="reward-total-line">
-            <span class="reward-total-text">ALMAS CONQUISTADAS:</span>
+            <span class="reward-total-text"><span data-i18n="match.results.earned">ALMAS CONQUISTADAS:</span></span>
             <span class="reward-total-number" id="victory-total-earned-souls">+2.350 🪙</span>
           </div>
           <div class="reward-vault-line">
-            <span>Saldo Total no Astrolábio:</span>
+            <span><span data-i18n="match.results.balance">Saldo Total no Astrolábio:</span></span>
             <b id="victory-vault-gold">0</b>
           </div>
         </div>
@@ -1728,7 +1850,7 @@
     <div class="victory-build-dossier" id="victory-build-dossier">
       <div class="build-dossier-header">
         <div class="build-dossier-title-wrap">
-          <span class="build-dossier-title">ARSENAL CONSAGRADO</span>
+          <span class="build-dossier-title"><span data-i18n="match.results.arsenal">ARSENAL CONSAGRADO</span></span>
           <span class="build-hero-name" id="victory-hero-name">Sir Roland • Nv. 35</span>
         </div>
         <span class="build-evolved-counter" id="victory-evolved-counter">0 Armas Evoluídas</span>
@@ -1752,27 +1874,27 @@
           <svg class="victory-action-icon" viewBox="0 0 24 24">
             <path fill="currentColor" d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
           </svg>
-          <span class="victory-action-text">JOGAR NOVAMENTE</span>
+          <span class="victory-action-text"><span data-i18n="match.results.again">JOGAR NOVAMENTE</span></span>
         </div>
-        <span class="victory-hotkey-hint">[ ESPAÇO / ENTER ]</span>
+        <span class="victory-hotkey-hint"><span data-i18n="match.common.keys">[ ESPAÇO / ENTER ]</span></span>
       </button>
 
-      <button class="btn-victory-action btn-victory-talents" id="talents-victory-btn" aria-label="Gastar Almas no Astrolábio">
+      <button class="btn-victory-action btn-victory-talents" id="talents-victory-btn" aria-label="Gastar Almas no Astrolábio" data-i18n-aria-label="match.results.spendAria">
         <div class="victory-btn-label-group">
           <svg class="victory-action-icon" viewBox="0 0 24 24">
             <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/>
           </svg>
-          <span class="victory-action-text">GASTAR NO ASTROLÁBIO</span>
+          <span class="victory-action-text"><span data-i18n="match.results.spend">GASTAR NO ASTROLÁBIO</span></span>
         </div>
         <span class="victory-talents-souls-badge" id="victory-talents-souls-badge">+2.350 🪙</span>
       </button>
 
-      <button class="btn-victory-action btn-victory-menu" id="menu-victory-btn" aria-label="Seleção de Personagens">
+      <button class="btn-victory-action btn-victory-menu" id="menu-victory-btn" aria-label="Seleção de Personagens" data-i18n-aria-label="match.results.selectAria">
         <div class="victory-btn-label-group">
           <svg class="victory-action-icon" viewBox="0 0 24 24">
             <path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
           </svg>
-          <span class="victory-action-text">ALTAR DE HERÓIS</span>
+          <span class="victory-action-text"><span data-i18n="match.results.heroes">ALTAR DE HERÓIS</span></span>
         </div>
       </button>
     </div>
@@ -1845,7 +1967,7 @@
 </div>
 
 <!-- Botão Contextual de Canalização do Altar de Sangue (Mobile / Toque / Centro-Direita da Tela) -->
-<div id="blood-altar-touch-btn" class="blood-altar-touch-btn" role="button" aria-label="Canalizar Altar de Sangue" style="display: none;">
+<div id="blood-altar-touch-btn" class="blood-altar-touch-btn" role="button" aria-label="Canalizar Altar de Sangue" data-i18n-aria-label="match.altar.touchAria" style="display: none;">
   <div class="blood-altar-touch-halo"></div>
   <svg class="blood-altar-touch-svg" viewBox="0 0 76 76">
     <defs>
@@ -1880,8 +2002,8 @@
       </svg>
       <div class="blood-altar-touch-pulse-dot"></div>
     </div>
-    <span class="blood-altar-touch-badge">PACTO</span>
-    <span class="blood-altar-touch-label">SEGURE <b>1s</b></span>
+    <span class="blood-altar-touch-badge" data-i18n="match.altar.touchBadge">PACTO</span>
+    <span class="blood-altar-touch-label" data-i18n-html="match.altar.touchHold" data-i18n-params='{"time":"1s"}'>SEGURE <b>1s</b></span>
   </div>
 </div>
 

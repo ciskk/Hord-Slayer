@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/bosses/supremeReaper/render.js
  * Pipeline de renderização procedural gráfica de alta definição de Thanatos, o Ceifador Supremo.
@@ -189,21 +190,21 @@ export function drawCinematicScreenTitle(ctx, e, frameCount) {
   ctx.font = isVertical ? '700 8.5px "Cinzel", monospace' : '800 10.5px "Cinzel", monospace';
   ctx.letterSpacing = isVertical ? '2px' : '4px';
   ctx.fillStyle = 'rgba(129, 236, 236, 0.80)';
-  ctx.fillText('[ JULGAMENTO DO ALÉM // AMEAÇA DA CEIFA ]', centerX, by + (isVertical ? 15 : 20));
+  ctx.fillText(matchText('match.canvas.reaperTop'), centerX, by + (isVertical ? 15 : 20));
 
   // Título Principal
   const titleY = by + (isVertical ? 34 : 50);
   ctx.font = isVertical ? '900 20px "Cinzel", "Times New Roman", serif' : '900 32px "Cinzel", "Times New Roman", serif';
   ctx.fillStyle = 'rgba(0, 206, 201, 0.5)';
-  ctx.fillText('THANATOS, O CEIFADOR SUPREMO', centerX + 1, titleY + 1.5);
+  ctx.fillText(matchText('match.canvas.reaper'), centerX + 1, titleY + 1.5);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('THANATOS, O CEIFADOR SUPREMO', centerX, titleY);
+  ctx.fillText(matchText('match.canvas.reaper'), centerX, titleY);
 
   // Subtítulo Épico Inferior
   ctx.font = isVertical ? '600 9px "Cinzel", sans-serif' : '700 12px "Cinzel", sans-serif';
   ctx.letterSpacing = isVertical ? '2px' : '5px';
   ctx.fillStyle = '#81ecec';
-  ctx.fillText('✦ O ARQUITETO DO VÉU DAS ALMAS & COLHEDOR ETERNO ✦', centerX, by + (isVertical ? 51 : 78));
+  ctx.fillText(matchText('match.canvas.reaperSub'), centerX, by + (isVertical ? 51 : 78));
   ctx.letterSpacing = '0px';
 
   ctx.restore();

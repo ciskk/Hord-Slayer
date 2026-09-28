@@ -1,3 +1,4 @@
+import { t as matchText } from '../../i18n/index.js';
 /**
  * src/render/worldEvents/bloodAltarRenderer.js
  * Renderização Diegética Monumental do Altar de Sangue e seu Círculo Ritual:
@@ -423,7 +424,21 @@ export function drawBloodAltarWorld(ctx, altar = getActiveBloodAltar()) {
       const distToPlayer = Math.hypot(player.x - altar.x, player.y - altar.y);
       if (distToPlayer <= altar.interactRadius) {
         ctx.save();
-        const boxW = 210;
+        const titleText = matchText('match.altar.title');
+        const subText = matchText('match.altar.sub');
+        const actionText = altar.channelProgress > 0
+          ? matchText('match.altar.channel', { percent: Math.round(altar.channelProgress * 100) })
+          : matchText('match.altar.action');
+
+        ctx.font = 'bold 11px Outfit, sans-serif';
+        const titW = ctx.measureText(titleText).width;
+        ctx.font = '9px Outfit, sans-serif';
+        const subW = ctx.measureText(subText).width;
+        ctx.font = 'bold 9.5px Outfit, sans-serif';
+        const actW = ctx.measureText(actionText).width;
+
+        const maxContentW = Math.max(titW + 28, subW, actW);
+        const boxW = Math.max(220, Math.ceil(maxContentW + 24));
         const boxH = 46;
         const boxY = -92;
 
@@ -445,31 +460,29 @@ export function drawBloodAltarWorld(ctx, altar = getActiveBloodAltar()) {
         ctx.stroke();
 
         // Título com pequeno ícone vetorial de gota de sangue (desenhado com canvas)
+        const dropX = Math.round(-titW / 2 - 4);
         ctx.fillStyle = '#ff3838';
         ctx.beginPath();
-        ctx.moveTo(-64, boxY + 5);
-        ctx.bezierCurveTo(-67, boxY + 8, -67, boxY + 12, -64, boxY + 12);
-        ctx.bezierCurveTo(-61, boxY + 12, -61, boxY + 8, -64, boxY + 5);
+        ctx.moveTo(dropX, boxY + 5);
+        ctx.bezierCurveTo(dropX - 3, boxY + 8, dropX - 3, boxY + 12, dropX, boxY + 12);
+        ctx.bezierCurveTo(dropX + 3, boxY + 12, dropX + 3, boxY + 8, dropX, boxY + 5);
         ctx.fill();
 
         ctx.font = 'bold 11px Outfit, sans-serif';
         ctx.fillStyle = '#ffd166';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText("ALTAR DE SANGUE", 6, boxY + 9);
+        ctx.fillText(titleText, 6, boxY + 9, boxW - 24);
 
         // Subtítulo descritivo do evento
         ctx.font = '9px Outfit, sans-serif';
         ctx.fillStyle = '#ddc8c8';
-        ctx.fillText("Sobreviva 10s • Horda 2.0x • Baú Lendário", 0, boxY + 24);
+        ctx.fillText(subText, 0, boxY + 24, boxW - 16);
 
         // Tecla de ação
         ctx.font = 'bold 9.5px Outfit, sans-serif';
         ctx.fillStyle = altar.channelProgress > 0 ? '#ff7675' : '#ffffff';
-        const actionText = altar.channelProgress > 0 
-          ? `CANALIZANDO... ${Math.round(altar.channelProgress * 100)}%` 
-          : "[ SEGURE F ] ATIVAR PACTO";
-        ctx.fillText(actionText, 0, boxY + 37);
+        ctx.fillText(actionText, 0, boxY + 37, boxW - 16);
 
         ctx.restore();
       }

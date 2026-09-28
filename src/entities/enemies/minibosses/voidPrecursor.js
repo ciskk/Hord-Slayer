@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/enemies/minibosses/voidPrecursor.js
  * 
@@ -29,7 +30,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionTimer = 27;
         e.actionMaxTimer = 27;
         safePlaySfx('singularity');
-        ctx.addDamageText(e.x, e.y, "VÓRTICE DO VAZIO!", true, '#8e44ad');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.vortex'), true, '#8e44ad');
       } else {
         e.currentSkill = 'EVENT_HORIZON';
         e.actionState = 'WINDUP';
@@ -37,7 +38,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionMaxTimer = 31;
         e.beamAngle = angle;
         safePlaySfx('charge');
-        ctx.addDamageText(e.x, e.y, "FEIXE CÓSMICO!", true, '#9b59b6');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.beam'), true, '#9b59b6');
 
         bossTelegraphs.push({
           type: 'DIMENSIONAL_CLEAVE',

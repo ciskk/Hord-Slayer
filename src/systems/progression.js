@@ -153,13 +153,10 @@ export function getPersistentGold() {
   return store.gold;
 }
 
-export function addPersistentGold(amount) {
+export function addPersistentGold(amount, multiplier = 1) {
   ensureStoreInitialized();
-  let finalAmount = amount;
-  // Bônus do multiplicador de ouro se player estiver ativo
-  if (amount > 0 && typeof window !== 'undefined' && window.player && window.player.goldMultiplier) {
-    finalAmount = Math.round(amount * window.player.goldMultiplier);
-  }
+  // Arena rewards pass their multiplier explicitly. Purchases and refunds do not.
+  const finalAmount = amount > 0 ? Math.round(amount * multiplier) : amount;
   store.gold = Math.max(0, store.gold + finalAmount);
   markDirty(GOLD_KEY);
   return store.gold;

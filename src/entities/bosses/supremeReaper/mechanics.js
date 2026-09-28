@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/bosses/supremeReaper/mechanics.js
  * Gerenciamento de sub-alvos (Lanternas Espirituais), Vínculo de Almas e ações agendadas do Ceifador Supremo.
@@ -182,7 +183,7 @@ export function destroyLantern(boss, lantern, lx, ly, context) {
   context.createHitParticles(lx, ly, '#00cec9', 22);
   context.createHitParticles(lx, ly, '#81ecec', 14);
   context.addDamageText(boss.x, boss.y, backlashDmg, true, '#f1c40f');
-  context.addDamageText(lx, ly, "FRAGMENTO DE ALMA LIBERADO!", true, '#00cec9');
+  context.addDamageText(lx, ly, matchText('match.combat.soulShard'), true, '#00cec9');
 
   // Ao destruir a última lanterna da fase: Colapso por 2.0 segundos
   const activeCount = boss.lanterns.filter(o => o.active).length;
@@ -198,7 +199,7 @@ export function destroyLantern(boss, lantern, lx, ly, context) {
       context.triggerShake(16);
       triggerHaptic('heavy');
       playSfx('boss');
-      context.addDamageText(boss.x, boss.y, "COLAPSO ESPIRITUAL (2.0s)!", true, '#81ecec');
+      context.addDamageText(boss.x, boss.y, matchText('match.combat.spiritCollapse'), true, '#81ecec');
     }
   }
 }
@@ -239,7 +240,7 @@ export function updateSoulShards(e, dt, context) {
       playSfx('gem');
       playSfx('chest_rare');
       if (context.triggerHaptic) context.triggerHaptic('medium');
-      addDamageText(player.x, player.y, `+${healAmt} HP & +20% VELOCIDADE!`, true, '#00cec9');
+      addDamageText(player.x, player.y, matchText('match.combat.reaperSpeed', { amount: healAmt }), true, '#00cec9');
       createHitParticles(s.x, s.y, '#81ecec', 16);
       createHitParticles(s.x, s.y, '#ffffff', 8);
 
@@ -280,7 +281,7 @@ export function updateSoulTether(e, dt, context) {
     e.tetherTension = 0;
     triggerShake(9);
     if (triggerHaptic) triggerHaptic('heavy');
-    addDamageText(player.x, player.y, "VÍNCULO QUEBRADO! RECUO DEFENSIVO!", true, '#2ecc71');
+    addDamageText(player.x, player.y, matchText('match.combat.linkRetreat'), true, '#2ecc71');
     playSfx('crit');
     playSfx('warp');
 
@@ -378,7 +379,7 @@ export function damagePlayerFromBoss(player, damage, attackerName, context, hitC
     player.tempShield -= absorb;
     finalDmg -= absorb;
     if (context.addDamageText) {
-      context.addDamageText(player.x, player.y - 35, `ESCUDO ABSORVEU -${absorb}`, true, '#a29bfe');
+      context.addDamageText(player.x, player.y - 35, matchText('match.combat.shield', { amount: absorb }), true, '#a29bfe');
     }
     if (player.tempShield <= 0) player.tempShieldTimer = 0;
   }
@@ -388,7 +389,7 @@ export function damagePlayerFromBoss(player, damage, attackerName, context, hitC
   if (ospTriggered) {
     player.iFrames = Math.max(player.iFrames || 0, 36);
     if (context.addDamageText) {
-      context.addDamageText(player.x, player.y - 25, "PROTEÇÃO DE SOBREVIDA!", true, '#2ecc71');
+      context.addDamageText(player.x, player.y - 25, matchText('match.combat.protection'), true, '#2ecc71');
     }
   }
 
@@ -684,7 +685,7 @@ export function updateDeathToll(boss, dt, context) {
       playSfx('crit');
       if (triggerShake) triggerShake(10 + S.chimeCount * 2);
       if (triggerHaptic) triggerHaptic('heavy');
-      if (addDamageText) addDamageText(boss.x, boss.y - 85, `BADALO FÚNEBRE (${S.chimeCount}/${S.maxChimes})!`, true, '#f1c40f');
+      if (addDamageText) addDamageText(boss.x, boss.y - 85, matchText('match.combat.deathToll', { current: S.chimeCount, max: S.maxChimes }), true, '#f1c40f');
 
       // Cria onda sonora concêntrica com frestas seguras aleatórias e imprevisíveis
       let baseGapAngle = Math.random() * Math.PI * 2;
@@ -743,7 +744,7 @@ export function updateDeathToll(boss, dt, context) {
           ring.hitPlayer = true;
           damagePlayerFromBoss(player, ring.damage, "Badalo Fúnebre", context, '#81ecec');
           player.judgmentSlowTimer = REAPER_CONFIG.DEATH_TOLL_SLOW_DURATION || 150;
-          if (addDamageText) addDamageText(player.x, player.y, "MARCA DO JULGAMENTO (-25% VEL)!", false, '#81ecec');
+          if (addDamageText) addDamageText(player.x, player.y, matchText('match.combat.judgment'), false, '#81ecec');
           if (createHitParticles) createHitParticles(player.x, player.y, '#81ecec', 16);
           if (triggerShake) triggerShake(9);
         }
@@ -990,7 +991,7 @@ export function checkCleaveParricide(boss, context) {
       if (triggerShake) triggerShake(16);
       if (triggerHaptic) triggerHaptic('heavy');
       if (createHitParticles) createHitParticles(a.x, a.y, '#ff4757', 28);
-      if (addDamageText) addDamageText(boss.x, boss.y - 65, "PARRICÍDIO! CEIFADOR ATORDOADO!", true, '#ff4757');
+      if (addDamageText) addDamageText(boss.x, boss.y - 65, matchText('match.combat.parricide'), true, '#ff4757');
       break;
     }
   }
@@ -1032,7 +1033,7 @@ export function confinePlayerToPurgatoryChains(player, boss, dt = 1, context = {
           if (triggerShake) triggerShake(14);
           if (triggerHaptic) triggerHaptic('heavy');
           if (createHitParticles) createHitParticles(player.x, player.y, '#00cec9', 24);
-          if (addDamageText) addDamageText(player.x, player.y, "ELO FRATURADO ROMPIDO!", true, '#00cec9');
+          if (addDamageText) addDamageText(player.x, player.y, matchText('match.combat.link'), true, '#00cec9');
           return; // Elo quebrado, jaula colapsada!
         }
       }
@@ -1184,7 +1185,7 @@ export function updatePurgatoryChains(boss, dt, context) {
       playSfx('shatter');
       if (triggerShake) triggerShake(10);
       if (createHitParticles) createHitParticles(a.x, a.y, '#00cec9', 20);
-      if (addDamageText) addDamageText(a.x, a.y, "ÂNCORA DESTRUÍDA!", true, '#00cec9');
+      if (addDamageText) addDamageText(a.x, a.y, matchText('match.combat.anchor'), true, '#00cec9');
     }
   }
 
@@ -1219,7 +1220,7 @@ export function updatePurgatoryChains(boss, dt, context) {
 
     playSfx('boss');
     if (triggerShake) triggerShake(12);
-    if (addDamageText) addDamageText(boss.x, boss.y - 50, "JAULA COLAPSADA!", true, '#00cec9');
+    if (addDamageText) addDamageText(boss.x, boss.y - 50, matchText('match.combat.cage'), true, '#00cec9');
   }
 }
 

@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/enemies/minibosses/runicWarden.js
  * 
@@ -26,7 +27,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionTimer = 28;
         e.actionMaxTimer = 28;
         safePlaySfx('charge');
-        ctx.addDamageText(e.x, e.y, "PRISÃO RÚNICA!", true, '#0984e3');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.prison'), true, '#0984e3');
 
         bossTelegraphs.push({
           x: player.x,

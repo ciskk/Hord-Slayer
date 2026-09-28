@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/xpDevourer.js
  * IA do Duende Ladrão de Gemas — Busca e consumo de gemas de éter.
@@ -51,7 +52,7 @@ export function xpDevourerBehavior(e, dt, angle, curSpeed, ctx) {
         e.radius = Math.min(24, e.radius + 0.8);
         createHitParticles(e.x, e.y, '#00d2d3', 4);
         playSfx('hit');
-        addDamageText(e.x, e.y, "ÉTER DEVORADO!", false, '#00d2d3');
+        addDamageText(e.x, e.y, matchText('match.combat.ether'), false, '#00d2d3');
       }
     }
   } else {

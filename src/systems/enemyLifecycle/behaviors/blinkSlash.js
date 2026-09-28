@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/blinkSlash.js
  * IA do Fatiador Quântico — Teleporte quântico + corte de foice.
@@ -35,7 +36,7 @@ export function blinkSlashBehavior(e, dt, angle, curSpeed, ctx) {
         maxTimer: 20,
         damage: Math.round(e.damage * 1.1)
       });
-      addDamageText(e.x, e.y, "CORTE QUÂNTICO!", true, '#a29bfe');
+      addDamageText(e.x, e.y, matchText('match.combat.quantum'), true, '#a29bfe');
     }
   }
 }

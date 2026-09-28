@@ -1,3 +1,4 @@
+import { t, formatNumber } from '../../i18n/index.js';
 const positive = value => Number.isFinite(value) ? Math.max(0, value) : 0;
 
 // Explicit targets, independent of lifetime upgrades or accumulated currency.
@@ -12,10 +13,10 @@ export function evaluateVictory({ kills = 0, survivalSecs = 0, evolvedCount = 0 
   ];
   const score = criteria.reduce((sum, item) => sum + item.points, 0);
   const [grade, title, color, starCount] = score >= 95
-    ? ['S+', 'LENDA DO ABISMO', '#ffe2a0', 5]
-    : score >= 85 ? ['S', 'CAMPEÃO DA ALVORADA', '#ffd166', 4]
-      : score >= 70 ? ['A+', 'EXPURGADOR SUPREMO', '#7ee8cc', 3]
-        : ['A', 'GUARDIÃO DA ALVORADA', '#b5c8f5', 2];
+    ? ['S+', t('match.rank.Splus'), '#ffe2a0', 5]
+    : score >= 85 ? ['S', t('match.rank.S'), '#ffd166', 4]
+      : score >= 70 ? ['A+', t('match.rank.Aplus'), '#7ee8cc', 3]
+        : ['A', t('match.rank.A'), '#b5c8f5', 2];
   return { score, grade, title, color, criteria, stars: '★'.repeat(starCount) + '☆'.repeat(5 - starCount) };
 }
 

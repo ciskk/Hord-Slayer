@@ -1,3 +1,4 @@
+import { t, formatNumber } from '../../i18n/index.js';
 /**
  * src/ui/modals/chestModal.js
  * Sequência Cinematográfica de Unboxing de Baús Arcanos (Chefe & Mini-Boss).
@@ -20,16 +21,21 @@ import { renderIcon } from '../icons.js';
 import { UPGRADE_ICONS, REWARD_ICONS } from '../cardIcons.js';
 import { recordRunStats } from '../../config/achievements.js';
 import { transitionToArenaTheme } from '../../render/environment.js';
-import { getHordeArenaTheme } from '../../systems/waves.js';
+import { getHordeArenaTheme, onBossChestCollected } from '../../systems/waves.js';
 import { onAltarChestCollected } from '../../systems/worldEvents.js';
 import { updateAllAutoFit } from '../../core/responsive.js';
 
 let chestKeydownHandler = null;
+let refreshOpenChest = null;
+export function refreshChestLanguage() { refreshOpenChest?.(); }
+
 
 export function openChestModal(tier = 'BOSS') {
   playSfx('chest_fanfare');
   gameState.isPaused = true;
   resetInputSoft();
+
+  if (typeof document === 'undefined') return;
 
   if (!activeBoss) {
     const bossHud = document.getElementById('boss-hud');
@@ -64,29 +70,32 @@ export function openChestModal(tier = 'BOSS') {
     gameCanvas.classList.add('canvas-chest-frozen');
   }
 
+  const renderHeadings = () => {
   // 2. Títulos e Contexto da Derrota do Algoz
   if (eyebrowElem) {
     eyebrowElem.innerText = isAltar
-      ? "DESAFIO DE SANGUE CONCLUÍDO • DÁDIVA SUPREMA"
+      ? t('match.chest.altarEyebrow')
       : (isMini 
-        ? "ABERRAÇÃO EXPURGADA • RELICÁRIO ESPECTRAL" 
-        : "COLOSSO ANIQUILADO • DÁDIVA DO DESTINO");
+        ? t('match.chest.miniEyebrow')
+        : t('match.chest.bossEyebrow'));
   }
 
   if (titleElem) {
     titleElem.innerText = isAltar
-      ? "BAÚ LENDÁRIO DO ALTAR"
-      : (isMini ? "RELICÁRIO DE SAFIRA" : "SARCÓFAGO DO SOBERANO");
+      ? t('match.chest.altar')
+      : (isMini ? t('match.chest.mini') : t('match.chest.boss'));
   }
 
   if (subElem) {
     subElem.innerText = isAltar
-      ? "A horda rubra sucumbiu ao seu ritual. As dádivas ancestrais do sangue foram reveladas:"
+      ? t('match.chest.altarSub')
       : (isMini 
-        ? "Campeão de elite abatido. Relíquias arcanas desvendadas:" 
-        : "A arena foi purificada. Recompensas lendárias concedidas:");
+        ? t('match.chest.miniSub')
+        : t('match.chest.bossSub'));
   }
 
+  };
+  renderHeadings();
   // 3. Preparação das recompensas
   const pendingRewards = [];
 
@@ -98,10 +107,10 @@ export function openChestModal(tier = 'BOSS') {
       const evo = syns[0];
       pendingRewards.push({
         isLegendary: true,
-        title: evo.name,
-        desc: evo.desc,
-        stat: "PODER MÁXIMO • TRANSCENDÊNCIA",
-        badge: "Evolução Suprema",
+        get title() { return evo.name; },
+        get desc() { return evo.desc; },
+        get stat() { return t('match.chest.power'); },
+        get badge() { return t('match.chest.evolution'); },
         iconSvg: UPGRADE_ICONS[evo.id] || `<svg viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="#ff3838"/></svg>`,
         apply: () => evo.apply()
       });
@@ -112,10 +121,10 @@ export function openChestModal(tier = 'BOSS') {
     upgrades.filter(u => !u.isDestinyCard && u.id !== 'heal').forEach(u => {
       pendingRewards.push({
         isLegendary: false,
-        title: u.title,
-        desc: u.desc,
+        get title() { return u.title; },
+        get desc() { return u.desc; },
         stat: typeof u.getStat === 'function' ? u.getStat() : u.stat,
-        badge: u.badge || "Aprimoramento",
+        get badge() { return u.badge || t('match.chest.upgrade'); },
         iconSvg: UPGRADE_ICONS[u.id] || `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#ff3838"/></svg>`,
         apply: () => u.apply()
       });
@@ -124,14 +133,14 @@ export function openChestModal(tier = 'BOSS') {
     // 3. Tributo de Sangue Garantido (Cura Vital + Ouro Persistente)
     pendingRewards.push({
       isLegendary: true,
-      title: "Tributo do Sangue Ancestral",
-      desc: "O altar consagra sua vitória: restaura sua vida ao máximo e concede almas persistentes.",
-      stat: "Vida Total & +40 Ouro",
-      badge: "Dádiva de Sangue",
+      get title() { return t('match.chest.tribute'); },
+      get desc() { return t('match.chest.tributeDesc'); },
+      get stat() { return t('match.chest.tributeStat'); },
+      get badge() { return t('match.chest.bloodGift'); },
       iconSvg: REWARD_ICONS.blood_tribute,
       apply: () => {
         player.hp = player.maxHp;
-        addPersistentGold(40);
+        addPersistentGold(40, player.goldMultiplier ?? 1);
       }
     });
   } else if (isMini) {
@@ -140,10 +149,10 @@ export function openChestModal(tier = 'BOSS') {
     upgrades.filter(u => !u.isDestinyCard).forEach(u => {
       pendingRewards.push({
         isLegendary: false,
-        title: u.title,
-        desc: u.desc,
+        get title() { return u.title; },
+        get desc() { return u.desc; },
         stat: typeof u.getStat === 'function' ? u.getStat() : u.stat,
-        badge: u.badge || "Aprimoramento",
+        get badge() { return u.badge || t('match.chest.upgrade'); },
         iconSvg: UPGRADE_ICONS[u.id] || `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#00f5d4"/></svg>`,
         apply: () => u.apply()
       });
@@ -155,10 +164,10 @@ export function openChestModal(tier = 'BOSS') {
       const evo = syns[0];
       pendingRewards.push({
         isLegendary: true,
-        title: evo.name,
-        desc: evo.desc,
-        stat: "PODER MÁXIMO • TRANSCENDÊNCIA",
-        badge: "Evolução Suprema",
+        get title() { return evo.name; },
+        get desc() { return evo.desc; },
+        get stat() { return t('match.chest.power'); },
+        get badge() { return t('match.chest.evolution'); },
         iconSvg: UPGRADE_ICONS[evo.id] || `<svg viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="#ffd166"/></svg>`,
         apply: () => evo.apply()
       });
@@ -168,10 +177,10 @@ export function openChestModal(tier = 'BOSS') {
     upgrades.filter(u => !u.isDestinyCard).forEach(u => {
       pendingRewards.push({
         isLegendary: false,
-        title: u.title,
-        desc: u.desc,
+        get title() { return u.title; },
+        get desc() { return u.desc; },
         stat: typeof u.getStat === 'function' ? u.getStat() : u.stat,
-        badge: u.badge || "Aprimoramento",
+        get badge() { return u.badge || t('match.chest.upgrade'); },
         iconSvg: UPGRADE_ICONS[u.id] || `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#ffd166"/></svg>`,
         apply: () => u.apply()
       });
@@ -182,48 +191,50 @@ export function openChestModal(tier = 'BOSS') {
   if (pendingRewards.length === 0) {
     pendingRewards.push({
       isLegendary: false,
-      title: "Bênção da Fortuna",
-      desc: "Todos os poderes conhecidos atingiram o apogeu! Recupera vitalidade e concede ouro da arena.",
-      stat: "+100 HP & +25 Ouro",
-      badge: "Fortuna",
+      get title() { return t('match.chest.fortune'); },
+      get desc() { return t('match.chest.fortuneDesc'); },
+      get stat() { return t('match.chest.fortuneStat'); },
+      get badge() { return t('match.chest.fortuneBadge'); },
       iconSvg: UPGRADE_ICONS.blessing,
       apply: () => {
         player.hp = Math.min(player.maxHp, player.hp + 100);
-        addPersistentGold(25);
+        addPersistentGold(25, player.goldMultiplier ?? 1);
       }
     });
   }
 
+  let transmuted = false;
   // Bônus de Transmutação Cósmica
   if (player && player.doubleChestChance > 0 && Math.random() < player.doubleChestChance) {
+    transmuted = true;
     if (subElem) {
-      subElem.innerHTML += ` <span style="color:#ffd166; font-weight:800;">${renderIcon('transmute', { size: 12, color: '#ffd166' })} TRANSMUTAÇÃO CÓSMICA ATIVADA!</span>`;
+      subElem.innerHTML += ` <span style="color:#ffd166; font-weight:800;">${renderIcon('transmute', { size: 12, color: '#ffd166' })} ${t('match.chest.transmute')}</span>`;
     }
     const extraUpgrades = getRandomChestUpgrades(1).filter(u => !u.isDestinyCard);
     if (extraUpgrades.length > 0) {
       const u = extraUpgrades[0];
       pendingRewards.push({
         isLegendary: false,
-        title: u.title,
-        desc: `[Transmutação Cósmica] ${u.desc}`,
+        get title() { return u.title; },
+        get desc() { return u.desc; },
         stat: u.stat,
-        badge: "Dádiva Astral",
+        get badge() { return t('match.chest.astral'); },
         iconSvg: UPGRADE_ICONS[u.id] || UPGRADE_ICONS.blessing,
         apply: () => {
           u.apply();
-          addPersistentGold(25);
+          addPersistentGold(25, player.goldMultiplier ?? 1);
         }
       });
     } else {
       pendingRewards.push({
         isLegendary: false,
-        title: "Transmutação de Almas",
-        desc: "A fenda cósmica duplicou o tesouro, vertendo essências imortais adicionais.",
-        stat: "+40 Almas Persistentes",
-        badge: "Dádiva Astral",
+        get title() { return t('match.chest.souls'); },
+        get desc() { return t('match.chest.soulsDesc'); },
+        get stat() { return t('match.chest.soulsStat'); },
+        get badge() { return t('match.chest.astral'); },
         iconSvg: REWARD_ICONS.soul_transmutation,
         apply: () => {
-          addPersistentGold(40);
+          addPersistentGold(40, player.goldMultiplier ?? 1);
         }
       });
     }
@@ -231,13 +242,11 @@ export function openChestModal(tier = 'BOSS') {
 
   // 4. Criar cartas no estado latente
   const cardElements = [];
-  pendingRewards.forEach(r => {
-    const card = document.createElement('div');
-    card.className = `chest-card ${r.isLegendary ? 'legendary-card' : ''}`;
+  const renderCard = (card, r) => {
     card.innerHTML = `
       <div class="chest-card-icon">${r.iconSvg}</div>
       <div class="chest-card-info">
-        ${r.isLegendary ? `<span class="legendary-pill">${renderIcon('star_evolution', { size: 10, color: '#040508' })} EVOLUÇÃO LENDÁRIA</span>` : ''}
+        ${r.isLegendary ? `<span class="legendary-pill">${renderIcon('star_evolution', { size: 10, color: '#040508' })} ${t('match.chest.legendary')}</span>` : ''}
         <div class="chest-card-title">
           <span>${r.title}</span>
           <span class="chest-card-badge">${r.badge}</span>
@@ -246,6 +255,11 @@ export function openChestModal(tier = 'BOSS') {
         <div class="chest-card-desc">${r.desc}</div>
       </div>
     `;
+  };
+  pendingRewards.forEach(r => {
+    const card = document.createElement('div');
+    card.className = `chest-card ${r.isLegendary ? 'legendary-card' : ''}`;
+    renderCard(card, r);
     list.appendChild(card);
     cardElements.push({ el: card, reward: r });
   });
@@ -257,9 +271,18 @@ export function openChestModal(tier = 'BOSS') {
   let revealTimeout = null;
   let currentIdx = 0;
 
+  refreshOpenChest = () => {
+    if (!modal.classList.contains('active')) return;
+    renderHeadings();
+    if (transmuted && subElem) subElem.append(' ' + t('match.chest.transmute'));
+    cardElements.forEach(({ el, reward }) => renderCard(el, reward));
+    if (claimText) claimText.innerText = t(isFullyRevealed ? 'match.chest.claim' : 'match.chest.revealing');
+    updateAllAutoFit(modal);
+  };
   const doClaim = () => {
     if (isClaiming) return;
     isClaiming = true;
+    refreshOpenChest = null;
 
     if (chestKeydownHandler) {
       window.removeEventListener('keydown', chestKeydownHandler);
@@ -286,7 +309,8 @@ export function openChestModal(tier = 'BOSS') {
         }
       });
 
-      if (!activeBoss) {
+      if (!activeBoss && tier === 'BOSS') {
+        onBossChestCollected(Math.floor(frameCount / 60));
         transitionToArenaTheme(getHordeArenaTheme(), 90);
         setIsWavePaused(false);
         resetSpawnTimer();
@@ -329,7 +353,7 @@ export function openChestModal(tier = 'BOSS') {
 
     if (claimBtn) {
       claimBtn.disabled = false;
-      if (claimText) claimText.innerText = "Equipar Poderes e Continuar";
+      if (claimText) claimText.innerText = t('match.chest.claim');
       claimBtn.onclick = doClaim;
     }
   };
@@ -360,7 +384,7 @@ export function openChestModal(tier = 'BOSS') {
 
   if (claimBtn) {
     claimBtn.disabled = true;
-    if (claimText) claimText.innerText = "Desvendando Relíquias...";
+    if (claimText) claimText.innerText = t('match.chest.revealing');
     claimBtn.onclick = () => {
       if (!isFullyRevealed) {
         fastForwardReveal();
@@ -395,7 +419,7 @@ export function openChestModal(tier = 'BOSS') {
         isFullyRevealed = true;
         if (claimBtn) {
           claimBtn.disabled = false;
-          if (claimText) claimText.innerText = "Equipar Poderes e Continuar";
+          if (claimText) claimText.innerText = t('match.chest.claim');
           claimBtn.onclick = doClaim;
         }
         return;

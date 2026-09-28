@@ -1459,12 +1459,13 @@ function updateGameSpeedUI() {
  * ========================================================
  */
 function renderPerfTab(container) {
+  perfMetrics.setEnabled(true);
   const stats = perfMetrics.getStats(300) || {
-    fps: 60,
-    fps1PctLow: 60,
-    frameTime: { avg: 16.6, p50: 16.6, p95: 16.6, p99: 16.6 },
-    updateTime: { avg: 4.0, p95: 5.0 },
-    renderTime: { avg: 5.0, p95: 6.0 },
+    fps: '—',
+    fps1PctLow: '—',
+    frameTime: { avg: '—', p50: '—', p95: '—', p99: '—' },
+    updateTime: { avg: '—', p95: '—' },
+    renderTime: { avg: '—', p95: '—' },
     subsystems: {},
     counters: {
       collisionsPerFrame: 0,
@@ -1493,7 +1494,7 @@ function renderPerfTab(container) {
     <!-- Indicadores Principais -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 14px;">
       <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 8px; text-align: center;">
-        <div style="font-size: 10px; color: #95a5a6;">FPS MÉDIO (1% LOW)</div>
+        <div style="font-size: 10px; color: #95a5a6;">CADÊNCIA rAF (1% LOW)</div>
         <div style="font-size: 18px; font-weight: bold; color: ${stats.fps >= 55 ? '#2ecc71' : '#f39c12'};">${stats.fps} <span style="font-size: 12px; color: #7f8c8d;">(${stats.fps1PctLow})</span></div>
       </div>
       <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 8px; text-align: center;">
@@ -1556,6 +1557,7 @@ function renderPerfTab(container) {
 
   card.querySelector('#btn-perf-bench-10s').onclick = () => {
     perfMetrics.startBenchmark(10, 'DEVTOOLS_10S', report => {
+      if (!report.stats) { showDevToast('Gravação interrompida antes de coletar quadros.'); return; }
       showDevToast(`✅ <b>Benchmark 10s Concluído:</b> FPS Médio: ${report.stats.fps} | p95: ${report.stats.frameTime.p95}ms | p99: ${report.stats.frameTime.p99}ms`);
       renderActiveTab();
     });
@@ -1564,6 +1566,7 @@ function renderPerfTab(container) {
 
   card.querySelector('#btn-perf-bench-30s').onclick = () => {
     perfMetrics.startBenchmark(30, 'DEVTOOLS_30S', report => {
+      if (!report.stats) { showDevToast('Gravação interrompida antes de coletar quadros.'); return; }
       showDevToast(`✅ <b>Benchmark 30s Concluído:</b> FPS Médio: ${report.stats.fps} | p95: ${report.stats.frameTime.p95}ms | p99: ${report.stats.frameTime.p99}ms`);
       renderActiveTab();
     });

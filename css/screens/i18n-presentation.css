@@ -1,0 +1,334 @@
+/* ==========================================================================
+   HORD.IO: INTERNACIONALIZAÇÃO & REVISÃO DE APRESENTAÇÃO (FASE 6)
+   Ajustes de quebra de linha, espaçamento de cards/botões e responsividade
+   multilíngue (Português, Inglês, Espanhol e Francês).
+   Garante paridade estética sem textos truncados, sobreposições ou desvios
+   de alinhamento em resoluções de 360px a 4K.
+   ========================================================================== */
+
+/* 1. Tratamento Tipográfico, Acentuação e Anti-Overflow Universal */
+:lang(fr), :lang(es), :lang(pt-BR), :lang(en) {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tratamento de pontuação de abertura em Espanhol (¡, ¿) */
+:lang(es) {
+  font-feature-settings: "liga" 1, "kern" 1;
+}
+
+/* 2. HUD de Combate em Partida (Anti-Overflow e Legibilidade) */
+.hud-bar-label {
+  max-width: calc(100% - 75px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:lang(fr) .hud-bar-label,
+:lang(es) .hud-bar-label {
+  letter-spacing: 0.6px;
+  font-size: 8.5px;
+}
+
+/* Ajuste do rótulo extenso de abates em Francês (ÉLIMINATIONS) */
+:lang(fr) #hud .kills-badge .hud-stat-label {
+  letter-spacing: 0.2px;
+  font-size: 8px;
+}
+
+/* Nome do Chefe e Títulos no HUD */
+#hud #boss-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+:lang(fr) #hud #boss-name,
+:lang(es) #hud #boss-name {
+  font-size: clamp(9.5px, 1.2vw, 11px);
+  letter-spacing: 0.4px;
+}
+
+.boss-title-tag {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Banner de Onda e Contexto */
+#hud #wave-banner {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Altar de Sangue no HUD */
+.blood-altar-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.blood-altar-status {
+  max-width: 170px;
+}
+
+.altar-warning-alert {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Botão Touch Mobile do Altar de Sangue */
+.blood-altar-touch-btn {
+  touch-action: manipulation;
+}
+
+.blood-altar-touch-badge {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.blood-altar-touch-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 8.5px;
+}
+
+:lang(fr) .blood-altar-touch-label,
+:lang(es) .blood-altar-touch-label {
+  font-size: 8px;
+  letter-spacing: 0.2px;
+}
+
+/* 3. Menu de Pausa (Estase Astral) */
+.pause-monumental-title {
+  overflow-wrap: break-word;
+  hyphens: auto;
+  text-align: center;
+}
+
+.pause-monumental-sub {
+  overflow-wrap: break-word;
+  hyphens: auto;
+  text-align: center;
+  max-width: 90%;
+  margin: 0 auto;
+}
+
+.pause-pillar .pillar-tag,
+.pause-pillar .pillar-subheader,
+.pillar-badge-fusion {
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  text-align: center;
+}
+
+.btn-pause-resume,
+.btn-pause-abandon {
+  white-space: normal;
+  min-width: 0;
+}
+
+.btn-pause-resume .resume-label,
+.btn-pause-abandon span {
+  overflow-wrap: break-word;
+}
+
+/* 4. Cartas de Melhoria (Tarô Arcano) */
+#upgrade-modal .upgrade-card-pro {
+  min-width: 0;
+}
+
+#upgrade-modal .card-title-main {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+#upgrade-modal .card-desc-text {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+#upgrade-modal .card-stat-pill {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+#upgrade-modal .boss-reward-title {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  text-align: center;
+  max-width: 90%;
+  margin: 0 auto;
+}
+
+#upgrade-modal .btn-auto-upgrade,
+#upgrade-modal .btn-reroll {
+  white-space: nowrap;
+  font-size: clamp(10px, 2.5vw, 12px);
+}
+
+:lang(fr) #upgrade-modal .btn-auto-upgrade,
+:lang(es) #upgrade-modal .btn-auto-upgrade {
+  font-size: clamp(9.5px, 2.2vw, 11px);
+  padding: 4px 8px;
+}
+
+/* 5. Modal de Relicários e Baús */
+#chest-modal .chest-reward-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+#chest-modal .reward-title {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  line-height: 1.3;
+}
+
+#chest-modal .reward-desc {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  line-height: 1.4;
+}
+
+#chest-modal .reward-badge-tag {
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-align: center;
+}
+
+/* 6. Modais de Desfecho: Vitória & Consagração / Fim da Jornada */
+#game-over-modal .death-verdict-text,
+#game-over-modal .consecration-lore-text,
+#victory-modal .victory-lore-text {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  line-height: 1.5;
+}
+
+#game-over-modal .verdict-badge,
+#victory-modal .victory-badge {
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-align: center;
+}
+
+#game-over-modal .summary-stat-chip,
+#victory-modal .summary-stat-chip {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+#game-over-modal .summary-stat-chip .chip-label,
+#victory-modal .summary-stat-chip .chip-label {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.rank-title-text,
+.rewards-card-title,
+.rewards-badge-run,
+.build-dossier-title {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.btn-victory-action,
+.btn-death-action {
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
+}
+
+.victory-action-text,
+.rebirth-text {
+  overflow-wrap: break-word;
+  line-height: 1.25;
+}
+
+/* 7. Astrolábio (Árvore de Talentos Meta) */
+#talents-modal .talent-card,
+#talents-modal .talent-node-card {
+  min-width: 0;
+}
+
+#talents-modal .talent-title,
+#talents-modal .talent-desc,
+#talents-modal .talent-lore {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  line-height: 1.4;
+}
+
+/* 8. Códice do Bestiário e Conquistas */
+#bestiary-modal .dossier-lore-box,
+#bestiary-modal .dossier-tactics-box,
+#bestiary-modal .dossier-quote-text,
+#achievements-modal .ach-card-desc,
+#achievements-modal .ach-dossier-lore {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  line-height: 1.45;
+}
+
+#bestiary-modal .bcard-name,
+#bestiary-modal .bcard-title,
+#achievements-modal .ach-card-title {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* 9. Botões Globais de Retorno e Ação */
+.btn-return-content,
+.btn-resume-content {
+  white-space: normal;
+  text-align: center;
+}
+
+/* 10. Adaptação Dinâmica em Telas Estreitas (Mobile Portrait & Landscape) */
+@media (max-width: 640px) {
+  #upgrade-modal .levelup-monumental-title {
+    font-size: clamp(16px, 4.5vw, 22px);
+    letter-spacing: 1px;
+    padding: 0 8px;
+    text-align: center;
+  }
+
+  #chest-modal .chest-monumental-title {
+    font-size: clamp(16px, 4.5vw, 22px);
+    letter-spacing: 1px;
+  }
+
+  .boss-bark-box {
+    max-width: 96vw;
+  }
+
+  .boss-bark-text {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  #blood-altar-hud {
+    max-width: 94vw;
+  }
+
+  .blood-altar-compact-row {
+    gap: 6px;
+  }
+}

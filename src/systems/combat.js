@@ -1,3 +1,4 @@
+import { t as matchText } from '../i18n/index.js';
 /**
  * src/systems/combat.js
  * Subsistema de combate, efeitos visuais de impacto e máquina de estados melee (Fase 3).
@@ -427,7 +428,7 @@ export function processEnemyMeleeAttacks(player, enemies, dt, freezeTimer = 0) {
                 const absorb = Math.min(player.tempShield, actualPlayerDmg);
                 player.tempShield -= absorb;
                 actualPlayerDmg -= absorb;
-                addDamageText(player.x, player.y - 35, `ESCUDO ABSORVEU -${Math.round(absorb)}`, true, '#a29bfe');
+                addDamageText(player.x, player.y - 35, matchText('match.combat.shield', { amount: Math.round(absorb) }), true, '#a29bfe');
                 if (player.tempShield <= 0) player.tempShieldTimer = 0;
               }
               player.hp -= actualPlayerDmg;

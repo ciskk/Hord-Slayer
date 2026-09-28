@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/webTrapper.js
  * IA da Tecelã das Catacumbas — Armadilha de teias desacelerantes.
@@ -23,7 +24,7 @@ export function webTrapperBehavior(e, dt, angle, curSpeed, ctx) {
     e.webTimer = 0;
     playSfx('shoot');
     createHitParticles(e.x, e.y, '#dfe4ea', 6);
-    addDamageText(e.x, e.y, "CASULO!", false, '#dfe4ea');
+    addDamageText(e.x, e.y, matchText('match.combat.cocoon'), false, '#dfe4ea');
 
     if (canSpawnEnemyBullet()) {
       const speed = 5.2;

@@ -23,7 +23,19 @@ export const GRAPHICS_QUALITY = {
 
 const STORAGE_KEY_GFX = 'hord_graphics_quality';
 
-let currentGraphicsQuality = GRAPHICS_QUALITY.NATIVE;
+export function detectInitialGraphicsQuality() {
+  if (typeof window !== 'undefined') {
+    const isMobile = (typeof window.Capacitor !== 'undefined') ||
+                     (/Android|iPhone|iPad|iPod/i.test(navigator?.userAgent || '')) ||
+                     ((window.devicePixelRatio || 1) > 1.5 && Math.min(window.innerWidth || 0, window.innerHeight || 0) < 600);
+    if (isMobile) {
+      return GRAPHICS_QUALITY.PERFORMANCE;
+    }
+  }
+  return GRAPHICS_QUALITY.NATIVE;
+}
+
+let currentGraphicsQuality = detectInitialGraphicsQuality();
 
 if (typeof localStorage !== 'undefined') {
   try {
@@ -41,19 +53,30 @@ export function getGraphicsQuality() {
 }
 
 export function resolveTargetDpr(mode = currentGraphicsQuality) {
-  const nativeDpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+  const rawDpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+  const nativeDpr = Math.max(0.5, rawDpr);
   switch (mode) {
     case GRAPHICS_QUALITY.NATIVE:
-      // Resolução nativa da tela - adaptação direta aos pixels físicos do aparelho
-      return Math.max(1, nativeDpr);
+      // Resolução nativa física 1:1 do monitor/display
+      return nativeDpr;
     case GRAPHICS_QUALITY.HIGH:
-      // Alta qualidade: nítida até 2.0x (excelente para Retina sem carga excessiva de preenchimento)
-      return Math.min(Math.max(1, nativeDpr), 2.0);
+      // Alta qualidade e nitidez:
+      // - Em telas de PC desktop padrão (nativeDpr <= 1.25): ativa Super-Sampling de 1.25x (ex: 1080p -> 1350p)
+      // - Em telas Retina / Smartphones de alta densidade (nativeDpr > 1.25): equilibra até 2.0x
+      if (nativeDpr <= 1.25) {
+        return Math.round(nativeDpr * 1.25 * 100) / 100;
+      }
+      return Math.min(nativeDpr, 2.0);
     case GRAPHICS_QUALITY.PERFORMANCE:
-      // Modo econômico: 1.25x
-      return Math.min(Math.max(1, nativeDpr), 1.25);
+      // Modo econômico / Alta performance:
+      // - Em telas de PC desktop (nativeDpr <= 1.25): ativa Sub-Sampling de 0.80x (ex: 1080p -> 864p)
+      // - Em telas Retina / Smartphones (nativeDpr > 1.25): reduz para 1.25x para poupar bateria e manter FPS
+      if (nativeDpr <= 1.25) {
+        return Math.round(nativeDpr * 0.80 * 100) / 100;
+      }
+      return Math.min(nativeDpr, 1.25);
     default:
-      return Math.max(1, nativeDpr);
+      return nativeDpr;
   }
 }
 

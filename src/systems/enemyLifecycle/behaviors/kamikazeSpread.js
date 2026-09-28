@@ -32,8 +32,11 @@ export function kamikazeSpreadBehavior(e, dt, angle, curSpeed, ctx) {
       };
       bossTelegraphs.push(e.fuseTelegraph);
     } else {
-      e.x += Math.cos(angle) * curSpeed * 1.25 * dt;
-      e.y += Math.sin(angle) * curSpeed * 1.25 * dt;
+      const frame = frameCount || 0;
+      const phase = e.phaseOffset || 0;
+      const sway = Math.sin(frame * 0.08 + phase) * 0.12;
+      e.x += Math.cos(angle + sway) * curSpeed * 1.25 * dt;
+      e.y += Math.sin(angle + sway) * curSpeed * 1.25 * dt;
     }
   }
 }

@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/bosses/vampireLord/render.js
  * Renderização procedural vetorial completa e cinemática do Lorde Vampírico (Boss 1).
@@ -388,14 +389,14 @@ function drawCinematicScreenTitle(ctx, e, frameCount) {
   const titleY = by + (isVertical ? 23 : 37);
   ctx.font = isVertical ? '900 21px "Cinzel", "Times New Roman", serif' : '900 34px "Cinzel", "Times New Roman", serif';
   ctx.fillStyle = 'rgba(255, 23, 68, 0.5)';
-  ctx.fillText('LORDE VAMPÍRICO', centerX + 1, titleY + 1.5);
+  ctx.fillText(matchText('match.canvas.vampire'), centerX + 1, titleY + 1.5);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('LORDE VAMPÍRICO', centerX, titleY);
+  ctx.fillText(matchText('match.canvas.vampire'), centerX, titleY);
 
   ctx.font = isVertical ? '600 10px "Cinzel", sans-serif' : '700 13px "Cinzel", sans-serif';
   ctx.letterSpacing = isVertical ? '3px' : '6px';
   ctx.fillStyle = '#f1c40f';
-  ctx.fillText('SOBERANO DA ESTIRPE CARMESIM', centerX, by + (isVertical ? 45 : 71));
+  ctx.fillText(matchText('match.canvas.vampireSub'), centerX, by + (isVertical ? 45 : 71));
   ctx.letterSpacing = '0px';
 
   ctx.restore();

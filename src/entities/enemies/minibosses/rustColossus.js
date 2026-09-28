@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/enemies/minibosses/rustColossus.js
  * 
@@ -30,7 +31,7 @@ update(e, dt, ctx, dist, angle) {
         e.tossTargetX = player.x;
         e.tossTargetY = player.y;
         safePlaySfx('charge');
-        ctx.addDamageText(e.x, e.y, "CATAPULTA!", true, '#d35400');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.catapult'), true, '#d35400');
 
         bossTelegraphs.push({
           type: 'FALLING_ROCK',
@@ -49,7 +50,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionMaxTimer = 26;
         e.chargeAngle = angle;
         safePlaySfx('boss');
-        ctx.addDamageText(e.x, e.y, "CARGA FÉRREA!", true, '#e67e22');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.iron'), true, '#e67e22');
 
         bossTelegraphs.push({
           type: 'MIST_DASH_LANE',

@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/bosses/abyssalMonolith/render.js
  * Pipeline de renderização gráfica procedural em Canvas 2D de "Ignis Lithos, o Titã de Basalto".
@@ -166,14 +167,14 @@ export function drawCinematicScreenTitle(ctx, e, frameCount) {
   const titleY = by + (isVertical ? 23 : 37);
   ctx.font = isVertical ? '900 21px "Cinzel", "Times New Roman", serif' : '900 34px "Cinzel", "Times New Roman", serif';
   ctx.fillStyle = 'rgba(230, 126, 34, 0.5)';
-  ctx.fillText('MONÓLITO ABISSAL', centerX + 1, titleY + 1.5);
+  ctx.fillText(matchText('match.canvas.monolith'), centerX + 1, titleY + 1.5);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('MONÓLITO ABISSAL', centerX, titleY);
+  ctx.fillText(matchText('match.canvas.monolith'), centerX, titleY);
 
   ctx.font = isVertical ? '600 10px "Cinzel", sans-serif' : '700 13px "Cinzel", sans-serif';
   ctx.letterSpacing = isVertical ? '3px' : '6px';
   ctx.fillStyle = '#f1c40f';
-  ctx.fillText('IGNIS LITHOS, O TITÃ DE BASALTO', centerX, by + (isVertical ? 45 : 71));
+  ctx.fillText(matchText('match.canvas.monolithSub'), centerX, by + (isVertical ? 45 : 71));
   ctx.letterSpacing = '0px';
 
   ctx.restore();

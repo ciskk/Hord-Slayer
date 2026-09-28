@@ -1,3 +1,4 @@
+import { t, formatNumber } from '../i18n/index.js';
 import { AXE_EVOLVED_COUNT } from './axes.js';
 
 /**
@@ -19,70 +20,70 @@ export const ITEMS = {
   SWORD: {
     id: 'SWORD',
     category: ITEM_CATEGORIES.WEAPON,
-    name: "Lâminas Espirituais",
+    get name() { return t('items.SWORD.name'); },
     icon: "sword",
-    badge: "Lâminas",
-    description: "Espadas astrais velozes arremessadas teleguiadas contra inimigos no alcance.",
+    get badge() { return t('items.SWORD.badge'); },
+    get description() { return t('items.SWORD.description'); },
     maxLevel: 5,
     evolutionId: 'evolved_sword'
   },
   STAFF: {
     id: 'STAFF',
     category: ITEM_CATEGORIES.WEAPON,
-    name: "Cajado da Tormenta",
+    get name() { return t('items.STAFF.name'); },
     icon: "staff",
-    badge: "Cajado",
-    description: "Canaliza e dispara esferas concentradas de poder mágico ígneo.",
+    get badge() { return t('items.STAFF.badge'); },
+    get description() { return t('items.STAFF.description'); },
     maxLevel: 5,
     evolutionId: 'evolved_staff'
   },
   POTION: {
     id: 'POTION',
     category: ITEM_CATEGORIES.WEAPON,
-    name: "Frascos Cáusticos",
+    get name() { return t('items.POTION.name'); },
     icon: "potion",
-    badge: "Poção",
-    description: "Bombardeia a rota dos monstros com poças gigantes de ácido corrosivo.",
+    get badge() { return t('items.POTION.badge'); },
+    get description() { return t('items.POTION.description'); },
     maxLevel: 5,
     evolutionId: 'evolved_potion'
   },
   HAMMER: {
     id: 'HAMMER',
     category: ITEM_CATEGORIES.WEAPON,
-    name: "Martelo Sagrado",
+    get name() { return t('items.HAMMER.name'); },
     icon: "hammer",
-    badge: "Martelo",
-    description: "Esmaga o solo em 360°, anula projéteis e abre fendas incandescentes frontais.",
+    get badge() { return t('items.HAMMER.badge'); },
+    get description() { return t('items.HAMMER.description'); },
     maxLevel: 5,
     evolutionId: 'evolved_hammer'
   },
   AXE: {
     id: 'AXE',
     category: ITEM_CATEGORIES.WEAPON,
-    name: "Machado Giratório",
+    get name() { return t('items.AXE.name'); },
     icon: "axe",
-    badge: "Machado",
-    description: "Translada em órbita; o cabo repele inimigos e a ponta desfere corte crítico integral.",
+    get badge() { return t('items.AXE.badge'); },
+    get description() { return t('items.AXE.description'); },
     maxLevel: 3,
     evolutionId: 'evolved_axe'
   },
   ORBITALS: {
     id: 'orbitals',
     category: ITEM_CATEGORIES.WEAPON,
-    name: "Bíblias Protetoras",
+    get name() { return t('items.orbitals.name'); },
     icon: "orbitals",
-    badge: "Bíblias",
-    description: "Tomos celestiais giram destruindo oponentes em órbita protetora ao redor do herói.",
+    get badge() { return t('items.orbitals.badge'); },
+    get description() { return t('items.orbitals.description'); },
     maxLevel: 3,
     evolutionId: 'evolved_orbitals'
   },
   AURA: {
     id: 'aura',
     category: ITEM_CATEGORIES.WEAPON,
-    name: "Aura Sagrada",
+    get name() { return t('items.aura.name'); },
     icon: "aura",
-    badge: "Aura",
-    description: "Campo sagrado de dano constante em raio radiante ao redor do herói.",
+    get badge() { return t('items.aura.badge'); },
+    get description() { return t('items.aura.description'); },
     maxLevel: 5,
     evolutionId: 'evolved_aura'
   },
@@ -93,73 +94,73 @@ export const ITEMS = {
   DMG: {
     id: 'dmg',
     category: ITEM_CATEGORIES.PASSIVE,
-    name: "Poder Bruto",
+    get name() { return t('items.dmg.name'); },
     icon: "damage",
-    badge: "Passiva",
-    description: "Aumenta o dano global do herói em +5% cumulativo por nível.",
+    get badge() { return t('items.dmg.badge'); },
+    get description() { return t('items.dmg.description'); },
     maxLevel: Infinity
   },
   ARMOR: {
     id: 'armor',
     category: ITEM_CATEGORIES.PASSIVE,
-    name: "Armadura Rúnica",
+    get name() { return t('items.armor.name'); },
     icon: "armor",
-    badge: "Passiva",
-    description: "Reforça a vitalidade máxima em +30 HP cumulativo por nível.",
+    get badge() { return t('items.armor.badge'); },
+    get description() { return t('items.armor.description'); },
     maxLevel: Infinity
   },
   WINGS: {
     id: 'wings',
     category: ITEM_CATEGORIES.PASSIVE,
-    name: "Asas do Vento",
+    get name() { return t('items.wings.name'); },
     icon: "wings",
-    badge: "Passiva",
-    description: "Acelera a locomoção do herói em +0.18 de velocidade base por nível.",
+    get badge() { return t('items.wings.badge'); },
+    get description() { return t('items.wings.description'); },
     maxLevel: Infinity
   },
   FROST_PASSIVE: {
     id: 'frost_passive',
     category: ITEM_CATEGORIES.PASSIVE,
-    name: "Golpe Criogênico",
+    get name() { return t('items.frost_passive.name'); },
     icon: "frost",
-    badge: "Passiva",
-    description: "+6% de chance de congelar e desacelerar monstros por +0.25s por nível.",
+    get badge() { return t('items.frost_passive.badge'); },
+    get description() { return t('items.frost_passive.description'); },
     maxLevel: Infinity
   },
   HASTE: {
     id: 'haste',
     category: ITEM_CATEGORIES.PASSIVE,
-    name: "Fúria Rápida",
+    get name() { return t('items.haste.name'); },
     icon: "cooldown",
-    badge: "Passiva",
-    description: "Reduz o tempo de recarga de todas as armas em 5% por nível (teto 55%; após converte em dano).",
+    get badge() { return t('items.haste.badge'); },
+    get description() { return t('items.haste.description'); },
     maxLevel: Infinity
   },
   ULT_COOLDOWN: {
     id: 'ult_cooldown',
     category: ITEM_CATEGORIES.PASSIVE,
-    name: "Ímpeto Supremo",
+    get name() { return t('items.ult_cooldown.name'); },
     icon: "ult_cooldown",
-    badge: "Passiva",
-    description: "Reduz o tempo de recarga da habilidade suprema (ULT) em 5% por nível.",
+    get badge() { return t('items.ult_cooldown.badge'); },
+    get description() { return t('items.ult_cooldown.description'); },
     maxLevel: Infinity
   },
   CRIT: {
     id: 'crit',
     category: ITEM_CATEGORIES.PASSIVE,
-    name: "Foco Letal",
+    get name() { return t('items.crit.name'); },
     icon: "crit",
-    badge: "Passiva",
-    description: "Aumenta as chances (+4%, teto 85%) e o multiplicador de dano crítico (+0.10).",
+    get badge() { return t('items.crit.badge'); },
+    get description() { return t('items.crit.description'); },
     maxLevel: Infinity
   },
   MAGNET: {
     id: 'magnet',
     category: ITEM_CATEGORIES.PASSIVE,
-    name: "Ímã Titânico",
+    get name() { return t('items.magnet.name'); },
     icon: "magnet",
-    badge: "Passiva",
-    description: "Aumenta o alcance de atração de gemas em +30px de raio por nível.",
+    get badge() { return t('items.magnet.badge'); },
+    get description() { return t('items.magnet.description'); },
     maxLevel: Infinity
   },
 
@@ -169,10 +170,10 @@ export const ITEMS = {
   HEAL: {
     id: 'heal',
     category: ITEM_CATEGORIES.UTILITY,
-    name: "Poção Alquímica",
+    get name() { return t('items.heal.name'); },
     icon: "heal",
-    badge: "Utilidade",
-    description: "Recupera imediatamente 65% do HP máximo.",
+    get badge() { return t('items.heal.badge'); },
+    get description() { return t('items.heal.description'); },
     maxLevel: Infinity
   }
 };
@@ -183,10 +184,10 @@ export const ITEMS = {
 export const SYNERGIES = [
   {
     id: 'evolved_sword',
-    name: "Lâmina Dimensional",
-    fullName: "Lâmina Dimensional",
-    desc: "Fusão: Lâminas Espirituais + Asas do Vento! Dispara espadas espaciais gigantes com perfuração quádrupla.",
-    reqText: "Espadas Nv 4 + Asas",
+    get name() { return t('evolutions.evolved_sword.name'); },
+    get fullName() { return t('evolutions.evolved_sword.fullName'); },
+    get desc() { return t('evolutions.evolved_sword.description'); },
+    get reqText() { return t('evolutions.evolved_sword.reqText'); },
     weaponId: 'SWORD',
     weaponUpgradeIds: ['sword_extra', 'sword_speed'],
     passiveId: 'wings',
@@ -201,10 +202,10 @@ export const SYNERGIES = [
   },
   {
     id: 'evolved_axe',
-    name: "Tempestade de Aço",
-    fullName: "Tempestade de Aço",
-    desc: "Fusão: Machado Giratório + Poder Bruto! 4 machados velozes transladam em anel triturando a arena.",
-    reqText: "Machado Nv 3 + Poder",
+    get name() { return t('evolutions.evolved_axe.name'); },
+    get fullName() { return t('evolutions.evolved_axe.fullName'); },
+    get desc() { return t('evolutions.evolved_axe.description'); },
+    get reqText() { return t('evolutions.evolved_axe.reqText'); },
     weaponId: 'AXE',
     weaponUpgradeIds: ['axe_extra', 'axe_speed', 'axe_radius'],
     passiveId: 'dmg',
@@ -220,10 +221,10 @@ export const SYNERGIES = [
   },
   {
     id: 'evolved_potion',
-    name: "Dilúvio Biológico",
-    fullName: "Dilúvio Biológico",
-    desc: "Fusão: Frascos Cáusticos + Golpe Criogênico! 5 frascos concentrados criam uma mega-zona tóxica congelante.",
-    reqText: "Poção Nv 3 + Gelo",
+    get name() { return t('evolutions.evolved_potion.name'); },
+    get fullName() { return t('evolutions.evolved_potion.fullName'); },
+    get desc() { return t('evolutions.evolved_potion.description'); },
+    get reqText() { return t('evolutions.evolved_potion.reqText'); },
     weaponId: 'POTION',
     weaponUpgradeIds: ['potion_volley', 'potion_potency'],
     passiveId: 'frost_passive',
@@ -240,10 +241,10 @@ export const SYNERGIES = [
   },
   {
     id: 'evolved_staff',
-    name: "Cataclismo Solar",
-    fullName: "Cataclismo Solar",
-    desc: "Fusão: Cajado da Tormenta + Poder Bruto! Supernovas de plasma que perfuram alvos e cobrem o chão de fogo.",
-    reqText: "Cajado Nv 3 + Poder",
+    get name() { return t('evolutions.evolved_staff.name'); },
+    get fullName() { return t('evolutions.evolved_staff.fullName'); },
+    get desc() { return t('evolutions.evolved_staff.description'); },
+    get reqText() { return t('evolutions.evolved_staff.reqText'); },
     weaponId: 'STAFF',
     weaponUpgradeIds: ['staff_projectiles', 'staff_pierce'],
     passiveId: 'dmg',
@@ -260,10 +261,10 @@ export const SYNERGIES = [
   },
   {
     id: 'evolved_hammer',
-    name: "Martelo dos Titãs",
-    fullName: "Martelo dos Titãs",
-    desc: "Fusão: Martelo Sagrado + Armadura Rúnica! Terremoto titânico em 360° com fendas incandescentes profundas.",
-    reqText: "Martelo Nv 3 + Armadura",
+    get name() { return t('evolutions.evolved_hammer.name'); },
+    get fullName() { return t('evolutions.evolved_hammer.fullName'); },
+    get desc() { return t('evolutions.evolved_hammer.description'); },
+    get reqText() { return t('evolutions.evolved_hammer.reqText'); },
     weaponId: 'HAMMER',
     weaponUpgradeIds: ['hammer_crush', 'hammer_impact'],
     passiveId: 'armor',
@@ -280,10 +281,10 @@ export const SYNERGIES = [
   },
   {
     id: 'evolved_aura',
-    name: "Santuário Celestial",
-    fullName: "Santuário Celestial",
-    desc: "Fusão: Aura Sagrada + Armadura Rúnica! Supernova radiante que expande o raio e regenera HP.",
-    reqText: "Aura Nv 5 + Armadura",
+    get name() { return t('evolutions.evolved_aura.name'); },
+    get fullName() { return t('evolutions.evolved_aura.fullName'); },
+    get desc() { return t('evolutions.evolved_aura.description'); },
+    get reqText() { return t('evolutions.evolved_aura.reqText'); },
     weaponId: 'AURA',
     weaponUpgradeIds: ['aura'],
     passiveId: 'armor',
@@ -297,10 +298,10 @@ export const SYNERGIES = [
   },
   {
     id: 'evolved_orbitals',
-    name: "Vórtice do Apocalipse",
-    fullName: "Vórtice do Apocalipse",
-    desc: "Fusão: Bíblias + Asas do Vento! 3 grimórios supremos hipersônicos com ressonância sagrada e dano devastador.",
-    reqText: "Bíblias Nv 3 + Asas",
+    get name() { return t('evolutions.evolved_orbitals.name'); },
+    get fullName() { return t('evolutions.evolved_orbitals.fullName'); },
+    get desc() { return t('evolutions.evolved_orbitals.description'); },
+    get reqText() { return t('evolutions.evolved_orbitals.reqText'); },
     weaponId: 'ORBITALS',
     weaponUpgradeIds: ['orbitals'],
     passiveId: 'wings',
@@ -324,8 +325,8 @@ export function getAvailableSynergies(player) {
     if (syn.isReady(player)) {
       readyList.push({
         id: syn.id,
-        name: syn.fullName,
-        desc: syn.desc,
+        get name() { return syn.fullName; },
+        get desc() { return syn.desc; },
         apply: () => syn.apply(player)
       });
     }
@@ -369,8 +370,9 @@ export function checkIsSynergyIngredient(upgradeId, player) {
  */
 export function getSynergyTrackerList(player) {
   return SYNERGIES.map(syn => ({
-    name: syn.name,
-    req: syn.reqText,
+    id: syn.id,
+    get name() { return syn.name; },
+    get req() { return syn.reqText; },
     isReady: syn.isReady(player),
     isEvolved: syn.isEvolved(player)
   }));

@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/summoner.js
  * IA do Cultista das Sombras — Orbe Entrópico + invocação de mortos.
@@ -40,13 +41,13 @@ export function summonerBehavior(e, dt, angle, curSpeed, ctx) {
       enemyType: e.baseType || 'NECRO'
     });
     createHitParticles(e.x + Math.cos(angle) * 18, e.y + Math.sin(angle) * 18 - 8, '#9b59b6', 6);
-    addDamageText(e.x, e.y, "ORBE SOMBRIO!", false, '#a29bfe');
+    addDamageText(e.x, e.y, matchText('match.combat.shadowOrb'), false, '#a29bfe');
   }
 
   e.summonTimer = (e.summonTimer || 0) + dt;
   if (e.summonTimer > 177 && !gameState.isWavePaused) {
     e.summonTimer = 0;
     spawnMobCluster('ZOMBIE', 2);
-    addDamageText(e.x, e.y, 'INVOCAR!', false, '#9b59b6');
+    addDamageText(e.x, e.y, matchText('match.combat.summon'), false, '#9b59b6');
   }
 }

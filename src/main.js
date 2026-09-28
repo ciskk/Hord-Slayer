@@ -1,3 +1,6 @@
+import { t as matchText } from './i18n/index.js';
+import { initMatchI18n } from './i18n/matchIntegration.js';
+import { initI18n } from './i18n/index.js';
 import { getSovereignIntroFraming } from './entities/bosses/abyssSovereign/introEffects.js';
 import { updateBossPhaseCinematic } from './systems/bossPhaseCinematic.js';
 import { perfMetrics } from './core/perfMetrics.js';
@@ -46,7 +49,7 @@ import {
 import { groundCraters, addConsecratedTrail, addRolandShockwave, clearRolandChargeEffects } from './render/groundCracks.js';
 import { traceIgnisStep, clearIgnisStepEffects, updateIgnisStepEffects } from './render/ignisUlt.js';
 import { traceKaelPhase, clearKaelPhaseEffects, updateKaelPhaseEffects } from './render/kaelUlt.js';
-import { spawnSquad, spawnMobCluster, spawnProp, spawnInitialHorde, isWormEnemyType, isKaelInvisible } from './entities/enemies.js';
+import { spawnSquad, spawnMobCluster, spawnEncirclementRing, spawnProp, spawnInitialHorde, isWormEnemyType, isKaelInvisible, isFpsHeavyEnemyType, isDesertArena } from './entities/enemies.js';
 import { recordRunStats } from './systems/progression.js';
 import { 
   getCurrentWave, 
@@ -59,7 +62,8 @@ import {
   resetMiniBossSchedule 
 } from './systems/waves.js';
 import { 
-  initUI, 
+  initUI,
+  initCharacterSelectI18n,
   openCharacterSelect, 
   triggerDeath, 
   triggerVictory, 
@@ -73,7 +77,7 @@ import {
   presentDeferredLevelUpModal
 } from './systems/ui.js';
 import { render } from './render/renderer.js';
-import { transitionToArenaTheme, resetEnvironment, warmupStartingTerrain } from './render/environment.js';
+import { transitionToArenaTheme, resetEnvironment, warmupStartingTerrain, clearNaturalTerrainCache } from './render/environment.js';
 import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
 import { initResponsive, layoutMetrics, GRAPHICS_QUALITY, getGraphicsQuality, setGraphicsQuality, resolveTargetDpr } from './core/responsive.js';
 import { clearSpriteCache } from './render/enemies/spriteCache.js';
@@ -278,6 +282,8 @@ export {
   resolveTargetDpr
 };
 
+let nextEncirclementSecond = 20;
+
 export function resize() {
   const currentCanvas = canvas || document.getElementById('game-canvas');
   if (currentCanvas && !canvas) {
@@ -323,6 +329,7 @@ export function resize() {
 
   // Invalida e sincroniza o atlas de monstros com a nova resolução/DPR
   clearSpriteCache();
+  clearNaturalTerrainCache();
 
   // O layout do HUD é resolvido em CSS, sem reparentear elementos ao girar a tela.
 
@@ -364,6 +371,7 @@ export function terminateMatch() {
 
   setFrameCount(0);
   setSpawnTimer(0);
+  nextEncirclementSecond = 20;
   resetScreenShake();
   setFreezeTimer(0);
 
@@ -840,11 +848,11 @@ function update(dt) {
             en.acidBurnTimer = Math.max(en.acidBurnTimer || 0, 240);
             en.isVulnerable = true;
             en.vulnerableTimer = Math.max(en.vulnerableTimer || 0, 180);
-            addDamageText(en.x, en.y - 12, "CORROSÃO TOTAL!", true, '#a55eea');
+            addDamageText(en.x, en.y - 12, matchText('match.combat.corrosion'), true, '#a55eea');
             createHitParticles(en.x, en.y, '#a55eea', 8);
           } else {
             en.confusedTimer = 110;
-            addDamageText(en.x, en.y - 10, "DESORIENTADO!", false, '#a55eea');
+            addDamageText(en.x, en.y - 10, matchText('match.combat.disoriented'), false, '#a55eea');
             createHitParticles(en.x, en.y, '#9b59b6', 5);
           }
         }
@@ -859,17 +867,7 @@ function update(dt) {
     player.slowTimer -= dt;
     isSlowed = true;
   }
-  for (let i = 0; i < enemies.length; i++) {
-    const e = enemies[i];
-    if (e.eliteMod === 'FROST') {
-      const dx = player.x - e.x;
-      const dy = player.y - e.y;
-      if (dx * dx + dy * dy < 125 * 125) {
-        isSlowed = true;
-        break;
-      }
-    }
-  }
+  // Lentidão exige um ataque aplicado ou um perigo de arena, nunca mera proximidade.
 
   let insideVortex = false;
   for (let i = voidVortices.length - 1; i >= 0; i--) {
@@ -1020,7 +1018,7 @@ function update(dt) {
           e.speed *= 1.35;
           triggerShake(15);
           playSfx('boss');
-          addDamageText(e.x, e.y, "EM FÚRIA!", true, '#e74c3c');
+          addDamageText(e.x, e.y, matchText('match.combat.enraged'), true, '#e74c3c');
         }
       }
     };
@@ -1299,7 +1297,7 @@ function update(dt) {
               triggerShake(14);
               triggerHaptic('heavy');
               createHitParticles(player.x, player.y, '#00cec9', 24);
-              addDamageText(player.x, player.y, "ELO FRATURADO ROMPIDO!", true, '#00cec9');
+              addDamageText(player.x, player.y, matchText('match.combat.link'), true, '#00cec9');
             }
           }
         }
@@ -1512,30 +1510,67 @@ function update(dt) {
   const targetLetterbox = (isBossSpawning || isBossDefeatCinematic) ? 1.0 : 0.0;
   cinematicCamera.letterboxProgress += (targetLetterbox - cinematicCamera.letterboxProgress) * (1 - Math.pow(1 - 0.08, dt));
 
-  checkBossSchedule(seconds);
-  checkMiniBossSchedule(seconds);
-
   // 1. Spawner de Hordas, Esquadrões e Props
   if (!gameState.isWavePaused) {
+    checkBossSchedule(seconds);
+    checkMiniBossSchedule(seconds);
     setSpawnTimer(spawnTimer + dt * getWorldEventSpawnRateMult());
+
+    const kaelInvis = isKaelInvisible();
+    const isDesert = isDesertArena();
+    let availableTypes = currentWave.types;
+    if (availableTypes) {
+      if (kaelInvis) availableTypes = availableTypes.filter(t => !isWormEnemyType(t));
+      if (!isDesert) availableTypes = availableTypes.filter(t => t !== 'STALKER');
+    }
+    const hasSquads = currentWave.allowedSquads && currentWave.allowedSquads.length > 0;
+    const hasTypes = availableTypes && availableTypes.length > 0;
+
+    // Onda de Cerco Periódica 360° (Surge de Encerramento a cada ~25s de horda)
+    if (hordeSeconds >= nextEncirclementSecond) {
+      nextEncirclementSecond = hordeSeconds + 25;
+      if (hasTypes) {
+        // Cerco concêntrico massivo de 360° exclui atiradores e auras pesadas para manter 60 FPS
+        const safeHordeTypes = availableTypes.filter(t => !isFpsHeavyEnemyType(t));
+        const ringType = safeHordeTypes.length > 0
+          ? safeHordeTypes[Math.floor(Math.random() * safeHordeTypes.length)]
+          : 'ZOMBIE';
+        const ringCount = Math.min(26, 16 + currentWave.index * 2);
+        spawnEncirclementRing(ringType, ringCount, currentWave.eliteChance * 0.5);
+      }
+    }
+
     if (spawnTimer >= currentWave.rate) {
-      const kaelInvis = isKaelInvisible();
-      const availableTypes = (kaelInvis && currentWave.types)
-        ? currentWave.types.filter(t => !isWormEnemyType(t))
-        : currentWave.types;
-      const hasSquads = currentWave.allowedSquads && currentWave.allowedSquads.length > 0;
-      const hasTypes = availableTypes && availableTypes.length > 0;
-      const spawnSquadChosen = hasSquads && (!hasTypes || Math.random() < 0.65);
+      const primaryAngle = Math.random() * Math.PI * 2;
+      const oppositeAngle = primaryAngle + Math.PI + (Math.random() - 0.5) * 0.4;
+      const spawnSquadChosen = hasSquads && (!hasTypes || Math.random() < 0.60);
 
       if (spawnSquadChosen) {
         const squadKey = currentWave.allowedSquads[Math.floor(Math.random() * currentWave.allowedSquads.length)];
-        spawnSquad(squadKey, currentWave.eliteChance);
+        spawnSquad(squadKey, currentWave.eliteChance, primaryAngle);
+
+        // Flanco de Pinça Secundário: gera um cluster complementar no flanco oposto para cercar
+        if (hasTypes) {
+          const safeFlankTypes = availableTypes.filter(t => !isFpsHeavyEnemyType(t));
+          const flankType = safeFlankTypes.length > 0
+            ? safeFlankTypes[Math.floor(Math.random() * safeFlankTypes.length)]
+            : availableTypes[Math.floor(Math.random() * availableTypes.length)];
+          const flankCount = Math.max(4, Math.floor((currentWave.clusterSize ? currentWave.clusterSize[0] : 8) * 0.65));
+          spawnMobCluster(flankType, flankCount, currentWave.eliteChance, oppositeAngle);
+        }
       } else if (hasTypes) {
         const chosenType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
-        const count = currentWave.clusterSize 
+        const totalCount = currentWave.clusterSize
           ? Math.floor(Math.random() * (currentWave.clusterSize[1] - currentWave.clusterSize[0] + 1)) + currentWave.clusterSize[0]
-          : 5;
-        spawnMobCluster(chosenType, count, currentWave.eliteChance);
+          : 12;
+        // Divide o cluster massivo entre duas direções opostas (pinça)
+        const countA = Math.ceil(totalCount * 0.55);
+        const countB = totalCount - countA;
+        spawnMobCluster(chosenType, countA, currentWave.eliteChance, primaryAngle);
+        if (countB > 0) {
+          const flankType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+          spawnMobCluster(flankType, countB, currentWave.eliteChance, oppositeAngle);
+        }
       }
       if (Math.random() < 0.26) spawnProp();
       setSpawnTimer(0);
@@ -1733,6 +1768,18 @@ function loop(now) {
 }
 
 function startApplication() {
+  // Loaded only in native environments or an explicitly requested web diagnostic session.
+  if (window.Capacitor?.isNativePlatform?.() || new URLSearchParams(location.search).get('diagnostics') === '1') {
+    import('./core/performanceLab.js').then(({ initPerformanceLab }) => initPerformanceLab(() => ({
+      inMatch: gameState.isInMatch, paused: gameState.isPaused, hero: selectedHeroKey,
+      arena: currentArenaTheme, enemies: enemies.length, dyingEnemies: dyingEnemies.length,
+      particles: particles.length, gems: gems.length, bullets: bullets.length,
+      enemyBullets: enemyBullets.length, acidPuddles: acidPuddles.length
+    }))).catch(error => console.warn('Diagnóstico indisponível', error));
+  }
+  initI18n();
+  initCharacterSelectI18n();
+  initMatchI18n();
   try {
     resize();
   } catch (err) {
@@ -1774,8 +1821,10 @@ function startApplication() {
   requestAnimationFrame(loop);
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', startApplication);
-} else {
-  startApplication();
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startApplication);
+  } else {
+    startApplication();
+  }
 }

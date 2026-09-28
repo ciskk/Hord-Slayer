@@ -197,6 +197,7 @@ html, body {
   height: 100%;
   position: absolute;
   inset: 0;
+  transform: translateZ(0);
 }
 
 #banner-canvas {
@@ -207,5 +208,6 @@ html, body {
   inset: 0;
   pointer-events: none;
   z-index: 50;
+  transform: translateZ(0);
 }
 

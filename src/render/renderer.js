@@ -1,3 +1,4 @@
+import { t, formatNumber, getLanguageRevision } from '../i18n/index.js';
 import { drawBossPhaseCinematic } from '../systems/bossPhaseCinematic.js';
 import { perfMetrics } from '../core/perfMetrics.js';
 /**
@@ -87,6 +88,8 @@ export { drawBloodAltarWorld } from './worldEvents/bloodAltarRenderer.js';
 
 // Cache do layout de texto do banner de onda (Zero Layout Thrashing e Zero measureText contínuo)
 let cachedWaveAnnouncementIndex = -1;
+let cachedWaveLanguageRevision = -1;
+let cachedWaveViewWidth = -1;
 let cachedWaveTitleText = '';
 let cachedWaveFontSize = 18;
 
@@ -157,40 +160,62 @@ export function drawMatchIntroOverlay(ctx, viewW, viewH, matchIntro, frameCount)
     ctx.textBaseline = 'middle';
 
     // A. Linha superior dourada: Tema da Arena com ornamentos
-    const arenaLabel = `— ${arenaPal.name.toUpperCase()} —`;
-    ctx.font = `bold ${isCompactH ? 10.5 : 12}px "Cinzel", Georgia, serif`;
+    const arenaThemeKey = currentArenaTheme ? `match.arena.${currentArenaTheme}` : 'match.arena.DESERT';
+    const arenaLabel = `— ${t(arenaThemeKey).toUpperCase()} —`;
+    const maxHeaderWidth = Math.max(160, viewW - 28);
+    let arenaFontSize = isCompactH ? 10.5 : 12;
+    ctx.font = `bold ${arenaFontSize}px "Cinzel", Georgia, serif`;
+    let arenaW = ctx.measureText(arenaLabel).width;
+    while (arenaW > maxHeaderWidth && arenaFontSize > 8) {
+      arenaFontSize -= 0.5;
+      ctx.font = `bold ${arenaFontSize}px "Cinzel", Georgia, serif`;
+      arenaW = ctx.measureText(arenaLabel).width;
+    }
     ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-    ctx.fillText(arenaLabel, centerX + 1, baseY - (isCompactH ? 24 : 30) + 1);
+    ctx.fillText(arenaLabel, centerX + 1, baseY - (isCompactH ? 24 : 30) + 1, maxHeaderWidth);
     ctx.fillStyle = '#f1c40f';
-    ctx.fillText(arenaLabel, centerX, baseY - (isCompactH ? 24 : 30));
+    ctx.fillText(arenaLabel, centerX, baseY - (isCompactH ? 24 : 30), maxHeaderWidth);
 
     // B. Nome do Herói em destaque imperial
-    const heroName = heroDef.name.toUpperCase();
-    const heroFontSize = isCompactH ? 20 : 26;
+    const heroName = (heroDef.name || '').toUpperCase();
+    let heroFontSize = isCompactH ? 20 : 26;
     ctx.font = `900 ${heroFontSize}px "Cinzel Decorative", "Cinzel", Georgia, serif`;
+    let heroNameW = ctx.measureText(heroName).width;
+    while (heroNameW > maxHeaderWidth && heroFontSize > 13) {
+      heroFontSize -= 1;
+      ctx.font = `900 ${heroFontSize}px "Cinzel Decorative", "Cinzel", Georgia, serif`;
+      heroNameW = ctx.measureText(heroName).width;
+    }
     // Sombra de contraste
     ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
-    ctx.fillText(heroName, centerX + 1.5, baseY + 1.5);
+    ctx.fillText(heroName, centerX + 1.5, baseY + 1.5, maxHeaderWidth);
     // Halo dourado sutil
     ctx.fillStyle = 'rgba(241, 196, 15, 0.35)';
-    ctx.fillText(heroName, centerX, baseY + 1);
+    ctx.fillText(heroName, centerX, baseY + 1, maxHeaderWidth);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(heroName, centerX, baseY);
+    ctx.fillText(heroName, centerX, baseY, maxHeaderWidth);
 
     // C. Alcunha / Subtítulo do Herói
-    const heroSubtitle = heroDef.title || heroDef.role || 'SOBREVIVENTE';
-    ctx.font = `italic ${isCompactH ? 10.5 : 12}px sans-serif`;
+    const heroSubtitle = t(`heroes.${selectedHeroKey}.title`);
+    let subFontSize = isCompactH ? 10.5 : 12;
+    ctx.font = `italic ${subFontSize}px sans-serif`;
+    let subW = ctx.measureText(heroSubtitle).width;
+    while (subW > maxHeaderWidth && subFontSize > 8) {
+      subFontSize -= 0.5;
+      ctx.font = `italic ${subFontSize}px sans-serif`;
+      subW = ctx.measureText(heroSubtitle).width;
+    }
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.fillText(heroSubtitle, centerX + 1, baseY + (isCompactH ? 21 : 26) + 1);
+    ctx.fillText(heroSubtitle, centerX + 1, baseY + (isCompactH ? 21 : 26) + 1, maxHeaderWidth);
     ctx.fillStyle = '#dfe4ea';
-    ctx.fillText(heroSubtitle, centerX, baseY + (isCompactH ? 21 : 26));
+    ctx.fillText(heroSubtitle, centerX, baseY + (isCompactH ? 21 : 26), maxHeaderWidth);
 
     // D. Indicador não-intrusivo de movimentação livre
     if (timer > 25 && progress < 0.60) {
       const hintPulse = 0.35 + Math.sin(frameCount * 0.08) * 0.25;
       ctx.font = '10px sans-serif';
       ctx.fillStyle = `rgba(223, 228, 234, ${hintPulse * textAlpha})`;
-      ctx.fillText('[ Mova ou toque para iniciar ]', centerX, baseY + (isCompactH ? 40 : 48));
+      ctx.fillText(t('match.canvas.start'), centerX, baseY + (isCompactH ? 40 : 48));
     }
 
     ctx.restore();
@@ -1509,9 +1534,11 @@ export function render() {
       targetCtx.textAlign = 'center';
       targetCtx.textBaseline = 'middle';
 
-      if (cachedWaveAnnouncementIndex !== waveAnnouncement.index) {
+      if (cachedWaveAnnouncementIndex !== waveAnnouncement.index || cachedWaveLanguageRevision !== getLanguageRevision() || cachedWaveViewWidth !== viewW) {
+        cachedWaveLanguageRevision = getLanguageRevision();
+        cachedWaveViewWidth = viewW;
         cachedWaveAnnouncementIndex = waveAnnouncement.index;
-        const waveTitle = (waveAnnouncement.name || '').toUpperCase();
+        const waveTitle = t(`match.wave.${waveAnnouncement.index}`).toUpperCase();
         cachedWaveTitleText = `⚜ ${waveTitle} ⚜`;
         let fontSize = isCompactH ? 14 : 18;
         targetCtx.font = `bold ${fontSize}px "Cinzel", "Cinzel Decorative", Georgia, serif`;
@@ -1542,9 +1569,9 @@ export function render() {
       if (!isCompactH || viewH > 370) {
         targetCtx.font = 'italic 10.5px sans-serif';
         targetCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        targetCtx.fillText("Sobreviva à maré crescente de horrores", titleX + 1, by + (isCompactH ? 30 : 38));
+        targetCtx.fillText(t('match.canvas.survive'), titleX + 1, by + (isCompactH ? 30 : 38));
         targetCtx.fillStyle = '#dfe4ea';
-        targetCtx.fillText("Sobreviva à maré crescente de horrores", titleX, by + (isCompactH ? 29 : 37));
+        targetCtx.fillText(t('match.canvas.survive'), titleX, by + (isCompactH ? 29 : 37));
       }
 
       targetCtx.restore();

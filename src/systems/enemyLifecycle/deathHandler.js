@@ -1,3 +1,4 @@
+import { t as matchText } from '../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/deathHandler.js
  * Processamento de Abates, Explosões Necróticas, Recompensas,
@@ -165,7 +166,7 @@ export function handleEnemyDeath(e, i, ctx) {
       triggerHaptic('medium');
       createHitParticles(e.x, e.y, '#e67e22', 18);
       createHitParticles(e.x, e.y, '#f39c12', 10);
-      addDamageText(e.x, e.y, "COMBUSTÃO!", true, '#e67e22');
+      addDamageText(e.x, e.y, matchText('match.combat.combustion'), true, '#e67e22');
 
       const nearbyNeighbors = getNeighborIndices(e.x, e.y, 65);
       for (let nIdx = 0; nIdx < nearbyNeighbors.length; nIdx++) {
@@ -237,7 +238,7 @@ export function handleEnemyDeath(e, i, ctx) {
       triggerHaptic('medium');
       createHitParticles(e.x, e.y, '#e67e22', 20);
       createHitParticles(e.x, e.y, '#d35400', 12);
-      addDamageText(e.x, e.y, "COMBUSTÃO!", true, '#e67e22');
+      addDamageText(e.x, e.y, matchText('match.combat.combustion'), true, '#e67e22');
 
       const nearbyNeighbors = getNeighborIndices(e.x, e.y, 80);
       for (let nIdx = 0; nIdx < nearbyNeighbors.length; nIdx++) {
@@ -341,7 +342,7 @@ export function handleEnemyDeath(e, i, ctx) {
   // ---- Ouro Persistente por monstros comuns ----
   if (!e.isMiniBoss && (Math.random() < 0.08 || e.isElite)) {
     const goldVal = e.isElite ? 2 : 1;
-    addPersistentGold(goldVal);
+    addPersistentGold(goldVal, player.goldMultiplier ?? 1);
   }
 
   // ---- Morte de Chefes ----
@@ -367,8 +368,8 @@ export function handleEnemyDeath(e, i, ctx) {
         }
 
         const bossGold = 50 * (e.bossId || 1);
-        addPersistentGold(bossGold);
-        addDamageText(e.x, e.y - 18, `+${bossGold} OURO!`, true, '#f1c40f');
+        addPersistentGold(bossGold, player.goldMultiplier ?? 1);
+        addDamageText(e.x, e.y - 18, matchText('match.combat.goldDrop', { amount: bossGold }), true, '#f1c40f');
 
         onBossDefeated(seconds);
 
@@ -463,8 +464,8 @@ export function handleEnemyDeath(e, i, ctx) {
     }
 
     const bossGold = 50 * (e.bossId || 1);
-    addPersistentGold(bossGold);
-    addDamageText(e.x, e.y - 18, `+${bossGold} OURO!`, true, '#f1c40f');
+    addPersistentGold(bossGold, player.goldMultiplier ?? 1);
+    addDamageText(e.x, e.y - 18, matchText('match.combat.goldDrop', { amount: bossGold }), true, '#f1c40f');
 
     onBossDefeated(seconds);
 
@@ -514,8 +515,8 @@ export function handleEnemyDeath(e, i, ctx) {
     playSfx('crit');
 
     const goldEarned = e.goldReward || 12;
-    addPersistentGold(goldEarned);
-    addDamageText(e.x, e.y - 18, `+${goldEarned} OURO!`, true, '#f1c40f');
+    addPersistentGold(goldEarned, player.goldMultiplier ?? 1);
+    addDamageText(e.x, e.y - 18, matchText('match.combat.goldDrop', { amount: goldEarned }), true, '#f1c40f');
 
     gems.push({
       x: e.x,
@@ -556,17 +557,17 @@ export function handleEnemyDeath(e, i, ctx) {
         pulseOffset: 0
       });
       const bonusGold = 2 + (e.eatenGemsCount || 0);
-      addPersistentGold(bonusGold);
-      addDamageText(e.x, e.y - 12, `+${bonusGold} OURO!`, false, '#f1c40f');
+      addPersistentGold(bonusGold, player.goldMultiplier ?? 1);
+      addDamageText(e.x, e.y - 12, matchText('match.combat.goldDrop', { amount: bonusGold }), false, '#f1c40f');
     } else if (e.baseType === 'CURSED_CHEST') {
-      addPersistentGold(15);
+      addPersistentGold(15, player.goldMultiplier ?? 1);
       // Redução de 70% na chance de drop de baú (de 100% para 30%)
       const droppedChest = Math.random() < 0.30;
       if (droppedChest) {
         spawnChest(e.x, e.y, 'MINI_BOSS');
-        addDamageText(e.x, e.y - 15, "+15 OURO & BAÚ!", true, '#e056fd');
+        addDamageText(e.x, e.y - 15, matchText('match.combat.goldChest'), true, '#e056fd');
       } else {
-        addDamageText(e.x, e.y - 15, "+15 OURO!", false, '#f1c40f');
+        addDamageText(e.x, e.y - 15, matchText('match.combat.goldDrop', { amount: 15 }), false, '#f1c40f');
       }
       spawnOrMergeGem(gems, e.x, e.y, e.xp);
     } else if (e.baseType === 'TRAIL_CRAWLER') {

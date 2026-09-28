@@ -10,7 +10,7 @@ import { perfMetrics } from '../core/perfMetrics.js';
  * Resolve as interpenetrações físicas no mundo de jogo:
  * 1. Utiliza a Spatial Grid já atualizada do quadro.
  * 2. Aplica separação elasto-cinemática (50% / 50%) entre inimigos na horda.
- * 3. Resolve a sobreposição física Jogador vs. Inimigos com base em massa relativa (70% mob / 30% player)
+ * 3. Resolve a sobreposição com mobs deslocando apenas os inimigos, sem frear o jogador
  *    ou executa o Crowd Shove de Kael caso esteja em estado de Phasing/Invisibilidade.
  * Sub-alvos estáticos de chefes (isBossSubTarget) são isentos de repulsão cinemática para preservar suas órbitas.
  * 
@@ -84,18 +84,13 @@ export function resolveWorldPhysics(player, enemies, dt) {
     }
   }
 
-  // 3. Separação Física Jogador vs. Inimigos (Spatial Grid Otimizada, Crowd Parting Dinâmico e Hiperarmadura)
+  // 3. Separação Física Jogador vs. Inimigos (Spatial Grid Otimizada, Crowd Parting Dinâmico)
   const isPhasing = !!(player.isPhasing || (player.invisTimer > 0));
   const moveLen = Math.sqrt(inputX * inputX + inputY * inputY);
   const isPlayerMoving = !!(player.isMoving && moveLen > 0.01);
   const pDirX = isPlayerMoving ? (inputX / moveLen) : (player.facing || 1);
   const pDirY = isPlayerMoving ? (inputY / moveLen) : 0;
   const isBerserk = (player.berserkTimer || 0) > 0;
-
-  let maxSingleAttackPush = 0;
-  let accumAttackPushX = 0;
-  let accumAttackPushY = 0;
-  let attackingCount = 0;
 
   // Consulta apenas as células espaciais ao redor do jogador (raio de 95px)
   const playerNeighbors = getNeighborIndices(player.x, player.y, 95);
@@ -129,30 +124,20 @@ export function resolveWorldPhysics(player, enemies, dt) {
         player.x += nx * overlap;
         player.y += ny * overlap;
       } else {
-        // Hiperarmadura: se o monstro iniciou WINDUP ou STRIKE, ele resiste ao empurrão
+        // Preparar um ataque não pode frear o jogador por contato.
         const isAttacking = e.combatState === 'WINDUP' || e.combatState === 'STRIKE';
 
         if (isAttacking) {
-          e.x -= nx * (overlap * 0.79);
-          e.y -= ny * (overlap * 0.79);
-
-          const singlePush = overlap * 0.21;
-          if (singlePush > maxSingleAttackPush) {
-            maxSingleAttackPush = singlePush;
-          }
-          accumAttackPushX += nx * singlePush;
-          accumAttackPushY += ny * singlePush;
-          attackingCount++;
+          e.x -= nx * overlap;
+          e.y -= ny * overlap;
         } else {
           const berserkMult = isBerserk ? 1.75 : 1.0;
           const eliteWeight = e.isElite ? 0.55 : 1.0;
 
-          // 1. Repulsão radial visível (redução de 50% no empurrão/lentidão sofrido pelo jogador ao ser cercado)
-          const radialPush = (overlap * 0.925 + (isPlayerMoving ? player.speed * 0.55 : 0)) * berserkMult * eliteWeight;
+          // 1. Corrige toda a sobreposição no mob; bônus de dispersão não altera o player.
+          const radialPush = overlap + (isPlayerMoving ? player.speed * 0.55 * dt : 0) * berserkMult * eliteWeight;
           e.x -= nx * radialPush;
           e.y -= ny * radialPush;
-          player.x += nx * (overlap * 0.075);
-          player.y += ny * (overlap * 0.075);
 
           // 2. Dispersão lateral tangencial
           if (isPlayerMoving) {
@@ -172,15 +157,4 @@ export function resolveWorldPhysics(player, enemies, dt) {
     }
   }
 
-  // Aplicação da força de ataque não-cumulativa
-  if (attackingCount > 0) {
-    const totalAttackPushLen = Math.sqrt(accumAttackPushX * accumAttackPushX + accumAttackPushY * accumAttackPushY);
-    if (totalAttackPushLen > maxSingleAttackPush && totalAttackPushLen > 0.0001) {
-      const clampFactor = maxSingleAttackPush / totalAttackPushLen;
-      accumAttackPushX *= clampFactor;
-      accumAttackPushY *= clampFactor;
-    }
-    player.x += accumAttackPushX;
-    player.y += accumAttackPushY;
-  }
 }

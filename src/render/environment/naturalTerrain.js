@@ -1,6 +1,7 @@
 import { NATURAL_ARENAS, resolveArenaTheme } from '../../config/arenas.js';
 import { perfMetrics } from '../../core/perfMetrics.js';
 import { matchIntro, baseCameraZoom, viewW, viewH } from '../../state/gameState.js';
+import { layoutMetrics, GRAPHICS_QUALITY, getGraphicsQuality } from '../../core/responsive.js';
 
 // Chunks são apenas cache: relevo, caminhos e objetos usam coordenadas mundiais.
 // ~36 MiB em telas comuns. Em telas grandes, comporta duas vistas completas
@@ -12,24 +13,32 @@ const sceneryCache = new Map();
 const prefetchQueue = [];
 const prefetchQueuedKeys = new Set();
 const TAU = Math.PI * 2;
-const SOIL_SAMPLE = 4;
 const SOIL_BORDER = 1;
-const SOIL_SIZE = CHUNK / SOIL_SAMPLE + SOIL_BORDER * 2;
+const MAX_SOIL_SIZE = Math.floor(CHUNK / 2) + SOIL_BORDER * 2; // 194 (para SOIL_SAMPLE = 2)
+
+export function resolveSoilSample() {
+  const quality = (layoutMetrics && layoutMetrics.graphicsQuality) ? layoutMetrics.graphicsQuality : getGraphicsQuality();
+  if (quality === GRAPHICS_QUALITY.PERFORMANCE) {
+    return 4;
+  }
+  // No modo NATIVO e ALTO, usamos amostragem refinada de 2px no desktop e telas de alta fidelidade
+  return 2;
+}
 
 // Chunk generation is synchronous. Reuse its scratch surface and exact double
 // precision samples; drawImage copies the result before the next chunk uses it.
 let soilCanvas = null;
 let soilContext = null;
 let soilPixels = null;
-const soilX = new Float64Array(SOIL_SIZE);
-const soilTrailA = new Float64Array(SOIL_SIZE);
-const soilTrailB = new Float64Array(SOIL_SIZE);
-const soilSandWave = new Float64Array(SOIL_SIZE);
+const soilX = new Float64Array(MAX_SOIL_SIZE);
+const soilTrailA = new Float64Array(MAX_SOIL_SIZE);
+const soilTrailB = new Float64Array(MAX_SOIL_SIZE);
+const soilSandWave = new Float64Array(MAX_SOIL_SIZE);
 
 function soilNoiseRows() {
   return {
-    columns: new Float64Array(SOIL_SIZE), weights: new Float64Array(SOIL_SIZE),
-    top: new Float64Array(SOIL_SIZE), bottom: new Float64Array(SOIL_SIZE),
+    columns: new Float64Array(MAX_SOIL_SIZE), weights: new Float64Array(MAX_SOIL_SIZE),
+    top: new Float64Array(MAX_SOIL_SIZE), bottom: new Float64Array(MAX_SOIL_SIZE),
     row: NaN, weight: 0
   };
 }
@@ -37,9 +46,9 @@ function soilNoiseRows() {
 const broadSoilNoise = soilNoiseRows();
 const fineSoilNoise = soilNoiseRows();
 
-function prepareSoilNoise(rows, scale) {
+function prepareSoilNoise(rows, scale, size) {
   rows.row = NaN;
-  for (let i = 0; i < SOIL_SIZE; i++) {
+  for (let i = 0; i < size; i++) {
     const gx = Math.floor(soilX[i] / scale);
     let u = soilX[i] / scale - gx;
     u *= u * (3 - 2 * u);
@@ -48,14 +57,14 @@ function prepareSoilNoise(rows, scale) {
   }
 }
 
-function updateSoilNoiseRow(rows, y, scale, seed) {
+function updateSoilNoiseRow(rows, y, scale, seed, size) {
   const gy = Math.floor(y / scale);
   let v = y / scale - gy;
   v *= v * (3 - 2 * v);
   rows.weight = v;
   if (gy === rows.row) return;
   rows.row = gy;
-  for (let i = 0; i < SOIL_SIZE; i++) {
+  for (let i = 0; i < size; i++) {
     const gx = rows.columns[i], u = rows.weights[i];
     const a = terrainHash(gx, gy, seed), b = terrainHash(gx + 1, gy, seed);
     const c = terrainHash(gx, gy + 1, seed), d = terrainHash(gx + 1, gy + 1, seed);
@@ -364,14 +373,17 @@ function landmark(ctx, x, y, theme, p, variant) {
 
 // Textura contínua de baixa frequência com granulação fina.
 function paintSoil(ctx, ox, oy, p) {
-  const sample = SOIL_SAMPLE, size = SOIL_SIZE;
-  if (!soilCanvas) {
+  const sample = resolveSoilSample();
+  const size = Math.floor(CHUNK / sample) + SOIL_BORDER * 2;
+  if (!soilCanvas || soilCanvas.width !== size) {
     soilCanvas = document.createElement('canvas');
     soilCanvas.width = soilCanvas.height = size;
     soilContext = soilCanvas.getContext('2d');
-    soilPixels = soilContext.createImageData(size, size);
+    soilPixels = soilContext ? soilContext.createImageData(size, size) : null;
   }
   const pixels = soilPixels;
+  if (!pixels || !soilContext) return;
+
   const sand = p.material === 'sand';
   for (let i = 0; i < size; i++) {
     const x = ox + (i - SOIL_BORDER) * sample;
@@ -380,13 +392,13 @@ function paintSoil(ctx, ox, oy, p) {
     soilTrailB[i] = Math.sin(x / 970) * 75;
     if (sand) soilSandWave[i] = Math.sin(x / 310) * 2;
   }
-  prepareSoilNoise(broadSoilNoise, 280);
-  prepareSoilNoise(fineSoilNoise, 61);
+  prepareSoilNoise(broadSoilNoise, 280, size);
+  prepareSoilNoise(fineSoilNoise, 61, size);
   for (let j = 0; j < size; j++) {
     const y = oy + (j - SOIL_BORDER) * sample;
     const branchWave = Math.sin(y / 490) * 115;
-    updateSoilNoiseRow(broadSoilNoise, y, 280, p.seed);
-    updateSoilNoiseRow(fineSoilNoise, y, 61, p.seed + 1);
+    updateSoilNoiseRow(broadSoilNoise, y, 280, p.seed, size);
+    updateSoilNoiseRow(fineSoilNoise, y, 61, p.seed + 1, size);
     const bv = broadSoilNoise.weight, fv = fineSoilNoise.weight;
     for (let i = 0; i < size; i++) {
       const x = soilX[i];
@@ -594,6 +606,9 @@ export function clearNaturalTerrainCache(preserveTheme = null) {
     }
   } else {
     sceneryCache.clear();
+    soilCanvas = null;
+    soilContext = null;
+    soilPixels = null;
   }
   prefetchQueue.length = 0;
   prefetchQueuedKeys.clear();

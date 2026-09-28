@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 import { isBossPhaseReady } from '../../../systems/bossPhaseCinematic.js';
 /**
  * src/entities/bosses/abyssSovereign/fsm.js
@@ -57,7 +58,7 @@ export function triggerStabilityBreak(boss, context) {
   triggerHaptic('heavy');
   createHitParticles(boss.x, boss.y, '#ffffff', 28);
   createHitParticles(boss.x, boss.y, '#a29bfe', 20);
-  addDamageText(boss.x, boss.y - boss.radius - 22, "COLAPSO DE ESTABILIDADE!", true, '#f1c40f');
+  addDamageText(boss.x, boss.y - boss.radius - 22, matchText('match.combat.stability'), true, '#f1c40f');
 }
 
 /**
@@ -106,12 +107,12 @@ export function triggerPhaseTransition(boss, nextPhase, context) {
     boss.isEnraged = true;
     boss.speed *= 1.25;
     boss.targetArenaRadius = 520;
-    addDamageText(boss.x, boss.y - boss.radius - 20, "FRATURA DO HORIZONTE!", true, '#e84393');
+    addDamageText(boss.x, boss.y - boss.radius - 20, matchText('match.combat.horizon'), true, '#e84393');
   } else if (nextPhase === 3) {
     playSfx('singularity');
     boss.speed *= 1.15;
     boss.targetArenaRadius = 380;
-    addDamageText(boss.x, boss.y - boss.radius - 20, "SINGULARIDADE PRIMORDIAL!", true, '#00cec9');
+    addDamageText(boss.x, boss.y - boss.radius - 20, matchText('match.combat.singularity'), true, '#00cec9');
     cleanupRiftAnchors(boss);
   }
 }
@@ -182,7 +183,7 @@ export function updateAbyssSovereign(e, dt, context) {
         playSfx('crit');
         triggerShake(26);
         triggerHaptic('heavy');
-        addDamageText(e.x, e.y - e.radius - 24, "COLAPSO DO VÁZIO!", true, '#f1c40f');
+        addDamageText(e.x, e.y - e.radius - 24, matchText('match.combat.voidCollapseAlt'), true, '#f1c40f');
       }
 
       e.x += (Math.random() - 0.5) * 2.5;
@@ -206,7 +207,7 @@ export function updateAbyssSovereign(e, dt, context) {
         playSfx('charge');
         triggerShake(18);
         triggerHaptic('heavy');
-        addDamageText(e.x, e.y - e.radius - 20, "IMPLOSÃO GRAVITACIONAL", true, '#00cec9');
+        addDamageText(e.x, e.y - e.radius - 20, matchText('match.combat.implosion'), true, '#00cec9');
       }
 
       const act2Prog = (progress - 0.25) / 0.30;
@@ -448,7 +449,7 @@ export function updateAbyssSovereign(e, dt, context) {
       e.isStaggered = true;
       e.isVulnerable = true;
       e.currentSkill = null;
-      addDamageText(e.x, e.y - e.radius - 14, 'BRECHA SIDÉRICA!', true, '#f1c40f');
+      addDamageText(e.x, e.y - e.radius - 14, matchText('match.combat.breach'), true, '#f1c40f');
     } else {
       const p = e.arenaPattern;
       e.actionState = p.active ? SOVEREIGN_STATES.CASTING : SOVEREIGN_STATES.WINDUP;
@@ -511,8 +512,8 @@ export function updateAbyssSovereign(e, dt, context) {
           });
         }
 
-        addDamageText(e.x, e.y - e.radius - 22, "O SOBERANO DESPERTOU!", true, '#00cec9');
-        addDamageText(e.x, e.y - e.radius - 42, "O FIM DOS TEMPOS COMEÇOU", false, '#e84393');
+        addDamageText(e.x, e.y - e.radius - 22, matchText('match.combat.awakening'), true, '#00cec9');
+        addDamageText(e.x, e.y - e.radius - 42, matchText('match.combat.endTimes'), false, '#e84393');
 
         spawnRiftAnchors(e, 3, 2200);
       }
@@ -776,7 +777,7 @@ export function updateAbyssSovereign(e, dt, context) {
           playSfx('charge');
           triggerShake(14);
           triggerHaptic('heavy');
-          addDamageText(e.x, e.y - e.radius - 16, "INVERSÃO!", true, '#ff7675');
+          addDamageText(e.x, e.y - e.radius - 16, matchText('match.combat.inversion'), true, '#ff7675');
         }
 
         if (e.inversionFlashTimer > 0) {
@@ -929,7 +930,7 @@ export function updateAbyssSovereign(e, dt, context) {
           e.isStaggered = true;
           e.isVulnerable = true;
           e.staggerGauge = 0;
-          addDamageText(e.x, e.y - e.radius - 14, "BRECHA SIDÉRICA!", true, '#f1c40f');
+          addDamageText(e.x, e.y - e.radius - 14, matchText('match.combat.breach'), true, '#f1c40f');
         } else {
           e.actionState = SOVEREIGN_STATES.IDLE;
           e.stateTimer = 0;
@@ -1158,7 +1159,7 @@ case SOVEREIGN_STATES.RECOVERY_STAGGER: {
         e.actionState = SOVEREIGN_STATES.IDLE;
         e.stateTimer = 0;
         e.idleTimer = 20;
-        addDamageText(e.x, e.y - e.radius - 12, "ESTABILIZADO!", true, '#8e44ad');
+        addDamageText(e.x, e.y - e.radius - 12, matchText('match.combat.stable'), true, '#8e44ad');
       }
       break;
     }

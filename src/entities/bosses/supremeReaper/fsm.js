@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 import { isBossPhaseReady } from '../../../systems/bossPhaseCinematic.js';
 /**
  * src/entities/bosses/supremeReaper/fsm.js
@@ -73,7 +74,7 @@ export function checkReaperPhases(e, context) {
     context.triggerShake(18);
     triggerHaptic('heavy');
     playSfx('boss');
-    context.addDamageText(e.x, e.y, "DESPERTAR DA CEIFA!", true, '#e74c3c');
+    context.addDamageText(e.x, e.y, matchText('match.combat.reaperAwakes'), true, '#e74c3c');
 
     context.bossShockwaves.push({
       x: e.x,
@@ -118,7 +119,7 @@ export function checkReaperPhases(e, context) {
     e.lanternAngularSpeed *= 1.4;
     context.triggerShake(20);
     playSfx('boss');
-    context.addDamageText(e.x, e.y, "DANÇA MACABRA!", true, '#ff4757');
+    context.addDamageText(e.x, e.y, matchText('match.combat.dance'), true, '#ff4757');
   }
 }
 
@@ -316,7 +317,7 @@ export function updateSupremeReaper(e, dt, context) {
     }
     if (!e.hasTriggeredDeathSentenceBark) {
       e.hasTriggeredDeathSentenceBark = true;
-      if (addDamageText) addDamageText(e.x, e.y - 55, "SENTENÇA DE MORTE!", true, '#ff4757');
+      if (addDamageText) addDamageText(e.x, e.y - 55, matchText('match.combat.sentence'), true, '#ff4757');
       playSfx('crit');
       if (triggerShake) triggerShake(10);
     }
@@ -420,7 +421,7 @@ export function updateSupremeReaper(e, dt, context) {
           playSfx('boss');
           triggerShake(22);
           triggerHaptic('heavy');
-          addDamageText(e.x, e.y - 30, "A LÂMINA DO DESTINO!", true, '#00cec9');
+          addDamageText(e.x, e.y - 30, matchText('match.combat.blade'), true, '#00cec9');
 
           for (let p = 0; p < 28; p++) {
             const fAng = Math.random() * Math.PI * 2;
@@ -474,7 +475,7 @@ export function updateSupremeReaper(e, dt, context) {
           playSfx('crit');
           triggerShake(20);
           triggerHaptic('heavy');
-          addDamageText(e.x, e.y - 50, "A MORTE É O SEU DESTINO!", true, '#00cec9');
+          addDamageText(e.x, e.y - 50, matchText('match.combat.deathDestiny'), true, '#00cec9');
 
           bossShockwaves.push({
             x: e.x,
@@ -523,7 +524,7 @@ export function updateSupremeReaper(e, dt, context) {
           triggerShake(16);
           triggerHaptic('heavy');
           playSfx('boss');
-          addDamageText(e.x, e.y, "COLAPSO ESPIRITUAL (2.0s)!", true, '#81ecec');
+          addDamageText(e.x, e.y, matchText('match.combat.spiritCollapse'), true, '#81ecec');
         } else {
           e.actionState = REAPER_STATES.CHASE;
           e.skillCooldown = 75;
@@ -566,7 +567,7 @@ export function updateSupremeReaper(e, dt, context) {
 
         triggerShake(14);
         playSfx('boss');
-        addDamageText(e.x, e.y, "RECONSTITUIÇÃO ESPIRITUAL!", true, '#00cec9');
+        addDamageText(e.x, e.y, matchText('match.combat.spectral'), true, '#00cec9');
       }
       return;
     }

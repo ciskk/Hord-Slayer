@@ -1,3 +1,4 @@
+import { t, formatNumber } from '../i18n/index.js';
 /**
  * src/ui/hudController.js
  * Gerenciador e Controlador Diegético de HUD de Combate.
@@ -9,7 +10,8 @@ import { CHARACTERS } from '../config/characters.js';
 import { ARENA_PALETTES } from '../render/environment.js';
 import { player, getPersistentGold, selectedHeroKey, triggerHeroSkill } from '../entities/player.js';
 import { waveAnnouncement, frameCount, matchIntro, deathSequence } from '../state/gameState.js';
-import { getTimeUntilNextWave, getEffectiveHordeSeconds, nextBossSpawnTime, currentBossIndex, BOSS_QUEUE } from '../systems/waves.js';
+import { activeBoss } from '../state/collections.js';
+import { getTimeUntilNextWave, getEffectiveHordeSeconds, getCurrentWave, nextBossSpawnTime, currentBossIndex, BOSS_QUEUE } from '../systems/waves.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { initUltButtonRenderer, renderUltButton, setUltHero, triggerUltBurst } from '../render/ultButtonRenderer.js';
 
@@ -274,7 +276,7 @@ export function applyHeroVisuals(heroKey) {
   }
   const titleEl = hudDom.hudHeroTitle || document.getElementById('hud-hero-title');
   if (titleEl) {
-    titleEl.innerText = (heroChar.title || 'O SOBREVIVENTE').toUpperCase();
+    titleEl.innerText = t(`heroes.${activeKey}.title`).toUpperCase();
   }
   const emblemWrap = hudDom.skillEmblemWrap || document.getElementById('skill-emblem-wrap');
   if (emblemWrap) {
@@ -338,7 +340,7 @@ export function resetHUD(initialHp = 120) {
   _lastTimerSeconds = null;
   _lastBossTimerRemaining = null;
   _lastHeroKey = null;
-  _lastSkillReady = true;
+  _lastSkillReady = null;
   _lastSkillDeg = 0;
   _lastSkillOffset = 0;
   _lastSkillTextStr = '';
@@ -512,12 +514,12 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
   
   let targetWaveBannerText = '';
   if (gameState.isWavePaused && !activeBoss) {
-    targetWaveBannerText = "ABRA O BAÚ PARA CONTINUAR!";
+    targetWaveBannerText = t('match.hud.openChest');
   } else if (activeBoss) {
-    const arenaName = ARENA_PALETTES[currentArenaTheme]?.name || '';
-    targetWaveBannerText = `${activeBoss.name} • ${arenaName}`;
+    const arenaName = t(`match.arena.${currentArenaTheme}`);
+    targetWaveBannerText = `${t(`bestiary.BOSS_${activeBoss.bossId}.name`)} • ${arenaName}`;
   } else {
-    const arenaName = ARENA_PALETTES[currentArenaTheme]?.name;
+    const arenaName = t(`match.arena.${currentArenaTheme}`);
     targetWaveBannerText = arenaName ? `${currentWave.name} • ${arenaName}` : (currentWave?.name || '');
   }
 
@@ -604,11 +606,11 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
       const maxHp = Math.ceil(activeBoss.maxHp);
       if (curHp !== _lastBossRawHp || maxHp !== _lastBossRawMaxHp) {
         if (maxHp !== _lastBossRawMaxHp) {
-          _lastBossMaxHpText = maxHp.toLocaleString('pt-BR');
+          _lastBossMaxHpText = formatNumber(maxHp);
         }
         _lastBossRawHp = curHp;
         _lastBossRawMaxHp = maxHp;
-        const rawText = `${curHp.toLocaleString('pt-BR')} / ${_lastBossMaxHpText} HP`;
+        const rawText = `${formatNumber(curHp)} / ${_lastBossMaxHpText} HP`;
         if (rawText !== _lastBossRawHpText) {
           _lastBossRawHpText = rawText;
           hudDom.bossHpRaw.innerText = rawText;
@@ -703,5 +705,22 @@ export function updateHUD(dt, { gameState, activeBoss, currentArenaTheme, second
         hudDom.bossTimerBadge.classList.toggle('urgent-pulse', isUrgent);
       }
     }
+  }
+}
+
+export function refreshHUDLanguage() {
+  _lastHeroKey = null;
+  _lastWaveBannerText = '';
+  _lastBossRawHp = -1;
+  _lastBossRawMaxHp = -1;
+  const title = document.getElementById('hud-hero-title');
+  if (title) title.textContent = t(`heroes.${selectedHeroKey}.title`).toUpperCase();
+
+  if (activeBoss) {
+    const bossNameEl = document.getElementById('boss-name');
+    if (bossNameEl) bossNameEl.innerText = t(`bestiary.BOSS_${activeBoss.bossId}.name`);
+    const bossHud = document.getElementById('boss-hud');
+    const titleTag = bossHud?.querySelector('.boss-title-tag');
+    if (titleTag) titleTag.innerText = t('match.hud.bossArch');
   }
 }

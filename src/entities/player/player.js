@@ -466,8 +466,9 @@ export function triggerHeroSkill(options = {}) {
 }
 
 export function getNextLevelXp(level) {
-  // Multiplica por 2 a facilidade de subir de nível (reduz à metade o requisito de XP)
-  return Math.max(1, Math.round((12 + (level * 7) + Math.floor(Math.pow(level, 1.28))) * 0.5));
+  // Curva de progressão de XP calibrada para nível ~70 ao zerar a partida (~20.7k XP acumulados).
+  // O expoente 1.60 preserva o início fluido (nível 1 com 10 XP) e reduz a facilidade progressivamente.
+  return Math.max(1, Math.round((12 + (level * 7) + Math.floor(Math.pow(level, 1.6))) * 0.5));
 }
 
 export function addXP(amount) {
@@ -514,6 +515,7 @@ export function resetPlayer(heroKey) {
   player.baseSpeed = c.stats.speed * meta.speedMult;
   player.speed = player.baseSpeed;
   player.damage = Math.round(c.stats.damage * meta.damageMult);
+  player.damageMetaMult = meta.damageMult;
   player.baseDamage = c.stats.damage;
   player.damagePercentBonus = 0;
   player.ultCooldownCount = 0;

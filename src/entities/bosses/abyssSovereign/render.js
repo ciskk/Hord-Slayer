@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/bosses/abyssSovereign/render.js
  * Renderização procedural completa no Canvas do Soberano do Abismo (Boss 4 / Chefe Final).
@@ -490,7 +491,7 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
     // Layout Vertical
     ctx.font = 'bold 9px monospace';
     ctx.fillStyle = '#f6e58d';
-    ctx.fillText("[ CATACLISMA PURGADO • O ABISMO FOI SELADO ]", screenW / 2, by + 14);
+    ctx.fillText(matchText('match.canvas.purged'), screenW / 2, by + 14);
 
     const titleY = by + 37;
     const titleGrad = ctx.createLinearGradient(0, titleY - 10, 0, titleY + 10);
@@ -500,23 +501,23 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
 
     ctx.font = 'bold 19px "Cinzel", "Cinzel Decorative", Georgia, serif';
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2 + 1, titleY + 1.5);
+    ctx.fillText(matchText('match.canvas.victory'), screenW / 2 + 1, titleY + 1.5);
     ctx.fillStyle = titleGrad;
-    ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2, titleY);
+    ctx.fillText(matchText('match.canvas.victory'), screenW / 2, titleY);
 
     ctx.font = 'italic 10px "Cinzel", Georgia, serif';
     ctx.fillStyle = '#fff2a8';
-    ctx.fillText("✦ O SOBERANO DO ABISMO FOI ANIQUILADO ✦", screenW / 2, by + 58);
+    ctx.fillText(matchText('match.canvas.sovereignDead'), screenW / 2, by + 58);
 
     // Linha de Honra e Métricas
     ctx.font = 'bold 9px monospace';
     ctx.fillStyle = '#f1c40f';
-    ctx.fillText(`TEMPO: ${stats.time}  •  ABATES: ${stats.kills}  •  NÍVEL: ${stats.level}  •  OURO: +${stats.gold}`, screenW / 2, by + 84);
+    ctx.fillText(matchText('match.canvas.summary', stats), screenW / 2, by + 84);
   } else {
     // Layout Horizontal
     ctx.font = 'bold 11px monospace';
     ctx.fillStyle = '#f6e58d';
-    ctx.fillText("[ CATACLISMA PURGADO // A ORDEM CÓSMICA FOI RESTAURADA ]", screenW / 2, by + 22);
+    ctx.fillText(matchText('match.canvas.order'), screenW / 2, by + 22);
 
     const titleY = by + 53;
     const titleGrad = ctx.createLinearGradient(0, titleY - 16, 0, titleY + 16);
@@ -527,18 +528,18 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
 
     ctx.font = 'bold 31px "Cinzel", "Cinzel Decorative", Georgia, serif';
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2 + 1.5, titleY + 2);
+    ctx.fillText(matchText('match.canvas.victory'), screenW / 2 + 1.5, titleY + 2);
     ctx.fillStyle = titleGrad;
-    ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2, titleY);
+    ctx.fillText(matchText('match.canvas.victory'), screenW / 2, titleY);
 
     ctx.font = 'italic 13px "Cinzel", Georgia, serif';
     ctx.fillStyle = '#fff2a8';
-    ctx.fillText("✦ O SOBERANO DO ABISMO FOI ANIQUILADO E AS TREVAS EXPURGADAS ✦", screenW / 2, by + 82);
+    ctx.fillText(matchText('match.canvas.darknessPurged'), screenW / 2, by + 82);
 
     // Fita de Honra com Métricas Destacadas
     ctx.font = 'bold 11px monospace';
     ctx.fillStyle = '#f1c40f';
-    ctx.fillText(`TEMPO DE COMBATE: ${stats.time}    |    MONSTROS EXPURGADOS: ${stats.kills}    |    NÍVEL: ${stats.level}    |    OURO CONQUISTADO: +${stats.gold}`, screenW / 2, by + 108);
+    ctx.fillText(matchText('match.canvas.summary', stats), screenW / 2, by + 108);
   }
 
   ctx.restore();
@@ -658,9 +659,9 @@ function drawHealingZones(ctx, e, frameCount) {
     ctx.font = 'bold 9px monospace';
     const secondsLeft = (zone.life / 60).toFixed(1);
     ctx.fillStyle = '#000000';
-    ctx.fillText(`CURA +10%/s (${secondsLeft}s)`, 1, -R - 9);
+    ctx.fillText(matchText('match.canvas.heal', { seconds: secondsLeft }), 1, -R - 9);
     ctx.fillStyle = zone.playerInside ? '#ffffff' : '#2ecc71';
-    ctx.fillText(`CURA +10%/s (${secondsLeft}s)`, 0, -R - 10);
+    ctx.fillText(matchText('match.canvas.heal', { seconds: secondsLeft }), 0, -R - 10);
 
     ctx.restore();
   }
@@ -3061,7 +3062,7 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     ctx.arc(0, 0, emitR, 0, Math.PI * 2);
     ctx.fill();
 
-    // 5.8 Clarão Dramático de Inversão ("INVERSÃO!")
+    // 5.8 Clarão Dramático de Inversão (matchText('match.combat.inversion'))
     if (e.inversionFlashTimer && e.inversionFlashTimer > 0) {
       const invRatio = 1 - (e.inversionFlashTimer / 18);
       const invR = 20 + invRatio * 160;

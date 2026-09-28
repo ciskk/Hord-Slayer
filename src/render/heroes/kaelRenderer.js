@@ -121,7 +121,7 @@ export function drawKaelModel(c, charDef, state, optionsOrBob = 0, legSwingArg =
 
   const bladeSteel = cCol.bladeSteel || '#475569';
   const bladeSteelLight = cCol.bladeSteelLight || '#94a3b8';
-  const bladeEdgeGlow = isPhaseActive ? '#f3e8ff' : (cCol.bladeEdgeGlow || '#c084fc');
+  const bladeEdgeGlow = state.evolvedSword ? '#f1c40f' : (isPhaseActive ? '#f3e8ff' : (cCol.bladeEdgeGlow || '#c084fc'));
   const bladeGlint = '#ffffff';
 
   const pantsCol = cCol.pants || '#1c182b';
@@ -284,7 +284,7 @@ export function drawKaelModel(c, charDef, state, optionsOrBob = 0, legSwingArg =
         c.strokeStyle = silverPlate;
         c.lineWidth = 0.7;
         c.strokeRect(-1.5, -4, 3.0, 12);
-        c.fillStyle = gemPurple;
+        c.fillStyle = state.evolvedSword ? bladeEdgeGlow : gemPurple;
         c.fillRect(-0.5, 0, 1.0, 4);
         c.restore();
         return;
@@ -295,14 +295,14 @@ export function drawKaelModel(c, charDef, state, optionsOrBob = 0, legSwingArg =
       c.rotate(cfg.ang);
 
       // Bainha de couro negro com guarnições de prata lunar
-      c.fillStyle = leatherDark;
+      c.fillStyle = state.evolvedSword ? '#715017' : leatherDark;
       c.fillRect(-1.6, -2.5, 3.2, 14);
       c.fillStyle = silverPlate;
       c.fillRect(-1.8, 8.5, 3.6, 2.5); // Ponteira de prata
       c.fillRect(-1.8, -2.5, 3.6, 1.2); // Bocal da bainha
 
       // Gravação rúnica violeta pulsante na bainha
-      c.fillStyle = gemPurple;
+      c.fillStyle = state.evolvedSword ? bladeEdgeGlow : gemPurple;
       c.fillRect(-0.6, 0.5, 1.2, 5.5);
       c.fillStyle = gemPurpleBright;
       c.fillRect(-0.3, 2.0, 0.6, 2.0);

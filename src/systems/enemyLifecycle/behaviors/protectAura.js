@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/protectAura.js
  * IA do Guardião Rúnico — Aura protetora com cura em área.
@@ -22,7 +23,7 @@ export function protectAuraBehavior(e, dt, angle, curSpeed, ctx) {
     playSfx('freeze');
     triggerShake(4);
     createHitParticles(e.x, e.y, '#0984e3', 14);
-    addDamageText(e.x, e.y, "AURA PROTETORA!", false, '#74b9ff');
+    addDamageText(e.x, e.y, matchText('match.combat.aura'), false, '#74b9ff');
     bossShockwaves.push({
       x: e.x,
       y: e.y,

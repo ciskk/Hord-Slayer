@@ -1,8 +1,8 @@
 // Modelo único do machado: coldre dorsal, órbita da partida e prévia.
 export function drawKragdorAxe(c, cCol = {}, { isEvolved = false, isBerserk = false } = {}) {
-  const axeSteel = cCol.axeSteel || '#7f8c8d';
-  const axeSteelLight = cCol.axeSteelLight || '#b2bec3';
-  const axeEdge = cCol.axeEdge || '#f1c40f';
+  const axeSteel = isEvolved ? '#b84a16' : (cCol.axeSteel || '#7f8c8d');
+  const axeSteelLight = isEvolved ? '#ff9f43' : (cCol.axeSteelLight || '#b2bec3');
+  const axeEdge = isEvolved ? '#fff1b8' : (cCol.axeEdge || '#f1c40f');
   const axeWood = cCol.axeWood || '#3d271d';
   const ironCol = cCol.iron || '#47535e';
   const brassCol = cCol.brass || '#f39c12';
@@ -67,7 +67,7 @@ export function drawKragdorAxe(c, cCol = {}, { isEvolved = false, isBerserk = fa
   c.lineTo(-15, -4);
   c.stroke();
 
-  // A evolução e a fúria preservam a lâmina e acrescentam uma runa luminosa.
+  // A runa de fúria se sobrepõe sem apagar o metal incandescente da evolução.
   if (isEvolved || isBerserk) {
     c.strokeStyle = isBerserk ? '#ff7675' : '#f39c12';
     c.lineWidth = 1.2;

@@ -1,3 +1,5 @@
+import { t as tr, formatNumber, onLanguageChange } from '../../i18n/index.js';
+import { htmlT, translateDOM } from '../../i18n/dom.js';
 /**
  * src/ui/modals/bestiaryModal.js
  * Códice do Bestiário das Trevas e Preview Procedural de Criaturas.
@@ -35,6 +37,7 @@ export function openBestiaryModal() {
 
   const modal = document.getElementById('bestiary-modal');
   if (!modal) return;
+  translateDOM(modal);
 
   const isMobile = isMobileScreen();
   modal.classList.toggle('is-mobile-device', isMobile);
@@ -50,7 +53,7 @@ export function openBestiaryModal() {
   const totalCountEl = document.getElementById('bestiary-total-count');
   if (totalCountEl) totalCountEl.innerText = totalCount;
   const totalKillsEl = document.getElementById('bestiary-total-kills-val');
-  if (totalKillsEl) totalKillsEl.innerText = totalKills.toLocaleString('pt-BR');
+  if (totalKillsEl) totalKillsEl.innerText = formatNumber(totalKills);
   const completionEl = document.getElementById('bestiary-completion-val');
   if (completionEl) completionEl.innerText = `${completionPct}%`;
 
@@ -145,22 +148,22 @@ export function renderBestiaryRoster(filterCategory = 'ALL') {
   document.querySelectorAll('.bestiary-tab-btn').forEach(btn => {
     const cat = btn.getAttribute('data-cat');
     const labelEl = btn.querySelector('.tab-label') || btn;
-    if (cat === 'ALL') labelEl.innerText = `TODOS (${BESTIARY_ENTRIES.length})`;
-    else if (cat === 'HORDE') labelEl.innerText = `HORDAS (${hordeTotal})`;
-    else if (cat === 'MINIBOSS') labelEl.innerText = `MINI-CHEFES (${miniTotal})`;
-    else if (cat === 'BOSS') labelEl.innerText = `CHEFES (${bossTotal})`;
+    if (cat === 'ALL') labelEl.innerText = `${tr('contentUI.allCreatures', { value1: BESTIARY_ENTRIES.length })}`;
+    else if (cat === 'HORDE') labelEl.innerText = `${tr('contentUI.hordes', { value1: hordeTotal })}`;
+    else if (cat === 'MINIBOSS') labelEl.innerText = `${tr('contentUI.minibosses', { value1: miniTotal })}`;
+    else if (cat === 'BOSS') labelEl.innerText = `${tr('contentUI.bosses', { value1: bossTotal })}`;
   });
 
   // Atualiza badge de filtro ativo no topo do Pilar de Roster
   const filterBadgeEl = document.getElementById('bestiary-filter-badge');
   if (filterBadgeEl) {
     const catLabels = {
-      'ALL': `TODOS (${BESTIARY_ENTRIES.length})`,
-      'HORDE': `HORDAS (${hordeTotal})`,
-      'MINIBOSS': `MINI-CHEFES (${miniTotal})`,
-      'BOSS': `CHEFES (${bossTotal})`
+      'ALL': `${tr('contentUI.allCreatures', { value1: BESTIARY_ENTRIES.length })}`,
+      'HORDE': `${tr('contentUI.hordes', { value1: hordeTotal })}`,
+      'MINIBOSS': `${tr('contentUI.minibosses', { value1: miniTotal })}`,
+      'BOSS': `${tr('contentUI.bosses', { value1: bossTotal })}`
     };
-    filterBadgeEl.innerText = catLabels[filterCategory] || `FILTRO (${entries.length})`;
+    filterBadgeEl.innerText = catLabels[filterCategory] || `${tr('contentUI.filter', { value1: entries.length })}`;
   }
 
   entries.forEach(c => {
@@ -174,13 +177,13 @@ export function renderBestiaryRoster(filterCategory = 'ALL') {
     card.setAttribute('data-id', c.id);
 
     let catBadgeClass = 'badge-horde';
-    let catLabel = 'HORDA';
+    let catLabel = tr('contentUI.horde');
     if (c.category === 'BOSS') { 
       catBadgeClass = 'badge-boss'; 
-      catLabel = 'CHEFE'; 
+      catLabel = tr('contentUI.boss');
     } else if (c.category === 'MINIBOSS') { 
       catBadgeClass = 'badge-miniboss'; 
-      catLabel = 'MINIBOSS'; 
+      catLabel = tr('contentUI.miniboss');
     }
 
     card.innerHTML = `
@@ -196,8 +199,8 @@ export function renderBestiaryRoster(filterCategory = 'ALL') {
           <span class="bcard-cat-pill ${catBadgeClass}">${catLabel}</span>
         </div>
         <div class="bcard-sub-row">
-          <span class="bcard-kills">${isDiscovered ? `${kills.toLocaleString('pt-BR')} ${kills === 1 ? 'abate' : 'abates'}` : 'Não catalogado'}</span>
-          <span class="bcard-threat" title="Nível de Ameaça: ${c.threat}/5">${stars}</span>
+          <span class="bcard-kills">${isDiscovered ? htmlT('bestiary.kills', { count: kills }) : tr('contentUI.uncatalogued')}</span>
+          <span class="bcard-threat" title="${htmlT('contentUI.threat', { value1: c.threat })}">${stars}</span>
         </div>
       </div>
       <div class="bcard-select-edge"></div>
@@ -227,16 +230,16 @@ export function renderBestiaryDossier(creatureId) {
   const archetypeBadge = document.getElementById('bestiary-dossier-archetype');
   if (archetypeBadge) {
     if (!isDiscovered) {
-      archetypeBadge.innerText = 'DESCONHECIDO';
+      archetypeBadge.innerText = tr('contentUI.unknown');
       archetypeBadge.className = 'pillar-badge-hero badge-unknown';
     } else if (c.category === 'BOSS') {
-      archetypeBadge.innerText = 'CHEFE SUPREMO';
+      archetypeBadge.innerText = tr('contentUI.supremeBoss');
       archetypeBadge.className = 'pillar-badge-hero badge-boss';
     } else if (c.category === 'MINIBOSS') {
-      archetypeBadge.innerText = 'MINI-CHEFE';
+      archetypeBadge.innerText = tr('contentUI.miniboss');
       archetypeBadge.className = 'pillar-badge-hero badge-miniboss';
     } else {
-      archetypeBadge.innerText = 'ENXAME DA HORDA';
+      archetypeBadge.innerText = tr('contentUI.hordeSwarm');
       archetypeBadge.className = 'pillar-badge-hero badge-horde';
     }
   }
@@ -248,10 +251,10 @@ export function renderBestiaryDossier(creatureId) {
         <div class="preview-ambient-glow"></div>
         <canvas id="bestiary-preview-canvas" width="220" height="220"></canvas>
         <div class="bestiary-category-pill" style="border-color:${isDiscovered ? c.color : '#ff4757'}; color:${isDiscovered ? c.color : '#ff7675'};">
-          ${c.category === 'BOSS' ? `${renderIcon('boss_crown', { size: 12, color: '#c084fc', style: 'vertical-align:middle;margin-right:4px;' })} CHEFE SUPREMO` : (c.category === 'MINIBOSS' ? `${renderIcon('damage', { size: 12, color: '#f39c12', style: 'vertical-align:middle;margin-right:4px;' })} MINI-CHEFE` : `${renderIcon('skull', { size: 12, color: '#2ecc71', style: 'vertical-align:middle;margin-right:4px;' })} HORDA DE ENXAME`)}
+          ${c.category === 'BOSS' ? `${renderIcon('boss_crown', { size: 12, color: '#c084fc', style: 'vertical-align:middle;margin-right:4px;' })} ${tr('contentUI.supremeBoss')}` : (c.category === 'MINIBOSS' ? `${renderIcon('damage', { size: 12, color: '#f39c12', style: 'vertical-align:middle;margin-right:4px;' })} ${tr('contentUI.miniboss')}` : `${renderIcon('skull', { size: 12, color: '#2ecc71', style: 'vertical-align:middle;margin-right:4px;' })} ${tr('contentUI.swarmHorde')}`)}
         </div>
         <div class="bestiary-kills-pill">
-          ${isDiscovered ? `${renderIcon('wave_swords', { size: 12, color: '#00f5d4', style: 'vertical-align:middle;margin-right:4px;' })} ${kills.toLocaleString('pt-BR')} Abates` : `${renderIcon('lock', { size: 11, color: '#ff7675', style: 'vertical-align:middle;margin-right:4px;' })} Não Catalogado`}
+          ${isDiscovered ? `${renderIcon('wave_swords', { size: 12, color: '#00f5d4', style: 'vertical-align:middle;margin-right:4px;' })} ${htmlT('bestiary.kills', { count: kills })}` : `${renderIcon('lock', { size: 11, color: '#ff7675', style: 'vertical-align:middle;margin-right:4px;' })} ${tr('contentUI.uncataloguedTitle')}`}
         </div>
       </div>
 
@@ -261,12 +264,12 @@ export function renderBestiaryDossier(creatureId) {
           <h2 class="dossier-name" style="color: ${isDiscovered ? (c.color || '#00f5d4') : '#ff7675'};">
             ${isDiscovered ? c.name : '???'}
           </h2>
-          <span class="dossier-threat-badge" title="Nível de Ameaça: ${c.threat}/5">
+          <span class="dossier-threat-badge" title="${htmlT('contentUI.threat', { value1: c.threat })}">
             ${stars}
           </span>
         </div>
         <div class="dossier-title">
-          ${isDiscovered ? c.title : 'Espécime Oculto nas Sombras do Abismo'}
+          ${isDiscovered ? c.title : tr('contentUI.hiddenSpecimen')}
         </div>
       </div>
 
@@ -274,25 +277,25 @@ export function renderBestiaryDossier(creatureId) {
       <div class="dossier-stats-grid">
         <div class="bestiary-stat-card stat-hp">
           <div class="stat-label">
-            ${renderIcon('heart', { size: 11, color: '#ff7675', style: 'vertical-align:middle;margin-right:3px;' })} VIDA BASE
+            ${renderIcon('heart', { size: 11, color: '#ff7675', style: 'vertical-align:middle;margin-right:3px;' })} ${htmlT('contentUI.baseHealth')}
           </div>
-          <div class="stat-val highlight-ruby">${isDiscovered ? c.hp.toLocaleString('pt-BR') : '???'}</div>
+          <div class="stat-val highlight-ruby">${isDiscovered ? formatNumber(c.hp) : '???'}</div>
         </div>
         <div class="bestiary-stat-card stat-damage">
           <div class="stat-label">
-            ${renderIcon('sword', { size: 11, color: '#ffd166', style: 'vertical-align:middle;margin-right:3px;' })} DANO CONTATO
+            ${renderIcon('sword', { size: 11, color: '#ffd166', style: 'vertical-align:middle;margin-right:3px;' })} ${htmlT('contentUI.contactDamage')}
           </div>
           <div class="stat-val highlight-gold">${isDiscovered ? c.damage : '???'}</div>
         </div>
         <div class="bestiary-stat-card stat-speed">
           <div class="stat-label">
-            ${renderIcon('boot', { size: 11, color: '#00f5d4', style: 'vertical-align:middle;margin-right:3px;' })} VELOCIDADE
+            ${renderIcon('boot', { size: 11, color: '#00f5d4', style: 'vertical-align:middle;margin-right:3px;' })} ${htmlT('contentUI.speed')}
           </div>
           <div class="stat-val highlight-cyan">${isDiscovered ? c.speed : '???'}</div>
         </div>
         <div class="bestiary-stat-card stat-role">
           <div class="stat-label">
-            ${renderIcon('execute', { size: 11, color: '#a29bfe', style: 'vertical-align:middle;margin-right:3px;' })} FUNÇÃO TÁTICA
+            ${renderIcon('execute', { size: 11, color: '#a29bfe', style: 'vertical-align:middle;margin-right:3px;' })} ${htmlT('contentUI.tacticalRole')}
           </div>
           <div class="stat-val highlight-purple">${isDiscovered ? c.role : '???'}</div>
         </div>
@@ -302,11 +305,11 @@ export function renderBestiaryDossier(creatureId) {
       <div class="dossier-lore-box ${isLore ? '' : 'is-locked'}">
         <div class="dossier-box-header">
           <span class="dossier-box-icon">${renderIcon('scroll', { size: 13, color: '#ffd166', style: 'display:inline-block;vertical-align:middle;' })}</span>
-          <span class="dossier-box-title">CRÔNICA DE ORIGEM PROFANA</span>
-          <span class="dossier-lock-status ${isLore ? 'unlocked' : 'locked'}">${isLore ? `${renderIcon('check', { size: 10, color: '#2ecc71', style: 'vertical-align:middle;margin-right:2px;' })} DESCRIPTOGRAFADO` : `${renderIcon('lock', { size: 10, color: '#ff7675', style: 'vertical-align:middle;margin-right:2px;' })} Requer ${reqKills} ${reqKills === 1 ? 'abate' : 'abates'}`}</span>
+          <span class="dossier-box-title">${htmlT('contentUI.profaneOrigins')}</span>
+          <span class="dossier-lock-status ${isLore ? 'unlocked' : 'locked'}">${isLore ? `${renderIcon('check', { size: 10, color: '#2ecc71', style: 'vertical-align:middle;margin-right:2px;' })} ${tr('contentUI.decrypted')}` : `${renderIcon('lock', { size: 10, color: '#ff7675', style: 'vertical-align:middle;margin-right:2px;' })} ${htmlT('contentUI.requiredKills', { count: reqKills })}`}</span>
         </div>
         <div class="dossier-box-content">
-          ${isLore ? c.microLore : (isDiscovered ? `O véu do mistério ainda oculta a origem ancestral desta abominação. Abata mais ${Math.max(1, reqKills - kills)} espécimes para decifrar seu registro.` : 'Criatura desconhecida. Elimine-a na arena para iniciar a extração de dados biométricos.')}
+          ${isLore ? c.microLore : (isDiscovered ? htmlT('contentUI.remainingLore', { count: Math.max(1, reqKills - kills) }) : tr('contentUI.unknownCreature'))}
         </div>
       </div>
 
@@ -314,11 +317,11 @@ export function renderBestiaryDossier(creatureId) {
       <div class="dossier-lore-box dossier-tactics-box ${isLore ? '' : 'is-locked'}">
         <div class="dossier-box-header">
           <span class="dossier-box-icon">${renderIcon('sword', { size: 13, color: '#00f5d4', style: 'display:inline-block;vertical-align:middle;' })}</span>
-          <span class="dossier-box-title">FRAQUEZA & CONDUTA TÁTICA</span>
-          <span class="dossier-lock-status ${isLore ? 'unlocked' : 'locked'}">${isLore ? `${renderIcon('sparkle', { size: 10, color: '#00f5d4', style: 'vertical-align:middle;margin-right:2px;' })} REVELADO` : `${renderIcon('lock', { size: 10, color: '#ff7675', style: 'vertical-align:middle;margin-right:2px;' })} BLOQUEADO`}</span>
+          <span class="dossier-box-title">${htmlT('contentUI.weaknessTactics')}</span>
+          <span class="dossier-lock-status ${isLore ? 'unlocked' : 'locked'}">${isLore ? `${renderIcon('sparkle', { size: 10, color: '#00f5d4', style: 'vertical-align:middle;margin-right:2px;' })} ${tr('contentUI.revealed')}` : `${renderIcon('lock', { size: 10, color: '#ff7675', style: 'vertical-align:middle;margin-right:2px;' })} ${tr('contentUI.locked')}`}</span>
         </div>
         <div class="dossier-box-content">
-          ${isLore ? c.tactics : 'Fraquezas e pontos vulneráveis desconhecidos.'}
+          ${isLore ? c.tactics : tr('contentUI.unknownWeakness')}
         </div>
       </div>
 
@@ -327,10 +330,10 @@ export function renderBestiaryDossier(creatureId) {
         <div class="dossier-quotes-box ${isLore ? '' : 'is-locked'}">
           <div class="dossier-box-header">
             <span class="dossier-box-icon">${renderIcon('quote', { size: 13, color: '#a29bfe', style: 'display:inline-block;vertical-align:middle;' })}</span>
-            <span class="dossier-box-title">ECOS & CITAÇÕES DA ARENA</span>
+            <span class="dossier-box-title">${htmlT('contentUI.echoes')}</span>
           </div>
           <div class="dossier-quotes-list">
-            ${isLore ? c.quotes.map(q => `<div class="dossier-quote-item">${q}</div>`).join('') : '<div class="dossier-quote-item locked-quote">“...” (Ecos selados pelo Abismo)</div>'}
+            ${isLore ? c.quotes.map(q => `<div class="dossier-quote-item">${q}</div>`).join('') : `<div class="dossier-quote-item locked-quote">${htmlT('contentUI.sealedEchoes')}</div>`}
           </div>
         </div>
       ` : ''}
@@ -343,3 +346,13 @@ export function renderBestiaryDossier(creatureId) {
   }
 }
 
+
+onLanguageChange(() => {
+  const modal = document.getElementById('bestiary-modal');
+  if (!modal?.classList.contains('active')) return;
+  translateDOM(modal);
+  renderBestiaryRoster(currentBestiaryCategory);
+  renderBestiaryDossier(selectedCreatureId);
+  const totalKills = BESTIARY_ENTRIES.reduce((sum, creature) => sum + getCreatureKills(creature.id), 0);
+  document.getElementById('bestiary-total-kills-val').textContent = formatNumber(totalKills);
+});

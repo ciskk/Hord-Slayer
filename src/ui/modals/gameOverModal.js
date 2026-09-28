@@ -1,3 +1,6 @@
+import { getCurrentWave, getEffectiveHordeSeconds } from '../../systems/waves.js';
+import { getSavedWeaponName, getSavedPassivePresentation } from '../../i18n/contentPresentation.js';
+import { t, formatNumber } from '../../i18n/index.js';
 /**
  * src/ui/modals/gameOverModal.js
  * Modais de Desfecho da Partida: Execução de Morte Intrínseca e Triunfo de Vitória.
@@ -30,6 +33,13 @@ import { frameCount } from '../../state/gameState.js';
 import { autoFitElement } from '../../core/responsiveAutoFit.js';
 
 let victorySettled = false;
+let refreshVictoryPresentation = null;
+let refreshDeathPresentation = null;
+export function refreshResultsLanguage() {
+  if (document.getElementById('death-modal')?.classList.contains('active')) refreshDeathPresentation?.();
+  if (document.getElementById('victory-modal')?.classList.contains('active')) refreshVictoryPresentation?.();
+}
+
 let matchStartGold = 0;
 export function markRunStartGold(gold) {
   victorySettled = false;
@@ -42,7 +52,7 @@ export function markRunStartGold(gold) {
 export function animateCountUp(element, targetValue, durationMs = 650) {
   if (!element) return;
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    element.innerText = Number(targetValue).toLocaleString('pt-BR');
+    element.innerText = formatNumber(Number(targetValue));
     return;
   }
   const num = parseInt(targetValue, 10);
@@ -56,11 +66,11 @@ export function animateCountUp(element, targetValue, durationMs = 650) {
     const progress = Math.min(elapsed / durationMs, 1);
     const easeProgress = 1 - Math.pow(1 - progress, 3);
     const currentVal = Math.floor(easeProgress * num);
-    element.innerText = currentVal.toLocaleString('pt-BR');
+    element.innerText = formatNumber(currentVal);
     if (progress < 1) {
       requestAnimationFrame(step);
     } else {
-      element.innerText = num.toLocaleString('pt-BR');
+      element.innerText = formatNumber(num);
     }
   }
   requestAnimationFrame(step);
@@ -71,98 +81,16 @@ export function animateCountUp(element, targetValue, durationMs = 650) {
  */
 export function calculateRunRank({ isVictory, wave, survivalSecs, kills, evolvedCount }) {
   if (isVictory) return evaluateVictory({ survivalSecs, kills, evolvedCount });
-  if (wave >= 9) return { grade: 'A', title: 'VETERANO DAS PROFUNDEZAS', color: '#9b59b6', stars: '★★★☆☆' };
-  if (wave >= 6) return { grade: 'B', title: 'GUERREIRO RESILIENTE', color: '#3498db', stars: '★★☆☆☆' };
-  if (wave >= 3) return { grade: 'C', title: 'SOBREVIVENTE APRENDIZ', color: '#2ecc71', stars: '★☆☆☆☆' };
-  return { grade: 'D', title: 'INICIADO CAÍDO', color: '#95a5a6', stars: '☆☆☆☆☆' };
+  if (wave >= 9) return { grade: 'A', title: t('match.rank.deathA'), color: '#9b59b6', stars: '★★★☆☆' };
+  if (wave >= 6) return { grade: 'B', title: t('match.rank.deathB'), color: '#3498db', stars: '★★☆☆☆' };
+  if (wave >= 3) return { grade: 'C', title: t('match.rank.deathC'), color: '#2ecc71', stars: '★☆☆☆☆' };
+  return { grade: 'D', title: t('match.rank.deathD'), color: '#95a5a6', stars: '☆☆☆☆☆' };
 }
 
 /**
  * Vereditos Poéticos da Queda (Horror Grim Cyber-Gothic)
  */
-export const DEATH_VERDICTS = [
-  "JUNTE-SE AO SANGUE DOS INFELIZES",
-  "SUA CARNE ALIMENTA AS PROFUNDEZAS",
-  "A ARENA BEBEU ATÉ SUA ÚLTIMA GOTA",
-  "NÃO RESTOU ALMA PARA REIVINDICAR",
-  "O ABISMO DEVOLVE APENAS OSSOS",
-  "EXTINTO NO SILÊNCIO DA CRIPTA",
-  "SEUS GRITOS ECOAM NO VÁCUO ETERNO",
-  "A HORDA CONSAGRA SEU SACRIFÍCIO",
-  "A MORTE NÃO TEVE PRESSA, APENAS PACIÊNCIA",
-  "CINZAS AO PÓ, SANGUE À TERRA MALDITA",
-  "VOCÊ FOI APENAS MAIS UM BANQUETE",
-  "O CICLO EXIGE SANGUE E VOCÊ FOI A OFERENDA",
-  "SUA CORAGEM NÃO PASSOU DE UMA ILUSÃO EFÊMERA",
-  "A ESCURIDÃO FINALMENTE RECLAMOU O QUE É DELA",
-  "SEU NOME FOI APAGADO DAS CRÔNICAS DESTE MUNDO",
-  "NENHUMA PRECE ALCANÇA O FUNDO DESTE ABISMO",
-  "O DESTINO TRIGNOU SEUS OSSOS SOB A LAMILHA",
-  "SEU ÚLTIMO SUSPIRO SE PERDEU NA TORMENTA",
-  "NEM MESMO OS VERMES LEMBRARÃO DE QUEM VOCÊ FOI",
-  "A NOITE ETERNA DESCEU SOBRE SEUS OLHOS",
-  "MAIS UMA LUZ APAGADA NA IMENSIDÃO DAS SOMBRAS",
-  "O BANQUETE TERMINOU E VOCÊ FOI O PRATO PRINCIPAL",
-  "A HORDA PISOTEOU SEUS ÚLTIMOS RESTOS",
-  "SUA JORNADA CULMINOU NESTE TÚMULO ESQUECIDO",
-  "A TERRA RANCOROSA TRAGOU SUAS MEMÓRIAS",
-  "NADA SOBROU ALÉM DO CHEIRO DE ENXOFRE E SANGUE",
-  "O ECO DA SUA DERROTA NUNCA CESSARÁ",
-  "A ETERNIDADE É FRIA E REPLETA DE MONSTROS",
-  "O PESO DA ARENA ESMAGOU SUAS ESPERANÇAS",
-  "SUAS ARMAS REPOUSAM AO LADO DE SEU CADÁVER",
-  "O ABISMO RIU DA SUA TENTATIVA DE RESISTIR",
-  "RESTOU APENAS UM RASTRO DE POEIRA ESCARLATE",
-  "A MORTE DECLAROU O SEU XEQUE-MATE FINAL",
-  "SEU SACRIFÍCIO FOI VAIDOSO E INSIGNIFICANTE",
-  "AS SOMBRAS FECHARAM O VÉU SOBRE SEU CORPO",
-  "NENHUMA GLÓRIA AGUARDA OS QUE CAEM NESTA ARENA",
-  "O SILÊNCIO REINOU ONDE ANTES HAVIA PULSO",
-  "SUAS BRASAS SE APAGARAM NA NEVE NEGRA DO TÁRTARO",
-  "A PRÓXIMA ONDA JÁ CAMINHA SOBRE O SEU TÚMULO",
-  "UMA VIDA A MENOS PARA DESAFIAR O INEVITÁVEL",
-  "O TRIBUNAL DAS SOMBRAS DECRETOU SUA EXTINÇÃO",
-  "A TERRA NUNCA DEVOLVE O QUE DEVORA",
-  "SUAS VEIAS SE TORNARAM RIOS DE LODO",
-  "O BARRO ESCURO BEBE SEU ÚLTIMO CALOR",
-  "SEUS OSSOS FINALMENTE ENCONTRARAM IGUAIS",
-  "NEM A POEIRA SE LEMBRARÁ DO SEU NOME",
-  "SUA CARCAÇA É O ADUBO DO PRÓXIMO CICLO",
-  "RESTOU APENAS A MARCA TÍPIDA DO SEU COLAPSO",
-  "A ARENA NÃO SE ENGASGA COM NENHUM GUERREIRO",
-  "CADA GOTA DERRAMADA FOI UM TRIBUTO AO VÁCUO",
-  "CARNE MACIA ENTRE MANDÍBULAS DE FERRO",
-  "NENHUM DEUS SE INCLINOU PARA OUVIR SEU CHORO",
-  "SUA ESPADA REPOUSA MAIS RÁPIDA QUE SUA CORAGEM",
-  "A GLÓRIA É UM FARRAPO QUE O SANGUE DILUI",
-  "VALENTES E COVARDES QUEBRAM COM O MESMO SOM",
-  "TANTAS HORAS DE LUTA POR UM TÚMULO SEM NOME",
-  "SUA LENDA MORREU ANTES DE ATINGIR A AURORA",
-  "O ORGULHO FOI O PRIMEIRO A SANGRAR",
-  "NÃO HÁ LÁGRIMAS NA CRIPTA DOS AMBICIOSOS",
-  "AS ESTRELAS FECHARAM OS OLHOS PARA A SUA QUEDA",
-  "SEUS JURAMENTOS APAGARAM-SE ANTES DO SEU PULSO",
-  "A ESCURIDÃO FINALMENTE ENCONTROU O SEU SILÊNCIO",
-  "O ABISMO NÃO PISCA PARA OS MORTOS",
-  "APAGUE-SE NA FRIALDADE DO NADA",
-  "NÃO HÁ ALVORADA PARA QUEM SE PERDE NESTE CHÃO",
-  "O SOPRO DA VIDA ERA APENAS UMA BRASA CONDENADA",
-  "AS SOMBRAS RECOLHERAM CADA PEDAÇO DA SUA LUZ",
-  "VOCÊ É MAIS UMA MANCHA NA PEDRA ETERNA",
-  "O VÁCUO NÃO GUARDA LEMBRANÇAS",
-  "ATÉ O SEU MEDO FOI ASFIXIADO",
-  "O HORIZONTE ENGOLIU SUA ÚLTIMA ESPERANÇA",
-  "OS PÉS DA HORDA ESMAGAM O QUE RESTOU DE TI",
-  "MAIS UM CONDENADO A DORMIR ENTRE AS RAÍZES",
-  "O ENXAME NUNCA PERGUNTA QUEM VOCÊ FOI",
-  "SEU FIM É APENAS O PRINCÍPIO DE MAIS UMA ONDA",
-  "OS ABUTRES DO ABISMO NÃO SABEM O QUE É PRESSA",
-  "VOCÊ TROPEÇOU NOS OSSOS DE QUEM VEIO ANTES",
-  "O CICLO DE DENTES E GARRAS NÃO CONHECE PIEDADE",
-  "SEU NOME AFUNDA ONDE OS OLHOS NÃO ALCANÇAM",
-  "O PESO DE MIL GARRAS SELOU SEU DESTINO",
-  "BEM-VINDO AO ABRAÇO DOS CONDENADOS"
-];
+export const DEATH_VERDICTS = Object.freeze(Array.from({ length: 81 }, (_, index) => 'match.death.verdict.' + index));
 
 let deathKeydownHandler = null;
 
@@ -243,31 +171,31 @@ function resolveDeathTacticsAndIcon(killerName, category, enemyType) {
     );
   }
 
-  let finalKillerName = killerName || 'A Horda do Abismo';
+  let finalKillerName = killerName || t('match.death.horde');
   if (bestiaryEntry) {
     const isElite = killerName && killerName.includes('(Elite)');
     finalKillerName = isElite ? `${bestiaryEntry.name} (Elite)` : bestiaryEntry.name;
   }
 
-  const killerTitle = bestiaryEntry ? bestiaryEntry.title : (category === 'BOSS' ? 'Soberano do Abismo' : (category === 'MINIBOSS' ? 'Terror da Arena' : 'Cria das Sombras'));
+  const killerTitle = bestiaryEntry ? bestiaryEntry.title : (category === 'BOSS' ? t('match.death.sovereign') : (category === 'MINIBOSS' ? t('match.death.terror') : t('match.death.spawn')));
   const killerColor = bestiaryEntry?.color || (category === 'BOSS' ? '#8e44ad' : (category === 'MINIBOSS' ? '#e67e22' : '#ff4757'));
 
   let tacticText = '';
-  let threatLabel = 'LETALIDADE ALTA';
-  let categoryLabel = 'ABOMINAÇÃO DA HORDA';
+  let threatLabel = t('match.death.high');
+  let categoryLabel = t('match.death.abomination');
   let iconSvg = '';
 
   if (bestiaryEntry) {
     tacticText = bestiaryEntry.tactics;
-    threatLabel = `AMEAÇA GRAU ${bestiaryEntry.threat || 3}`;
+    threatLabel = t('match.death.threat', { number: bestiaryEntry.threat || 3 });
     if (bestiaryEntry.category === 'BOSS') {
-      categoryLabel = 'CHEFE SUPREMO DO ABISMO';
+      categoryLabel = t('match.death.boss');
       iconSvg = renderIcon('boss_crown', { size: 30, color: '#ffd166' });
     } else if (bestiaryEntry.category === 'MINIBOSS') {
-      categoryLabel = 'MINI-CHEFE DEVASTADOR';
+      categoryLabel = t('match.death.mini');
       iconSvg = renderIcon('skull', { size: 28, color: '#e67e22' });
     } else {
-      categoryLabel = 'ABOMINAÇÃO DA HORDA';
+      categoryLabel = t('match.death.abomination');
       if (bestiaryEntry.id === 'BAT') {
         iconSvg = `<svg class="killer-glyph" viewBox="0 0 24 24" style="color:${killerColor};"><path fill="currentColor" d="M12 4c-1.5 2-4 3-7 3-1.5 0-3-.5-4-1 0 5 3 9 7 9 1 0 2-.5 3-1 1 .5 2 1 3 1 4 0 7-4 7-9-1 .5-2.5 1-4 1-3 0-5.5-1-7-3zm-2 7a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm4 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>`;
       } else if (bestiaryEntry.id === 'GOLEM') {
@@ -286,38 +214,38 @@ function resolveDeathTacticsAndIcon(killerName, category, enemyType) {
     // 2. Conselhos de Sobrevivência Contextuais para Perigos e Golpes Especiais
     switch (category) {
       case 'BOSS':
-        categoryLabel = 'CHEFE SUPREMO DO ABISMO';
-        threatLabel = 'PERIGO APOCALÍPTICO';
+        categoryLabel = t('match.death.boss');
+        threatLabel = t('match.death.apocalypse');
         iconSvg = renderIcon('boss_crown', { size: 30, color: '#ffd166' });
-        tacticText = "Os ataques de chefes possuem telégrafos visuais no solo. Guarde a esquiva/dash para o momento em que a demarcação geométrica fechar.";
+        tacticText = t('match.death.tipBoss');
         break;
 
       case 'MINIBOSS':
-        categoryLabel = 'MINI-CHEFE DEVASTADOR';
-        threatLabel = 'AMEAÇA DEVASTADORA';
+        categoryLabel = t('match.death.mini');
+        threatLabel = t('match.death.devastating');
         iconSvg = renderIcon('skull', { size: 28, color: '#e67e22' });
-        tacticText = "Mini-chefes possuem hiperarmadura e investidas velozes. Ataque em círculos concêntricos mantendo rota de fuga livre.";
+        tacticText = t('match.death.tipMini');
         break;
 
       case 'PROJECTILE':
-        categoryLabel = 'DISPARO BALÍSTICO PROFANO';
-        threatLabel = 'PERIGO À DISTÂNCIA';
+        categoryLabel = t('match.death.projectile');
+        threatLabel = t('match.death.ranged');
         iconSvg = `<svg class="killer-glyph" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="#9b59b6" stroke-width="2"/><circle cx="12" cy="12" r="3.5" fill="#9b59b6"/><line x1="12" y1="2" x2="12" y2="6" stroke="#9b59b6" stroke-width="2"/><line x1="12" y1="18" x2="12" y2="22" stroke="#9b59b6" stroke-width="2"/></svg>`;
-        tacticText = "Monstros à distância atacam com base na sua trajetória. Mantenha movimentação em arco contínuo para que os tiros passem reto.";
+        tacticText = t('match.death.tipProjectile');
         break;
 
       case 'HAZARD':
-        categoryLabel = 'CATACLISMO AMBIENTAL';
-        threatLabel = 'DANO CONTÍNUO';
+        categoryLabel = t('match.death.hazard');
+        threatLabel = t('match.death.dot');
         iconSvg = `<svg class="killer-glyph" viewBox="0 0 24 24"><path fill="#e74c3c" d="M12 2L1 21h22L12 2zm0 4l7.5 13h-15L12 6zm-1 5v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>`;
-        tacticText = "Zonas de solo contaminado, miasmas e vórtices drenam vida aceleradamente. Ao avistar distorções no terreno, reposicione-se de imediato.";
+        tacticText = t('match.death.tipHazard');
         break;
 
       default:
-        categoryLabel = 'ABOMINAÇÃO DA HORDA';
-        threatLabel = 'ENXAME MORTAL';
+        categoryLabel = t('match.death.abomination');
+        threatLabel = t('match.death.swarm');
         iconSvg = renderIcon('skull', { size: 28, color: '#ff4757' });
-        tacticText = "Evite ser encurralado contra as extremidades da arena. Utilize o empurrão das armas para abrir brechas no cerco dos monstros.";
+        tacticText = t('match.death.tipHorde');
         break;
     }
   }
@@ -351,10 +279,10 @@ export function triggerDeath() {
 
   // Snapshot do algoz e do ataque letal no momento exato do impacto fatal
   pendingDeathPayload = {
-    killerName: (deathContext && deathContext.name) ? deathContext.name : (lastAttackerName || 'A Horda do Abismo'),
+    killerName: (deathContext && deathContext.name) ? deathContext.name : (lastAttackerName || t('match.death.horde')),
     killerCategory: (deathContext && deathContext.category) ? deathContext.category : 'HORDE',
-    killerAttack: (deathContext && deathContext.attackName) ? deathContext.attackName : 'Golpe Melee Fatal',
-    lethalDmg: (deathContext && deathContext.damage > 0) ? `-${deathContext.damage} Dano` : 'Golpe Fatal',
+    killerAttack: (deathContext && deathContext.attackName) ? deathContext.attackName : t('match.death.melee'),
+    lethalDmg: (deathContext && deathContext.damage > 0) ? `-${deathContext.damage} Dano` : t('match.death.fatal'),
     enemyType: deathContext ? deathContext.enemyType : null,
     tacticTip: (deathContext && deathContext.tacticTip) ? deathContext.tacticTip : ''
   };
@@ -385,20 +313,27 @@ export function openDeathModalReal() {
   }
 
   // 3. Sorteio Dinâmico do Veredito
-  const randomVerdict = DEATH_VERDICTS[Math.floor(Math.random() * DEATH_VERDICTS.length)];
-  const titleElem = document.getElementById('death-verdict-title');
-  if (titleElem) {
-    titleElem.innerText = randomVerdict;
-  }
+  const verdictKey = DEATH_VERDICTS[Math.floor(Math.random() * DEATH_VERDICTS.length)];
+  const randomVerdict = t(verdictKey);
+  const survivalSeconds = Math.max(0, Math.floor(frameCount / 60));
+  const survivalTime = String(Math.floor(survivalSeconds / 60)).padStart(2, '0') + ':' + String(survivalSeconds % 60).padStart(2, '0');
+  const currentWaveNum = getCurrentWave(getEffectiveHordeSeconds(survivalSeconds)).index;
+
 
   // 4. Resolução da Causa Mortis (O Algoz e Golpe Fatal)
-  const killerName = pendingDeathPayload ? pendingDeathPayload.killerName : ((deathContext && deathContext.name) ? deathContext.name : (lastAttackerName || 'A Horda do Abismo'));
+  const killerName = pendingDeathPayload ? pendingDeathPayload.killerName : ((deathContext && deathContext.name) ? deathContext.name : (lastAttackerName || t('match.death.horde')));
   const killerCategory = pendingDeathPayload ? pendingDeathPayload.killerCategory : ((deathContext && deathContext.category) ? deathContext.category : 'HORDE');
-  const killerAttack = pendingDeathPayload ? pendingDeathPayload.killerAttack : ((deathContext && deathContext.attackName) ? deathContext.attackName : 'Golpe Melee Fatal');
-  const lethalDmg = pendingDeathPayload ? pendingDeathPayload.lethalDmg : ((deathContext && deathContext.damage > 0) ? `-${deathContext.damage} Dano` : 'Golpe Fatal');
+  const killerAttack = pendingDeathPayload ? pendingDeathPayload.killerAttack : ((deathContext && deathContext.attackName) ? deathContext.attackName : t('match.death.melee'));
+  const lethalDmg = pendingDeathPayload ? pendingDeathPayload.lethalDmg : ((deathContext && deathContext.damage > 0) ? `-${deathContext.damage} Dano` : t('match.death.fatal'));
   const enemyType = pendingDeathPayload ? pendingDeathPayload.enemyType : (deathContext ? deathContext.enemyType : null);
 
-  const { tacticText, threatLabel, categoryLabel, iconSvg, killerTitle, killerColor, finalKillerName } = resolveDeathTacticsAndIcon(killerName, killerCategory, enemyType);
+  const renderDeathDetails = () => {
+    const titleElem = document.getElementById('death-verdict-title');
+    if (titleElem) {
+      titleElem.innerText = t(verdictKey);
+    }
+
+    const { tacticText, threatLabel, categoryLabel, iconSvg, killerTitle, killerColor, finalKillerName } = resolveDeathTacticsAndIcon(killerName, killerCategory, enemyType);
 
   const emblemElem = document.getElementById('death-killer-emblem');
   if (emblemElem && iconSvg) {
@@ -443,7 +378,7 @@ export function openDeathModalReal() {
     let formattedDmg = lethalDmg;
     if (dmgVal > 0) {
       const pct = Math.min(100, Math.round((dmgVal / maxHp) * 100));
-      formattedDmg = `-${dmgVal} Dano (${pct}% do HP)`;
+      formattedDmg = t('match.death.damage', { amount: dmgVal, percent: pct });
     }
     lethalDamageElem.innerText = formattedDmg;
   }
@@ -454,21 +389,14 @@ export function openDeathModalReal() {
   }
 
   // 5. Estatísticas da Partida (Biometria em Badges Transparentes)
-  const timerElem = document.getElementById('timer-val');
-  const survivalTime = (timerElem && typeof timerElem.innerText === 'string' && timerElem.innerText.trim()) ? timerElem.innerText.trim() : '00:00';
-
-  const waveElem = document.getElementById('wave-banner');
-  const rawWaveStr = (waveElem && typeof waveElem.innerText === 'string') ? waveElem.innerText : '';
-  const waveText = rawWaveStr.includes(':') ? rawWaveStr.split(':')[0].trim() : (rawWaveStr.trim() || 'Horda');
-
-
+  const waveText = t('wave.title', { number: currentWaveNum });
   const metricsStream = document.getElementById('death-metrics-stream');
   if (metricsStream) {
     metricsStream.innerHTML = `
       <div class="death-metric-pill">
         <div class="death-pill-header">
           <svg class="death-pill-icon" viewBox="0 0 24 24" style="color:#ffd166;"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 16 14" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-          <span class="death-pill-label">SOBREVIVÊNCIA</span>
+          <span class="death-pill-label">${t('match.results.survival')}</span>
         </div>
         <span class="death-pill-value">${survivalTime}</span>
       </div>
@@ -476,7 +404,7 @@ export function openDeathModalReal() {
       <div class="death-metric-pill">
         <div class="death-pill-header">
           ${renderIcon('wave_swords', { size: 12, color: '#f1c40f' })}
-          <span class="death-pill-label">HORDA</span>
+          <span class="death-pill-label">${t('match.results.horde')}</span>
         </div>
         <span class="death-pill-value">${waveText}</span>
       </div>
@@ -484,7 +412,7 @@ export function openDeathModalReal() {
       <div class="death-metric-pill">
         <div class="death-pill-header">
           ${renderIcon('skull', { size: 12, color: '#ff4757' })}
-          <span class="death-pill-label">ABATES</span>
+          <span class="death-pill-label">${t('match.results.kills')}</span>
         </div>
         <span class="death-pill-value highlight-crimson" id="death-kills-val">0</span>
       </div>
@@ -492,24 +420,24 @@ export function openDeathModalReal() {
       <div class="death-metric-pill">
         <div class="death-pill-header">
           ${renderIcon('sparkle', { size: 12, color: '#f1c40f' })}
-          <span class="death-pill-label">PODER</span>
+          <span class="death-pill-label">${t('match.results.power')}</span>
         </div>
-        <span class="death-pill-value">Nv. ${player.level}</span>
+        <span class="death-pill-value">${t('match.common.level', { number: player.level })}</span>
       </div>
 
       <div class="death-metric-pill">
         <div class="death-pill-header">
           ${renderIcon('gold', { size: 12, color: '#f1c40f' })}
-          <span class="death-pill-label">ALMAS</span>
+          <span class="death-pill-label">${t('match.results.souls')}</span>
         </div>
         <span class="death-pill-value highlight-gold" id="death-souls-val">0</span>
       </div>
     `;
   }
 
+  };
+  const waveText = t('wave.title', { number: currentWaveNum });
   // 6. Conquistas Desbloqueadas e Registro de Melhor Run nesta Jornada
-  const waveMatch = (waveText || '').match(/\d+/);
-  const currentWaveNum = waveMatch ? parseInt(waveMatch[0], 10) : 1;
   const currentHeroDef = CHARACTERS[selectedHeroKey] || CHARACTERS.KNIGHT;
   const { weapons: playerWeapons, passives: playerPassives } = harvestPlayerRunArsenal();
   const survivalSecs = parseTimeToSeconds(survivalTime);
@@ -555,16 +483,17 @@ export function openDeathModalReal() {
     recordRunStats({ score: recordResult.bestRun.score });
   }
 
+  const renderDeathArsenal = () => {
   // 6.5. Arsenal Resumido da Partida (Linha Compacta de Armas & Evoluções)
   const arsenalContainer = document.getElementById('death-arsenal-container');
   const arsenalStrip = document.getElementById('death-arsenal-strip');
   if (arsenalContainer && arsenalStrip) {
     if (playerWeapons && playerWeapons.length > 0) {
       arsenalStrip.innerHTML = playerWeapons.map(w => `
-        <div class="death-arsenal-pill ${w.evolved ? 'is-evolved' : ''}" title="${w.name} (${w.evolved ? 'Evoluída' : `Nv. ${w.level}`})">
+        <div class="death-arsenal-pill ${w.evolved ? 'is-evolved' : ''}" title="${getSavedWeaponName(w)} (${w.evolved ? t('match.results.evolved') : t('match.common.level', { number: w.level })})">
           ${renderIcon(w.iconKey || 'sword', { size: 13, color: w.evolved ? '#ffd166' : '#ecf0f1' })}
-          <span class="death-arsenal-pill-name">${w.name}</span>
-          <span class="death-arsenal-pill-lvl">${w.evolved ? '★' : `Nv.${w.level}`}</span>
+          <span class="death-arsenal-pill-name">${getSavedWeaponName(w)}</span>
+          <span class="death-arsenal-pill-lvl">${w.evolved ? '★' : t('match.common.level', { number: w.level })}</span>
         </div>
       `).join('');
       arsenalContainer.style.display = 'flex';
@@ -580,10 +509,10 @@ export function openDeathModalReal() {
       html += `
         <div class="death-ach-card" style="border-color: rgba(241, 196, 15, 0.6); background: linear-gradient(135deg, rgba(35, 26, 15, 0.95) 0%, rgba(18, 14, 10, 0.98) 100%);">
           <div class="death-ach-header" style="color: #ffd166;">
-            ${renderIcon('boss_crown', { size: 12, color: '#ffd166' })} NOVO RECORDE HISTÓRICO!
+            ${renderIcon('boss_crown', { size: 12, color: '#ffd166' })} ${t('match.results.recordSimple')}
           </div>
           <div class="death-ach-item" style="color: #f1f5f9;">
-            Sua crônica foi consagrada no <b>Monumento do Grimório</b> com <b>${recordResult.bestRun.score.toLocaleString('pt-BR')} Pontos</b>!
+            ${t('match.results.recordScore', { number: formatNumber(recordResult.bestRun.score) })}
           </div>
         </div>
       `;
@@ -592,11 +521,11 @@ export function openDeathModalReal() {
       html += `
         <div class="death-ach-card">
           <div class="death-ach-header">
-            ${renderIcon('sparkle', { size: 12, color: '#ffd166' })} CONQUISTA DESBLOQUEADA!
+            ${renderIcon('sparkle', { size: 12, color: '#ffd166' })} ${t('match.results.unlocked')}
           </div>
           ${newlyUnlocked.map(a => `
             <div class="death-ach-item">
-              <b>${a.title}</b>: ${a.heroTitle ? `Despertou <b>${a.heroTitle}</b> no Altar!` : a.desc}
+              <b>${a.title}</b>: ${a.heroTitle ? t('match.results.awakened', { hero: a.heroTitle }) : a.desc}
             </div>
           `).join('')}
         </div>
@@ -604,6 +533,17 @@ export function openDeathModalReal() {
     }
     achContainer.innerHTML = html;
   }
+
+  };
+  refreshDeathPresentation = () => {
+    renderDeathDetails();
+    renderDeathArsenal();
+    const kills = document.getElementById('death-kills-val');
+    const souls = document.getElementById('death-souls-val');
+    if (kills) kills.textContent = formatNumber(gameState.kills);
+    if (souls) souls.textContent = formatNumber(getPersistentGold());
+  };
+  refreshDeathPresentation();
 
   // 7. Registro de Teclas de Atalho (Espaço ou Enter para Renascer no PC)
   if (deathKeydownHandler) {
@@ -702,7 +642,7 @@ export function openVictoryModalReal() {
   const evolvedCount = playerWeapons.filter(w => w.evolved).length;
 
   // 6. Concessão do Bônus Sagrado de Vitória (+1.500 Almas Permanentes)
-  const bossVictoryBonus = 1500;
+  const bossVictoryBonus = Math.round(1500 * (player.goldMultiplier ?? 1));
   const beforeBonus = getPersistentGold();
 
   // Credita o bônus permanente no banco do jogador
@@ -763,6 +703,8 @@ export function openVictoryModalReal() {
   const ledger = victoryLedger(matchStartGold, beforeBonus, getPersistentGold(), bossVictoryBonus);
   const totalEarnedInRun = ledger.total;
 
+  refreshVictoryPresentation = () => {
+    const honorsOpen = document.querySelector('.victory-honors')?.open;
   // 8. Cálculo e Apresentação do Rank Stamped
   const rank = calculateRunRank({
     isVictory: true,
@@ -787,22 +729,22 @@ export function openVictoryModalReal() {
 
   // 9. Preenchimento do Extrato de Almas Ganhas
   const waveSoulsElem = document.getElementById('victory-waves-souls');
-  if (waveSoulsElem) waveSoulsElem.innerText = `+${ledger.collected.toLocaleString('pt-BR')}`;
+  if (waveSoulsElem) waveSoulsElem.innerText = `+${formatNumber(ledger.collected)}`;
 
   const killsSoulsElem = document.getElementById('victory-kills-souls');
-  if (killsSoulsElem) killsSoulsElem.innerText = `+${ledger.achievements.toLocaleString('pt-BR')}`;
+  if (killsSoulsElem) killsSoulsElem.innerText = `+${formatNumber(ledger.achievements)}`;
 
   const bossSoulsElem = document.getElementById('victory-boss-souls');
-  if (bossSoulsElem) bossSoulsElem.innerText = `+${bossVictoryBonus.toLocaleString('pt-BR')}`;
+  if (bossSoulsElem) bossSoulsElem.innerText = `+${formatNumber(bossVictoryBonus)}`;
 
   const totalSoulsElem = document.getElementById('victory-total-earned-souls');
-  if (totalSoulsElem) totalSoulsElem.innerText = `+${totalEarnedInRun.toLocaleString('pt-BR')} almas`;
+  if (totalSoulsElem) totalSoulsElem.innerText = t('match.results.soulsEarned', { number: formatNumber(totalEarnedInRun) });
 
   const vaultSoulsElem = document.getElementById('victory-vault-gold');
-  if (vaultSoulsElem) vaultSoulsElem.innerText = getPersistentGold().toLocaleString('pt-BR');
+  if (vaultSoulsElem) vaultSoulsElem.innerText = formatNumber(getPersistentGold());
 
   const talentsBtnBadge = document.getElementById('victory-talents-souls-badge');
-  if (talentsBtnBadge) talentsBtnBadge.innerText = `+${totalEarnedInRun.toLocaleString('pt-BR')} almas`;
+  if (talentsBtnBadge) talentsBtnBadge.innerText = t('match.results.soulsEarned', { number: formatNumber(totalEarnedInRun) });
 
   // 10. Biometria da Partida (5 Badges)
   const metricsStream = document.getElementById('victory-metrics-stream');
@@ -811,7 +753,7 @@ export function openVictoryModalReal() {
       <div class="victory-metric-pill">
         <div class="victory-pill-header">
           <svg class="death-pill-icon" viewBox="0 0 24 24" width="12" height="12" style="color:#ffd166;"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="12 6 12 12 16 14" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-          <span>SOBREVIVÊNCIA</span>
+          <span>${t('match.results.survival')}</span>
         </div>
         <span class="victory-pill-value">${survivalTime}</span>
       </div>
@@ -819,15 +761,15 @@ export function openVictoryModalReal() {
       <div class="victory-metric-pill">
         <div class="victory-pill-header">
           ${renderIcon('wave_swords', { size: 12, color: '#f1c40f' })}
-          <span>HORDA</span>
+          <span>${t('match.results.horde')}</span>
         </div>
-        <span class="victory-pill-value highlight-gold">Onda 10 ★</span>
+        <span class="victory-pill-value highlight-gold">${t('wave.title', { number: 10 })} ★</span>
       </div>
 
       <div class="victory-metric-pill">
         <div class="victory-pill-header">
           ${renderIcon('skull', { size: 12, color: '#ff4757' })}
-          <span>ABATES</span>
+          <span>${t('match.results.kills')}</span>
         </div>
         <span class="victory-pill-value highlight-crimson" id="victory-kills-val">0</span>
       </div>
@@ -835,17 +777,17 @@ export function openVictoryModalReal() {
       <div class="victory-metric-pill">
         <div class="victory-pill-header">
           ${renderIcon('sparkle', { size: 12, color: '#f1c40f' })}
-          <span>PODER</span>
+          <span>${t('match.results.power')}</span>
         </div>
-        <span class="victory-pill-value">Nv. ${player.level}</span>
+        <span class="victory-pill-value">${t('match.common.level', { number: player.level })}</span>
       </div>
 
       <div class="victory-metric-pill">
         <div class="victory-pill-header">
           ${renderIcon('boss_crown', { size: 12, color: '#ffd166' })}
-          <span>CHEFES</span>
+          <span>${t('match.results.bosses')}</span>
         </div>
-        <span class="victory-pill-value highlight-gold">4 / 4 PURGADOS</span>
+        <span class="victory-pill-value highlight-gold">${t('match.results.purged')}</span>
       </div>
     `;
   }
@@ -853,18 +795,18 @@ export function openVictoryModalReal() {
   // 11. Vitrine do Arsenal: Armas e Passivas
   const heroNameElem = document.getElementById('victory-hero-name');
   if (heroNameElem) {
-    heroNameElem.innerText = `${currentHeroDef.name || 'Sir Roland'} • Nv. ${player.level}`;
+    heroNameElem.innerText = `${currentHeroDef.name || 'Sir Roland'} • ${t('match.common.level', { number: player.level })}`;
   }
 
   const evolvedCounterElem = document.getElementById('victory-evolved-counter');
   if (evolvedCounterElem) {
-    evolvedCounterElem.innerText = `${evolvedCount} Arma${evolvedCount !== 1 ? 's' : ''} Evoluída${evolvedCount !== 1 ? 's' : ''}`;
+    evolvedCounterElem.innerText = t('match.results.evolvedCount', { count: evolvedCount });
   }
 
   const weaponsContainer = document.getElementById('victory-weapons-container');
   if (weaponsContainer) {
     if (playerWeapons.length === 0) {
-      weaponsContainer.innerHTML = '<span style="font-size:11px;color:#888;">Nenhuma arma registrada</span>';
+      weaponsContainer.innerHTML = `<span style="font-size:11px;color:#888;">${t('match.results.emptyWeapons')}</span>`;
     } else {
       weaponsContainer.innerHTML = playerWeapons.map(w => `
         <div class="build-weapon-card ${w.evolved ? 'is-evolved' : ''}">
@@ -872,10 +814,10 @@ export function openVictoryModalReal() {
             ${renderIcon(w.iconKey || 'sword', { size: 20, color: w.evolved ? '#ffd166' : '#ecf0f1' })}
           </div>
           <div class="build-weapon-info">
-            <span class="build-weapon-name" title="${w.name}">${w.name}</span>
+            <span class="build-weapon-name" title="${getSavedWeaponName(w)}">${getSavedWeaponName(w)}</span>
             <div class="build-weapon-status">
-              <span class="build-weapon-lvl">${w.evolved ? 'Nv. MAX' : `Nv. ${w.level}`}</span>
-              ${w.evolved ? '<span class="build-weapon-badge-evolved">★ EVOLUÍDA</span>' : ''}
+              <span class="build-weapon-lvl">${w.evolved ? t('match.common.level', { number: 'MAX' }) : t('match.common.level', { number: w.level })}</span>
+              ${w.evolved ? `<span class="build-weapon-badge-evolved">${t('match.results.evolvedBadge')}</span>` : ''}
             </div>
           </div>
         </div>
@@ -886,10 +828,10 @@ export function openVictoryModalReal() {
   const passivesContainer = document.getElementById('victory-passives-container');
   if (passivesContainer) {
     if (playerPassives.length === 0) {
-      passivesContainer.innerHTML = '<span class="build-passive-pill" style="opacity:0.6;">Sem bênçãos passivas ativas</span>';
+      passivesContainer.innerHTML = `<span class="build-passive-pill" style="opacity:0.6;">${t('match.results.emptyPassives')}</span>`;
     } else {
       passivesContainer.innerHTML = playerPassives.map(p => `
-        <span class="build-passive-pill">${p}</span>
+        <span class="build-passive-pill">${getSavedPassivePresentation(p)?.name || p}</span>
       `).join('');
     }
   }
@@ -902,10 +844,10 @@ export function openVictoryModalReal() {
       achHtml += `
         <div class="death-ach-card" style="border-color: rgba(241, 196, 15, 0.7); background: linear-gradient(135deg, rgba(40, 30, 10, 0.95) 0%, rgba(20, 15, 5, 0.98) 100%);">
           <div class="death-ach-header" style="color: #ffd166;">
-            ${renderIcon('boss_crown', { size: 14, color: '#ffd166' })} NOVO RECORDE HISTÓRICO SUPREMO!
+            ${renderIcon('boss_crown', { size: 14, color: '#ffd166' })} ${t('match.results.record')}
           </div>
           <div class="death-ach-item" style="color: #f1f5f9;">
-            Sua vitória consagrou <b>${recordResult.bestRun.score.toLocaleString('pt-BR')} Pontos</b> no Monumento do Grimório!
+            ${t('match.results.recordScore', { number: formatNumber(recordResult.bestRun.score) })}
           </div>
         </div>
       `;
@@ -914,18 +856,25 @@ export function openVictoryModalReal() {
       achHtml += `
         <div class="death-ach-card" style="border-color: rgba(46, 204, 113, 0.6);">
           <div class="death-ach-header" style="color: #2ecc71;">
-            ${renderIcon('sparkle', { size: 14, color: '#2ecc71' })} CONQUISTAS DESBLOQUEADAS!
+            ${renderIcon('sparkle', { size: 14, color: '#2ecc71' })} ${t('match.results.unlocked')}
           </div>
           ${newlyUnlocked.map(a => `
             <div class="death-ach-item">
-              <b>${a.title}</b>: ${a.heroTitle ? `Despertou <b>${a.heroTitle}</b> no Altar!` : a.desc}
+              <b>${a.title}</b>: ${a.heroTitle ? t('match.results.awakened', { hero: a.heroTitle }) : a.desc}
             </div>
           `).join('')}
         </div>
       `;
     }
-    achContainer.innerHTML = achHtml ? `<details class="victory-honors"><summary>${renderIcon('sparkle', { size: 14, color: '#ffd166' })}<span>${recordResult?.isNewBest ? 'Novo recorde pessoal' : 'Honras da partida'}${newlyUnlocked.length ? ' · ' + newlyUnlocked.length + ' conquistas desbloqueadas' : ''}</span><span class="victory-honors-hint">VER</span></summary><div class="victory-honors-content">${achHtml}</div></details>` : '';
+    achContainer.innerHTML = achHtml ? `<details class="victory-honors"><summary>${renderIcon('sparkle', { size: 14, color: '#ffd166' })}<span>${recordResult?.isNewBest ? t('match.results.personal') : t('match.results.honors')}${newlyUnlocked.length ? ' · ' + t('match.results.unlockCount', { count: newlyUnlocked.length }) : ''}</span><span class="victory-honors-hint">${t('match.results.view')}</span></summary><div class="victory-honors-content">${achHtml}</div></details>` : '';
   }
+
+    const honors = document.querySelector('.victory-honors');
+    if (honors && honorsOpen) honors.open = true;
+    const kills = document.getElementById('victory-kills-val');
+    if (kills) kills.textContent = formatNumber(gameState.kills);
+  };
+  refreshVictoryPresentation();
 
   // 13. Teclas de Atalho (Espaço ou Enter para Reiniciar no PC)
   if (victoryKeydownHandler) {

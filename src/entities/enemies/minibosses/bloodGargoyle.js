@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/enemies/minibosses/bloodGargoyle.js
  * 
@@ -27,7 +28,7 @@ update(e, dt, ctx, dist, angle) {
     e.isAirborne = false;
     e.elevZ = 0;
     safePlaySfx('freeze');
-    ctx.addDamageText(e.x, e.y, "PETRIFICAÇÃO!", true, '#7f8c8d');
+    ctx.addDamageText(e.x, e.y, matchText('match.combat.petrify'), true, '#7f8c8d');
     return;
   }
 

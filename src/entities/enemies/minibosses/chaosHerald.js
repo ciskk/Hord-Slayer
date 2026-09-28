@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/enemies/minibosses/chaosHerald.js
  * 
@@ -31,7 +32,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionMaxTimer = 19;
         e.aimAngle = angle;
         safePlaySfx('charge');
-        ctx.addDamageText(e.x, e.y, "ESPIRAIS DO CAOS!", true, '#c0392b');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.chaosSpiral'), true, '#c0392b');
       } else if (e.cycleIndex === 1) {
         e.currentSkill = 'HELLFIRE_CHARGE';
         e.actionState = 'WINDUP';
@@ -39,7 +40,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionMaxTimer = 25;
         e.chargeAngle = angle;
         safePlaySfx('boss');
-        ctx.addDamageText(e.x, e.y, "CARGA INFERNAL!", true, '#e74c3c');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.infernal'), true, '#e74c3c');
 
         bossTelegraphs.push({
           type: 'MIST_DASH_LANE',
@@ -57,7 +58,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionTimer = 29;
         e.actionMaxTimer = 29;
         safePlaySfx('boss');
-        ctx.addDamageText(e.x, e.y, "COLAPSO DO CAOS!", true, '#c0392b');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.chaosCollapse'), true, '#c0392b');
 
         bossTelegraphs.push({
           x: e.x,

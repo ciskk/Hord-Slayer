@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/bosses/abyssSovereign/physics.js
  * Física ambiental, singularidade gravitacional, âncoras e tentáculos do Soberano do Abismo.
@@ -372,7 +373,7 @@ export function updateAnchors(boss, dt, context, onStabilityBreak) {
       const backlashDmg = Math.round(boss.maxHp * 0.05);
       boss.hp -= backlashDmg;
       addDamageText(boss.x, boss.y, backlashDmg, true, '#00cec9');
-      addDamageText(a.x, a.y - 14, "ORBE DESTRUÍDA!", true, '#00cec9');
+      addDamageText(a.x, a.y - 14, matchText('match.combat.orbDead'), true, '#00cec9');
 
       // Cancelamento do ataque do chefe garantido estritamente pela destruição da orbe
       if (typeof onStabilityBreak === 'function') {
@@ -380,7 +381,7 @@ export function updateAnchors(boss, dt, context, onStabilityBreak) {
       }
 
       if (boss.activeAnchorsCount <= 0) {
-        addDamageText(boss.x, boss.y - boss.radius - 20, "COLAPSO DO VAZIO!", true, '#00cec9');
+        addDamageText(boss.x, boss.y - boss.radius - 20, matchText('match.combat.voidCollapse'), true, '#00cec9');
       }
     }
   }
@@ -702,7 +703,7 @@ export function spawnSanctuaryHealingZone(boss, context) {
   playSfx('heal');
   triggerHaptic('medium');
   if (context.triggerShake) context.triggerShake(4);
-  if (context.addDamageText) context.addDamageText(hx, hy - 32, "SANTUÁRIO DE CURA!", true, '#2ecc71');
+  if (context.addDamageText) context.addDamageText(hx, hy - 32, matchText('match.combat.healing'), true, '#2ecc71');
   if (context.createHitParticles) {
     context.createHitParticles(hx, hy, '#2ecc71', 16);
     context.createHitParticles(hx, hy, '#f1c40f', 10);

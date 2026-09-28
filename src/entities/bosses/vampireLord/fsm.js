@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 import { isBossPhaseReady } from '../../../systems/bossPhaseCinematic.js';
 /**
  * src/entities/bosses/vampireLord/fsm.js
@@ -112,7 +113,7 @@ export function updateVampireLord(e, dt, context) {
     triggerShake(16);
     triggerHaptic('heavy');
     playSfx('boss');
-    addDamageText(e.x, e.y, "DESPERTAR DA FÚRIA!", true, '#e74c3c');
+    addDamageText(e.x, e.y, matchText('match.combat.rage'), true, '#e74c3c');
 
     bossShockwaves.push({
       x: e.x,
@@ -215,7 +216,7 @@ export function updateVampireLord(e, dt, context) {
           playSfx('boss');
           triggerShake(16);
           triggerHaptic('heavy');
-          addDamageText(e.x, e.y - 45, "A NOITE ME PERTENCE!", true, '#ff1744');
+          addDamageText(e.x, e.y - 45, matchText('match.combat.night'), true, '#ff1744');
 
           bossShockwaves.push({
             x: e.x,
@@ -357,7 +358,7 @@ export function updateVampireLord(e, dt, context) {
           e.actionState = 'MIST_BRAKE';
           e.actionTimer = 20;
           triggerShake(2);
-          addDamageText(e.x, e.y, "CONDENSANDO...", false, '#e74c3c');
+          addDamageText(e.x, e.y, matchText('match.combat.condensing'), false, '#e74c3c');
         }
       }
       return;
@@ -407,7 +408,7 @@ export function updateVampireLord(e, dt, context) {
         e.actionState = 'RECOVERY';
         e.recoveryTimer = e.isEnraged ? 70 : 90;
         e.isVulnerable = true;
-        addDamageText(e.x, e.y, "EXAUSTO!", true, '#f1c40f');
+        addDamageText(e.x, e.y, matchText('match.combat.exhausted'), true, '#f1c40f');
       }
       return;
     }

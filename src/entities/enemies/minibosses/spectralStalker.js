@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/enemies/minibosses/spectralStalker.js
  * 
@@ -25,7 +26,7 @@ update(e, dt, ctx, dist, angle) {
       e.actionMaxTimer = 29;
       e.isStealthed = true;
       safePlaySfx('warp');
-      ctx.addDamageText(e.x, e.y, "CAMUFLAGEM!", true, '#6c5ce7');
+      ctx.addDamageText(e.x, e.y, matchText('match.combat.camouflage'), true, '#6c5ce7');
 
       const pFacingAng = player.facing === 1 ? 0 : Math.PI;
       e.flankTargetX = player.x - Math.cos(pFacingAng) * 75;

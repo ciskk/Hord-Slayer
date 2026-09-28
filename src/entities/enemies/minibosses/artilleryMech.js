@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/enemies/minibosses/artilleryMech.js
  * 
@@ -20,7 +21,7 @@ update(e, dt, ctx, dist, angle) {
     e.y -= Math.sin(angle) * 75;
     safePlaySfx('warp');
     createHitParticles(e.x, e.y, '#00cec9', 10);
-    ctx.addDamageText(e.x, e.y, "RECUO A JATO!", false, '#00cec9');
+    ctx.addDamageText(e.x, e.y, matchText('match.combat.jet'), false, '#00cec9');
   }
   if (e.thrusterCd > 0) e.thrusterCd -= dt;
 
@@ -46,7 +47,7 @@ update(e, dt, ctx, dist, angle) {
         e.isSiegeMode = true;
         e.aimAngle = angle;
         safePlaySfx('charge');
-        ctx.addDamageText(e.x, e.y, "TRAVANDO MIRA!", true, '#00cec9');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.aim'), true, '#00cec9');
       } else {
         // Salva de Mísseis
         e.currentSkill = 'MISSILE_BARRAGE';

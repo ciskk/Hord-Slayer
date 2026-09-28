@@ -35,6 +35,8 @@
 @import "./css/responsive/autofit.css";
 @import "./css/screens/victory.css";
 @import "./css/hud/hud-layout.css";
+@import "./css/screens/character-language.css";
+@import "./css/screens/i18n-presentation.css";
 
 @keyframes urgentPulse {
   0% { transform: scale(1); filter: brightness(1); }

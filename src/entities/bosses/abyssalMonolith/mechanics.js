@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/bosses/abyssalMonolith/mechanics.js
  * Gerenciamento de sub-alvos (Litocistos), fontes termais interativas e ações agendadas de Ignis Lithos.
@@ -89,7 +90,7 @@ export function updateThermalVents(boss, dt, context) {
       triggerHaptic('medium');
 
       addDamageText(player.x, player.y, `+${healAmount} HP`, true, '#2ecc71');
-      addDamageText(player.x, player.y - 18, "HABILIDADE RECARREGADA!", true, '#f1c40f');
+      addDamageText(player.x, player.y - 18, matchText('match.combat.ready'), true, '#f1c40f');
 
       for (let p = 0; p < 18; p++) {
         createHitParticles(player.x, player.y, '#f1c40f', 1);
@@ -148,7 +149,7 @@ export function destroyLitocisto(boss, o, ox, oy, context) {
   context.createHitParticles(ox, oy, '#d35400', 18);
   context.createHitParticles(ox, oy, '#f1c40f', 14);
   context.addDamageText(boss.x, boss.y, backlashDmg, true, '#f1c40f');
-  context.addDamageText(ox, oy, "LITOCISTO QUEBRADO!", true, '#e67e22');
+  context.addDamageText(ox, oy, matchText('match.combat.lithocyst'), true, '#e67e22');
 
   boss.thermalVents.push({
     x: ox,
@@ -174,7 +175,7 @@ export function destroyLitocisto(boss, o, ox, oy, context) {
       context.triggerShake(16);
       triggerHaptic('heavy');
       playSfx('boss');
-      context.addDamageText(boss.x, boss.y, "COLAPSO SÍSMICO!", true, '#f1c40f');
+      context.addDamageText(boss.x, boss.y, matchText('match.combat.seismicCollapse'), true, '#f1c40f');
     }
   }
 }

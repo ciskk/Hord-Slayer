@@ -1,3 +1,7 @@
+import { getBestRunPresentation, getSavedPassivePresentation, savedWeaponHtml } from '../../i18n/contentPresentation.js';
+import { escapeHtml } from '../../i18n/dom.js';
+import { t as tr, formatNumber, onLanguageChange } from '../../i18n/index.js';
+import { htmlT, translateDOM } from '../../i18n/dom.js';
 /**
  * src/ui/modals/achievementsModal.js
  * Grimório de Conquistas Heroicas e Monumento da Maior Jornada.
@@ -31,71 +35,20 @@ const HERO_COLORS = {
 /**
  * Formata cada bênção/passiva como um chip de relíquia arcana com ícone, cor temática e valor destacado
  */
-function formatPassiveChip(passiveText) {
-  if (typeof passiveText !== 'string') return '';
-  const text = passiveText.trim();
-  
-  let iconKey = 'sparkle';
-  let iconColor = '#ffd166';
-  let categoryClass = 'passive-general';
-
-  if (text.includes('Poder Bruto') || text.includes('Dano')) {
-    iconKey = 'sword';
-    iconColor = '#ff7675';
-    categoryClass = 'passive-damage';
-  } else if (text.includes('Armadura') || text.includes('HP')) {
-    iconKey = 'shield';
-    iconColor = '#00f5d4';
-    categoryClass = 'passive-defense';
-  } else if (text.includes('Asas') || text.includes('Vel')) {
-    iconKey = 'wing';
-    iconColor = '#74b9ff';
-    categoryClass = 'passive-speed';
-  } else if (text.includes('Criogênico') || text.includes('Gelo')) {
-    iconKey = 'snowflake';
-    iconColor = '#81ecec';
-    categoryClass = 'passive-frost';
-  } else if (text.includes('Bíblia') || text.includes('Protetoras')) {
-    iconKey = 'book';
-    iconColor = '#ffeaa7';
-    categoryClass = 'passive-holy';
-  } else if (text.includes('Aura')) {
-    iconKey = 'aura';
-    iconColor = '#fdcb6e';
-    categoryClass = 'passive-aura';
-  } else if (text.includes('Foco Letal') || text.includes('Crítico') || text.includes('%')) {
-    iconKey = 'target';
-    iconColor = '#fd79a8';
-    categoryClass = 'passive-crit';
-  } else if (text.includes('Fúria') || text.includes('Haste')) {
-    iconKey = 'lightning';
-    iconColor = '#a29bfe';
-    categoryClass = 'passive-haste';
-  } else if (text.includes('Ímã')) {
-    iconKey = 'magnet';
-    iconColor = '#fab1a0';
-    categoryClass = 'passive-utility';
-  }
-
-  const match = text.match(/^(.*?)\s*\((.*?)\)$/);
-  if (match) {
-    const name = match[1].trim();
-    const val = match[2].trim();
-    return `
-      <div class="monument-passive-chip ${categoryClass}" title="${text}">
-        <span class="chip-passive-icon">${renderIcon(iconKey, { size: 10, color: iconColor })}</span>
-        <span class="chip-passive-name">${name}</span>
-        <span class="chip-passive-val">${val}</span>
-      </div>
-    `;
-  }
-
-  return `
-    <div class="monument-passive-chip ${categoryClass}" title="${text}">
-      <span class="chip-passive-icon">${renderIcon(iconKey, { size: 10, color: iconColor })}</span>
-      <span class="chip-passive-name">${text}</span>
-    </div>
-  `;
+function formatPassiveChip(entry) {
+  const passive = getSavedPassivePresentation(entry);
+  if (!passive) return '';
+  const themes = {
+    dmg: ['damage', '#ff7675'], armor: ['defense', '#00f5d4'], wings: ['speed', '#74b9ff'],
+    frost_passive: ['frost', '#81ecec'], orbitals: ['holy', '#ffeaa7'], aura: ['aura', '#fdcb6e'],
+    crit: ['crit', '#fd79a8'], haste: ['haste', '#a29bfe'], ult_cooldown: ['haste', '#c084fc'], magnet: ['utility', '#fab1a0']
+  };
+  const [theme, color] = themes[passive.id] || ['general', '#ffd166'];
+  return `<div class="monument-passive-chip passive-${theme}" title="${escapeHtml(passive.name)}">
+    <span class="chip-passive-icon">${renderIcon(passive.icon, { size: 10, color })}</span>
+    <span class="chip-passive-name">${escapeHtml(passive.name)}</span>
+    ${passive.value ? `<span class="chip-passive-val">${escapeHtml(passive.value)}</span>` : ''}
+  </div>`;
 }
 
 /**
@@ -105,7 +58,7 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
   const container = document.getElementById(targetContainerId);
   if (!container) return;
 
-  const bestRun = getBestRun();
+  const bestRun = getBestRunPresentation(getBestRun());
 
   if (!bestRun) {
     container.innerHTML = `
@@ -113,14 +66,13 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
         <div class="monument-empty-icon-wrap">
           ${renderIcon('soul_coin', { size: 28, color: '#64748b' })}
         </div>
-        <div class="monument-empty-eyebrow">MONUMENTO À MAIOR JORNADA</div>
-        <div class="monument-empty-title">NENHUMA CRÔNICA GRAVADA AINDA</div>
+        <div class="monument-empty-eyebrow">${htmlT('contentUI.monument')}</div>
+        <div class="monument-empty-title">${htmlT('contentUI.noChronicle')}</div>
         <div class="monument-empty-desc">
-          Adentre a arena das trevas, purifique abominações e desafie os Senhores do Vazio. 
-          Sua jornada mais gloriosa ficará eternizada aqui como um marco para todas as eras.
+          ${htmlT('contentUI.chronicleHint')}
         </div>
         <div class="monument-empty-hint">
-          ${renderIcon('sparkle', { size: 12, color: '#00f5d4' })} Inicie uma partida no Altar para inaugurar seu legado
+          ${renderIcon('sparkle', { size: 12, color: '#00f5d4' })} ${htmlT('contentUI.startLegacy')}
         </div>
       </div>
     `;
@@ -132,28 +84,28 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
   let weaponsHtml = '';
   if (Array.isArray(bestRun.weapons) && bestRun.weapons.length > 0) {
     weaponsHtml = bestRun.weapons.map(w => `
-      <div class="monument-weapon-chip ${w.evolved ? 'weapon-evolved' : ''}" title="${w.name || w.type}">
+      <div class="monument-weapon-chip ${w.evolved ? 'weapon-evolved' : ''}" title="${savedWeaponHtml(w)}">
         <div class="weapon-chip-icon-box">
           ${renderIcon(w.iconKey || 'sword', { size: 13, color: w.evolved ? '#ffd166' : '#cbd5e1' })}
         </div>
         <div class="weapon-chip-text">
-          <span class="weapon-chip-title">${w.name || w.type}</span>
+          <span class="weapon-chip-title">${savedWeaponHtml(w)}</span>
           <div class="weapon-chip-sub">
-            <span class="weapon-chip-lvl">Nv. ${w.level || 1}</span>
-            ${w.evolved ? `<span class="weapon-chip-fusion-tag">${renderIcon('star_evolution', { size: 8, color: '#ffd166' })} FUSÃO</span>` : ''}
+            <span class="weapon-chip-lvl">${htmlT('contentUI.level', { value1: w.level || 1 })}</span>
+            ${w.evolved ? `<span class="weapon-chip-fusion-tag">${renderIcon('star_evolution', { size: 8, color: '#ffd166' })} ${htmlT('contentUI.fusion')}</span>` : ''}
           </div>
         </div>
       </div>
     `).join('');
   } else {
-    weaponsHtml = `<span class="monument-empty-note">Nenhuma arma registrada nesta crônica.</span>`;
+    weaponsHtml = `<span class="monument-empty-note">${htmlT('contentUI.noWeapons')}</span>`;
   }
 
   let passivesHtml = '';
   if (Array.isArray(bestRun.passives) && bestRun.passives.length > 0) {
     passivesHtml = bestRun.passives.map(formatPassiveChip).join('');
   } else {
-    passivesHtml = `<span class="monument-empty-note">Nenhuma bênção ativa coletada.</span>`;
+    passivesHtml = `<span class="monument-empty-note">${htmlT('contentUI.noCollectedBlessings')}</span>`;
   }
 
   const lifetime = getLifetimeStats();
@@ -170,14 +122,14 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
         <div class="monument-title-wrap">
           <div class="monument-pulsing-glyph"></div>
           <div class="monument-header-text-group">
-            <div class="monument-eyebrow-mini">SANTUÁRIO DO RECORDE SUPREMO</div>
-            <div class="monument-title-text">MONUMENTO À MAIOR JORNADA</div>
+            <div class="monument-eyebrow-mini">${htmlT('contentUI.recordSanctuary')}</div>
+            <div class="monument-title-text">${htmlT('contentUI.monument')}</div>
           </div>
         </div>
         <div class="monument-meta-right">
           <div class="monument-date-chip">
             ${renderIcon('timer', { size: 10, color: '#a29bfe' })}
-            <span>Gravado em ${bestRun.date || ''}</span>
+            <span>${htmlT('contentUI.recordedOn', { value1: bestRun.date || '' })}</span>
           </div>
           <span class="monument-fate-badge ${bestRun.isVictory ? 'badge-victory' : 'badge-defeat'}">
             ${bestRun.isVictory ? renderIcon('boss_crown', { size: 12, color: '#ffd166' }) : renderIcon('skull', { size: 12, color: '#ff7675' })}
@@ -197,7 +149,7 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
             <div class="tarot-corner-glyph corner-br">✦</div>
 
             <div class="tarot-card-header">
-              <div class="tarot-card-eyebrow">✦ ARCANO SUPREMO DO CÓDICE ✦</div>
+              <div class="tarot-card-eyebrow">${htmlT('contentUI.supremeCodex')}</div>
               <div class="tarot-hero-name" style="color: ${heroColor};">${bestRun.heroName}</div>
               <div class="tarot-hero-subtitle">${bestRun.heroTitle}</div>
             </div>
@@ -211,7 +163,7 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
             <div class="tarot-card-footer">
               <div class="tarot-verdict-quote">
                 <span class="tarot-quote-mark">“</span>
-                ${bestRun.verdictSub || (bestRun.isVictory ? 'O destino curva-se diante da tua glória' : 'Caiu perante as trevas ancestrais')}
+                ${bestRun.verdictSub || (bestRun.isVictory ? tr('contentUI.victoryQuote') : tr('contentUI.defeatQuote'))}
                 <span class="tarot-quote-mark">”</span>
               </div>
             </div>
@@ -228,8 +180,8 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
                 ${renderIcon('trophy', { size: 13, color: '#ffd166' })}
               </div>
               <div class="stat-pill-data">
-                <div class="stat-pill-label label-gold">SCORE DA LENDA</div>
-                <div class="stat-pill-val val-gold">${Number(bestRun.score).toLocaleString('pt-BR')} <span class="val-unit">PTS</span></div>
+                <div class="stat-pill-label label-gold">${htmlT('contentUI.legendScore')}</div>
+                <div class="stat-pill-val val-gold">${formatNumber(Number(bestRun.score))} <span class="val-unit">${htmlT('contentUI.points')}</span></div>
               </div>
             </div>
 
@@ -239,7 +191,7 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
                 ${renderIcon('timer', { size: 13, color: '#f39c12' })}
               </div>
               <div class="stat-pill-data">
-                <div class="stat-pill-label">SOBREVIVÊNCIA</div>
+                <div class="stat-pill-label">${htmlT('contentUI.survival')}</div>
                 <div class="stat-pill-val">${bestRun.time || '00:00'}</div>
               </div>
             </div>
@@ -250,8 +202,8 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
                 ${renderIcon('wave_swords', { size: 13, color: '#00f5d4' })}
               </div>
               <div class="stat-pill-data">
-                <div class="stat-pill-label">HORDA MÁXIMA</div>
-                <div class="stat-pill-val text-cyan">${bestRun.waveText || `Onda ${bestRun.wave}`}</div>
+                <div class="stat-pill-label">${htmlT('contentUI.highestHorde')}</div>
+                <div class="stat-pill-val text-cyan">${bestRun.waveText || `${tr('contentUI.wave', { value1: bestRun.wave })}`}</div>
               </div>
             </div>
 
@@ -261,8 +213,8 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
                 ${renderIcon('skull', { size: 13, color: '#ff4757' })}
               </div>
               <div class="stat-pill-data">
-                <div class="stat-pill-label">ABATES TOTAIS</div>
-                <div class="stat-pill-val text-ruby">${Number(bestRun.kills).toLocaleString('pt-BR')}</div>
+                <div class="stat-pill-label">${htmlT('contentUI.totalKills')}</div>
+                <div class="stat-pill-val text-ruby">${formatNumber(Number(bestRun.kills))}</div>
               </div>
             </div>
 
@@ -272,8 +224,8 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
                 ${renderIcon('sparkle', { size: 13, color: '#c084fc' })}
               </div>
               <div class="stat-pill-data">
-                <div class="stat-pill-label">NÍVEL DE ASCENSÃO</div>
-                <div class="stat-pill-val text-purple">Nv. ${bestRun.level}</div>
+                <div class="stat-pill-label">${htmlT('contentUI.ascension')}</div>
+                <div class="stat-pill-val text-purple">${htmlT('contentUI.level', { value1: bestRun.level })}</div>
               </div>
             </div>
 
@@ -283,8 +235,8 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
                 ${renderIcon('soul_coin', { size: 13, color: '#f1c40f' })}
               </div>
               <div class="stat-pill-data">
-                <div class="stat-pill-label">ALMAS COLHIDAS</div>
-                <div class="stat-pill-val text-gold">+${Number(bestRun.souls).toLocaleString('pt-BR')}</div>
+                <div class="stat-pill-label">${htmlT('contentUI.soulsCollected')}</div>
+                <div class="stat-pill-val text-gold">+${formatNumber(Number(bestRun.souls))}</div>
               </div>
             </div>
           </div>
@@ -294,7 +246,7 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
             <div class="monument-section-header">
               <span class="monument-section-tag">
                 ${renderIcon('sword', { size: 11, color: '#ffd166' })}
-                ARSENAL CONSAGRADO
+                ${htmlT('contentUI.arsenalConsecrated')}
               </span>
             </div>
             <div class="monument-weapons-grid">
@@ -307,7 +259,7 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
             <div class="monument-section-header">
               <span class="monument-section-tag">
                 ${renderIcon('sparkle', { size: 11, color: '#00f5d4' })}
-                BÊNÇÃOS & TRANSMUTAÇÕES ATIVAS (${Array.isArray(bestRun.passives) ? bestRun.passives.length : 0})
+                ${htmlT('contentUI.activeTransmutations', { value1: Array.isArray(bestRun.passives) ? bestRun.passives.length : 0 })}
               </span>
             </div>
             <div class="monument-passives-grid">
@@ -319,20 +271,20 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
           <div class="monument-lifetime-strip">
             <div class="lifetime-strip-title">
               ${renderIcon('keystone', { size: 11, color: '#a29bfe' })}
-              <span>MARCOS HISTÓRICOS DA CONTA</span>
+              <span>${htmlT('contentUI.milestones')}</span>
             </div>
             <div class="lifetime-strip-chips">
-              <div class="lifetime-bench-chip" title="Maior massacre de inimigos em uma partida única">
-                <span class="bench-label">MAIOR MASSACRE:</span>
-                <span class="bench-val text-ruby">${Number(lifetime.singleRunMaxKills || 0).toLocaleString('pt-BR')}</span>
+              <div class="lifetime-bench-chip" title="${htmlT('contentUI.maxKillsHint')}">
+                <span class="bench-label">${htmlT('contentUI.maxKills')}</span>
+                <span class="bench-val text-ruby">${formatNumber(Number(lifetime.singleRunMaxKills || 0))}</span>
               </div>
-              <div class="lifetime-bench-chip" title="Maior tempo de sobrevivência registrado na conta">
-                <span class="bench-label">RECORDE DE TEMPO:</span>
+              <div class="lifetime-bench-chip" title="${htmlT('contentUI.timeRecordHint')}">
+                <span class="bench-label">${htmlT('contentUI.timeRecord')}</span>
                 <span class="bench-val text-amber">${formatSeconds(lifetime.maxSurvivalSeconds || 0)}</span>
               </div>
-              <div class="lifetime-bench-chip" title="Total de baús misteriosos abertos em todas as jornadas">
-                <span class="bench-label">BAÚS ABERTOS:</span>
-                <span class="bench-val text-gold">${Number(lifetime.totalChestsOpened || 0).toLocaleString('pt-BR')}</span>
+              <div class="lifetime-bench-chip" title="${htmlT('contentUI.openedChestsHint')}">
+                <span class="bench-label">${htmlT('contentUI.openedChests')}</span>
+                <span class="bench-val text-gold">${formatNumber(Number(lifetime.totalChestsOpened || 0))}</span>
               </div>
             </div>
           </div>
@@ -386,6 +338,7 @@ export function openAchievementsModal() {
 
   const modal = document.getElementById('achievements-modal');
   if (!modal) return;
+  translateDOM(modal);
 
   const isMobile = isMobileScreen();
   modal.classList.toggle('is-mobile-device', isMobile);
@@ -402,7 +355,7 @@ export function openAchievementsModal() {
   if (legacyTotal) legacyTotal.innerText = summary.total;
 
   const soulsEl = document.getElementById('ach-souls-val');
-  if (soulsEl) soulsEl.innerText = `+${summary.totalSoulsReward.toLocaleString('pt-BR')}`;
+  if (soulsEl) soulsEl.innerText = `+${formatNumber(summary.totalSoulsReward)}`;
 
   const completionEl = document.getElementById('ach-completion-val');
   if (completionEl) completionEl.innerText = `${summary.completionPct}%`;
@@ -491,7 +444,6 @@ export function renderAchievementsRoster(filterCategory = 'ALL') {
   if (filterCategory === 'JOURNEY') {
     if (bentoGrid) bentoGrid.classList.add('is-journey-view');
     grid.innerHTML = '';
-    return;
   } else {
     if (bentoGrid) bentoGrid.classList.remove('is-journey-view');
   }
@@ -510,53 +462,55 @@ export function renderAchievementsRoster(filterCategory = 'ALL') {
   document.querySelectorAll('.achievements-tab-btn').forEach(btn => {
     const cat = btn.getAttribute('data-cat');
     const labelEl = btn.querySelector('.tab-label') || btn;
-    if (cat === 'ALL') labelEl.innerText = `TODAS (${ACHIEVEMENTS.length})`;
-    else if (cat === 'hero') labelEl.innerText = `HERÓIS (${heroTotal})`;
-    else if (cat === 'combat') labelEl.innerText = `COMBATE (${combatTotal})`;
-    else if (cat === 'boss') labelEl.innerText = `CHEFES (${bossTotal})`;
-    else if (cat === 'arsenal') labelEl.innerText = `ARSENAL (${arsenalTotal})`;
-    else if (cat === 'mastery') labelEl.innerText = `CÓDICE (${masteryTotal})`;
+    if (cat === 'ALL') labelEl.innerText = `${tr('contentUI.allAchievements', { value1: ACHIEVEMENTS.length })}`;
+    else if (cat === 'hero') labelEl.innerText = `${tr('contentUI.heroes', { value1: heroTotal })}`;
+    else if (cat === 'combat') labelEl.innerText = `${tr('contentUI.combatCount', { value1: combatTotal })}`;
+    else if (cat === 'boss') labelEl.innerText = `${tr('contentUI.bosses', { value1: bossTotal })}`;
+    else if (cat === 'arsenal') labelEl.innerText = `${tr('contentUI.arsenalCount', { value1: arsenalTotal })}`;
+    else if (cat === 'mastery') labelEl.innerText = `${tr('contentUI.codexCount', { value1: masteryTotal })}`;
   });
 
   const filterBadgeEl = document.getElementById('achievements-filter-badge');
   if (filterBadgeEl) {
     const catLabels = {
-      'ALL': `TODAS (${ACHIEVEMENTS.length})`,
-      'hero': `HERÓIS (${heroTotal})`,
-      'combat': `COMBATE (${combatTotal})`,
-      'boss': `CHEFES (${bossTotal})`,
-      'arsenal': `ARSENAL (${arsenalTotal})`,
-      'mastery': `CÓDICE (${masteryTotal})`,
-      'JOURNEY': `MAIOR JORNADA`
+      'ALL': `${tr('contentUI.allAchievements', { value1: ACHIEVEMENTS.length })}`,
+      'hero': `${tr('contentUI.heroes', { value1: heroTotal })}`,
+      'combat': `${tr('contentUI.combatCount', { value1: combatTotal })}`,
+      'boss': `${tr('contentUI.bosses', { value1: bossTotal })}`,
+      'arsenal': `${tr('contentUI.arsenalCount', { value1: arsenalTotal })}`,
+      'mastery': `${tr('contentUI.codexCount', { value1: masteryTotal })}`,
+      'JOURNEY': `${tr('contentUI.greatestJourney')}`
     };
-    filterBadgeEl.innerText = catLabels[filterCategory] || `FILTRO (${entries.length})`;
+    filterBadgeEl.innerText = catLabels[filterCategory] || `${tr('contentUI.filter', { value1: entries.length })}`;
   }
+
+  if (filterCategory === 'JOURNEY') return;
 
   entries.forEach(ach => {
     const status = getAchievementStatus(ach.id);
     const isSelected = ach.id === selectedAchievementId;
 
     let catBadgeClass = 'badge-cat-hero';
-    let catLabel = 'HERÓI';
+    let catLabel = tr('contentUI.hero');
     if (ach.category === 'combat') {
       catBadgeClass = 'badge-cat-combat';
-      catLabel = 'COMBATE';
+      catLabel = tr('contentUI.combat');
     } else if (ach.category === 'boss') {
       catBadgeClass = 'badge-cat-boss';
-      catLabel = 'CHEFE';
+      catLabel = tr('contentUI.boss');
     } else if (ach.category === 'arsenal') {
       catBadgeClass = 'badge-cat-arsenal';
-      catLabel = 'ARSENAL';
+      catLabel = tr('contentUI.arsenal');
     } else if (ach.category === 'mastery') {
       catBadgeClass = 'badge-cat-mastery';
-      catLabel = 'CÓDICE';
+      catLabel = tr('contentUI.codex');
     }
 
     let rewardBadge = '';
     if (ach.heroTitle) {
       rewardBadge = `<span class="ach-reward-pill ach-hero-reward">${renderIcon('keystone', { size: 9, color: '#a29bfe' })} ${ach.heroTitle.split(',')[0]}</span>`;
     } else if (ach.rewardGold > 0) {
-      rewardBadge = `<span class="ach-reward-pill ach-gold-reward">${renderIcon('soul_coin', { size: 9, color: '#ffd166' })} +${ach.rewardGold} Almas</span>`;
+      rewardBadge = `<span class="ach-reward-pill ach-gold-reward">${renderIcon('soul_coin', { size: 9, color: '#ffd166' })} ${htmlT('contentUI.soulsReward', { value1: ach.rewardGold })}</span>`;
     }
 
     const card = document.createElement('div');
@@ -579,7 +533,7 @@ export function renderAchievementsRoster(filterCategory = 'ALL') {
         <div class="ach-card-bottom-row">
           <div class="ach-reward-wrap">${rewardBadge}</div>
           <span class="ach-status-badge ${status.isCompleted ? 'badge-done' : 'badge-pending'}">
-            ${status.isCompleted ? `${renderIcon('check', { size: 9, color: '#2ecc71', style: 'vertical-align:middle;margin-right:2px;' })} CONCLUÍDO` : `${status.percent}%`}
+            ${status.isCompleted ? `${renderIcon('check', { size: 9, color: '#2ecc71', style: 'vertical-align:middle;margin-right:2px;' })} ${tr('contentUI.completed')}` : `${status.percent}%`}
           </span>
         </div>
       </div>
@@ -610,9 +564,9 @@ export function renderAchievementDossier(achievementId) {
       targetId = 'JOURNEY';
       selectedAchievementId = 'JOURNEY';
       if (bentoGrid) bentoGrid.classList.add('is-journey-view');
-      if (dossierTag) dossierTag.innerText = 'SANTUÁRIO DO RECORDE';
+      if (dossierTag) dossierTag.innerText = tr('contentUI.recordShrine');
       if (dossierTier) {
-        dossierTier.innerText = 'ARCANO SUPREMO';
+        dossierTier.innerText = tr('contentUI.supremeArcana');
         dossierTier.className = 'pillar-badge-hero tier-primordial';
       }
       renderBestRunMonument('achievements-dossier-panel');
@@ -668,29 +622,29 @@ export function renderAchievementDossier(achievementId) {
   const status = getAchievementStatus(ach.id);
 
   let tierClass = 'tier-heroic';
-  if (ach.tier === 'PRIMORDIAL') tierClass = 'tier-primordial';
-  else if (ach.tier === 'LENDÁRIO') tierClass = 'tier-legendary';
+  if (ach.tierId === 'primordial') tierClass = 'tier-primordial';
+  else if (ach.tierId === 'legendary') tierClass = 'tier-legendary';
 
-  if (dossierTag) dossierTag.innerText = 'ALTAR DE CONSAGRAÇÃO';
+  if (dossierTag) dossierTag.innerText = tr('contentUI.consecrationAltar');
   if (dossierTier) {
-    dossierTier.innerText = ach.tier || 'HERÓICO';
+    dossierTier.innerText = ach.tier || tr('contentUI.heroic');
     dossierTier.className = `pillar-badge-hero ${tierClass}`;
   }
 
   let catBadgeClass = 'badge-cat-hero';
-  let catLabel = 'DESPERTAR DE CAMPEÃO';
+  let catLabel = tr('contentUI.championAwakening');
   if (ach.category === 'combat') {
     catBadgeClass = 'badge-cat-combat';
-    catLabel = 'FAÇANHA DE COMBATE';
+    catLabel = tr('contentUI.combatFeat');
   } else if (ach.category === 'boss') {
     catBadgeClass = 'badge-cat-boss';
-    catLabel = 'PURIFICAÇÃO DE CHEFE';
+    catLabel = tr('contentUI.bossPurification');
   } else if (ach.category === 'arsenal') {
     catBadgeClass = 'badge-cat-arsenal';
-    catLabel = 'TRANSMUTAÇÃO DO ARSENAL';
+    catLabel = tr('contentUI.arsenalTransmutation');
   } else if (ach.category === 'mastery') {
     catBadgeClass = 'badge-cat-mastery';
-    catLabel = 'DESTINO & CÓDICE';
+    catLabel = tr('contentUI.destinyCodex');
   }
 
   dossierPanel.innerHTML = `
@@ -705,7 +659,7 @@ export function renderAchievementDossier(achievementId) {
           ${catLabel}
         </div>
         <div class="ach-status-pill ${status.isCompleted ? 'status-done' : 'status-pending'}">
-          ${status.isCompleted ? `${renderIcon('check', { size: 10, color: '#2ecc71', style: 'vertical-align:middle;margin-right:3px;' })} CONCLUÍDO COM GLÓRIA` : `${renderIcon('timer', { size: 10, color: '#ffd166', style: 'vertical-align:middle;margin-right:3px;' })} EM ANDAMENTO`}
+          ${status.isCompleted ? `${renderIcon('check', { size: 10, color: '#2ecc71', style: 'vertical-align:middle;margin-right:3px;' })} ${tr('contentUI.gloriousCompletion')}` : `${renderIcon('timer', { size: 10, color: '#ffd166', style: 'vertical-align:middle;margin-right:3px;' })} ${tr('contentUI.inProgress')}`}
         </div>
       </div>
 
@@ -715,7 +669,7 @@ export function renderAchievementDossier(achievementId) {
           <h2 class="dossier-name" style="color: ${status.isCompleted ? '#ffd166' : '#f1f5f9'};">
             ${ach.title}
           </h2>
-          <span class="dossier-tier-badge ${tierClass}">${ach.tier || 'HERÓICO'}</span>
+          <span class="dossier-tier-badge ${tierClass}">${ach.tier || tr('contentUI.heroic')}</span>
         </div>
         <div class="dossier-desc">${ach.desc}</div>
       </div>
@@ -723,20 +677,20 @@ export function renderAchievementDossier(achievementId) {
       <!-- 3. Grade Biométrica do Feito (4 Cards) -->
       <div class="dossier-stats-grid">
         <div class="ach-stat-card">
-          <div class="stat-label">${renderIcon('execute', { size: 9, color: '#a29bfe', style: 'margin-right:3px;' })} REQUISITO</div>
-          <div class="stat-val" style="color:#f1f5f9;">${ach.target.toLocaleString('pt-BR')}</div>
+          <div class="stat-label">${renderIcon('execute', { size: 9, color: '#a29bfe', style: 'margin-right:3px;' })} ${htmlT('contentUI.requirement')}</div>
+          <div class="stat-val" style="color:#f1f5f9;">${formatNumber(ach.target)}</div>
         </div>
         <div class="ach-stat-card">
-          <div class="stat-label">${renderIcon('timer', { size: 9, color: '#00f5d4', style: 'margin-right:3px;' })} PROGRESSO</div>
-          <div class="stat-val" style="color:${status.isCompleted ? '#2ecc71' : '#00f5d4'};">${status.isCompleted ? '100% (FEITO)' : `${status.percent}%`}</div>
+          <div class="stat-label">${renderIcon('timer', { size: 9, color: '#00f5d4', style: 'margin-right:3px;' })} ${htmlT('contentUI.progress')}</div>
+          <div class="stat-val" style="color:${status.isCompleted ? '#2ecc71' : '#00f5d4'};">${status.isCompleted ? tr('contentUI.done') : `${status.percent}%`}</div>
         </div>
         <div class="ach-stat-card">
-          <div class="stat-label">${renderIcon('soul_coin', { size: 9, color: '#ffd166', style: 'margin-right:3px;' })} RECOMPENSA</div>
-          <div class="stat-val" style="color:#ffd166;">+${ach.rewardGold} Almas</div>
+          <div class="stat-label">${renderIcon('soul_coin', { size: 9, color: '#ffd166', style: 'margin-right:3px;' })} ${htmlT('contentUI.reward')}</div>
+          <div class="stat-val" style="color:#ffd166;">${htmlT('contentUI.soulsReward', { value1: ach.rewardGold })}</div>
         </div>
         <div class="ach-stat-card">
-          <div class="stat-label">${renderIcon('keystone', { size: 9, color: '#c084fc', style: 'margin-right:3px;' })} DESBLOQUEIO</div>
-          <div class="stat-val" style="color:${ach.heroTitle ? '#c084fc' : '#94a3b8'};">${ach.heroTitle ? ach.heroTitle.split(',')[0] : 'Glória'}</div>
+          <div class="stat-label">${renderIcon('keystone', { size: 9, color: '#c084fc', style: 'margin-right:3px;' })} ${htmlT('contentUI.unlock')}</div>
+          <div class="stat-val" style="color:${ach.heroTitle ? '#c084fc' : '#94a3b8'};">${ach.heroTitle ? ach.heroTitle.split(',')[0] : tr('contentUI.glory')}</div>
         </div>
       </div>
 
@@ -744,13 +698,13 @@ export function renderAchievementDossier(achievementId) {
       <div class="dossier-lore-box">
         <div class="dossier-box-header">
           <span class="dossier-box-icon">${renderIcon('scroll', { size: 12, color: '#ffd166', style: 'display:inline-block;vertical-align:middle;' })}</span>
-          <span class="dossier-box-title">CRÔNICA DE LORE ANCESTRAL</span>
+          <span class="dossier-box-title">${htmlT('contentUI.ancestralLore')}</span>
           <span class="dossier-lock-status ${status.isCompleted ? 'unlocked' : 'locked'}">
-            ${status.isCompleted ? `${renderIcon('check', { size: 9, color: '#2ecc71', style: 'vertical-align:middle;margin-right:2px;' })} ETERNIZADO` : `${renderIcon('lock', { size: 9, color: '#ff7675', style: 'vertical-align:middle;margin-right:2px;' })} EM PROVAÇÃO`}
+            ${status.isCompleted ? `${renderIcon('check', { size: 9, color: '#2ecc71', style: 'vertical-align:middle;margin-right:2px;' })} ${tr('contentUI.immortalized')}` : `${renderIcon('lock', { size: 9, color: '#ff7675', style: 'vertical-align:middle;margin-right:2px;' })} ${tr('contentUI.onTrial')}`}
           </span>
         </div>
         <div class="dossier-box-content">
-          "${ach.lore || 'Os ecos do destino ainda aguardam que sua lenda seja gravada nas lajes de pedra do submundo.'}"
+          "${ach.lore || tr('contentUI.unwrittenLore')}"
         </div>
       </div>
 
@@ -758,13 +712,23 @@ export function renderAchievementDossier(achievementId) {
       <div class="dossier-lore-box dossier-tactics-box">
         <div class="dossier-box-header">
           <span class="dossier-box-icon">${renderIcon('sword', { size: 12, color: '#00f5d4', style: 'display:inline-block;vertical-align:middle;' })}</span>
-          <span class="dossier-box-title">DIRETRIZ TÁTICA DE COMBATE</span>
-          <span class="dossier-lock-status unlocked">${renderIcon('sparkle', { size: 9, color: '#00f5d4', style: 'vertical-align:middle;margin-right:2px;' })} RECOMENDAÇÃO</span>
+          <span class="dossier-box-title">${htmlT('contentUI.combatGuidance')}</span>
+          <span class="dossier-lock-status unlocked">${renderIcon('sparkle', { size: 9, color: '#00f5d4', style: 'vertical-align:middle;margin-right:2px;' })} ${htmlT('contentUI.recommendation')}</span>
         </div>
         <div class="dossier-box-content">
-          ${ach.tactics || 'Mantenha movimentação constante e adapte seu arsenal conforme as fraquezas da horda.'}
+          ${ach.tactics || tr('contentUI.generalTactics')}
         </div>
       </div>
     </div>
   `;
 }
+
+onLanguageChange(() => {
+  const modal = document.getElementById('achievements-modal');
+  if (!modal?.classList.contains('active')) return;
+  translateDOM(modal);
+  renderAchievementsRoster(currentAchievementsCategory);
+  renderAchievementDossier(selectedAchievementId);
+  const souls = document.getElementById('ach-souls-val');
+  if (souls) souls.textContent = '+' + formatNumber(getAchievementsSummary().totalSoulsReward);
+});

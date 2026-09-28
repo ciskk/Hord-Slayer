@@ -1,0 +1,539 @@
+/* ==========================================================================
+   HORD.IO: CÁPSULA RÚNICA DE IDIOMA & MENU FLUTUANTE (Grim Cyber-Gothic)
+   Animação Majestosa, Adaptação Dinâmica da Combobox e Cabeçalho em Linha Única
+   ========================================================================== */
+
+/* 1. Container do Widget de Idiomas */
+.char-language-widget {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  z-index: 130;
+}
+
+.char-language-widget.is-open {
+  z-index: 250 !important;
+}
+
+/* 2. Adaptação Dinâmica da Cápsula (Combobox) */
+.char-language-capsule {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  background: rgba(12, 18, 34, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.2px solid rgba(255, 209, 102, 0.35);
+  border-radius: 16px;
+  color: #ffd166;
+  box-shadow: 0 0 12px rgba(255, 209, 102, 0.12), inset 0 0 8px rgba(255, 209, 102, 0.05);
+  transition: border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              border-radius 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  font-family: inherit;
+  outline: none;
+}
+
+.char-language-capsule:hover {
+  border-color: rgba(255, 209, 102, 0.75);
+  box-shadow: 0 0 16px rgba(255, 209, 102, 0.28);
+  transform: translateY(-1px);
+}
+
+/* Adaptação quando Aberto: A combobox ancora suavemente para baixo e irradia ouro */
+.char-language-widget.is-open .char-language-capsule {
+  background: rgba(14, 20, 36, 0.96);
+  border-color: rgba(255, 209, 102, 0.95);
+  border-radius: 16px 16px 5px 5px;
+  box-shadow: 0 0 22px rgba(255, 209, 102, 0.45), inset 0 0 12px rgba(255, 209, 102, 0.2);
+  transform: translateY(0);
+}
+
+/* Ícone de Globo Vetorial (conforme referência): Linhas rúnicas bem definidas e fill nulo */
+.char-language-capsule .lang-globe-icon {
+  width: 16px;
+  height: 16px;
+  stroke: #ffd166 !important;
+  fill: none !important;
+  flex-shrink: 0;
+  pointer-events: none;
+  transition: transform 0.48s cubic-bezier(0.16, 1, 0.3, 1), filter 0.48s ease;
+}
+
+.char-language-capsule .lang-globe-icon * {
+  fill: none !important;
+  stroke: #ffd166 !important;
+}
+
+.char-language-widget.is-open .char-language-capsule .lang-globe-icon {
+  transform: scale(1.18) rotate(15deg);
+  filter: drop-shadow(0 0 8px #ffd166);
+}
+
+/* Nome por extenso do idioma (Desktop) */
+.char-language-capsule .lang-label-text {
+  font-family: var(--font-heading);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #f1f5f9;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: color 0.3s ease;
+}
+
+.char-language-widget.is-open .char-language-capsule .lang-label-text {
+  color: #ffd166;
+}
+
+/* Badge com a sigla rúnica (PT, EN, ES, FR) */
+.char-language-capsule .lang-code-badge {
+  display: none;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #ffd166;
+  pointer-events: none;
+}
+
+/* Chevron Rúnico com rotação lenta e elegante */
+.char-language-capsule .lang-chevron-icon {
+  width: 12px;
+  height: 12px;
+  color: #ffd166;
+  flex-shrink: 0;
+  pointer-events: none;
+  transition: transform 0.48s cubic-bezier(0.16, 1, 0.3, 1), color 0.3s ease;
+}
+
+.char-language-widget.is-open .char-language-capsule .lang-chevron-icon {
+  transform: rotate(180deg);
+  color: #fff2a8;
+}
+
+/* 3. Menu Dropdown Gótico Flutuante (Animação Lenta e Majestosa) */
+.char-language-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: auto;
+  min-width: 185px;
+  width: max-content;
+  max-width: 240px;
+  background: linear-gradient(180deg, rgba(14, 20, 36, 0.98) 0%, rgba(8, 12, 22, 0.99) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1.2px solid rgba(255, 209, 102, 0.45);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.9), 0 0 24px rgba(255, 209, 102, 0.2);
+  z-index: 300 !important;
+  overflow: hidden;
+
+  /* Estado Fechado: Recolhido acima com efeito suave */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-16px) scaleY(0.72) scaleX(0.92);
+  transform-origin: top left;
+  transition: opacity 0.46s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.52s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.52s;
+}
+
+/* Filete luminoso de ouro rúnico no topo do menu */
+.char-language-dropdown::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, #ffd166, transparent);
+  box-shadow: 0 0 8px #ffd166;
+}
+
+/* Estado Aberto: Desce de forma suave e majestosa */
+.char-language-widget.is-open .char-language-dropdown {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scaleY(1) scaleX(1);
+}
+
+/* Cabeçalho do Dropdown */
+.lang-dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 6px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 4px;
+}
+
+.lang-dropdown-sigil {
+  font-size: 9px;
+  color: #ffd166;
+  filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.6));
+}
+
+.lang-dropdown-title {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: #8c94a8;
+}
+
+/* Lista de Opções */
+.lang-dropdown-options {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Botão individual da opção */
+.lang-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: #cbd5e1;
+  font-family: var(--font-heading);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  text-align: left;
+  user-select: none;
+  outline: none;
+  position: relative;
+
+  /* Transição de entrada suave para a cascata (stagger) */
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: background 0.22s ease,
+              border-color 0.22s ease,
+              color 0.22s ease,
+              padding-left 0.22s ease,
+              transform 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Cascata Sequencial (Stagger) dos itens descendo em ordem */
+.char-language-widget.is-open .lang-option-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+.char-language-widget.is-open .lang-option-btn:nth-child(1) { transition-delay: 0.06s; }
+.char-language-widget.is-open .lang-option-btn:nth-child(2) { transition-delay: 0.12s; }
+.char-language-widget.is-open .lang-option-btn:nth-child(3) { transition-delay: 0.18s; }
+.char-language-widget.is-open .lang-option-btn:nth-child(4) { transition-delay: 0.24s; }
+
+/* Micro-badge de sigla da opção */
+.lang-opt-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1.5px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  letter-spacing: 0.6px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.lang-opt-name {
+  flex: 1 1 auto;
+  white-space: nowrap;
+}
+
+/* Glifo de seleção (✦) */
+.lang-opt-sigil {
+  font-size: 10px;
+  color: transparent;
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+}
+
+/* Hover na Opção */
+.lang-option-btn:hover {
+  background: rgba(255, 209, 102, 0.12);
+  border-color: rgba(255, 209, 102, 0.4);
+  color: #ffffff;
+  padding-left: 13px;
+}
+
+.lang-option-btn:hover .lang-opt-badge {
+  background: rgba(255, 209, 102, 0.2);
+  border-color: rgba(255, 209, 102, 0.5);
+  color: #ffd166;
+}
+
+/* Opção Ativa (Selecionada) */
+.lang-option-btn.active {
+  background: rgba(255, 209, 102, 0.14);
+  border-color: rgba(255, 209, 102, 0.5);
+  color: #ffd166;
+}
+
+.lang-option-btn.active .lang-opt-badge {
+  background: rgba(255, 209, 102, 0.28);
+  border-color: #ffd166;
+  color: #ffd166;
+}
+
+.lang-option-btn.active .lang-opt-sigil {
+  color: #ffd166;
+  filter: drop-shadow(0 0 6px #ffd166);
+}
+
+/* Select invisível de backup para testes e screen readers */
+.visually-hidden-select {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
+/* Ajustes no cabeçalho geral (PC & Global) */
+#char-modal .char-scene-header {
+  position: relative !important;
+  z-index: 120 !important;
+  overflow: visible !important;
+}
+
+#char-modal .char-brand-group { min-width: 0; }
+#char-modal .char-brand-title { overflow-wrap: anywhere; }
+#char-modal .char-header-utilities {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+  position: relative !important;
+  z-index: 125 !important;
+  overflow: visible !important;
+}
+#char-modal .hero-monolith-role,
+#char-modal .loadout-entry-title,
+#char-modal .loadout-entry-chip { overflow-wrap: anywhere; }
+
+/* Long localized dossiers must scale from the top and keep the action in flow. */
+#char-showcase { overflow-anchor: none; }
+#char-showcase[data-autofit="true"] .char-dossier-content.autofit-scaled {
+  transform-origin: top center !important;
+}
+#char-showcase[data-autofit="true"] .btn-ignition-catalyst {
+  position: relative;
+  bottom: auto;
+  min-height: 48px;
+  height: auto;
+}
+
+/* 4. Responsividade Vertical (Portrait & Telas Móveis): LINHA ÚNICA INTELIGENTE */
+@media (orientation: portrait), ((max-width: 850px) and (hover: none) and (pointer: coarse)) {
+  /* Cabeçalho ultra-compacto em uma única linha (44px) */
+  #char-modal .char-scene-header {
+    height: auto !important;
+    min-height: 44px !important;
+    padding: max(env(safe-area-inset-top, 6px), 6px) 10px 6px 10px !important;
+  }
+
+  /* Recupera o espaço vertical (+46px) para o palco e herói */
+  #char-modal .char-stage-viewport {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 48px) !important;
+  }
+
+  /* A focus change must only scroll the carousel, never its surrounding stage. */
+  #char-modal .char-panoramic-stage { overflow: clip !important; }
+
+  /* Distribuição em Linha Única sem quebra */
+  #char-modal .char-header-utilities {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    gap: 4px !important;
+  }
+
+  /* Grupo 1 (Esquerda): Relíquias de navegação (Bestiário e Conquistas compactos) */
+  #char-modal .char-header-nav-cluster {
+    order: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+  }
+
+  #char-modal .char-relic-btn {
+    width: 32px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  #char-modal .char-relic-btn .relic-label {
+    display: none !important; /* Oculta textos no Bestiário e Conquistas */
+  }
+
+  #char-modal .char-relic-btn .relic-icon {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  /* Exceção: Botão do Astrolábio exibe o nome com destaque rúnico */
+  #char-modal .char-relic-btn.relic-talents {
+    width: auto !important;
+    padding: 0 8px !important;
+    gap: 5px !important;
+    background: rgba(36, 26, 10, 0.78) !important;
+    border: 1.2px solid rgba(255, 209, 102, 0.45) !important;
+    color: #ffd166 !important;
+    box-shadow: 0 0 10px rgba(255, 209, 102, 0.15) !important;
+  }
+
+  #char-modal .char-relic-btn.relic-talents .relic-label {
+    display: inline-block !important;
+    font-family: var(--font-heading) !important;
+    font-size: 9.5px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.8px !important;
+    color: #ffd166 !important;
+    white-space: nowrap !important;
+  }
+
+  #char-modal .char-relic-btn.relic-talents .relic-icon {
+    width: 13px !important;
+    height: 13px !important;
+    stroke: #ffd166 !important;
+  }
+
+  /* Grupo 2 (Direita): Widget de Idiomas */
+  #char-modal .char-language-widget {
+    order: 2 !important;
+    margin-left: auto !important;
+    position: relative !important;
+  }
+
+  #char-modal .char-language-capsule {
+    height: 28px !important;
+    padding: 0 8px !important;
+    gap: 4px !important;
+    border-radius: 14px !important;
+    flex-shrink: 0 !important;
+  }
+
+  #char-modal .char-language-widget.is-open .char-language-capsule {
+    border-radius: 14px 14px 4px 4px !important;
+  }
+
+  #char-modal .char-language-capsule .lang-globe-icon {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  /* Em telas estreitas, oculta o texto extenso e exibe o badge curto */
+  #char-modal .char-language-capsule .lang-label-text {
+    display: none !important;
+  }
+
+  #char-modal .char-language-capsule .lang-code-badge {
+    display: inline-block !important;
+    font-size: 10.5px !important;
+  }
+
+  #char-modal .char-language-capsule .lang-chevron-icon {
+    width: 9px !important;
+    height: 9px !important;
+    margin-left: 1px !important;
+  }
+
+  /* Dropdown flutuante em mobile: ancora na direita pois a cápsula fica na direita */
+  #char-modal .char-language-dropdown {
+    top: calc(100% + 5px) !important;
+    left: auto !important;
+    right: 0 !important;
+    min-width: 155px !important;
+    max-width: 175px !important;
+    transform-origin: top right !important;
+  }
+
+  /* Grupo 3 (Extrema Direita): Cápsula de Almas compacta [ ✦ 118,486 ] */
+  #char-modal .char-souls-capsule {
+    order: 3 !important;
+    height: 28px !important;
+    padding: 0 8px !important;
+    gap: 4px !important;
+    border-radius: 14px !important;
+    font-size: 11px !important;
+    flex-shrink: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  #char-modal .char-souls-capsule .souls-label {
+    display: none !important; /* Oculta rótulo 'ALMAS'; a estrela dourada já comunica a moeda */
+  }
+
+  #char-modal .char-souls-capsule svg {
+    width: 11px !important;
+    height: 11px !important;
+  }
+
+  /* Painéis e biografia mobile */
+  #char-modal .mobile-slide-pane { overflow-y: auto !important; }
+  #char-modal .char-identity-monolith { padding: 3px 3px 2px !important; }
+  #char-modal .hero-monolith-name { line-height: 1.3 !important; }
+  #char-modal .hero-loadout-lineage {
+    height: auto !important;
+    min-height: 100% !important;
+    flex: 0 0 auto !important;
+  }
+  #char-modal .loadout-entry { flex: 0 0 auto !important; }
+  #char-modal .loadout-entry-desc {
+    display: block !important;
+    overflow: visible !important;
+    -webkit-line-clamp: unset !important;
+  }
+  #char-modal .loadout-entry-title,
+  #char-modal .loadout-entry-chip { white-space: normal !important; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 850px) and (pointer: coarse) {
+  #char-modal .hero-monolith-quote,
+  #char-modal .hero-monolith-role { display: block !important; }
+  #char-modal .mobile-bottom-sheet[data-sheet-state="half"] {
+    height: calc(100dvh - 110px) !important;
+    max-height: calc(100dvh - 110px) !important;
+  }
+}

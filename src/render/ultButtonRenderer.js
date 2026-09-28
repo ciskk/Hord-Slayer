@@ -21,6 +21,18 @@
  * - Projeção de halos e partículas que ultrapassam os limites do botão para manter visibilidade periférica no mobile.
  */
 
+import { layoutMetrics } from '../core/responsive.js';
+import { graphicsDiagnostics } from '../core/graphicsDiagnostics.js';
+
+function syncUltResolution() {
+  const dpr = graphicsDiagnostics.mode === 'original' ? (window.devicePixelRatio || 1) : (layoutMetrics.dpr || 1);
+  const size = Math.max(1, Math.round(CANVAS_SIZE * dpr));
+  if (ultCanvas.width !== size || ultCanvas.height !== size) {
+    ultCanvas.width = size; ultCanvas.height = size;
+    ultCtx.setTransform(size / CANVAS_SIZE, 0, 0, size / CANVAS_SIZE, 0, 0);
+  }
+}
+
 // Estado interno do renderizador
 let ultCanvas = null;
 let ultCtx = null;
@@ -157,11 +169,7 @@ export function initUltButtonRenderer() {
   ultCtx = ultCanvas.getContext('2d', { alpha: true });
   if (!ultCtx) return;
 
-  // Ajuste de DPI nítido
-  const dpr = window.devicePixelRatio || 1;
-  ultCanvas.width = CANVAS_SIZE * dpr;
-  ultCanvas.height = CANVAS_SIZE * dpr;
-  ultCtx.scale(dpr, dpr);
+  syncUltResolution();
 }
 
 /**
@@ -235,20 +243,20 @@ export function triggerUltBurst(heroKey) {
  * Loop mestre de renderização procedural da ULT
  */
 export function renderUltButton(player, frameCount) {
+  if (graphicsDiagnostics.mode === 'ult-off') return;
   if (!ultCtx || !ultCanvas) {
     ultCanvas = document.getElementById('ult-fx-canvas');
     if (ultCanvas) {
       ultCtx = ultCanvas.getContext('2d', { alpha: true });
-      const dpr = window.devicePixelRatio || 1;
-      ultCanvas.width = CANVAS_SIZE * dpr;
-      ultCanvas.height = CANVAS_SIZE * dpr;
-      ultCtx.scale(dpr, dpr);
+      if (!ultCtx) return;
+      syncUltResolution();
     } else {
       return;
     }
   }
 
   // Dirty checking / Culling de visibilidade e descarte de quadros duplicados
+  syncUltResolution();
   if (frameCount === _lastRenderFrame) return;
   _lastRenderFrame = frameCount;
 

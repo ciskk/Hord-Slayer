@@ -1,3 +1,5 @@
+import { t, formatNumber } from '../../i18n/index.js';
+import { htmlT, escapeHtml } from '../../i18n/dom.js';
 /**
  * src/ui/modals/upgradeModal.js
  * Renderizador de Cartas de Tarô Arcano de Poder (Level-up & Bênçãos de Chefes).
@@ -69,13 +71,13 @@ export function updateUpgradeModalHeader() {
   const queueCount = document.getElementById('levelup-queue-count');
 
   if (heroLvlBadge) {
-    heroLvlBadge.innerText = `NV ${player.level || 1}`;
+    heroLvlBadge.innerText = t('match.common.level', { number: formatNumber(player.level || 1) });
   }
 
   if (queueChip && queueCount) {
     if (pendingLevelUps > 1) {
       queueChip.style.display = 'inline-flex';
-      queueCount.innerText = `${pendingLevelUps} Bênçãos`;
+      queueCount.innerText = t('match.upgrade.blessings', { count: pendingLevelUps });
     } else {
       queueChip.style.display = 'none';
     }
@@ -85,14 +87,14 @@ export function updateUpgradeModalHeader() {
       autoSkipBtn = document.createElement('button');
       autoSkipBtn.id = 'levelup-auto-skip-btn';
       autoSkipBtn.className = 'levelup-auto-skip-btn';
-      autoSkipBtn.title = 'Aplica automaticamente todas as bênçãos restantes e fecha o Tarô';
+      autoSkipBtn.title = t('match.upgrade.autoTip');
       autoSkipBtn.onclick = () => autoCompleteRemainingLevelUps();
       queueChip.parentNode.insertBefore(autoSkipBtn, queueChip.nextSibling);
     }
     if (autoSkipBtn) {
       if (pendingLevelUps > 1) {
         autoSkipBtn.style.display = 'inline-flex';
-        autoSkipBtn.innerHTML = `⚡ Auto-Completar (${pendingLevelUps})`;
+        autoSkipBtn.innerHTML = t('match.upgrade.auto', { count: pendingLevelUps });
       } else {
         autoSkipBtn.style.display = 'none';
       }
@@ -102,24 +104,29 @@ export function updateUpgradeModalHeader() {
   if (bossRewardContext && bossRewardContext.totalCount > 0) {
     if (bossBanner) {
       bossBanner.style.display = 'flex';
-      if (bossTitle) bossTitle.innerText = `VITÓRIA CONTRA ${bossRewardContext.bossName.toUpperCase()}!`;
+      if (bossTitle) {
+        const rawBossId = bossRewardContext.bossId;
+        const normalizedBossId = String(rawBossId).startsWith('BOSS_') ? rawBossId : `BOSS_${rawBossId}`;
+        const translatedBoss = t(`creatures.${normalizedBossId}.name`, {}, t(`bestiary.${normalizedBossId}.name`, {}, bossRewardContext.bossName || ''));
+        bossTitle.innerText = t('match.upgrade.victory', { boss: translatedBoss.toUpperCase() });
+      }
       if (bossCounter) {
         const currentChoice = bossRewardContext.chosenCount + 1;
         const total = Math.max(bossRewardContext.totalCount, bossRewardContext.chosenCount + pendingLevelUps);
         const remaining = Math.max(0, pendingLevelUps - 1);
-        bossCounter.innerHTML = `<span style="color:#ffd166; font-weight:800;">+${total} UPGRADES CONQUISTADOS</span> &bull; Escolhendo Bênção <b>${currentChoice} de ${total}</b>${remaining > 0 ? ` (${remaining} restante${remaining > 1 ? 's' : ''})` : ' (Última Bênção)'}`;
+        bossCounter.textContent = t('match.upgrade.counter', { total, current: currentChoice, remaining });
       }
     }
-    if (eyebrowText) eyebrowText.innerText = "COLOSSO SUPREMO DERROTADO • DÁDIVA ARCANO";
-    if (headerSub) headerSub.innerText = "Recompensa mística concedida pela aniquilação do soberano";
+    if (eyebrowText) eyebrowText.innerText = t('match.upgrade.bossEyebrow');
+    if (headerSub) headerSub.innerText = t('match.upgrade.bossSub');
   } else {
     if (bossBanner) bossBanner.style.display = 'none';
-    if (eyebrowText) eyebrowText.innerText = "TRANSCENDÊNCIA DE NÍVEL • TARÔ ARCANO";
+    if (eyebrowText) eyebrowText.innerText = t('match.upgrade.eyebrow');
     if (headerSub) {
       if (pendingLevelUps > 1) {
-        headerSub.innerHTML = `Invoque uma bênção arcana para remodelar o combate &bull; <b style="color:#ffd166;">${pendingLevelUps} bênçãos na fila</b>`;
+        headerSub.textContent = t('match.upgrade.sub') + ' • ' + t('match.upgrade.blessings', { count: pendingLevelUps });
       } else {
-        headerSub.innerText = "Invoque uma bênção arcana para remodelar o combate";
+        headerSub.innerText = t('match.upgrade.sub');
       }
     }
   }
@@ -127,14 +134,7 @@ export function updateUpgradeModalHeader() {
 }
 
 function resolveCardCategory(opt) {
-  const badgeLower = (opt.badge || '').toLowerCase();
-  if (badgeLower.includes('machado') || badgeLower.includes('poção') || badgeLower.includes('cajado') || badgeLower.includes('espada') || badgeLower.includes('martelo') || badgeLower.includes('arma')) {
-    return 'ARMA';
-  }
-  if (badgeLower.includes('recompensa') || badgeLower.includes('fortuna') || badgeLower.includes('cura') || badgeLower.includes('utilidade')) {
-    return 'UTILIDADE';
-  }
-  return 'PASSIVA';
+  return opt.category || 'PASSIVE';
 }
 
 function selectCardIndex(idx) {
@@ -224,7 +224,7 @@ function setupLevelupKeyboard() {
   window.addEventListener('keydown', levelupKeydownHandler);
 }
 
-export function renderUpgradeCards() {
+export function renderUpgradeCards({ preserveOptions = false } = {}) {
   const modal = document.getElementById('upgrade-modal');
   const container = document.getElementById('upgrade-list');
   if (!container || !modal) return;
@@ -236,7 +236,16 @@ export function renderUpgradeCards() {
     upgradeResizeObserver.observe(stage);
   }
 
-  currentOptions = getRandomUpgrades(3, { allowDestiny: true });
+  if (!preserveOptions) currentOptions = getRandomUpgrades(3, { allowDestiny: true });
+
+  let durationNote = document.getElementById('upgrade-duration-note');
+  if (!durationNote) {
+    durationNote = document.createElement('p');
+    durationNote.id = 'upgrade-duration-note';
+    durationNote.className = 'upgrade-duration-note';
+    container.insertAdjacentElement('afterend', durationNote);
+  }
+  durationNote.textContent = t('cards.duration');
 
   currentOptions.forEach((opt, index) => {
     const card = document.createElement('div');
@@ -245,23 +254,25 @@ export function renderUpgradeCards() {
     const iconSvg = UPGRADE_ICONS[opt.id] || `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#ffd166"/></svg>`;
     const isSynergy = isSynergyIngredient(opt.id);
     const isDestiny = !!opt.isDestinyCard;
-    const category = isDestiny ? 'PACTO' : resolveCardCategory(opt);
+    const category = isDestiny ? 'PACT' : resolveCardCategory(opt);
     const hotkeyNum = index + 1;
+    const presentation = opt.getPresentation();
+    const effectRows = kind => presentation.effects.filter(effect => !kind || effect.kind === kind)
+      .map(effect => `<div class="card-effect-row">${escapeHtml(effect.text)}</div>`).join('');
 
-    const categoryIcon = isDestiny ? 'pact' : (category === 'ARMA' ? 'sword' : (category === 'UTILIDADE' ? 'heal' : 'aura'));
+    const categoryIcon = isDestiny ? 'pact' : (category === 'WEAPON' ? 'sword' : (category === 'UTILITY' ? 'heal' : 'aura'));
     const categoryColor = isDestiny ? '#c084fc' : '#94a3b8';
 
     card.innerHTML = `
       <div class="card-header-bar">
         <span class="card-category-tag" style="${isDestiny ? 'border-color: rgba(192, 132, 252, 0.5); color: #d8b4fe;' : ''}">
           ${renderIcon(categoryIcon, { size: 10, color: categoryColor })}
-          ${category}
+          ${htmlT(`content.categories.${category}`)}
         </span>
+        ${isSynergy ? `<span class="synergy-indicator-tag">${renderIcon('sparkle', { size: 10, color: '#ffd166' })} ${htmlT('content.fusionIngredient')}</span>` : ''}
+        ${isDestiny ? `<span class="synergy-indicator-tag" style="border-color: rgba(192, 132, 252, 0.6); color: #e9d5ff; background: rgba(147, 51, 234, 0.25);">${renderIcon('pact', { size: 10, color: '#c084fc' })} ${htmlT('content.cursedPact')}</span>` : ''}
         <span class="card-hotkey-badge">[ ${hotkeyNum} ]</span>
       </div>
-
-      ${isSynergy ? `<div class="synergy-indicator-tag">${renderIcon('sparkle', { size: 10, color: '#ffd166' })} PEÇA DE FUSÃO</div>` : ''}
-      ${isDestiny ? `<div class="synergy-indicator-tag" style="border-color: rgba(192, 132, 252, 0.6); color: #e9d5ff; background: rgba(147, 51, 234, 0.25);">${renderIcon('pact', { size: 10, color: '#c084fc' })} PACTO AMALDIÇOADO</div>` : ''}
 
       <div class="card-icon-pedestal">
         <div class="pedestal-ring-outer"></div>
@@ -279,11 +290,12 @@ export function renderUpgradeCards() {
 
       ${isDestiny 
         ? `<div class="card-tradeoff-group">
-             <div class="card-stat-pill stat-bonus">▲ ${opt.bonusText}</div>
-             <div class="card-stat-pill stat-penalty">▼ ${opt.penaltyText}</div>
+             <div class="card-stat-pill stat-bonus"><strong class="card-effect-label">${htmlT('cards.benefit')}</strong>${effectRows('bonus')}</div>
+             <div class="card-stat-pill stat-penalty"><strong class="card-effect-label">${htmlT('cards.penalty')}</strong>${effectRows('penalty')}</div>
            </div>`
-        : `<div class="card-stat-pill">${typeof opt.getStat === 'function' ? opt.getStat() : opt.stat}</div>`
+        : `<div class="card-stat-pill">${effectRows()}</div>`
       }
+      ${presentation.progress ? `<div class="card-progress-text">${escapeHtml(presentation.progress)}</div>` : ''}
     `;
 
     card.onmouseenter = () => {

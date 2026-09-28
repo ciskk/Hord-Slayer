@@ -3,7 +3,7 @@
  * 
  * Controlador e FSM do Miniboss Incinerador Instável (FIRE_INCINERATOR).
  */
-import { safePlaySfx } from './common.js';
+import { safePlaySfx, matchText } from './common.js';
 
 export const fireIncineratorHandler = {
 init(e) {
@@ -28,7 +28,7 @@ update(e, dt, ctx, dist, angle) {
         e.actionMaxTimer = 22;
         e.aimAngle = angle;
         safePlaySfx('charge');
-        ctx.addDamageText(e.x, e.y, "LANÇA-CHAMAS!", true, '#e67e22');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.flamethrower'), true, '#e67e22');
       } else {
         // Purga de Vapor e Brasas
         e.currentSkill = 'STEAM_PURGE';

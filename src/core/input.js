@@ -13,8 +13,10 @@ import { getActiveBloodAltar, setPlayerChannelingAltar } from '../systems/worldE
 const activeKeyCodes = new Set();
 
 // Trava contra gestos do Safari iOS (Pinch-to-zoom / Double-tap zoom / Pull-to-refresh)[cite: 1]
-document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
-document.addEventListener('dblclick', function(e) { e.preventDefault(); }, { passive: false });
+if (typeof document !== 'undefined') {
+  document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+  document.addEventListener('dblclick', function(e) { e.preventDefault(); }, { passive: false });
+}
 
 // Modos de Joystick Virtual Suportados
 export const JOYSTICK_MODES = {
@@ -205,13 +207,14 @@ export function restoreKeyboardMovement() {
   updateKeyboardVector();
 }
 
-window.addEventListener('blur', () => {
-  activeKeyCodes.clear();
-  resetInput();
-  setPlayerChannelingAltar(false);
-});
+if (typeof window !== 'undefined') {
+  window.addEventListener('blur', () => {
+    activeKeyCodes.clear();
+    resetInput();
+    setPlayerChannelingAltar(false);
+  });
 
-const canvas = document.getElementById('game-canvas');
+  const canvas = document.getElementById('game-canvas');
 
 // Touch Mobile com Zonificação Inteligente, Follow-Stick Dinâmico e Zonas Mortas Duplas
 window.addEventListener('touchstart', e => {
@@ -552,3 +555,4 @@ window.addEventListener('contextmenu', e => {
   }
   triggerHeroSkill({ cursorX: e.clientX, cursorY: e.clientY });
 });
+}

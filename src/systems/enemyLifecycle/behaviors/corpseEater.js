@@ -1,3 +1,4 @@
+import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/behaviors/corpseEater.js
  * IA do Carniçal Necrófago — Necrofagia consumindo cadáveres abatidos.
@@ -6,8 +7,11 @@ import { playSfx } from '../../../core/audio.js';
 import { createHitParticles, addDamageText, dyingEnemies } from '../../combat.js';
 
 export function corpseEaterBehavior(e, dt, angle, curSpeed, ctx) {
-  e.x += Math.cos(angle) * curSpeed * dt;
-  e.y += Math.sin(angle) * curSpeed * dt;
+  const frame = ctx?.frameCount || 0;
+  const phase = e.phaseOffset || 0;
+  const sway = Math.sin(frame * 0.05 + phase) * 0.12;
+  e.x += Math.cos(angle + sway) * curSpeed * dt;
+  e.y += Math.sin(angle + sway) * curSpeed * dt;
   e.devourTimer = (e.devourTimer || 0) + dt;
   if (e.devourTimer >= 30) {
     e.devourTimer = 0;
@@ -23,7 +27,7 @@ export function corpseEaterBehavior(e, dt, angle, curSpeed, ctx) {
         e.radius = Math.min(26, e.radius + 1.2);
         createHitParticles(e.x, e.y, '#c0392b', 8);
         playSfx('hit');
-        addDamageText(e.x, e.y, "CARNE DEVORADA!", false, '#e74c3c');
+        addDamageText(e.x, e.y, matchText('match.combat.flesh'), false, '#e74c3c');
         // Consumido uma única vez; a finalização visual pode terminar normalmente.
         dead.consumed = true;
         break;

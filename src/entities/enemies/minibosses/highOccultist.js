@@ -3,7 +3,7 @@
  * 
  * Controlador e FSM do Miniboss Alto Sacerdote (HIGH_OCCULTIST).
  */
-import { safePlaySfx } from './common.js';
+import { safePlaySfx, matchText } from './common.js';
 
 export const highOccultistHandler = {
 init(e) {
@@ -33,7 +33,7 @@ update(e, dt, ctx, dist, angle) {
         e.runeX = player.x;
         e.runeY = player.y;
         safePlaySfx('singularity');
-        ctx.addDamageText(e.x, e.y, "SELO ABISSAL!", true, '#341f97');
+        ctx.addDamageText(e.x, e.y, matchText('match.combat.abyssalSeal'), true, '#341f97');
 
         bossTelegraphs.push({
           type: 'ABYSSAL_VOID_RIFT',

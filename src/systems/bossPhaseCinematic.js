@@ -1,15 +1,16 @@
+import { t, formatNumber } from '../i18n/index.js';
 import { MONOLITH_CONFIG } from '../entities/bosses/abyssalMonolith/constants.js';
 import { REAPER_CONFIG } from '../entities/bosses/supremeReaper/constants.js';
 import { VAMPIRE_CONFIG } from '../entities/bosses/vampireLord/constants.js';
 
 const sequences = {
-  1: [[2, VAMPIRE_CONFIG.ENRAGE_HP_RATIO, 'hasEnraged', 'DESPERTAR DA FÚRIA', '#e74c3c']],
-  2: [[2, MONOLITH_CONFIG.P2_HP_RATIO, 'hasTransitionedP2', 'SOBRECARGA MAGMÁTICA', '#ff9f43'],
-      [3, MONOLITH_CONFIG.P3_HP_RATIO, 'isPhase3', 'FUSÃO CRÍTICA', '#ff4757']],
-  3: [[2, REAPER_CONFIG.ENRAGE_HP_RATIO, 'hasEnraged', 'DESPERTAR DA CEIFA', '#a29bfe'],
-      [3, REAPER_CONFIG.PHASE3_HP_RATIO, 'isPhase3', 'DANÇA MACABRA', '#dfe6e9']],
-  4: [[2, 0.70, 'hasTriggeredPhase2', 'FRATURA DO HORIZONTE', '#e84393'],
-      [3, 0.30, 'hasTriggeredPhase3', 'SINGULARIDADE PRIMORDIAL', '#00cec9']]
+  1: [[2, VAMPIRE_CONFIG.ENRAGE_HP_RATIO, 'hasEnraged', 'match.phase.rage', '#e74c3c']],
+  2: [[2, MONOLITH_CONFIG.P2_HP_RATIO, 'hasTransitionedP2', 'match.phase.magma', '#ff9f43'],
+      [3, MONOLITH_CONFIG.P3_HP_RATIO, 'isPhase3', 'match.phase.fusion', '#ff4757']],
+  3: [[2, REAPER_CONFIG.ENRAGE_HP_RATIO, 'hasEnraged', 'match.phase.reaper', '#a29bfe'],
+      [3, REAPER_CONFIG.PHASE3_HP_RATIO, 'isPhase3', 'match.phase.dance', '#dfe6e9']],
+  4: [[2, 0.70, 'hasTriggeredPhase2', 'match.phase.horizon', '#e84393'],
+      [3, 0.30, 'hasTriggeredPhase3', 'match.phase.singularity', '#00cec9']]
 };
 
 function hexToRgba(hex, alpha) {
@@ -51,7 +52,7 @@ export function updateBossPhaseCinematic(boss, dt, context = {}) {
       phase: next[0],
       hpRatio: next[1],
       flag: next[2],
-      title: next[3],
+      title: t(next[3]),
       color: next[4],
       elapsed: 0,
       duration: next[0] === 3 ? 180 : 160,
@@ -206,7 +207,7 @@ export function drawBossPhaseCinematic(ctx, boss, w, h, camera, zoom) {
   ctx.fillStyle = '#ffffff';
   ctx.shadowColor = s.color;
   ctx.shadowBlur = 8;
-  ctx.fillText(`◆  FASE ${s.phase}  ◆`, w / 2, cy - (isCompact ? 18 : 22));
+  ctx.fillText(t('match.canvas.phase', { number: s.phase }), w / 2, cy - (isCompact ? 18 : 22));
 
   // Título Principal com Brilho Gótico
   const fontSize = Math.max(16, Math.min(isCompact ? 24 : 32, Math.floor(w / 22)));

@@ -1,3 +1,4 @@
+import { t as matchText } from '../i18n/index.js';
 /**
  * src/systems/worldEvents.js
  * Subsistema Modular de Eventos Dinâmicos e Risco vs. Recompensa na Arena:
@@ -247,7 +248,7 @@ export function updateWorldEvents(dt, {
         triggerShake(14);
         playSfx('warp');
         try { triggerHaptic('heavy'); } catch (_) {}
-        addDamageText(altar.x, altar.y - 30, "PACTO DE SANGUE SELADO!", true, "#ff3838");
+        addDamageText(altar.x, altar.y - 30, matchText('match.combat.pact'), true, "#ff3838");
       }
     } else {
       altar.channelProgress = Math.max(0, altar.channelProgress - (dt / 60) * 2.5);
@@ -283,7 +284,7 @@ export function updateWorldEvents(dt, {
         altar.fadeTimer = 2.0;
         triggerShake(8);
         playSfx('kill');
-        addDamageText(altar.x, altar.y - 20, "PACTO QUEBRADO!", true, "#8e44ad");
+        addDamageText(altar.x, altar.y - 20, matchText('match.combat.pactBroken'), true, "#8e44ad");
       }
     } else {
       altar.isWarning = false;
@@ -306,7 +307,7 @@ export function updateWorldEvents(dt, {
       triggerShake(16);
       playSfx('chest_fanfare');
       try { triggerHaptic('heavy'); } catch (_) {}
-      addDamageText(altar.x, altar.y - 30, "DESAFIO CUMPRIDO!", true, "#ffd166");
+      addDamageText(altar.x, altar.y - 30, matchText('match.combat.challenge'), true, "#ffd166");
 
       // Detonação sagrada / choque de sangue que repele monstros normais
       enemies.forEach(e => {
@@ -454,7 +455,7 @@ export function updateBloodAltarHUD(data) {
           setAltarStatus(status, `
             <span class="altar-warning-alert">
               <svg viewBox="0 0 24 24" class="altar-status-icon warning-icon"><path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
-              FORA DO CÍRCULO! <b>${data.graceLeft.toFixed(1)}s</b>
+              ${matchText('match.altar.outOfBounds', { time: data.graceLeft.toFixed(1) })}
             </span>
           `, true);
         }
@@ -482,7 +483,7 @@ export function updateBloodAltarHUD(data) {
         setAltarStatus(status, `
           <span style="color:#ffd166; font-weight:800; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:4px;">
             <svg viewBox="0 0 24 24" class="altar-status-icon" style="color:#ffd166;"><path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            PACTO CUMPRIDO!
+            ${matchText('match.altar.fulfilled')}
           </span>
         `);
       }
@@ -505,7 +506,7 @@ export function updateBloodAltarHUD(data) {
         setAltarStatus(status, `
           <span style="color:#e056fd; font-weight:800; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:4px;">
             <svg viewBox="0 0 24 24" class="altar-status-icon" style="color:#e056fd;"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-            PACTO QUEBRADO!
+            ${matchText('match.altar.broken')}
           </span>
         `);
       }

@@ -1,3 +1,4 @@
+import { t as matchText } from '../i18n/index.js';
 /**
  * src/systems/projectiles.js
  * Subsistema Balístico, Poças Ambientais e Paridade de Dano Melee (Fase 3 e 5).
@@ -318,7 +319,7 @@ export function updateProjectiles(dt) {
             // Quebra de Guarda com impacto pesado (Martelo)
             if (b.type === 'HAMMER_SLAM') {
               e.shieldStaggerTimer = 45; // 0.75s de guarda aberta
-              addDamageText(e.x, e.y - 12, "GUARDA QUEBRADA!", true, '#e67e22');
+              addDamageText(e.x, e.y - 12, matchText('match.combat.guard'), true, '#e67e22');
               triggerShake(4);
             }
           }
@@ -523,7 +524,7 @@ export function updateProjectiles(dt) {
           const pullAng = Math.atan2(eb.parentY - player.y, eb.parentX - player.x);
           player.pushVx = Math.cos(pullAng) * 12;
           player.pushVy = Math.sin(pullAng) * 12;
-          addDamageText(player.x, player.y - 12, "PUXADO!", false, '#e74c3c');
+          addDamageText(player.x, player.y - 12, matchText('match.combat.pulled'), false, '#e74c3c');
         } else {
           const bulletAng = Math.atan2(eb.vy || (player.y - eb.y), eb.vx || (player.x - eb.x));
           const bulletPush = 6.5 * (player.knockbackReceived !== undefined ? player.knockbackReceived : 1.0);
