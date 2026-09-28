@@ -1,3 +1,4 @@
+import { getPauseEquipment } from '../pauseEquipment.js';
 import { frameCount } from '../../state/gameState.js';
 import { activeBoss } from '../../state/collections.js';
 import { getCurrentWave, getEffectiveHordeSeconds } from '../../systems/waves.js';
@@ -16,12 +17,92 @@ import { isMobileScreen } from './characterSelectModal.js';
 import { WEAPON_ICONS, renderIcon } from '../icons.js';
 import { ITEMS, getSynergyTrackerList } from '../../config/items.js';
 import { gameState, setLastTime } from '../../main.js';
-import { initAudio, applyStasisAudioFilter, resetStasisAudioFilter, playSfx } from '../../core/audio.js';
+import { initAudio, applyStasisAudioFilter, resetStasisAudioFilter, playSfx, triggerHaptic } from '../../core/audio.js';
 import { getJoystickMode, setJoystickMode, JOYSTICK_MODES, resetInput } from '../../core/input.js';
 import { updateAllAutoFit, layoutMetrics, getGraphicsQuality, setGraphicsQuality, GRAPHICS_QUALITY } from '../../core/responsive.js';
 
 let isTransitioning = false;
 let pauseKeydownHandler = null;
+let pauseNavigationInitialized = false;
+const portraitPause = () => window.matchMedia('(orientation: portrait), (max-width: 850px)').matches || isMobileScreen();
+function selectPauseView(view) {
+  const modal = document.getElementById('pause-modal');
+  if (!modal) return;
+  modal.dataset.pauseView = view;
+  closePauseLanguageControl();
+  const settings = view === 'settings';
+  const isPortrait = portraitPause();
+
+  const survivorPanel = document.getElementById('pause-survivor-panel');
+  const equipmentPanel = document.getElementById('pause-equipment-panel');
+  const synergiesPanel = document.getElementById('pause-synergies-panel');
+  const settingsPanel = document.getElementById('pause-settings-panel');
+
+  if (settings) {
+    if (survivorPanel) survivorPanel.hidden = !isPortrait;
+    if (equipmentPanel) equipmentPanel.hidden = true;
+    if (synergiesPanel) synergiesPanel.hidden = true;
+    if (settingsPanel) settingsPanel.hidden = false;
+  } else if (view === 'synergies') {
+    if (survivorPanel) survivorPanel.hidden = false;
+    if (equipmentPanel) equipmentPanel.hidden = isPortrait;
+    if (synergiesPanel) synergiesPanel.hidden = false;
+    if (settingsPanel) settingsPanel.hidden = true;
+  } else {
+    // view === 'equipment'
+    if (survivorPanel) survivorPanel.hidden = false;
+    if (equipmentPanel) equipmentPanel.hidden = false;
+    if (synergiesPanel) synergiesPanel.hidden = isPortrait;
+    if (settingsPanel) settingsPanel.hidden = true;
+  }
+
+  for (const tab of modal.querySelectorAll('[data-pause-tab]')) {
+    let selected = false;
+    if (settings) {
+      selected = tab.dataset.pauseTab === 'settings';
+    } else if (isPortrait) {
+      selected = tab.dataset.pauseTab === view;
+    } else {
+      selected = tab.dataset.pauseTab === 'equipment';
+    }
+    tab.setAttribute('aria-selected', String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+  }
+}
+function initPauseNavigation() {
+  if (pauseNavigationInitialized) return;
+  pauseNavigationInitialized = true;
+  const modal = document.getElementById('pause-modal');
+  if (!modal) return;
+  const toggle = document.getElementById('pause-settings-toggle');
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      selectPauseView(modal.dataset.pauseView === 'settings' ? (modal.dataset.previousPauseView || 'equipment') : 'settings');
+    });
+  }
+  const tabs = [...modal.querySelectorAll('[data-pause-tab]')];
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      if (modal.dataset.pauseView === tab.dataset.pauseTab) return;
+      playSfx('card_hover');
+      triggerHaptic('light');
+      if (tab.dataset.pauseTab !== 'settings') {
+        modal.dataset.previousPauseView = tab.dataset.pauseTab;
+      }
+      selectPauseView(tab.dataset.pauseTab);
+    });
+    tab.addEventListener('keydown', event => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const visibleTabs = tabs.filter(t => window.getComputedStyle(t).display !== 'none');
+      const curIdx = visibleTabs.indexOf(tab);
+      const nextIdx = event.key === 'Home' ? 0 : event.key === 'End' ? visibleTabs.length - 1 : (curIdx + (event.key === 'ArrowRight' ? 1 : -1) + visibleTabs.length) % visibleTabs.length;
+      visibleTabs[nextIdx]?.click();
+      visibleTabs[nextIdx]?.focus();
+    });
+  });
+  window.addEventListener('resize', () => selectPauseView(modal.dataset.pauseView || 'equipment'));
+}
 
 /**
  * Preenchimento Dinâmico do Palco de Estase Astral (Crônica da Batalha)
@@ -114,18 +195,18 @@ export function renderPauseInventory() {
 
   // 3. Pilar 2: Arsenal Arcano & Pips de Energia
   const weaponsCountBadge = document.getElementById('pause-weapons-count');
-  if (weaponsCountBadge) weaponsCountBadge.innerText = t('match.pause.weapons', { count: player.weapons.length });
+  if (weaponsCountBadge) weaponsCountBadge.innerText = t('match.pause.weapons', { count: getPauseEquipment(player).length });
 
   const buildList = document.getElementById('pause-build-list');
   if (buildList) {
     buildList.innerHTML = '';
-    player.weapons.forEach(w => {
+    getPauseEquipment(player).forEach(w => {
       const card = document.createElement('div');
       card.className = 'pause-weapon-card';
       const iconKey = WEAPON_ICONS[w.type] || 'sword';
       const weaponItem = ITEMS[w.type];
       const weaponDisplayName = weaponItem ? weaponItem.name : w.type;
-      const weaponLvl = w.count || 1;
+      const weaponLvl = w.level;
       const maxLvl = (weaponItem && weaponItem.maxLevel) ? weaponItem.maxLevel : 5;
 
       // Criação dos 5 pips de energia luminosa
@@ -139,11 +220,11 @@ export function renderPauseInventory() {
           <div class="weapon-icon-box">
             ${renderIcon(iconKey, { size: 13, color: '#00f5d4' })}
           </div>
-          <span class="weapon-title">${weaponDisplayName}</span>
+          <span class="weapon-title">${weaponDisplayName}${w.evolved ? `<small class="pause-evolved-label">${t('match.pause.weaponEvolved')}</small>` : ''}</span>
         </div>
         <div class="weapon-pips-col">
           <span class="weapon-lvl-tag">${t('match.common.level', { number: weaponLvl })}</span>
-          <div class="weapon-energy-pips">
+          <div class="weapon-energy-pips" aria-hidden="true">
             ${pipsHtml}
           </div>
         </div>
@@ -169,14 +250,6 @@ export function renderPauseInventory() {
     }
     if (player.frostCardCount || (player.slowChance || 0) > 0) {
       passives.push({ icon: 'frost', label: ITEMS.FROST_PASSIVE.name, val: `${Math.round(player.slowChance * 100)}% ${t('cards.effect.slowChance')} (${t('match.common.level', { number: player.frostCardCount || 1 })})`, color: '#74b9ff' });
-    }
-    if (player.orbitals > 0) {
-      const isMax = player.orbitals >= 3;
-      passives.push({ icon: 'orbitals', label: ITEMS.ORBITALS.name, val: `${player.orbitals}/3 ${t('match.stat.tomes')}${isMax ? ` (${t('match.stat.max')})` : ''} ${player.evolvedOrbitals ? `(${t('match.stat.vortex')})` : ''}`.trim(), color: '#9b59b6' });
-    }
-    if (player.auraLvl > 0) {
-      const isMax = player.auraLvl >= 5;
-      passives.push({ icon: 'aura', label: ITEMS.AURA.name, val: `${t('match.common.level', { number: player.auraLvl })}/5${isMax ? ` (${t('match.stat.max')})` : ''} ${player.evolvedAura ? `(${t('match.stat.sanctuary')})` : ''}`.trim(), color: '#f1c40f' });
     }
     if (player.critCardCount || player.critChance > 0.05) {
       passives.push({ icon: 'crit', label: ITEMS.CRIT.name, val: `${Math.round(player.critChance * 100)}% ${t('match.stat.crit')} (${t('match.common.level', { number: player.critCardCount || 1 })})`, color: '#f39c12' });
@@ -208,10 +281,14 @@ export function renderPauseInventory() {
 
     // Exibição de Pactos Amaldiçoados do Destino
     if (player.destinyPacts && player.destinyPacts.length > 0) {
+      const heading = document.createElement('div');
+      heading.className = 'pillar-subheader pause-pacts-heading';
+      heading.textContent = t('match.pause.pacts');
+      passivesFlow.appendChild(heading);
       player.destinyPacts.forEach(saved => {
         const p = getPactPresentation(saved);
         const chip = document.createElement('div');
-        chip.className = 'pause-passive-chip';
+        chip.className = 'pause-passive-chip pause-pact-chip';
         chip.style.borderColor = 'rgba(168, 85, 247, 0.7)';
         chip.style.background = 'rgba(48, 16, 68, 0.55)';
         chip.innerHTML = `
@@ -228,7 +305,10 @@ export function renderPauseInventory() {
   // 4. Pilar 3: Matriz de Transmutação (Sinergias)
   const synTracker = document.getElementById('pause-synergies-tracker');
   if (synTracker) {
+    const equipment = new Set(getPauseEquipment(player).map(w => w.type));
     const synList = getSynergyTrackerList(player);
+    const rank = s => s.isReady ? 0 : s.isEvolved ? 2 : equipment.has(s.id.replace('evolved_', '').toUpperCase()) ? 1 : 3;
+    synList.sort((a, b) => rank(a) - rank(b));
 
     synTracker.innerHTML = synList.map(s => {
       let cardClass = 'pause-synergy-card';
@@ -321,6 +401,16 @@ function setupPauseKeydown() {
   cleanupPauseKeydown();
   pauseKeydownHandler = (e) => {
     if (e.target.closest?.('select, input, textarea')) return;
+    const modal = document.getElementById('pause-modal');
+    if (e.code === 'Escape' && modal?.dataset.pauseView === 'settings') {
+      e.preventDefault();
+      const prevView = modal.dataset.previousPauseView || 'equipment';
+      selectPauseView(prevView);
+      const activeTab = modal.querySelector(`[data-pause-tab="${prevView}"]`);
+      activeTab?.focus();
+      return;
+    }
+    if (e.code === 'Space' && e.target.closest?.('button')) return;
     if (e.code === 'Escape' || e.code === 'KeyP' || e.code === 'Space') {
       e.preventDefault();
       closePause();
@@ -342,6 +432,8 @@ function cleanupPauseKeydown() {
 export function openPause() {
   if (!gameState.isInMatch || gameState.isDead || gameState.isWon || isTransitioning) return;
   if (gameState.isPaused) return;
+  initPauseNavigation();
+  selectPauseView(document.getElementById('pause-modal').dataset.previousPauseView || 'equipment');
   initPauseLanguageControl();
   closePauseLanguageControl();
 

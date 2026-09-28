@@ -1,0 +1,895 @@
+/* ======================================================== */
+/* HORD.IO: PAUSE NAVIGATION & RESPONSIVE BENTO LAYOUT     */
+/* Design System: Neo-Arcane / Void Astral                  */
+/* ======================================================== */
+
+#pause-modal [hidden],
+#pause-modal .pause-pillar[hidden],
+#pause-modal .pause-settings-panel[hidden] { 
+  display: none !important; 
+}
+
+#pause-modal .pause-intrinsic-stage { 
+  position: relative; 
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+#pause-modal .pause-bento-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
+/* Navegação por Teclado */
+#pause-modal button:focus-visible, 
+#pause-modal [tabindex="0"]:focus-visible {
+  outline: 2px solid #ffd166;
+  outline-offset: 2px;
+}
+
+/* ======================================================== */
+/* 1. NAVEGAÇÃO DE ABAS (DESKTOP)                           */
+/* ======================================================== */
+.pause-tabs {
+  display: flex;
+  align-self: center;
+  gap: 12px;
+  margin: 0 0 6px 0;
+  z-index: 5;
+}
+
+.pause-tabs button {
+  background: rgba(11, 23, 36, 0.88);
+  color: #94a3b8;
+  border: 1px solid rgba(66, 125, 121, 0.45);
+  border-radius: 8px;
+  padding: 8px 24px;
+  min-height: 38px;
+  font: 700 12px var(--font-body);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1), transform 0.16s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.pause-tabs button:hover {
+  background: rgba(16, 38, 56, 0.95);
+  border-color: #00f5d4;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 0 14px rgba(0, 245, 212, 0.25);
+}
+
+.pause-tabs button:active {
+  transform: scale(0.97);
+}
+
+.pause-tabs button[aria-selected="true"] {
+  background: radial-gradient(circle at 50% 50%, rgba(0, 245, 212, 0.25), rgba(7, 60, 61, 0.92));
+  color: #5cffe1;
+  border-color: #00f5d4;
+  box-shadow: 0 0 16px rgba(0, 245, 212, 0.35), inset 0 0 10px rgba(0, 245, 212, 0.12);
+  transform: translateY(-1px);
+}
+
+/* No desktop, Sinergias já é o Pilar 3 da Crônica da Batalha */
+.pause-tabs button[data-pause-tab="synergies"] {
+  display: none;
+}
+.pause-tabs .tab-label-desktop { display: inline; }
+.pause-tabs .tab-label-mobile { display: none; }
+
+.pause-settings-toggle { display: none !important; }
+
+/* ======================================================== */
+/* ANIMAÇÕES DE TRANSIÇÃO SUAVE ENTRE ABAS                  */
+/* ======================================================== */
+@keyframes pausePillarCascade {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pauseSettingsGridEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pauseMobilePanelSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #pause-modal :is(.pause-pillar, .pause-settings-panel, .pause-settings-col) {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ======================================================== */
+/* 2. CONTROLE DESKTOP (BATALHA VS AJUSTES)                 */
+/* ======================================================== */
+@media not all and (orientation: portrait), (min-width: 851px) {
+  /* Visualização da Batalha (Crônica) com entrada suave em cascata */
+  #pause-modal:not([data-pause-view="settings"]) #pause-survivor-panel {
+    display: flex !important;
+    animation: pausePillarCascade 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  #pause-modal:not([data-pause-view="settings"]) #pause-equipment-panel {
+    display: flex !important;
+    animation: pausePillarCascade 0.28s 0.04s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  #pause-modal:not([data-pause-view="settings"]) #pause-synergies-panel {
+    display: flex !important;
+    animation: pausePillarCascade 0.28s 0.08s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  #pause-modal:not([data-pause-view="settings"]) #pause-settings-panel {
+    display: none !important;
+  }
+
+  /* Visualização dos Ajustes (Preenche os 3 pilares sem scroll horizontal) */
+  #pause-modal[data-pause-view="settings"] #pause-survivor-panel,
+  #pause-modal[data-pause-view="settings"] #pause-equipment-panel,
+  #pause-modal[data-pause-view="settings"] #pause-synergies-panel {
+    display: none !important;
+  }
+
+  #pause-modal[data-pause-view="settings"] .pause-bento-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    overflow-x: hidden !important;
+  }
+
+  #pause-modal[data-pause-view="settings"] #pause-settings-panel {
+    grid-column: 1 / -1 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr) !important;
+    gap: 16px !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    min-height: clamp(340px, 42vh, 460px);
+    max-height: 65dvh;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    animation: pauseSettingsGridEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  #pause-modal[data-pause-view="settings"] .pause-settings-audio-col {
+    animation: pausePillarCascade 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  #pause-modal[data-pause-view="settings"] .pause-settings-video-col {
+    animation: pausePillarCascade 0.28s 0.04s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  #pause-modal[data-pause-view="settings"] .pause-settings-controls-col {
+    animation: pausePillarCascade 0.28s 0.08s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+.pause-settings-col {
+  background: radial-gradient(ellipse at 50% 15%, rgba(24, 12, 50, 0.7) 0%, rgba(8, 16, 32, 0.85) 60%, rgba(4, 5, 8, 0.94) 100%);
+  border: 1.2px solid rgba(0, 245, 212, 0.24);
+  border-radius: 14px;
+  padding: 14px 16px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.8), inset 0 0 28px rgba(0, 245, 212, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  min-height: 100%;
+}
+
+#pause-modal .pause-settings-panel .pause-graphics-box,
+#pause-modal .pause-settings-panel .pause-joystick-box,
+#pause-modal .pause-settings-panel .pause-volume-box {
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* ------------------------------------------------------------- */
+/* CONTROLE DE IDIOMA NO MENU DE PAUSA (PC e Mobile)            */
+/* ------------------------------------------------------------- */
+#pause-modal .pause-settings-panel .pause-language-control,
+#pause-modal #pause-language-widget {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  align-self: stretch !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+#pause-modal .pause-settings-panel .char-language-capsule,
+#pause-modal #pause-language-btn {
+  width: 100% !important;
+  min-height: 36px !important;
+  height: 36px !important;
+  padding: 0 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  box-sizing: border-box !important;
+  border-radius: 10px !important;
+  background: rgba(14, 20, 36, 0.88) !important;
+  border: 1.2px solid rgba(255, 209, 102, 0.4) !important;
+  color: #ffd166 !important;
+  cursor: pointer !important;
+  transition: all 0.25s ease !important;
+}
+
+#pause-modal #pause-language-btn:hover {
+  border-color: rgba(255, 209, 102, 0.85) !important;
+  box-shadow: 0 0 14px rgba(255, 209, 102, 0.3) !important;
+}
+
+#pause-modal #pause-language-widget.is-open #pause-language-btn {
+  border-color: rgba(255, 209, 102, 0.95) !important;
+  background: rgba(18, 24, 44, 0.98) !important;
+  box-shadow: 0 0 18px rgba(255, 209, 102, 0.35) !important;
+}
+
+#pause-modal #pause-language-btn .lang-label-text {
+  flex: 1 1 auto !important;
+  text-align: left !important;
+  font-family: var(--font-heading) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.8px !important;
+  color: #f1f5f9 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#pause-modal #pause-language-btn .lang-code-badge {
+  display: inline-block !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  padding: 1.5px 5px !important;
+  border-radius: 4px !important;
+  background: rgba(255, 209, 102, 0.15) !important;
+  border: 1px solid rgba(255, 209, 102, 0.35) !important;
+  color: #ffd166 !important;
+  flex-shrink: 0 !important;
+}
+
+#pause-modal #pause-language-btn .lang-chevron-icon {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease !important;
+}
+
+#pause-modal #pause-language-widget.is-open #pause-language-btn .lang-chevron-icon {
+  transform: rotate(180deg) !important;
+  color: #fff2a8 !important;
+}
+
+/* Menu Dropdown Gótico Flutuante (Animação Fluida Rolando para Baixo - Paridade com Tela Inicial) */
+#pause-modal #pause-language-dropdown {
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  background: linear-gradient(180deg, rgba(14, 20, 36, 0.98) 0%, rgba(8, 12, 22, 0.99) 100%) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.85), 0 0 16px rgba(255, 209, 102, 0.15) !important;
+  transform-origin: top center !important;
+  overflow: hidden !important;
+
+  /* Estado Fechado: Recolhido com max-height 0, transição suave */
+  max-height: 0 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+  padding: 0 6px !important;
+  border: 1.2px solid transparent !important;
+  transform: translateY(-12px) scaleY(0.7) !important;
+  transition: max-height 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.32s ease,
+              margin 0.32s ease,
+              border-color 0.25s ease,
+              visibility 0.38s !important;
+}
+
+/* Estado Aberto: Desce e rola para baixo de forma majestosa */
+#pause-modal #pause-language-widget.is-open #pause-language-dropdown {
+  max-height: 280px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  margin: 6px 0 0 0 !important;
+  padding: 6px !important;
+  border-color: rgba(255, 209, 102, 0.45) !important;
+  transform: translateY(0) scaleY(1) !important;
+}
+
+#pause-modal #pause-language-dropdown .lang-dropdown-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 3px 6px 5px 6px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  margin-bottom: 4px !important;
+}
+
+#pause-modal #pause-language-dropdown .lang-dropdown-sigil {
+  font-size: 9px !important;
+  color: #ffd166 !important;
+}
+
+#pause-modal #pause-language-dropdown .lang-dropdown-title {
+  font-family: var(--font-heading) !important;
+  font-size: 9.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.4px !important;
+  text-transform: uppercase !important;
+  color: #8c94a8 !important;
+}
+
+#pause-modal #pause-language-dropdown .lang-dropdown-options {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  width: 100% !important;
+}
+
+#pause-modal #pause-language-dropdown .lang-option-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-height: 34px !important;
+  padding: 6px 8px !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 6px !important;
+  color: #cbd5e1 !important;
+  font-family: var(--font-heading) !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.6px !important;
+  cursor: pointer !important;
+  text-align: left !important;
+  user-select: none !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+
+  /* Transição de entrada suave para a cascata (stagger igual tela inicial) */
+  opacity: 0 !important;
+  transform: translateY(-8px) !important;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.34s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.18s ease,
+              border-color 0.18s ease,
+              color 0.18s ease,
+              padding-left 0.18s ease !important;
+}
+
+/* Cascata Sequencial (Stagger) dos itens descendo em ordem */
+#pause-modal #pause-language-widget.is-open .lang-option-btn {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+#pause-modal #pause-language-widget.is-open .lang-option-btn:nth-child(1) { transition-delay: 0.05s !important; }
+#pause-modal #pause-language-widget.is-open .lang-option-btn:nth-child(2) { transition-delay: 0.10s !important; }
+#pause-modal #pause-language-widget.is-open .lang-option-btn:nth-child(3) { transition-delay: 0.15s !important; }
+#pause-modal #pause-language-widget.is-open .lang-option-btn:nth-child(4) { transition-delay: 0.20s !important; }
+
+#pause-modal #pause-language-dropdown .lang-option-btn:hover {
+  background: rgba(255, 209, 102, 0.12) !important;
+  border-color: rgba(255, 209, 102, 0.4) !important;
+  color: #ffffff !important;
+  padding-left: 11px !important;
+}
+
+#pause-modal #pause-language-dropdown .lang-option-btn.active {
+  background: rgba(255, 209, 102, 0.16) !important;
+  border-color: rgba(255, 209, 102, 0.55) !important;
+  color: #ffd166 !important;
+}
+
+#pause-modal #pause-language-dropdown .lang-opt-badge {
+  font-size: 9.5px !important;
+  font-weight: 800 !important;
+  padding: 1.5px 5px !important;
+  border-radius: 4px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #94a3b8 !important;
+  letter-spacing: 0.6px !important;
+  flex-shrink: 0 !important;
+}
+
+#pause-modal #pause-language-dropdown .lang-option-btn.active .lang-opt-badge {
+  background: rgba(255, 209, 102, 0.28) !important;
+  border-color: #ffd166 !important;
+  color: #ffd166 !important;
+}
+
+#pause-modal #pause-language-dropdown .lang-opt-name {
+  flex: 1 1 auto !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#pause-modal #pause-language-dropdown .lang-opt-sigil {
+  font-size: 10px !important;
+  color: transparent !important;
+  flex-shrink: 0 !important;
+}
+
+#pause-modal #pause-language-dropdown .lang-option-btn.active .lang-opt-sigil {
+  color: #ffd166 !important;
+  filter: drop-shadow(0 0 6px #ffd166) !important;
+}
+
+/* Guia Visual de Teclas (Exclusivo PC / Teclado) */
+.pause-keyboard-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(10, 16, 32, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.keyboard-guide-title {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #00f5d4;
+  text-transform: uppercase;
+  border-bottom: 1px dashed rgba(0, 245, 212, 0.2);
+  padding-bottom: 5px;
+  margin-bottom: 2px;
+}
+
+.keyboard-guide-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.keyboard-key-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  background: rgba(0, 245, 212, 0.12);
+  border: 1px solid rgba(0, 245, 212, 0.4);
+  border-radius: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #ffd166;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.keyboard-key-desc {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  color: #94a3b8;
+  text-align: right;
+  min-width: 0;
+}
+
+/* ======================================================== */
+/* 3. ARSENAL, PASSIVAS & SINERGIAS                         */
+/* ======================================================== */
+.pause-equipment-scroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; flex: 1; }
+#pause-modal .pause-weapons-scroll, 
+#pause-modal .pause-passives-flow {
+  max-height: none; overflow: visible; flex: none; flex-wrap: nowrap; flex-direction: column;
+}
+#pause-modal .pause-equipment-scroll { max-height: 48vh; }
+#pause-modal .pause-passive-chip { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 3px 7px; }
+#pause-modal .pause-passive-chip > .game-icon { grid-row: 1 / 3; }
+#pause-modal .pause-passive-chip .passive-val { grid-column: 2; font-size: inherit; }
+#pause-modal .pause-pact-chip > span:last-child { grid-column: 2; margin-left: 0 !important; font-size: inherit !important; }
+.pause-evolved-label { display: block; color: #ffd166; font: 600 10px var(--font-body); }
+#pause-modal .weapon-info-col { min-width: 0; }
+#pause-modal .weapon-title { overflow-wrap: anywhere; }
+#pause-modal .weapon-pips-col { flex-shrink: 0; }
+#pause-modal .pause-pacts-heading { width: 100%; }
+
+/* ======================================================== */
+/* 4. ADAPTAÇÃO MOBILE / PORTRAIT (3 ABAS PERFEITAS)        */
+/* ======================================================== */
+@media (orientation: portrait), (max-width: 850px) {
+  #pause-modal { 
+    overflow: hidden !important; 
+    padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)) !important; 
+  }
+  
+  #pause-modal .pause-intrinsic-stage {
+    height: 100% !important; 
+    max-height: 100% !important; 
+    max-width: min(520px, calc(100vw - 20px)) !important;
+    width: 100%; 
+    padding: 6px 4px 2px 4px !important; 
+    margin: 0 auto !important; 
+    gap: 4px !important;
+    justify-content: flex-start !important; 
+    overflow: visible !important; 
+    box-sizing: border-box !important;
+    transform: none !important;
+  }
+
+  /* CABEÇALHO HEROICO E IMPONENTE NO MOBILE (+30% no widget animado e proporção harmonizada) */
+  #pause-modal .pause-header-group {
+    align-self: stretch;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px !important;
+    text-align: center;
+    margin: 0 !important;
+    padding: 4px 8px 1px 8px !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    animation: none;
+  }
+
+  /* Widget animado de estase aumentado em +30% (44px * 1.30 = 57.2px) com presença destacada */
+  #pause-modal .pause-sigil-wrap {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 57px !important;
+    height: 57px !important;
+    margin: 2px 0 2px 0 !important;
+    overflow: visible !important;
+  }
+
+  #pause-modal .pause-sigil-halo-outer {
+    inset: -7px !important;
+  }
+  #pause-modal .pause-sigil-halo-inner {
+    inset: -3px !important;
+  }
+  #pause-modal .pause-sigil-mist {
+    inset: -10px !important;
+  }
+
+  #pause-modal .pause-eyebrow, 
+  #pause-modal .pause-monumental-sub { 
+    display: none !important; 
+  }
+
+  #pause-modal .pause-monumental-title { 
+    font-size: clamp(16px, 4.2vw, 19px) !important; 
+    letter-spacing: 1px !important; 
+    text-align: center !important; 
+    margin: 0 !important;
+    line-height: 1.12 !important;
+    text-shadow: 0 0 16px rgba(0, 245, 212, 0.7), 0 0 28px rgba(9, 132, 227, 0.5), 1px 2px 4px #000;
+  }
+
+  #pause-modal .pause-meta-chips-row { 
+    gap: 4px !important; 
+    margin: 1px 0 0 0 !important; 
+    flex-wrap: wrap !important; 
+    justify-content: center !important; 
+  }
+
+  #pause-modal .pause-meta-chip { 
+    padding: 1.5px 7px !important; 
+    font-size: 10px !important; 
+  }
+  #pause-modal .pause-meta-chip .chip-val { font-size: 10px !important; }
+  #pause-modal .pause-meta-chip .chip-label { font-size: 8px !important; }
+
+  /* NAVEGAÇÃO DE ABAS NO MOBILE (Redução proporcional compensatória) */
+  #pause-modal .pause-tabs {
+    display: flex !important;
+    gap: 5px !important;
+    width: 100%;
+    margin: 0 !important;
+    padding: 2px 4px !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+
+  #pause-modal .pause-tabs button {
+    flex: 1;
+    min-width: 0;
+    min-height: 33px !important;
+    padding: 4px 3px !important;
+    font-size: 10.5px !important;
+    letter-spacing: 0.25px !important;
+    border-radius: 6px !important;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s ease !important;
+  }
+
+  #pause-modal .pause-tabs button[aria-selected="true"] {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 0 0 1.5px rgba(0, 245, 212, 0.8), 0 0 12px rgba(0, 245, 212, 0.4) !important;
+    z-index: 2 !important;
+  }
+
+  #pause-modal .pause-tabs button:active {
+    transform: scale(0.97) !important;
+  }
+
+  #pause-modal .pause-tabs button[data-pause-tab="synergies"] {
+    display: flex !important;
+  }
+  #pause-modal .pause-tabs .tab-label-desktop {
+    display: none !important;
+  }
+  #pause-modal .pause-tabs .tab-label-mobile {
+    display: inline !important;
+  }
+
+  /* BENTO GRID NO MOBILE */
+  #pause-modal .pause-bento-grid {
+    flex: 1 1 0 !important; 
+    min-height: 0 !important; 
+    width: 100%; 
+    overflow: hidden !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important; 
+    grid-template-rows: auto minmax(0, 1fr) !important;
+    grid-template-areas: 'survivor' 'content' !important; 
+    gap: 5px !important; 
+    animation: none;
+  }
+
+  #pause-modal .pause-pillar { 
+    padding: 6px 8px !important; 
+    min-width: 0; 
+    min-height: 0 !important; 
+  }
+
+  #pause-modal .pause-pillar-survivor { 
+    grid-area: survivor !important; 
+  }
+
+  #pause-modal .pause-pillar-survivor > .pillar-header,
+  #pause-modal .pause-pillar-survivor > .pillar-subheader { 
+    display: none; 
+  }
+
+  #pause-modal .pause-hero-dossier { 
+    padding: 0 !important; 
+    border: 0; 
+    background: none; 
+    margin-bottom: 2px !important; 
+  }
+
+  #pause-modal .pause-hero-meta { 
+    display: grid; 
+    grid-template-columns: 1fr auto; 
+    gap: 1px 6px; 
+  }
+
+  #pause-modal .pause-hero-name { font-size: 12px !important; }
+  #pause-modal .pause-hero-level, 
+  #pause-modal .pause-hp-text { font-size: 9.5px !important; }
+  #pause-modal .pause-hp-gauge-row { grid-column: 1 / -1; }
+  #pause-modal .pause-stat-label { font-size: 7.5px !important; letter-spacing: 0 !important; }
+  #pause-modal .pause-stat-val { font-size: 11px !important; }
+  #pause-modal .pause-stat-card { padding: 2px 4px !important; }
+
+  /* ÁREA DE CONTEÚDO (EQUIPAMENTO / SINERGIAS / AJUSTES) */
+  #pause-modal #pause-equipment-panel, 
+  #pause-modal #pause-synergies-panel, 
+  #pause-modal #pause-settings-panel {
+    grid-area: content !important; 
+    height: 100% !important; 
+    max-height: none !important; 
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ALTERNÂNCIA ESTRITA E VISÍVEL DAS 3 ABAS NO MOBILE COM TRANSIÇÃO SUAVE */
+  #pause-modal:not([data-pause-view="synergies"]):not([data-pause-view="settings"]) #pause-equipment-panel {
+    display: flex !important;
+    animation: pauseMobilePanelSlide 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  #pause-modal:not([data-pause-view="synergies"]):not([data-pause-view="settings"]) #pause-synergies-panel,
+  #pause-modal:not([data-pause-view="synergies"]):not([data-pause-view="settings"]) #pause-settings-panel {
+    display: none !important;
+  }
+
+  #pause-modal[data-pause-view="synergies"] #pause-synergies-panel {
+    display: flex !important;
+    animation: pauseMobilePanelSlide 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  #pause-modal[data-pause-view="synergies"] #pause-equipment-panel,
+  #pause-modal[data-pause-view="synergies"] #pause-settings-panel {
+    display: none !important;
+  }
+
+  #pause-modal[data-pause-view="settings"] #pause-settings-panel {
+    display: flex !important;
+    animation: pauseMobilePanelSlide 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  #pause-modal[data-pause-view="settings"] #pause-equipment-panel,
+  #pause-modal[data-pause-view="settings"] #pause-synergies-panel {
+    display: none !important;
+  }
+
+  /* PAINEL DE AJUSTES NO MOBILE: Cards limpos e perfeitamente proporcionados */
+  #pause-modal .pause-settings-panel { 
+    overflow-y: auto !important; 
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    padding: 6px 8px !important;
+    background: radial-gradient(ellipse at 50% 15%, rgba(24, 12, 50, 0.7) 0%, rgba(8, 16, 32, 0.85) 60%, rgba(4, 5, 8, 0.94) 100%) !important;
+    border: 1.2px solid rgba(0, 245, 212, 0.24) !important;
+    border-radius: 12px !important;
+  }
+
+  #pause-modal .pause-settings-col {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    min-height: auto !important;
+    gap: 6px !important;
+    overflow: visible !important;
+  }
+
+  #pause-modal .pause-settings-controls-col {
+    overflow: visible !important;
+    padding: 1px 1px !important;
+  }
+
+  #pause-modal .pause-settings-panel .pillar-header {
+    display: none !important;
+  }
+
+  #pause-modal .pause-settings-panel :is(.pause-graphics-box, .pause-joystick-box, .pause-volume-box) { 
+    margin: 0 !important;
+    padding: 6px 8px !important; 
+    gap: 5px !important; 
+  }
+
+  #pause-modal .pause-settings-panel .pause-language-control,
+  #pause-modal #pause-language-widget {
+    align-self: stretch !important;
+    margin: 2px 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  #pause-modal .pause-settings-panel .char-language-capsule,
+  #pause-modal #pause-language-btn {
+    width: 100% !important;
+    min-height: 36px !important;
+    height: 36px !important;
+    justify-content: space-between !important;
+    padding: 0 10px !important;
+    border: 1.5px solid rgba(255, 209, 102, 0.75) !important;
+    border-radius: 9px !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+    box-shadow: 0 0 10px rgba(255, 209, 102, 0.18) !important;
+  }
+
+  #pause-modal #pause-language-btn:hover,
+  #pause-modal #pause-language-btn:focus-visible {
+    border-color: #ffd166 !important;
+    box-shadow: 0 0 0 2px rgba(255, 209, 102, 0.45), 0 0 14px rgba(255, 209, 102, 0.35) !important;
+    outline: none !important;
+  }
+
+  #pause-modal #pause-language-dropdown .lang-option-btn {
+    min-height: 36px !important;
+    padding: 6px 8px !important;
+    font-size: 11.5px !important;
+  }
+
+  #pause-modal .pause-keyboard-guide {
+    display: none !important;
+  }
+
+  #pause-modal .pause-equipment-scroll { 
+    overflow-x: hidden; 
+    overflow-y: auto; 
+    max-height: none; 
+    scrollbar-width: thin; 
+    scrollbar-color: #308b83 transparent; 
+  }
+
+  #pause-modal .pause-weapons-scroll, 
+  #pause-modal .pause-passives-flow {
+    min-height: 0 !important; 
+    max-height: none !important; 
+    overflow: visible !important;
+    flex: none !important; 
+    flex-wrap: nowrap !important; 
+    gap: 4px !important; 
+    padding-right: 2px !important;
+  }
+
+  #pause-modal .pause-weapon-card { min-height: 33px; padding: 5px 7px !important; gap: 6px; }
+  #pause-modal .weapon-title { font: 600 11.5px var(--font-body) !important; }
+  #pause-modal .weapon-lvl-tag { font-size: 10px !important; }
+  #pause-modal .weapon-icon-box { width: 20px !important; height: 20px !important; flex-shrink: 0; }
+  #pause-modal .pause-passive-chip { display: grid !important; font-size: 11px !important; padding: 5px 6px !important; line-height: 1.25; }
+  #pause-modal .pause-passive-chip .passive-val { font-size: 11px; }
+  #pause-modal .pillar-tag { font-size: 10px !important; letter-spacing: .3px !important; }
+  #pause-modal .pillar-subheader { font-size: 10px !important; color: #a4b0c3; margin: 6px 0 3px !important; }
+  #pause-modal .pause-pillar-actions .pillar-badge-fusion { display: none; }
+  #pause-modal .pause-synergies-scroll { min-height: 0 !important; max-height: none !important; flex: 1 !important; overflow-y: auto !important; gap: 5px !important; }
+  #pause-modal .pause-synergy-card { padding: 6px 7px !important; }
+  #pause-modal .synergy-card-top { flex-direction: column; align-items: flex-start; gap: 4px; }
+  #pause-modal .synergy-name { font: 600 12px var(--font-body) !important; }
+  #pause-modal .synergy-status-tag { font-size: 10px !important; letter-spacing: .2px; }
+
+  #pause-modal :is(.graphics-box-title, .joystick-box-title, .volume-title, .graphics-mode-badge, .joystick-mode-badge, .volume-num) { font-size: 9.5px !important; }
+  #pause-modal :is(.graphics-toggle-btn, .joystick-toggle-btn) { min-height: 33px; font-size: 10px !important; padding: 3px !important; }
+  #pause-modal .graphics-subtext { font-size: 8.5px !important; }
+  #pause-modal .pause-slider { min-height: 14px; margin: 4px 0; }
+  #pause-modal .pause-actions-bar { 
+    flex: 0 0 auto !important; 
+    margin: 0 !important; 
+    padding: 2px 2px !important;
+    grid-template-columns: 1.35fr 1fr !important; 
+    gap: 6px !important; 
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+  #pause-modal :is(.btn-pause-resume, .btn-pause-abandon) { min-height: 38px; padding: 6px 8px !important; font-size: 10.5px !important; letter-spacing: .25px !important; }
+}

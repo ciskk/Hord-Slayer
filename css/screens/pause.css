@@ -697,7 +697,7 @@
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 8px;
   padding: 6px 12px;
-  margin-top: auto;
+  margin-top: 0;
   margin-bottom: 6px;
   flex-direction: column;
   gap: 5px;
@@ -973,13 +973,11 @@
 
 /* A cápsula e as opções compartilham o design da tela inicial. */
 .pause-language-control {
-  margin: 4px auto 8px;
+  margin: 0;
+  width: 100%;
 }
 
 #pause-language-dropdown {
-  left: 50%;
-  right: auto;
-  margin-left: -93px;
   max-height: min(260px, 60dvh);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -988,12 +986,6 @@
 #pause-language-widget :is(.char-language-capsule, .lang-option-btn):focus-visible {
   outline: 2px solid #ffd166;
   outline-offset: 3px;
-}
-
-@media (max-width: 580px) {
-  #pause-language-btn .lang-label-text { display: none; }
-  #pause-language-btn .lang-code-badge { display: inline-block; }
-  #pause-language-widget .lang-option-btn { min-height: 40px; }
 }
 
 /* ======================================================== */
@@ -1438,10 +1430,10 @@
   .pause-sigil-wrap {
     position: relative !important;
     overflow: visible !important;
-    width: 62px !important;
-    height: 62px !important;
+    width: 57px !important;
+    height: 57px !important;
     margin-bottom: 2px !important;
-    margin-top: 6px !important;
+    margin-top: 1px !important;
   }
 
   .pause-sigil-halo-outer {
@@ -1547,20 +1539,16 @@
   }
 
   .pause-pillar-arsenal {
-    grid-area: arsenal !important;
     min-height: 0 !important;
     height: auto !important;
     overflow: hidden !important;
-    display: flex !important;
     flex-direction: column !important;
   }
 
   .pause-pillar-actions {
-    grid-area: synergies !important;
     min-height: 0 !important;
     height: auto !important;
     overflow: hidden !important;
-    display: flex !important;
     flex-direction: column !important;
   }
 
@@ -1727,7 +1715,7 @@
   .pause-graphics-box {
     flex-shrink: 0 !important;
     padding: 3px 6px !important;
-    margin-top: auto !important;
+    margin-top: 0 !important;
     margin-bottom: 2.5px !important;
     border-radius: 5px !important;
     gap: 2px !important;

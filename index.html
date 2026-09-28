@@ -1312,7 +1312,7 @@
 </div>
 
 <!-- Palco de Pausa Intrínseco: Estase Astral (Crônica da Batalha) -->
-<div id="pause-modal" class="modal-overlay pause-screen-overlay" style="display: none;" data-autofit="true" data-autofit-target=".pause-intrinsic-stage">
+<div id="pause-modal" class="modal-overlay pause-screen-overlay" style="display: none;" data-pause-view="equipment">
   <div class="pause-stasis-veil"></div>
 
   <div class="pause-intrinsic-stage">
@@ -1389,72 +1389,20 @@
       </div>
     </div>
 
-        <div class="char-language-widget pause-language-control" id="pause-language-widget">
-          <button type="button" class="char-language-capsule char-language-control" id="pause-language-btn" aria-controls="pause-language-dropdown" aria-haspopup="listbox" aria-expanded="false" title="Idioma / Language" data-i18n-title="settings.language.label">
-            <svg class="lang-globe-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <!-- Contorno do Balão de Diálogo com Globo (conforme referência) -->
-              <path d="M12 2A8.5 8.5 0 0 1 20.5 10.5C20.5 15.2 16.7 19 12 19c-1.3 0-2.5-.3-3.6-.8L4 21.5l1.2-5C4.1 15 3.5 12.8 3.5 10.5A8.5 8.5 0 0 1 12 2z"/>
-              <!-- Linha Central do Equador -->
-              <line x1="3.5" y1="10.5" x2="20.5" y2="10.5"/>
-              <!-- Meridiano Central Vertical -->
-              <line x1="12" y1="2" x2="12" y2="19"/>
-              <!-- Meridianos Curvos Laterais -->
-              <ellipse cx="12" cy="10.5" rx="4.5" ry="8.5"/>
-              <!-- Paralelo Superior Curvo -->
-              <path d="M5.5 6.5Q12 8.5 18.5 6.5"/>
-              <!-- Paralelo Inferior Curvo -->
-              <path d="M5.5 14.5Q12 12.5 18.5 14.5"/>
-            </svg>
-            <span class="lang-label-text" id="pause-lang-text">Português</span>
-            <span class="lang-code-badge" id="pause-lang-code">PT</span>
-            <svg class="lang-chevron-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
-            </svg>
-          </button>
-
-          <!-- Dropdown Gótico Flutuante (Animação Fluida Descendente) -->
-          <div class="char-language-dropdown" id="pause-language-dropdown" role="listbox" data-i18n-aria-label="settings.language.ariaLabel" aria-label="Selecionar idioma">
-            <div class="lang-dropdown-header">
-              <span class="lang-dropdown-sigil">✦</span>
-              <span class="lang-dropdown-title" data-i18n="settings.language.label">Idioma</span>
-            </div>
-            <div class="lang-dropdown-options" id="pause-lang-options">
-              <button type="button" class="lang-option-btn active" role="option" aria-selected="true" data-lang="pt-BR">
-                <span class="lang-opt-badge">PT</span>
-                <span class="lang-opt-name">Português</span>
-                <span class="lang-opt-sigil">✦</span>
-              </button>
-              <button type="button" class="lang-option-btn" role="option" aria-selected="false" data-lang="en">
-                <span class="lang-opt-badge">EN</span>
-                <span class="lang-opt-name">English</span>
-                <span class="lang-opt-sigil">✦</span>
-              </button>
-              <button type="button" class="lang-option-btn" role="option" aria-selected="false" data-lang="es">
-                <span class="lang-opt-badge">ES</span>
-                <span class="lang-opt-name">Español</span>
-                <span class="lang-opt-sigil">✦</span>
-              </button>
-              <button type="button" class="lang-option-btn" role="option" aria-selected="false" data-lang="fr">
-                <span class="lang-opt-badge">FR</span>
-                <span class="lang-opt-name">Français</span>
-                <span class="lang-opt-sigil">✦</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Select nativo invisível preservado para automação e acessibilidade -->
-          <select id="pause-language-select" class="visually-hidden-select" data-i18n-aria-label="settings.language.ariaLabel" aria-label="Selecionar idioma" tabindex="-1" aria-hidden="true">
-            <option value="pt-BR" lang="pt-BR">Português</option>
-            <option value="en" lang="en">English</option>
-            <option value="es" lang="es">Español</option>
-            <option value="fr" lang="fr">Français</option>
-          </select>
-        </div>
     <!-- Layout Bento Modular de 3 Pilares -->
+    <!-- Navegação de Abas Unificada (Mobile: 3 Abas | Desktop: 2 Abas) -->
+    <div class="pause-tabs" role="tablist" aria-label="Navegação da Pausa" data-i18n-aria-label="match.pause.navAria">
+      <button id="pause-equipment-tab" type="button" role="tab" aria-selected="true" aria-controls="pause-equipment-panel" data-pause-tab="equipment">
+        <span class="tab-label-mobile" data-i18n="match.pause.equipment">Equipamento</span>
+        <span class="tab-label-desktop" data-i18n="match.pause.battle">Crônica da Batalha</span>
+      </button>
+      <button id="pause-synergies-tab" type="button" role="tab" aria-selected="false" aria-controls="pause-synergies-panel" tabindex="-1" data-pause-tab="synergies" data-i18n="match.pause.synergies">Sinergias</button>
+      <button id="pause-settings-tab" type="button" role="tab" aria-selected="false" aria-controls="pause-settings-panel" tabindex="-1" data-pause-tab="settings" data-i18n="match.pause.settings">Ajustes</button>
+    </div>
     <div class="pause-bento-grid">
       
       <!-- PILAR 1: O Campeão & Biometria Cósmica -->
-      <div class="pause-pillar pause-pillar-survivor">
+      <div id="pause-survivor-panel" class="pause-pillar pause-pillar-survivor">
         <div class="pillar-header">
           <span class="pillar-tag"><span data-i18n="match.pause.biometrics">ARQUÉTIPO & BIOMETRIA</span></span>
           <span id="pause-hero-badge" class="pillar-badge-hero">O PALADINO</span>
@@ -1485,12 +1433,13 @@
       </div>
 
       <!-- PILAR 2: Arsenal Arcano & Bênçãos Ativas -->
-      <div class="pause-pillar pause-pillar-arsenal">
+      <div id="pause-equipment-panel" class="pause-pillar pause-pillar-arsenal" tabindex="0" aria-labelledby="pause-equipment-tab">
         <div class="pillar-header">
           <span class="pillar-tag"><span data-i18n="match.pause.arsenal">ARSENAL ADQUIRIDO</span></span>
           <span id="pause-weapons-count" class="pillar-badge-count">0 ARMAS</span>
         </div>
 
+        <div class="pause-equipment-scroll">
         <!-- Lista de Armas em Formato Bento -->
         <div id="pause-build-list" class="pause-weapons-scroll">
           <!-- Preenchido dinamicamente com pips luminosos de nível -->
@@ -1503,8 +1452,10 @@
         </div>
       </div>
 
+        </div>
+
       <!-- PILAR 3: Matriz de Transmutação & Comandos -->
-      <div class="pause-pillar pause-pillar-actions">
+      <div id="pause-synergies-panel" class="pause-pillar pause-pillar-actions" tabindex="0" aria-labelledby="pause-synergies-tab">
         <div class="pillar-header">
           <span class="pillar-tag"><span data-i18n="match.pause.matrix">MATRIZ DE TRANSMUTAÇÃO</span></span>
           <span class="pillar-badge-fusion"><span data-i18n="match.pause.synergies">SINERGIAS</span></span>
@@ -1515,71 +1466,195 @@
           <!-- Preenchido dinamicamente por getSynergyTrackerList() -->
         </div>
 
-        <!-- Seletor de Resolução / Qualidade Gráfica (Adaptação à Tela) -->
-        <div class="pause-graphics-box" id="pause-graphics-box">
-          <div class="graphics-box-header">
-            <span class="graphics-box-title">
+
+      </div>
+
+            <!-- PAINEL DE AJUSTES: No PC divide-se em 3 pilares temáticos e no Mobile em cards bem distribuídos -->
+      <section id="pause-settings-panel" class="pause-pillar pause-settings-panel" aria-labelledby="pause-settings-tab" hidden>
+        
+        <!-- SUB-PILAR 1: Áudio & Imersão -->
+        <div class="pause-settings-col pause-settings-audio-col">
+          <div class="pillar-header">
+            <span class="pillar-tag">
+              <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:4px;">
+                <polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+              <span data-i18n="match.pause.audio">ÁUDIO & IMERSÃO</span>
+            </span>
+          </div>
+
+          <!-- Controle de Áudio Integrado -->
+          <div class="pause-volume-box">
+            <div class="volume-header">
+              <span class="volume-title">
+                <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:4px;"><polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                <span data-i18n="match.settings.volume">VOLUME GERAL</span>
+              </span>
+              <span id="volume-val" class="volume-num">50%</span>
+            </div>
+            <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" class="pause-slider" aria-label="Volume Geral" data-i18n-aria-label="match.settings.volume">
+          </div>
+        </div>
+
+        <!-- SUB-PILAR 2: Vídeo & Desempenho -->
+        <div class="pause-settings-col pause-settings-video-col">
+          <div class="pillar-header">
+            <span class="pillar-tag">
               <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:4px;">
                 <rect x="2" y="3" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
                 <line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 <line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2"/>
               </svg>
-              <span data-i18n="match.settings.resolution">RESOLUÇÃO DA TELA</span>
+              <span data-i18n="match.pause.video">VÍDEO & DESEMPENHO</span>
             </span>
             <span id="graphics-mode-badge" class="graphics-mode-badge"><span data-i18n="match.settings.native">NATIVA</span></span>
           </div>
-          <div class="graphics-toggle-group" role="radiogroup" aria-label="Resolução Gráfica" data-i18n-aria-label="match.settings.resolutionAria">
-            <button type="button" class="graphics-toggle-btn active" id="btn-gfx-native" data-mode="native" aria-pressed="true" title="Adaptação 1:1 aos pixels físicos da tela (resolução padrão)" data-i18n-title="match.settings.nativeTip">
-              <span class="toggle-indicator"></span>
-              <span class="toggle-label"><span data-i18n="match.settings.native">NATIVA</span></span>
-            </button>
-            <button type="button" class="graphics-toggle-btn" id="btn-gfx-high" data-mode="high" aria-pressed="false" title="Alta nitidez com super-amostragem (1.25x no PC / até 2.0x no mobile)" data-i18n-title="match.settings.highTip">
-              <span class="toggle-indicator"></span>
-              <span class="toggle-label"><span data-i18n="match.settings.high">ALTA</span></span>
-            </button>
-            <button type="button" class="graphics-toggle-btn" id="btn-gfx-performance" data-mode="performance" aria-pressed="false" title="Modo econômico e maior taxa de FPS (0.80x no PC / economia no mobile)" data-i18n-title="match.settings.powerTip">
-              <span class="toggle-indicator"></span>
-              <span class="toggle-label"><span data-i18n="match.settings.performance">ECONÔMICA</span></span>
-            </button>
+
+          <!-- Seletor de Resolução / Qualidade Gráfica (Adaptação à Tela) -->
+          <div class="pause-graphics-box" id="pause-graphics-box">
+            <div class="graphics-box-header">
+              <span class="graphics-box-title">
+                <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:4px;">
+                  <rect x="2" y="3" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <span data-i18n="match.settings.resolution">RESOLUÇÃO DA TELA</span>
+              </span>
+            </div>
+            <div class="graphics-toggle-group" role="radiogroup" aria-label="Resolução Gráfica" data-i18n-aria-label="match.settings.resolutionAria">
+              <button type="button" class="graphics-toggle-btn active" id="btn-gfx-native" data-mode="native" aria-pressed="true" title="Adaptação 1:1 aos pixels físicos da tela (resolução padrão)" data-i18n-title="match.settings.nativeTip">
+                <span class="toggle-indicator"></span>
+                <span class="toggle-label"><span data-i18n="match.settings.native">NATIVA</span></span>
+              </button>
+              <button type="button" class="graphics-toggle-btn" id="btn-gfx-high" data-mode="high" aria-pressed="false" title="Alta nitidez com super-amostragem (1.25x no PC / até 2.0x no mobile)" data-i18n-title="match.settings.highTip">
+                <span class="toggle-indicator"></span>
+                <span class="toggle-label"><span data-i18n="match.settings.high">ALTA</span></span>
+              </button>
+              <button type="button" class="graphics-toggle-btn" id="btn-gfx-performance" data-mode="performance" aria-pressed="false" title="Modo econômico e maior taxa de FPS (0.80x no PC / economia no mobile)" data-i18n-title="match.settings.powerTip">
+                <span class="toggle-indicator"></span>
+                <span class="toggle-label"><span data-i18n="match.settings.performance">ECONÔMICA</span></span>
+              </button>
+            </div>
+            <div class="graphics-subtext" id="graphics-subtext">Adaptação 1:1 aos pixels físicos da tela</div>
           </div>
-          <div class="graphics-subtext" id="graphics-subtext">Adaptação 1:1 aos pixels físicos da tela</div>
+
+          <!-- Seletor de Tipo de Joystick (Exclusivo Mobile) -->
+          <div class="pause-joystick-box" id="pause-joystick-box">
+            <div class="joystick-box-header">
+              <span class="joystick-box-title">
+                <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:4px;">
+                  <path fill="currentColor" d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/>
+                </svg>
+                <span data-i18n="match.settings.joystick">TIPO DE JOYSTICK</span>
+              </span>
+              <span id="joystick-mode-badge" class="joystick-mode-badge"><span data-i18n="match.settings.floating">FLUTUANTE</span></span>
+            </div>
+            <div class="joystick-toggle-group" role="radiogroup" aria-label="Tipo de Joystick" data-i18n-aria-label="match.settings.joystickAria">
+              <button type="button" class="joystick-toggle-btn active" id="btn-joy-floating" data-mode="floating" aria-pressed="true">
+                <span class="toggle-indicator"></span>
+                <span class="toggle-label"><span data-i18n="match.settings.floating">FLUTUANTE</span></span>
+              </button>
+              <button type="button" class="joystick-toggle-btn" id="btn-joy-dynamic" data-mode="dynamic" aria-pressed="false">
+                <span class="toggle-indicator"></span>
+                <span class="toggle-label"><span data-i18n="match.settings.dynamic">DINÂMICO</span></span>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- Seletor de Tipo de Joystick (Exclusivo Mobile) -->
-        <div class="pause-joystick-box" id="pause-joystick-box">
-          <div class="joystick-box-header">
-            <span class="joystick-box-title">
+        <!-- SUB-PILAR 3: Idioma & Comandos / Teclado -->
+        <div class="pause-settings-col pause-settings-controls-col">
+          <div class="pillar-header">
+            <span class="pillar-tag">
               <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:4px;">
-                <path fill="currentColor" d="M15 7.5V2H9v5.5l3 3 3-3zM7.5 9H2v6h5.5l3-3-3-3zM9 16.5V22h6v-5.5l-3-3-3 3zM16.5 9l-3 3 3 3H22V9h-5.5z"/>
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                <line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" fill="none" stroke="currentColor" stroke-width="1.8"/>
               </svg>
-              <span data-i18n="match.settings.joystick">TIPO DE JOYSTICK</span>
+              <span data-i18n="match.pause.controls">IDIOMA & COMANDOS</span>
             </span>
-            <span id="joystick-mode-badge" class="joystick-mode-badge"><span data-i18n="match.settings.floating">FLUTUANTE</span></span>
           </div>
-          <div class="joystick-toggle-group" role="radiogroup" aria-label="Tipo de Joystick" data-i18n-aria-label="match.settings.joystickAria">
-            <button type="button" class="joystick-toggle-btn active" id="btn-joy-floating" data-mode="floating" aria-pressed="true">
-              <span class="toggle-indicator"></span>
-              <span class="toggle-label"><span data-i18n="match.settings.floating">FLUTUANTE</span></span>
+
+          <div class="char-language-widget pause-language-control" id="pause-language-widget">
+            <button type="button" class="char-language-capsule char-language-control" id="pause-language-btn" aria-controls="pause-language-dropdown" aria-haspopup="listbox" aria-expanded="false" title="Idioma / Language" data-i18n-title="settings.language.label">
+              <svg class="lang-globe-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2A8.5 8.5 0 0 1 20.5 10.5C20.5 15.2 16.7 19 12 19c-1.3 0-2.5-.3-3.6-.8L4 21.5l1.2-5C4.1 15 3.5 12.8 3.5 10.5A8.5 8.5 0 0 1 12 2z"/>
+                <line x1="3.5" y1="10.5" x2="20.5" y2="10.5"/>
+                <line x1="12" y1="2" x2="12" y2="19"/>
+                <ellipse cx="12" cy="10.5" rx="4.5" ry="8.5"/>
+                <path d="M5.5 6.5Q12 8.5 18.5 6.5"/>
+                <path d="M5.5 14.5Q12 12.5 18.5 14.5"/>
+              </svg>
+              <span class="lang-label-text" id="pause-lang-text">Português</span>
+              <span class="lang-code-badge" id="pause-lang-code">PT</span>
+              <svg class="lang-chevron-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+              </svg>
             </button>
-            <button type="button" class="joystick-toggle-btn" id="btn-joy-dynamic" data-mode="dynamic" aria-pressed="false">
-              <span class="toggle-indicator"></span>
-              <span class="toggle-label"><span data-i18n="match.settings.dynamic">DINÂMICO</span></span>
-            </button>
+
+            <!-- Dropdown Gótico Flutuante (Animação Fluida Descendente) -->
+            <div class="char-language-dropdown" id="pause-language-dropdown" role="listbox" data-i18n-aria-label="settings.language.ariaLabel" aria-label="Selecionar idioma">
+              <div class="lang-dropdown-header">
+                <span class="lang-dropdown-sigil">✦</span>
+                <span class="lang-dropdown-title" data-i18n="settings.language.label">Idioma</span>
+              </div>
+              <div class="lang-dropdown-options" id="pause-lang-options">
+                <button type="button" class="lang-option-btn active" role="option" aria-selected="true" data-lang="pt-BR">
+                  <span class="lang-opt-badge">PT</span>
+                  <span class="lang-opt-name">Português</span>
+                  <span class="lang-opt-sigil">✦</span>
+                </button>
+                <button type="button" class="lang-option-btn" role="option" aria-selected="false" data-lang="en">
+                  <span class="lang-opt-badge">EN</span>
+                  <span class="lang-opt-name">English</span>
+                  <span class="lang-opt-sigil">✦</span>
+                </button>
+                <button type="button" class="lang-option-btn" role="option" aria-selected="false" data-lang="es">
+                  <span class="lang-opt-badge">ES</span>
+                  <span class="lang-opt-name">Español</span>
+                  <span class="lang-opt-sigil">✦</span>
+                </button>
+                <button type="button" class="lang-option-btn" role="option" aria-selected="false" data-lang="fr">
+                  <span class="lang-opt-badge">FR</span>
+                  <span class="lang-opt-name">Français</span>
+                  <span class="lang-opt-sigil">✦</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Select nativo invisível preservado para automação e acessibilidade -->
+            <select id="pause-language-select" class="visually-hidden-select" data-i18n-aria-label="settings.language.ariaLabel" aria-label="Selecionar idioma" tabindex="-1" aria-hidden="true">
+              <option value="pt-BR" lang="pt-BR">Português</option>
+              <option value="en" lang="en">English</option>
+              <option value="es" lang="es">Español</option>
+              <option value="fr" lang="fr">Français</option>
+            </select>
+          </div>
+
+          <!-- Guia Visual de Teclas (Exclusivo PC / Teclado) -->
+          <div class="pause-keyboard-guide" id="pause-keyboard-guide">
+            <div class="keyboard-guide-title">
+              <span data-i18n="match.pause.keyGuideTitle">COMANDOS DO TECLADO</span>
+            </div>
+            <div class="keyboard-guide-row">
+              <span class="keyboard-key-badge">W A S D / ◄ ▲ ▼ ►</span>
+              <span class="keyboard-key-desc" data-i18n="match.pause.move">Mover Sobrevivente</span>
+            </div>
+            <div class="keyboard-guide-row">
+              <span class="keyboard-key-badge">ESPAÇO / ENTER</span>
+              <span class="keyboard-key-desc" data-i18n="match.pause.action">Interagir / Altar</span>
+            </div>
+            <div class="keyboard-guide-row">
+              <span class="keyboard-key-badge">ESC / P</span>
+              <span class="keyboard-key-desc" data-i18n="match.hud.pauseAria">Pausar Batalha</span>
+            </div>
           </div>
         </div>
 
-        <!-- Controle de Áudio Integrado -->
-        <div class="pause-volume-box">
-          <div class="volume-header">
-            <span class="volume-title">
-              <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:4px;"><polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-              <span data-i18n="match.settings.volume">VOLUME GERAL</span>
-            </span>
-            <span id="volume-val" class="volume-num">50%</span>
-          </div>
-          <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" class="pause-slider">
-        </div>
-      </div>
+      </section>
 
     </div>
 

@@ -23,6 +23,11 @@ export function initPauseLanguageControl() {
     dropdown.inert = false;
     playSfx('card_hover');
     triggerHaptic('light');
+    if (typeof dropdown.scrollIntoView === 'function') {
+      setTimeout(() => {
+        dropdown.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 40);
+    }
   };
   const update = () => {
     const language = getLanguage();
