@@ -1,0 +1,29 @@
+{
+  "name": "hord-slayer",
+  "version": "1.0.0",
+  "description": "Hord Slayer - Grim Cyber-Gothic Survival Game",
+  "type": "module",
+  "scripts": {
+    "build:mobile": "node scripts/build-mobile.mjs",
+    "build:pc": "node scripts/build-desktop.mjs",
+    "cap:sync": "npm run build:mobile && npx cap sync android",
+    "cap:open": "npx cap open android"
+  },
+  "keywords": [
+    "game",
+    "roguelike",
+    "i18n",
+    "canvas"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-packager": "^17.1.2"
+  }
+}
