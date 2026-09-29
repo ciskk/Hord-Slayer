@@ -4,9 +4,9 @@ import { getNextLevelXp } from '../src/entities/player/player.js';
 
 describe('Progressão de XP e Calibragem de Nível', () => {
 
-  test('nível 1 deve iniciar fluido com requisito baixo (10 XP)', () => {
+  test('nível 1 deve iniciar com requisito calibrado em 2x (20 XP)', () => {
     const xp1 = getNextLevelXp(1);
-    assert.equal(xp1, 10, 'Nível 1 deve exigir exatamente 10 XP para dinamismo inicial');
+    assert.equal(xp1, 20, 'Nível 1 deve exigir exatamente 20 XP com dificuldade 2x');
   });
 
   test('requisito de XP deve ser estritamente crescente e gerar números inteiros válidos', () => {
@@ -28,24 +28,24 @@ describe('Progressão de XP e Calibragem de Nível', () => {
     const xp50 = getNextLevelXp(50);
     const xp70 = getNextLevelXp(70);
 
-    // Valores calibrados
-    assert.equal(xp1, 10);
-    assert.equal(xp10, 61);
-    assert.equal(xp30, 226);
-    assert.equal(xp50, 442);
-    assert.equal(xp70, 699);
+    // Valores calibrados com dificuldade 2x (dobro de XP)
+    assert.equal(xp1, 20);
+    assert.equal(xp10, 121);
+    assert.equal(xp30, 452);
+    assert.equal(xp50, 884);
+    assert.equal(xp70, 1397);
 
     // Taxa de crescimento relativo entre faixas (demonstra inclinação progressivamente mais íngreme)
-    const deltaEarly = (xp10 - xp1) / 9;      // Ganho médio de XP por nível entre 1 e 10 (~5.67 XP/lvl)
-    const deltaLate = (xp70 - xp50) / 20;     // Ganho médio de XP por nível entre 50 e 70 (~12.85 XP/lvl)
+    const deltaEarly = (xp10 - xp1) / 9;      // Ganho médio de XP por nível entre 1 e 10 (~11.22 XP/lvl)
+    const deltaLate = (xp70 - xp50) / 20;     // Ganho médio de XP por nível entre 50 e 70 (~25.65 XP/lvl)
     assert.ok(deltaLate > deltaEarly * 2, `O ganho marginal por nível na fase tardia (${deltaLate.toFixed(2)}) deve ser mais que o dobro da fase inicial (${deltaEarly.toFixed(2)})`);
 
     const ratio70to10 = xp70 / xp10;
     assert.ok(ratio70to10 > 11, `Razão Nível 70 / Nível 10 deve ser > 11x (atual: ${ratio70to10.toFixed(2)}x)`);
   });
 
-  test('ao acumular o XP típico de zerar o jogo (~20.731 XP), o player deve atingir o nível 70', () => {
-    const baselineRunXp = 20731; // Total acumulado na fórmula antiga ao atingir nível 90
+  test('com a dificuldade 2x de XP, alcançar o nível 70 exige ~41.4k XP (ou nível 52 com ~20.7k XP)', () => {
+    const baselineRunXp = 20731; // Total acumulado na partida
 
     let accumulatedXp = 0;
     let currentLevel = 1;
@@ -59,7 +59,7 @@ describe('Progressão de XP e Calibragem de Nível', () => {
       currentLevel++;
     }
 
-    assert.equal(currentLevel, 70, `Com ${baselineRunXp} XP acumulados, o jogador deve atingir exatamente o Nível 70`);
+    assert.equal(currentLevel, 52, `Com ${baselineRunXp} XP acumulados e dificuldade 2x, o jogador atinge o nível 52`);
 
     const totalToReach70 = (() => {
       let sum = 0;
@@ -67,8 +67,8 @@ describe('Progressão de XP e Calibragem de Nível', () => {
       return sum;
     })();
 
-    assert.equal(totalToReach70, 20702, 'Total para alcançar nível 70 deve ser 20.702 XP');
-    assert.ok(Math.abs(baselineRunXp - totalToReach70) < 50, 'A diferença para o total de zerar a partida deve ser menor que 50 XP (< 0.2%)');
+    assert.equal(totalToReach70, 41367, 'Total para alcançar nível 70 deve ser 41.367 XP (dobro exato da curva anterior)');
+    assert.ok(Math.abs(baselineRunXp * 2 - totalToReach70) < 100, 'A diferença para o dobro do total da partida deve ser mínima (< 0.25%)');
   });
 
 });

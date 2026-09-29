@@ -466,9 +466,9 @@ export function triggerHeroSkill(options = {}) {
 }
 
 export function getNextLevelXp(level) {
-  // Curva de progressão de XP calibrada para nível ~70 ao zerar a partida (~20.7k XP acumulados).
-  // O expoente 1.60 preserva o início fluido (nível 1 com 10 XP) e reduz a facilidade progressivamente.
-  return Math.max(1, Math.round((12 + (level * 7) + Math.floor(Math.pow(level, 1.6))) * 0.5));
+  // Curva de progressão de XP calibrada com dificuldade 2x (necessário o dobro de XP por nível).
+  // Remove o multiplicador 0.5x, dobrando a exigência de XP para avanço de nível.
+  return Math.max(1, Math.round(12 + (level * 7) + Math.floor(Math.pow(level, 1.6))));
 }
 
 export function addXP(amount) {
