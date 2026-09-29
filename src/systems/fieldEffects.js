@@ -6,7 +6,7 @@ import { t as matchText } from '../i18n/index.js';
  * - Bíblias Protetoras (Orbitais, Bloqueio de Tiros e Colisão Suave com Knockback Amortecido)
  * - Miasma Cáustico da Alquimista (Dissolução de Projéteis, Super-Slow 70%, Acid Shred e Vapor Estimulante)
  */
-import { getNeighborIndices, forEachNeighborIndex } from '../core/spatialGrid.js';
+import { forEachNeighborIndex } from '../core/spatialGrid.js';
 import { playSfx } from '../core/audio.js';
 import { addDamageText, createHitParticles, applyFreeze } from './combat.js';
 import { getBossPhaseDefeatDamage } from './devtools.js';
@@ -14,9 +14,6 @@ import { getBossPhaseDefeatDamage } from './devtools.js';
 export function updateFieldEffects(dt, { 
   player, 
   enemies, 
-  enemyBullets, 
-  acidPuddles, 
-  frameCount, 
   selectedHeroKey, 
   triggerShake 
 }) {
@@ -172,65 +169,5 @@ export function updateFieldEffects(dt, {
     }
   }
 
-  // 3. Mecânicas do Miasma da Valéria: Dissolução de Tiros, Super Slow (70%), Acid Shred e Vapor Móvel
-  let bulletsDissolved = false;
-  for (let pIdx = 0; pIdx < acidPuddles.length; pIdx++) {
-    const p = acidPuddles[pIdx];
-    if (!p.isAlchemist) continue;
-
-    // Dissolução de projéteis inimigos comuns que entrarem no vapor (Zero Splice)
-    for (let bIdx = 0; bIdx < enemyBullets.length; bIdx++) {
-      const eb = enemyBullets[bIdx];
-      if (eb._dissolved || eb.isBossProjectile) continue;
-      const edx = eb.x - p.x;
-      const edy = eb.y - p.y;
-      if (edx * edx + edy * edy < (p.radius + (eb.radius || 5)) ** 2) {
-        createHitParticles(eb.x, eb.y, p.isEvolved ? '#81ecec' : '#a55eea', 4);
-        eb._dissolved = true;
-        bulletsDissolved = true;
-      }
-    }
-
-    // Super slow de 70%, quebra de dashes e stacks de corrosão em inimigos (Acesso Direto à Spatial Grid)
-    forEachNeighborIndex(p.x, p.y, p.radius + 35, idx => {
-      const e = enemies[idx];
-      if (!e || e.hp <= 0 || e.isTargetable === false) return;
-      const edx = e.x - p.x;
-      const edy = e.y - p.y;
-      if (edx * edx + edy * edy < (p.radius + e.radius) ** 2) {
-        e.inAcidPuddle = true;
-        e.slowTimer = Math.max(e.slowTimer || 0, 30);
-        e.slowFactor = 0.70;
-        if (e.dashState === 'dashing') {
-          e.dashState = 'cooldown';
-          e.dashTimer = 0;
-        }
-        if (Math.floor(frameCount) % 15 === 0) {
-          e.acidStacks = Math.min(5, (e.acidStacks || 0) + 1);
-          e.acidStackTimer = 180;
-        }
-        e.acidBurnTimer = Math.max(e.acidBurnTimer || 0, 160);
-        if (p.isEvolved) e.acidBurnEvolved = true;
-      }
-    });
-
-    // Concessão e renovação do buff portátil de Vapor Estimulante ao cruzar o miasma
-    const pdx = player.x - p.x;
-    const pdy = player.y - p.y;
-    if (pdx * pdx + pdy * pdy < (p.radius + player.radius) ** 2) {
-      player.alchemistBuffTimer = 180;
-    }
-  }
-
-  // Compactação estável de projéteis inimigos caso algum tenha sido dissolvido
-  if (bulletsDissolved) {
-    let writeIdx = 0;
-    for (let i = 0; i < enemyBullets.length; i++) {
-      const eb = enemyBullets[i];
-      if (!eb._dissolved) {
-        enemyBullets[writeIdx++] = eb;
-      }
-    }
-    enemyBullets.length = writeIdx;
-  }
+  // Persistent alchemy coverage is processed once in updateAcidPuddles.
 }

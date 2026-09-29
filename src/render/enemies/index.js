@@ -8,11 +8,13 @@ import { ctx, frameCount } from '../../state/gameState.js';
 import { drawBoss } from '../../entities/bosses/bossRegistry.js';
 import { drawMiniBossShape, drawDyingMiniBossShape } from '../minibossesRenderer.js';
 import { drawEnemyStatusOverlays, drawMiniBossHpOverlay, drawCommonEnemyGroundDecorations, applyKinematicDeformations, drawEnemyAttackTelegraph } from './enemyDecorators.js';
-import { drawCachedEnemy, clearSpriteCache } from './spriteCache.js';
+import { drawCachedEnemy, clearSpriteCache, queueSpritePrewarm, processEnemySpritePrewarm } from './spriteCache.js';
+import { perfMetrics } from '../../core/perfMetrics.js';
+import { ENEMY_TYPES } from '../../config/enemies.js';
 import { getEnemyDeathProgress } from '../../config/enemyDeaths.js';
 import { drawDeathResidue } from './deathEffects.js';
 import { orientCrawler } from '../../entities/enemies/crawlerLocomotion.js';
-export { clearSpriteCache };
+export { clearSpriteCache, processEnemySpritePrewarm };
 import * as zombie from './zombieRenderer.js';
 import * as bat from './batRenderer.js';
 import * as shielded from './shieldedRenderer.js';
@@ -66,6 +68,24 @@ export const ENEMY_RENDERERS = {
   SPLITTER_MINI: splitter
 };
 
+/** Schedule only the next wave's normal poses, then optional elite sizes. */
+export function queueEnemySpritePrewarm(types, { includeElites = true, ...options } = {}) {
+  const templates = [];
+  const uniqueTypes = [...new Set(types || [])];
+  for (const elite of includeElites ? [false, true] : [false]) {
+    for (const type of uniqueTypes) {
+      const def = ENEMY_TYPES[type];
+      if (!def) continue;
+      for (let variant = 0; variant < (type === 'ZOMBIE' ? 4 : 1); variant++) {
+        templates.push({ baseType: type, radius: elite ? Math.round(def.radius * 1.25) : def.radius,
+          hp: def.hp, maxHp: def.hp, color: def.color, variant, isElite: elite,
+          combatState: 'CHASE', facing: 1, x: 0, y: 0 });
+      }
+    }
+  }
+  return queueSpritePrewarm(templates, type => ENEMY_RENDERERS[type], options);
+}
+
 /**
  * Renderiza a forma, animações e overlays de um inimigo no Canvas.
  * @param {Object} e Entidade do inimigo a ser desenhado.
@@ -76,6 +96,7 @@ export function drawEnemyShape(e) {
   ctx.save();
   ctx.translate(e.x, e.y);
   ctx.scale(e.facing, 1);
+  let cachedBody = false;
 
   drawEnemyStatusOverlays(e);
 
@@ -104,7 +125,8 @@ export function drawEnemyShape(e) {
 
       const renderer = ENEMY_RENDERERS[e.baseType];
       if (renderer && renderer.draw) {
-        if (!drawCachedEnemy(ctx, e, renderer)) {
+        cachedBody = drawCachedEnemy(ctx, e, renderer);
+        if (!cachedBody) {
           renderer.draw(e);
         }
       } else {
@@ -116,6 +138,7 @@ export function drawEnemyShape(e) {
     }
   }
 
+  perfMetrics.countEnemyBodyRender(cachedBody);
   ctx.restore();
 }
 

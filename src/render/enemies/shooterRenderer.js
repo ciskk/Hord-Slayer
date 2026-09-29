@@ -3,7 +3,7 @@ import { getRelativeAimAngle } from '../../core/math.js';
 import { beginCreature, endCreature, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
 // An angular walking gun carriage. The barrel alone carries the aim and charge.
-export function draw(e) {
+function drawParts(e, body, cannon) {
   const p = creaturePalette(e, '#4c8bbc', '#203656', '#ff5944');
   const dead = e.deathPose !== undefined;
   const burst = !dead && (e.burstRemaining || 0) > 0;
@@ -11,6 +11,7 @@ export function draw(e) {
   const walk = dead ? 0 : Math.sin(frameCount * .18) * .08;
   const aim = getRelativeAimAngle(e.aimAngle ?? (e.facing === -1 ? Math.PI : 0), e.facing || 1);
   beginCreature(ctx, e);
+  if (body) {
   for (const side of [-1, 1]) {
     stroke(ctx, [[side * .37, .23], [side * .59, .62], [side * (.79 + walk), .91]], p.ink, .26);
     stroke(ctx, [[side * .37, .23], [side * .59, .62], [side * (.79 + walk), .91]], p.body, .14);
@@ -20,6 +21,8 @@ export function draw(e) {
   polygon(ctx, [[-.62, -.43], [-.4, -.59], [.19, -.59], [.39, .22], [-.49, .22]], p.body, null);
   polygon(ctx, [[-.67, -.43], [-.75, -1.07], [-.48, -1.07], [-.35, -.5]], p.shade);
   stroke(ctx, [[-.68, -.92], [-.48, -.92]], p.body, .1);
+  }
+  if (cannon) {
   ctx.save();
   // Keep the cannon pivot at the entity origin, matching the bullet direction.
   ctx.rotate(aim);
@@ -42,7 +45,13 @@ export function draw(e) {
   }
   if (burst) polygon(ctx, [[muzzle + .09, -.13], [muzzle + .42, -.28], [muzzle + .72, 0], [muzzle + .39, .25], [muzzle + .09, .12]], p.accent, null);
   ctx.restore();
+  }
   endCreature(ctx);
 }
+
+export const animationFrequency = .18;
+export function draw(e) { drawParts(e, true, true); }
+export function drawBody(e) { drawParts(e, true, false); }
+export function drawLive(e) { drawParts(e, false, true); }
 
 export function drawDying(de, t) { drawCreatureDeath(ctx, de, t, draw, 'crumble'); }

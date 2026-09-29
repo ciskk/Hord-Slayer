@@ -1,3 +1,4 @@
+import { registerPersistentArea } from '../../../systems/persistentAreas.js';
 /**
  * src/entities/enemies/minibosses/fireIncinerator.js
  * 
@@ -87,7 +88,7 @@ update(e, dt, ctx, dist, angle) {
 
       if (e.flameDuration <= 0) {
         e.isFlamethrowing = false;
-        acidPuddles.push({ x: e.x, y: e.y, radius: 26, life: 180, maxLife: 180, isFire: true });
+        registerPersistentArea(acidPuddles, { x: e.x, y: e.y, radius: 26, life: 180, maxLife: 180, isFire: true });
         e.actionState = 'RECOVERY';
         e.actionTimer = 18;
       }

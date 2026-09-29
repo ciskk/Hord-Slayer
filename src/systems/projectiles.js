@@ -14,6 +14,8 @@ import { addGroundCrater, updateGroundCraters } from '../render/groundCracks.js'
 import { addKaelHitFissure } from '../render/kaelUlt.js';
 import { triggerDeath } from './ui.js';
 import { getBossPhaseDefeatDamage } from './devtools.js';
+import { getGraphicsProfile } from '../core/responsive.js';
+import { registerPersistentArea, updatePersistentAreas, findDissolvingArea } from './persistentAreas.js';
 
 export { bullets, enemyBullets, acidPuddles, MAX_CONCURRENT_ENEMY_BULLETS, canSpawnEnemyBullet };
 
@@ -43,7 +45,10 @@ export function updateProjectiles(dt) {
       b.trail.unshift(pt);
     } else if (b.type === 'STAFF') {
       if (!b.trail) b.trail = [];
-      const maxTrail = b.isEvolved ? 12 : 9;
+      // The current projectile is the first rendered point. Keep the original
+      // history in full quality; shrink existing trails immediately on switch.
+      const maxTrail = Math.min(b.isEvolved ? 12 : 9, getGraphicsProfile().staffTrailPoints - 1);
+      if (b.trail.length > maxTrail) b.trail.length = maxTrail;
       const pt = b.trail.length >= maxTrail ? b.trail.pop() : {};
       pt.x = b.x;
       pt.y = b.y;
@@ -123,7 +128,7 @@ export function updateProjectiles(dt) {
           }
         });
 
-        acidPuddles.push({
+        registerPersistentArea(acidPuddles, {
           x: b.x,
           y: b.y,
           radius: puddleRadius,
@@ -433,8 +438,15 @@ export function updateProjectiles(dt) {
       eb.vy = Math.sin(newAngle) * speed;
     }
 
+    const previousX = eb.x;
+    const previousY = eb.y;
     eb.x += eb.vx * dt;
     eb.y += eb.vy * dt;
+    const dissolvingArea = findDissolvingArea(eb, previousX, previousY, acidPuddles);
+    if (dissolvingArea) {
+      createHitParticles(eb.x, eb.y, dissolvingArea.isEvolved ? '#81ecec' : '#a55eea', 4);
+      continue;
+    }
 
     // Culling Radial Restrito: Descarte imediato de projéteis inimigos fora da arena do Boss Final
     if (isFinalBoss) {
@@ -447,7 +459,7 @@ export function updateProjectiles(dt) {
 
     if (eb.life <= 0) {
       if (eb.isWebCocoon) {
-        acidPuddles.push({
+        registerPersistentArea(acidPuddles, {
           x: eb.x,
           y: eb.y,
           radius: 38,
@@ -534,7 +546,7 @@ export function updateProjectiles(dt) {
       }
 
       if (eb.isWebCocoon) {
-        acidPuddles.push({
+        registerPersistentArea(acidPuddles, {
           x: player.x,
           y: player.y,
           radius: 38,
@@ -565,188 +577,31 @@ export function updateProjectiles(dt) {
   enemyBullets.length = ebWriteIdx;
 }
 
-// Estruturas Zero-Alloc estáticas para consolidação de dano de poças
-let _puddleFrameSeq = 0;
-const _affectedEnemies = [];
-
-/**
- * Atualiza poças de ácido, lodo alquímico e chamas residuais.
- */
+// Dano e debuffs usam a mesma cobertura espacial; o envelhecimento e o
+// contato do jogador continuam usando o tempo de cada callback.
 export function updateAcidPuddles(dt) {
-  _puddleFrameSeq++;
-  _affectedEnemies.length = 0;
-  let playerInAlchemistPuddle = false;
-  let alchemistPuddleEvolved = false;
-
-  let puddleWriteIdx = 0;
-  for (let i = 0; i < acidPuddles.length; i++) {
-    const p = acidPuddles[i];
-    p.life -= dt;
-
-    if (p.life <= 0) {
-      continue;
-    }
-
-    if (p.isFire || p.isAlchemist) {
-      forEachNeighborIndex(p.x, p.y, p.radius + 35, (candIdx) => {
-        const e = enemies[candIdx];
-        if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) return;
-        if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) return;
-        if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) return;
-        const dx = e.x - p.x;
-        const dy = e.y - p.y;
-        if (dx * dx + dy * dy < (p.radius + e.radius) ** 2) {
-          let baseDmg = p.isAlchemist ? ((p.damage || 18) * 0.045) : 0.55;
-          if (p.isAlchemist && e.baseType === 'LITOCISTO') {
-            baseDmg *= 4.0;
-          }
-
-          if (e._puddleFrame !== _puddleFrameSeq) {
-            e._puddleFrame = _puddleFrameSeq;
-            e._puddleMaxDmg = baseDmg;
-            e._puddleExtra = 0;
-            e._puddleAlchemist = !!p.isAlchemist;
-            e._puddleFire = !!p.isFire;
-            e._puddleEvolved = !!p.isEvolved;
-            _affectedEnemies.push(e);
-          } else {
-            if (baseDmg > e._puddleMaxDmg) e._puddleMaxDmg = baseDmg;
-            e._puddleExtra++;
-            if (p.isEvolved) e._puddleEvolved = true;
-            if (p.isAlchemist) e._puddleAlchemist = true;
-            if (p.isFire) e._puddleFire = true;
-          }
-        }
-      });
-    }
-
-    // Detecção de permanência da Valéria sobre o miasma aliado (sem empilhar cura por poça)
-    if (p.isAlchemist && selectedHeroKey === 'ALCHEMIST') {
-      const pdx = player.x - p.x;
-      const pdy = player.y - p.y;
-      if ((pdx * pdx + pdy * pdy) < (p.radius + player.radius) ** 2) {
-        playerInAlchemistPuddle = true;
-        if (p.isEvolved) alchemistPuddleEvolved = true;
-      }
-    }
-
-    if (!p.isAlchemist && !p.isFire) {
-      const pdx = player.x - p.x;
-      const pdy = player.y - p.y;
-      if ((pdx * pdx + pdy * pdy) < (p.radius + player.radius) ** 2) {
-        // Poças inimigas de veneno/ácido causam dano por tick sem aplicar lentidão ao jogador
-        if (player.iFrames <= 0) {
-          p.tickTimer = (p.tickTimer || 0) + dt;
-          if (p.tickTimer > 20) {
-            p.tickTimer = 0;
-            const dmgVal = p.isCaustic ? 4 : 6;
-            setLastAttackerInfo({
-              name: p.isCaustic ? 'Miasma Cáustico' : 'Poça de Ácido',
-              category: 'HAZARD',
-              attackName: 'Corrosão Ácida',
-              damage: dmgVal,
-              color: p.isCaustic ? '#00d2d3' : '#2ecc71',
-              tacticTip: "Evite transitar sobre fluidos tóxicos e poças corrosivas depositadas por rastejadores e chefes."
-            });
-            player.hp -= dmgVal;
-            player.iFrames = 18;
-            triggerShake(2);
-            playSfx('acid');
-            addDamageText(player.x, player.y, `-${dmgVal}`, false, p.isCaustic ? '#00d2d3' : '#2ecc71');
-            createHitParticles(player.x, player.y, p.isCaustic ? '#00d2d3' : '#2ecc71', 3);
-
-            if (player.hp <= 0) {
-              player.hp = 0;
-              triggerDeath();
-              for (let r = i + 1; r < acidPuddles.length; r++) {
-                acidPuddles[puddleWriteIdx++] = acidPuddles[r];
-              }
-              acidPuddles.length = puddleWriteIdx;
-              return;
-            }
-          }
-        }
-      }
-    }
-
-    acidPuddles[puddleWriteIdx++] = p;
-  }
-  acidPuddles.length = puddleWriteIdx;
-
-  // Aplicação consolidada de dano com Anti-Stacking e Passiva de Corrosão (Zero-Alloc)
-  const affectedCount = _affectedEnemies.length;
-  for (let idx = 0; idx < affectedCount; idx++) {
-    const e = _affectedEnemies[idx];
-    if (e.hp <= 0) continue;
-
-    // Anti-Stacking: 100% da poça principal + 15% por poça adicional (teto de +45%)
-    // Evita que poças sobrepostas multipliquem o dano descontroladamente
-    const stackBonus = Math.min(0.45, e._puddleExtra * 0.15);
-    let finalDot = e._puddleMaxDmg * (1 + stackBonus) * dt;
-
-    // Passiva de Corrosão da Valéria (+6% por stack até +30%)
-    if (e.acidStacks > 0) {
-      finalDot *= (1 + e.acidStacks * 0.06);
-    }
-
-    if ((e.isBoss || e.isMiniBoss) && e._puddleAlchemist) {
-      finalDot *= (40 / 27);
-    }
-
-    e.hp -= finalDot;
-
-    if (e._puddleAlchemist) {
-      e.slowTimer = Math.max(e.slowTimer || 0, 40);
-      e.slowFactor = e._puddleEvolved ? 0.65 : 0.45;
-      
-      // Ao permanecer na poça, renova o veneno aderente e a duração dos stacks
-      e.acidBurnTimer = Math.max(e.acidBurnTimer || 0, 150);
-      e.acidStackTimer = 200;
-      if (e._puddleEvolved) e.acidBurnEvolved = true;
-      if (Math.random() < 0.02 * dt) {
-        createHitParticles(e.x, e.y, e._puddleEvolved ? '#d6a2e8' : '#a29bfe', 1);
-      }
-
-      // Feedback visual periódico de dano contínuo (DoT) para as poças da Valéria
-      e.acidDotAcc = (e.acidDotAcc || 0) + finalDot;
-      e.acidDotTimer = (e.acidDotTimer || 0) + dt;
-      if (e.acidDotTimer >= 22) {
-        const displayDmg = Math.round(e.acidDotAcc);
-        if (displayDmg >= 1) {
-          const dotColor = e._puddleEvolved ? '#a29bfe' : '#9b59b6';
-          addDamageText(e.x, e.y - (e.radius || 14) * 0.5, displayDmg, false, dotColor);
-        }
-        e.acidDotAcc = 0;
-        e.acidDotTimer = 0;
-      }
-    }
-
-    if (e._puddleFire) {
-      applyFireBurn(e, 90, (player.damage || 45) * 0.30, false);
-      if (Math.random() < 0.03 * dt) {
-        createHitParticles(e.x, e.y, '#f39c12', 1);
-      }
-    }
-  }
-
-  // Regeneração Global da Valéria (Opção A: Anti-Stacking Absoluto)
-  // Calibrado para recuperar vida da Valéria (70 HP máx) sobre o miasma aliado
-  // 105 HP / 20s = 5.25 HP/s -> +2 HP a cada 23 frames (~0.38s = 5.22 HP/s)
-  if (playerInAlchemistPuddle && selectedHeroKey === 'ALCHEMIST') {
-    player.alchemistHealTimer = (player.alchemistHealTimer || 0) + dt;
-    if (player.alchemistHealTimer >= 23) {
-      player.alchemistHealTimer = 0;
-      if (player.hp < player.maxHp) {
-        const healAmount = alchemistPuddleEvolved ? 3 : 2;
-        player.hp = Math.min(player.maxHp, player.hp + healAmount);
-        addDamageText(player.x, player.y, `+${healAmount}`, false, '#a29bfe');
+  updatePersistentAreas(dt, {
+    areas: acidPuddles, enemies, player, selectedHeroKey,
+    effects: {
+      damageText: addDamageText,
+      hitParticles: createHitParticles,
+      fireBurn: applyFireBurn,
+      heal(amount) {
+        addDamageText(player.x, player.y, '+' + amount, false, '#a29bfe');
         createHitParticles(player.x, player.y, '#d6a2e8', 2);
+      },
+      playerHazard(p, damage) {
+        const color = p.isCaustic ? '#00d2d3' : '#2ecc71';
+        setLastAttackerInfo({ name: p.isCaustic ? 'Miasma Cáustico' : 'Poça de Ácido',
+          category: 'HAZARD', attackName: 'Corrosão Ácida', damage, color,
+          tacticTip: 'Evite transitar sobre fluidos tóxicos e poças corrosivas depositadas por rastejadores e chefes.' });
+        triggerShake(2);
+        playSfx('acid');
+        addDamageText(player.x, player.y, '-' + damage, false, color);
+        createHitParticles(player.x, player.y, color, 3);
       }
     }
-  } else if (player.alchemistHealTimer > 0) {
-    player.alchemistHealTimer = Math.max(0, player.alchemistHealTimer - dt);
-  }
-
-  // Atualização do ciclo de vida das crateras e fendas geológicas no solo
+  });
+  if (player.hp <= 0) { player.hp = 0; triggerDeath(); return; }
   updateGroundCraters(dt);
 }

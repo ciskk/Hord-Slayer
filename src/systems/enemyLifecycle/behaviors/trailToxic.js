@@ -1,3 +1,4 @@
+import { registerPersistentArea } from '../../persistentAreas.js';
 /**
  * src/systems/enemyLifecycle/behaviors/trailToxic.js
  * IA do Rastejador Peçonhento — Rastro de poças cáusticas com coalescência.
@@ -28,7 +29,7 @@ export function trailToxicBehavior(e, dt, angle, curSpeed, ctx) {
       }
     }
     if (!merged && acidPuddles.length < 50) {
-      acidPuddles.push({
+      registerPersistentArea(acidPuddles, {
         x: e.x,
         y: e.y,
         radius: 18,

@@ -18,8 +18,41 @@ import { updateAllAutoFit, initAutoFitSystem } from './responsiveAutoFit.js';
 export const GRAPHICS_QUALITY = {
   NATIVE: 'native',       // Adaptação 100% à resolução física real (devicePixelRatio nativo da tela)
   HIGH: 'high',           // Alta nitidez equilibrada (limitada a 2.0x para telas 3x/4K)
-  PERFORMANCE: 'performance' // Modo econômico / bateria (1.25x)
+  PERFORMANCE: 'performance' // Menor resolução e complexidade visual
 };
+
+// Shared rendering and persistent-effect budgets. Combat stats and projectile
+// movement stay independent; Economic area consolidation approximates coverage.
+// Use explicit profiles: desktop and phone can share the same buffer density.
+const FULL_GRAPHICS_PROFILE = Object.freeze({
+  simpleEffects: false,
+  denseDprLimit: 2,
+  desktopDprScale: 1.25,
+  staffTrailPoints: 32,
+  enemyAnimationSteps: 6,
+  crawlerAnimationSteps: 12,
+  ultFxIntervalMs: 0,
+  maxAlchemistRegions: Infinity,
+  puddleTickFrames: 1
+});
+
+export const GRAPHICS_PROFILES = Object.freeze({
+  [GRAPHICS_QUALITY.NATIVE]: Object.freeze({
+    ...FULL_GRAPHICS_PROFILE, denseDprLimit: Infinity, desktopDprScale: 1
+  }),
+  [GRAPHICS_QUALITY.HIGH]: FULL_GRAPHICS_PROFILE,
+  [GRAPHICS_QUALITY.PERFORMANCE]: Object.freeze({
+    simpleEffects: true,
+    denseDprLimit: 1,
+    desktopDprScale: 0.8,
+    staffTrailPoints: 8,
+    enemyAnimationSteps: 4,
+    crawlerAnimationSteps: 4,
+    ultFxIntervalMs: 50,
+    maxAlchemistRegions: 24,
+    puddleTickFrames: 3 // dt is measured in units of 1/60 second.
+  })
+});
 
 const STORAGE_KEY_GFX = 'hord_graphics_quality';
 
@@ -52,9 +85,14 @@ export function getGraphicsQuality() {
   return currentGraphicsQuality;
 }
 
+export function getGraphicsProfile(mode = currentGraphicsQuality) {
+  return GRAPHICS_PROFILES[mode] || GRAPHICS_PROFILES[GRAPHICS_QUALITY.NATIVE];
+}
+
 export function resolveTargetDpr(mode = currentGraphicsQuality) {
   const rawDpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
   const nativeDpr = Math.max(0.5, rawDpr);
+  const profile = getGraphicsProfile(mode);
   switch (mode) {
     case GRAPHICS_QUALITY.NATIVE:
       // Resolução nativa física 1:1 do monitor/display
@@ -70,11 +108,11 @@ export function resolveTargetDpr(mode = currentGraphicsQuality) {
     case GRAPHICS_QUALITY.PERFORMANCE:
       // Modo econômico / Alta performance:
       // - Em telas de PC desktop (nativeDpr <= 1.25): ativa Sub-Sampling de 0.80x (ex: 1080p -> 864p)
-      // - Em telas Retina / Smartphones (nativeDpr > 1.25): reduz para 1.25x para poupar bateria e manter FPS
+      // - Em telas Retina / Smartphones: buffer de até 1.0x; HUD DOM continua nativo
       if (nativeDpr <= 1.25) {
-        return Math.round(nativeDpr * 0.80 * 100) / 100;
+        return Math.round(nativeDpr * profile.desktopDprScale * 100) / 100;
       }
-      return Math.min(nativeDpr, 1.25);
+      return Math.min(nativeDpr, profile.denseDprLimit);
     default:
       return nativeDpr;
   }

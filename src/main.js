@@ -46,6 +46,7 @@ import {
   updateProjectiles, 
   updateAcidPuddles 
 } from './systems/projectiles.js';
+import { registerPersistentArea, resetPersistentAreas } from './systems/persistentAreas.js';
 import { groundCraters, addConsecratedTrail, addRolandShockwave, clearRolandChargeEffects } from './render/groundCracks.js';
 import { traceIgnisStep, clearIgnisStepEffects, updateIgnisStepEffects } from './render/ignisUlt.js';
 import { traceKaelPhase, clearKaelPhaseEffects, updateKaelPhaseEffects } from './render/kaelUlt.js';
@@ -80,7 +81,7 @@ import { render } from './render/renderer.js';
 import { transitionToArenaTheme, resetEnvironment, warmupStartingTerrain, clearNaturalTerrainCache } from './render/environment.js';
 import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
 import { initResponsive, layoutMetrics, GRAPHICS_QUALITY, getGraphicsQuality, setGraphicsQuality, resolveTargetDpr } from './core/responsive.js';
-import { clearSpriteCache } from './render/enemies/spriteCache.js';
+import { clearSpriteCache, queueEnemySpritePrewarm, processEnemySpritePrewarm } from './render/enemiesRenderer.js';
 import { devCheats, getBossPhaseDefeatDamage } from './systems/devtools.js';
 import { clearActiveBarks } from './systems/barks.js';
 import { forceClosePause } from './ui/modals/pauseModal.js';
@@ -283,6 +284,13 @@ export {
 };
 
 let nextEncirclementSecond = 20;
+let preparedWaveIndex = 0;
+
+function prepareWaveSprites(wave) {
+  if (!wave || wave.index === preparedWaveIndex) return;
+  queueEnemySpritePrewarm(wave.types, { includeElites: true });
+  preparedWaveIndex = wave.index;
+}
 
 export function resize() {
   const currentCanvas = canvas || document.getElementById('game-canvas');
@@ -329,6 +337,10 @@ export function resize() {
 
   // Invalida e sincroniza o atlas de monstros com a nova resolução/DPR
   clearSpriteCache();
+  preparedWaveIndex = 0;
+  if (gameState.isInMatch) {
+    prepareWaveSprites(getCurrentWave(getEffectiveHordeSeconds(Math.floor(frameCount / 60))));
+  }
   clearNaturalTerrainCache();
 
   // O layout do HUD é resolvido em CSS, sem reparentear elementos ao girar a tela.
@@ -393,6 +405,9 @@ export function terminateMatch() {
   bullets.length = 0;
   enemyBullets.length = 0;
   acidPuddles.length = 0;
+  resetPersistentAreas();
+  clearSpriteCache();
+  preparedWaveIndex = 0;
   groundCraters.length = 0;
   clearRolandChargeEffects();
   clearIgnisStepEffects();
@@ -573,6 +588,7 @@ export function resetGame() {
 
   // Spawna a horda inicial ativa imediatamente nas bordas da arena
   spawnInitialHorde();
+  prepareWaveSprites(getCurrentWave(0));
 
   // Pré-aquece antecipadamente o terreno da arena para evitar engasgos durante o zoom-out
   warmupStartingTerrain('CEMETERY');
@@ -741,6 +757,7 @@ function update(dt) {
   // Gatilho de Anúncio Cinematográfico de Transição de Onda
   if (!activeBoss && currentWave && currentWave.index !== lastAnnouncedWaveIndex && !matchIntro.active) {
     setLastAnnouncedWaveIndex(currentWave.index);
+    prepareWaveSprites(currentWave);
     waveAnnouncement.name = currentWave.name;
     waveAnnouncement.index = currentWave.index;
     waveAnnouncement.timer = 180;
@@ -750,6 +767,12 @@ function update(dt) {
   }
   if (waveAnnouncement.timer > 0) {
     waveAnnouncement.timer -= dt;
+  }
+
+  // Start preparing the incoming species before the next wave begins.
+  if (!activeBoss && !gameState.isWavePaused) {
+    const incomingWave = getCurrentWave(hordeSeconds + 5);
+    if (incomingWave.index !== currentWave.index) prepareWaveSprites(incomingWave);
   }
 
   // A região avança após a vitória e coleta da recompensa; ondas não a fazem regredir.
@@ -1075,7 +1098,7 @@ function update(dt) {
     if (player.ignisFireTrailTimer <= 0) {
       // Keep the original two-frame cadence across high refresh rates.
       player.ignisFireTrailTimer = 2 + (player.ignisFireTrailTimer % 2);
-      acidPuddles.push({
+      registerPersistentArea(acidPuddles, {
         x: player.x,
         y: player.y,
         radius: 38,
@@ -1720,6 +1743,9 @@ function loop(now) {
 
   try {
     if (gameState.isInMatch) {
+      // Spread sprite preparation across frames; never evict the active horde.
+      // The processor stops between bakes at this small time/work budget.
+      processEnemySpritePrewarm({ budgetMs: 0.75, maxBakes: 2 });
       // Cosmetic lifetimes continue when gameplay updates stop for death/victory.
       if (!gameState.isPaused && (gameState.isDead || gameState.isWon || deathSequence?.active)) {
         updateIgnisStepEffects(dt);

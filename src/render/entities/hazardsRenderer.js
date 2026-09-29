@@ -9,6 +9,7 @@
  */
 
 import { drawIgnisResidualFire } from '../ignisUlt.js';
+import { getGraphicsProfile } from '../../core/responsive.js';
 
 let _heatGlowCanvas = null;
 const _magmaGradCache = new Array(85);
@@ -34,10 +35,11 @@ function getHeatGlowCanvas() {
 
 export function renderAcidPuddles(ctx, acidPuddles, bounds, frameCount) {
   const { viewLeft, viewRight, viewTop, viewBottom } = bounds;
+  const simpleEffects = getGraphicsProfile().simpleEffects;
   const puddleCount = acidPuddles.length;
   for (let i = 0; i < puddleCount; i++) {
     const p = acidPuddles[i];
-    const maxR = p.isFire ? 65 : 35;
+    const maxR = (p.radius || 35) * (p.isFire ? 1.7 : 1) + 5;
     if (p.x < viewLeft - maxR || p.x > viewRight + maxR || p.y < viewTop - maxR || p.y > viewBottom + maxR) continue;
 
     const maxL = p.maxLife || 220;
@@ -45,6 +47,24 @@ export function renderAcidPuddles(ctx, acidPuddles, bounds, frameCount) {
     // Janela de animação visível de fade out cobrindo os últimos 50% de vida da poça
     const fadeWindow = maxL * 0.50;
     const fadeProgress = Math.min(1, Math.max(0, p.life / fadeWindow));
+
+    if (simpleEffects) {
+      // One readable outline per region. It follows the logical coverage radius
+      // rather than multiplying animated bubbles, flames and transparent halos.
+      ctx.globalAlpha = (p.isAlchemist ? 0.28 : p.isFire ? 0.45 : 0.60) * fadeProgress;
+      ctx.fillStyle = p.isAlchemist ? (p.isEvolved ? '#a29bfe' : '#8e44ad')
+        : p.isFire ? '#d35400' : '#2ecc71';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, Math.max(2, p.radius || 24), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = Math.max(0.25, fadeProgress);
+      ctx.strokeStyle = p.isAlchemist ? (p.isEvolved ? '#d6a2e8' : '#9b59b6')
+        : p.isFire ? '#f39c12' : '#27ae60';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      continue;
+    }
 
     // Dissipação visual: a poça encolhe gradualmente até o solo enquanto esvazia o alpha
     const shrinkFactor = 0.25 + 0.75 * fadeProgress;

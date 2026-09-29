@@ -1,3 +1,4 @@
+import { registerPersistentArea } from '../persistentAreas.js';
 import { t as matchText } from '../../i18n/index.js';
 /**
  * src/systems/enemyLifecycle/deathHandler.js
@@ -71,7 +72,7 @@ export function handleEnemyDeath(e, i, ctx) {
 
   // Efervescência Necrótica: inimigos corroídos deixam poça secundária ao morrer
   if (selectedHeroKey === 'ALCHEMIST' && ((e.acidStacks && e.acidStacks > 0) || e.inAcidPuddle)) {
-    acidPuddles.push({
+    registerPersistentArea(acidPuddles, {
       x: e.x,
       y: e.y,
       radius: 24,
@@ -97,7 +98,7 @@ export function handleEnemyDeath(e, i, ctx) {
 
   // ---- Efeitos de Elite na Morte ----
   if (e.eliteMod === 'TOXIC') {
-    acidPuddles.push({ x: e.x, y: e.y, radius: 32, life: 340, maxLife: 340, isFire: false });
+    registerPersistentArea(acidPuddles, { x: e.x, y: e.y, radius: 32, life: 340, maxLife: 340, isFire: false });
   } else if (e.eliteMod === 'FROST') {
     triggerShake(4);
     playSfx('freeze');
@@ -159,7 +160,7 @@ export function handleEnemyDeath(e, i, ctx) {
           enemyType: e.baseType || 'EXPLODER'
         });
       }
-      acidPuddles.push({ x: e.x, y: e.y, radius: 24, life: 160, maxLife: 160, isFire: true });
+      registerPersistentArea(acidPuddles, { x: e.x, y: e.y, radius: 24, life: 160, maxLife: 160, isFire: true });
     } else {
       playSfx('hit');
       triggerShake(10);
@@ -264,7 +265,7 @@ export function handleEnemyDeath(e, i, ctx) {
   // ---- Morte do Splitter: Poça Cáustica + Filhotes ----
   if (e.behavior === 'splitter') {
     // Poça Cáustica Residual e Espículas Ácidas
-    acidPuddles.push({ x: e.x, y: e.y, radius: 36, life: 180, maxLife: 180, isCaustic: true, isFire: false });
+    registerPersistentArea(acidPuddles, { x: e.x, y: e.y, radius: 36, life: 180, maxLife: 180, isCaustic: true, isFire: false });
     playSfx('acid');
     createHitParticles(e.x, e.y, '#ff4757', 10);
 
@@ -531,11 +532,11 @@ export function handleEnemyDeath(e, i, ctx) {
 
     if (e.behavior === 'splitter_queen' || e.baseType === 'BROOD_MATRIARCH') {
       for (let k = 0; k < 3; k++) spawnMobCluster('SPLITTER', 1);
-      acidPuddles.push({ x: e.x, y: e.y, radius: 32, life: 240, maxLife: 240, isFire: false });
+      registerPersistentArea(acidPuddles, { x: e.x, y: e.y, radius: 32, life: 240, maxLife: 240, isFire: false });
     } else if (e.baseType === 'MOBILE_HIVE') {
       spawnMobCluster('BAT', 3);
     } else if (e.baseType === 'FIRE_INCINERATOR') {
-      acidPuddles.push({ x: e.x, y: e.y, radius: 30, life: 200, maxLife: 200, isFire: true });
+      registerPersistentArea(acidPuddles, { x: e.x, y: e.y, radius: 30, life: 200, maxLife: 200, isFire: true });
     }
 
     if (Math.random() < 0.40) {
@@ -586,7 +587,7 @@ export function handleEnemyDeath(e, i, ctx) {
         }
       }
       if (!merged && acidPuddles.length < 50) {
-        acidPuddles.push({ x: e.x, y: e.y, radius: 24, life: 160, maxLife: 160, isCaustic: true, isFire: false });
+        registerPersistentArea(acidPuddles, { x: e.x, y: e.y, radius: 24, life: 160, maxLife: 160, isCaustic: true, isFire: false });
       }
     } else {
       spawnOrMergeGem(gems, e.x, e.y, e.xp);

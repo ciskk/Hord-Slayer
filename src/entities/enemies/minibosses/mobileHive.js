@@ -1,3 +1,4 @@
+import { registerPersistentArea } from '../../../systems/persistentAreas.js';
 /**
  * src/entities/enemies/minibosses/mobileHive.js
  * 
@@ -70,7 +71,7 @@ update(e, dt, ctx, dist, angle) {
       }
     } else if (e.currentSkill === 'SMOG_CLOUD') {
       safePlaySfx('freeze');
-      acidPuddles.push({
+      registerPersistentArea(acidPuddles, {
         x: e.x,
         y: e.y,
         radius: 38,

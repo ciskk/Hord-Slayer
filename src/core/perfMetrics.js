@@ -1,7 +1,7 @@
 /** Opt-in callback/CPU telemetry. Does not measure GPU presentation. */
 const CAPACITY = 10000;
 const KEYS = ['update', 'render', 'physics', 'enemies', 'weapons', 'projectiles', 'fieldEffects', 'pickups', 'hazards', 'hud', 'terrain', 'mobsRender', 'effectsRender'];
-const fields = ['interval', 'cpu', ...KEYS, 'collisions', 'spriteHits', 'spriteBakes', 'terrainChunks', 'reads', 'writes'];
+const fields = ['interval', 'cpu', ...KEYS, 'collisions', 'spriteHits', 'spriteBakes', 'enemyBodiesVisible', 'enemyBodiesCached', 'enemyBodiesProcedural', 'terrainChunks', 'reads', 'writes'];
 const history = Object.fromEntries(fields.map(k => [k, new Float64Array(CAPACITY)]));
 const values = Object.fromEntries(fields.map(k => [k, 0]));
 const starts = {};
@@ -83,6 +83,11 @@ export const perfMetrics = {
   countCollisionCandidate: amount => count('collisions', amount),
   countSpriteHit: () => count('spriteHits'),
   countSpriteBake: () => count('spriteBakes'),
+  countEnemyBodyRender(cached) {
+    if (!enabled) return;
+    values.enemyBodiesVisible++;
+    values[cached ? 'enemyBodiesCached' : 'enemyBodiesProcedural']++;
+  },
   countTerrainChunk: () => count('terrainChunks'),
   countPersistenceRead: () => count('reads'),
   countPersistenceWrite: () => count('writes'),
@@ -108,6 +113,10 @@ export const perfMetrics = {
         collisionsPerFrame: round(sum('collisions') / n),
         spriteHitRatePct: sum('spriteHits') + sum('spriteBakes') ? round(100 * sum('spriteHits') / (sum('spriteHits') + sum('spriteBakes'))) : 100,
         spriteBakesTotal: sum('spriteBakes'), spriteBakesPerSec: perSecond('spriteBakes'),
+        enemyBodiesVisiblePerFrame: round(sum('enemyBodiesVisible') / n),
+        enemyBodiesCachedPerFrame: round(sum('enemyBodiesCached') / n),
+        enemyBodiesProceduralPerFrame: round(sum('enemyBodiesProcedural') / n),
+        enemyBodyCacheCoveragePct: sum('enemyBodiesVisible') ? round(100 * sum('enemyBodiesCached') / sum('enemyBodiesVisible')) : null,
         terrainChunksTotal: sum('terrainChunks'), persistenceReadsPerSec: perSecond('reads'), persistenceWritesPerSec: perSecond('writes')
       },
       preview: { samples: pn, fps: pn ? round(1000 / mean(pIntervals)) : null, cpuTime: summary(recent(previewCpu, pn, previewTotal)), frameTime: summary(pIntervals) },

@@ -21,7 +21,7 @@
  * - Projeção de halos e partículas que ultrapassam os limites do botão para manter visibilidade periférica no mobile.
  */
 
-import { layoutMetrics } from '../core/responsive.js';
+import { layoutMetrics, getGraphicsProfile } from '../core/responsive.js';
 import { graphicsDiagnostics } from '../core/graphicsDiagnostics.js';
 
 function syncUltResolution() {
@@ -30,7 +30,9 @@ function syncUltResolution() {
   if (ultCanvas.width !== size || ultCanvas.height !== size) {
     ultCanvas.width = size; ultCanvas.height = size;
     ultCtx.setTransform(size / CANVAS_SIZE, 0, 0, size / CANVAS_SIZE, 0, 0);
+    return true;
   }
+  return false;
 }
 
 // Estado interno do renderizador
@@ -40,6 +42,9 @@ let currentHeroKey = 'KNIGHT';
 let lastProgress = 0;
 let lastIsReady = false;
 let _lastRenderFrame = -1;
+let _lastRenderTime = -Infinity;
+let _lastGraphicsProfile = null;
+let _forceUltRefresh = true;
 let activeParticleCount = 0;
 
 // Configuração do Canvas (Espaço de desenho 160x160 com centro em 80, 80)
@@ -152,7 +157,7 @@ function updateParticles(dtFactor = 1.0) {
   // Atualização do Trigger Flare
   if (triggerFlare.active) {
     triggerFlare.radius += 3.8 * dtFactor;
-    triggerFlare.alpha *= 0.90;
+    triggerFlare.alpha *= Math.pow(0.90, dtFactor);
     if (triggerFlare.alpha < 0.02 || triggerFlare.radius >= triggerFlare.maxRadius) {
       triggerFlare.active = false;
     }
@@ -170,6 +175,10 @@ export function initUltButtonRenderer() {
   if (!ultCtx) return;
 
   syncUltResolution();
+  _forceUltRefresh = true;
+  _lastRenderFrame = -1;
+  _lastRenderTime = -Infinity;
+  _lastGraphicsProfile = null;
 }
 
 /**
@@ -184,12 +193,14 @@ export function setUltHero(heroKey) {
   activeParticleCount = 0;
   smoothGaugeAngle = 0;
   triggerFlare.active = false;
+  _forceUltRefresh = true;
 }
 
 /**
  * Dispara a onda de choque e ejeção física de partículas ao usar a ULT
  */
 export function triggerUltBurst(heroKey) {
+  _forceUltRefresh = true;
   const hero = heroKey || currentHeroKey;
   triggerFlare.active = true;
   triggerFlare.radius = 12;
@@ -221,6 +232,10 @@ export function triggerUltBurst(heroKey) {
     pType = 'spark';
   }
 
+  // The economical button keeps the immediate confirmation ring but emits no
+  // particle pool work. The SVG emblem and cooldown DOM remain unchanged.
+  if (getGraphicsProfile().simpleEffects) return;
+
   // Emite faíscas radiais potentes além da borda
   const count = 18;
   for (let i = 0; i < count; i++) {
@@ -242,8 +257,11 @@ export function triggerUltBurst(heroKey) {
 /**
  * Loop mestre de renderização procedural da ULT
  */
-export function renderUltButton(player, frameCount) {
-  if (graphicsDiagnostics.mode === 'ult-off') return;
+export function renderUltButton(player, frameCount, now = performance.now()) {
+  if (graphicsDiagnostics.mode === 'ult-off') {
+    _forceUltRefresh = true;
+    return;
+  }
   if (!ultCtx || !ultCanvas) {
     ultCanvas = document.getElementById('ult-fx-canvas');
     if (ultCanvas) {
@@ -255,28 +273,42 @@ export function renderUltButton(player, frameCount) {
     }
   }
 
-  // Dirty checking / Culling de visibilidade e descarte de quadros duplicados
-  syncUltResolution();
-  if (frameCount === _lastRenderFrame) return;
-  _lastRenderFrame = frameCount;
-
   if (document.hidden || ultCanvas.offsetParent === null || !ultCanvas.isConnected) {
+    _forceUltRefresh = true;
     return;
   }
-
-  ultCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-  updateParticles(1.0);
 
   const skillCd = player ? player.skillCd : 0;
   const maxCd = (player && player.skillMaxCd > 0) ? player.skillMaxCd : 400;
   const isReady = skillCd <= 0;
   const progress = Math.max(0, Math.min(1.0, 1.0 - (skillCd / maxCd)));
 
+  const profile = getGraphicsProfile();
+  const profileChanged = profile !== _lastGraphicsProfile;
+  const resolutionChanged = syncUltResolution();
+  const forceRefresh = _forceUltRefresh || profileChanged || resolutionChanged || isReady !== lastIsReady;
+  if (!forceRefresh && frameCount === _lastRenderFrame) return;
+  if (!forceRefresh && profile.ultFxIntervalMs > 0 && now - _lastRenderTime + 0.001 < profile.ultFxIntervalMs) return;
+  if (profileChanged && _lastGraphicsProfile && profile.simpleEffects !== _lastGraphicsProfile.simpleEffects) {
+    for (let i = 0; i < MAX_PARTICLES; i++) particlePool[i].active = false;
+    activeParticleCount = 0;
+  }
+  const elapsedFactor = Number.isFinite(_lastRenderTime) ? Math.min(6, Math.max(0, (now - _lastRenderTime) * 0.06)) : 1;
+  _lastGraphicsProfile = profile;
+  _lastRenderFrame = frameCount;
+  _lastRenderTime = now;
+  _forceUltRefresh = false;
+
+  ultCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  updateParticles(profile.simpleEffects ? elapsedFactor : 1.0);
+
   lastProgress = progress;
   lastIsReady = isReady;
 
   // Renderização da arquitetura do herói selecionado
-  switch (currentHeroKey) {
+  if (profile.simpleEffects) {
+    drawSimpleUltRing(ultCtx, progress, isReady, now);
+  } else switch (currentHeroKey) {
     case 'MAGE':
       drawVolcanoCore(ultCtx, progress, isReady, frameCount);
       break;
@@ -298,7 +330,7 @@ export function renderUltButton(player, frameCount) {
   }
 
   // Renderização das partículas ativas
-  drawActiveParticles(ultCtx);
+  if (!profile.simpleEffects) drawActiveParticles(ultCtx);
 
   // Renderização do Trigger Flare (Onda de choque)
   if (triggerFlare.active) {
@@ -311,6 +343,27 @@ export function renderUltButton(player, frameCount) {
     ultCtx.stroke();
     ultCtx.restore();
   }
+}
+
+const SIMPLE_ULT_COLORS = {
+  MAGE: '#e67e22', ROGUE: '#a855f7', WARRIOR: '#a855f7',
+  BARBARIAN: '#e74c3c', ALCHEMIST: '#9b59b6', KNIGHT: '#f1c40f', PALADIN: '#f1c40f'
+};
+
+function drawSimpleUltRing(ctx, progress, isReady, now) {
+  const radius = BUTTON_RADIUS + 3;
+  ctx.save();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(18,22,30,0.85)';
+  ctx.beginPath();
+  ctx.arc(CENTER_X, CENTER_Y, radius, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = SIMPLE_ULT_COLORS[currentHeroKey] || SIMPLE_ULT_COLORS.KNIGHT;
+  ctx.globalAlpha = isReady ? 0.8 + Math.sin(now * 0.006) * 0.2 : 0.9;
+  ctx.beginPath();
+  ctx.arc(CENTER_X, CENTER_Y, radius, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 /**

@@ -8,5 +8,7 @@ export {
   drawEnemyShape,
   drawDyingEnemyShape,
   ENEMY_RENDERERS,
-  clearSpriteCache
+  clearSpriteCache,
+  queueEnemySpritePrewarm,
+  processEnemySpritePrewarm
 } from './enemies/index.js';

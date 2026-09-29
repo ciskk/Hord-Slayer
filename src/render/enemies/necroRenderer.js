@@ -3,7 +3,7 @@ import { getRelativeAimAngle } from '../../core/math.js';
 import { beginCreature, endCreature, creaturePalette, polygon, ellipse, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
 // Pointed hood, a skull staff and one raised hand identify the summoner.
-export function draw(e) {
+function drawParts(e, body, castingParts) {
   const p = creaturePalette(e, '#8239bb', '#29143d', '#32e4c8');
   const dead = e.deathPose !== undefined;
   const hover = dead ? 0 : Math.sin(frameCount * .08) * .06;
@@ -13,6 +13,7 @@ export function draw(e) {
   const aim = getRelativeAimAngle(e.aimAngle ?? (e.facing === -1 ? Math.PI : 0), e.facing || 1);
   beginCreature(ctx, e);
   ctx.translate(0, hover);
+  if (body) {
   polygon(ctx, [[-.46, -.5], [.26, -.53], [.6, .97], [.18, .8], [-.05, 1.1], [-.3, .8], [-.69, .98]], p.shade);
   polygon(ctx, [[-.4, -.55], [-.11, -.37], [-.28, .67], [-.69, .98], [-.56, .1]], p.body, null);
   polygon(ctx, [[.11, -.46], [.4, -.6], [.45, .48], [.6, .97], [.17, .68]], p.body, null);
@@ -22,6 +23,8 @@ export function draw(e) {
   polygon(ctx, [[-.24, -.71], [.08, -1.09], [.27, -.7], [.16, -.39], [-.14, -.42]], p.ink, null);
   stroke(ctx, [[-.13, -.66], [-.01, -.61]], p.accent, .075);
   stroke(ctx, [[.08, -.61], [.2, -.67]], p.accent, .075);
+  }
+  if (castingParts) {
   const handY = summoning ? -.65 : .2;
   stroke(ctx, [[-.36, -.23], [-.68, .04], [-.87, handY]], p.ink, .24);
   stroke(ctx, [[-.36, -.23], [-.68, .04], [-.87, handY]], p.body, .15);
@@ -47,7 +50,13 @@ export function draw(e) {
     ellipse(ctx, tip, 0, .13 + charge * .12, .13 + charge * .12, '#bd71ff', p.ink, .045);
   }
   ctx.restore();
+  }
   endCreature(ctx);
 }
+
+export const animationFrequency = .08;
+export function draw(e) { drawParts(e, true, true); }
+export function drawBody(e) { drawParts(e, true, false); }
+export function drawLive(e) { drawParts(e, false, true); }
 
 export function drawDying(de, t) { drawCreatureDeath(ctx, de, t, draw, 'crumble'); }

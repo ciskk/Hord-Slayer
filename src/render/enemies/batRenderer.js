@@ -3,7 +3,7 @@ import { getRelativeAimAngle } from '../../core/math.js';
 import { beginCreature, endCreature, creaturePalette, polygon, stroke, drawCreatureDeath } from '../creatureStyle.js';
 
 // Wide red membranes, pointed ears, two fangs: readable even at radius 4.5.
-export function draw(e) {
+function drawParts(e, body, slash) {
   const p = creaturePalette(e, '#e02746', '#570d27', '#ffbd61');
   const dead = e.deathPose !== undefined;
   const windup = !dead && e.combatState === 'WINDUP';
@@ -11,6 +11,7 @@ export function draw(e) {
   const flap = dead ? .8 * e.deathPose : Math.sin(frameCount * (strike ? .68 : .42)) * .38;
   beginCreature(ctx, e);
   if (windup) ctx.rotate(.2);
+  if (body) {
   for (const side of [-1, 1]) {
     ctx.save();
     ctx.scale(side, 1);
@@ -26,7 +27,8 @@ export function draw(e) {
   stroke(ctx, [[.1, -.4], [.29, -.46]], p.accent, .14);
   polygon(ctx, [[-.25, -.2], [-.1, .17], [-.04, -.16]], p.bone, null);
   polygon(ctx, [[.04, -.16], [.1, .17], [.25, -.2]], p.bone, null);
-  if (strike) {
+  }
+  if (strike && slash) {
     ctx.save();
     ctx.rotate(getRelativeAimAngle(e.attackAngle ?? (e.facing === -1 ? Math.PI : 0), e.facing || 1));
     stroke(ctx, [[.75, -.35], [1, 0], [.75, .35]], p.accent, .16);
@@ -34,6 +36,11 @@ export function draw(e) {
   }
   endCreature(ctx);
 }
+
+export function animationFrequency(e) { return e.combatState === 'STRIKE' ? .68 : .42; }
+export function draw(e) { drawParts(e, true, true); }
+export function drawBody(e) { drawParts(e, true, false); }
+export function drawLive(e) { if (e.combatState === 'STRIKE') drawParts(e, false, true); }
 
 export function drawDying(de, t) {
   ctx.save();

@@ -1,3 +1,4 @@
+import { registerPersistentArea } from '../../../systems/persistentAreas.js';
 import { t as matchText } from '../../../i18n/index.js';
 /**
  * src/entities/enemies/minibosses/broodMatriarch.js
@@ -65,7 +66,7 @@ update(e, dt, ctx, dist, angle) {
     if (e.currentSkill === 'ACID_SPIT') {
       safePlaySfx('shoot');
       createHitParticles(e.x, e.y, '#00cec9', 10);
-      acidPuddles.push({
+      registerPersistentArea(acidPuddles, {
         x: ctx.player.x,
         y: ctx.player.y,
         radius: 35,

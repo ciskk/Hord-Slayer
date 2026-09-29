@@ -10,6 +10,7 @@ import { getActiveBloodAltar } from '../../systems/worldEvents.js';
 import { player } from '../../entities/player.js';
 import { chests } from '../../state/collections.js';
 import { frameCount } from '../../state/gameState.js';
+import { getGraphicsProfile } from '../../core/responsive.js';
 
 const _chestWoodGradCache = {};
 const _chestLidGradCache = {};
@@ -184,12 +185,33 @@ export function renderChests(ctx, chests, bounds, frameCount) {
 
 export function renderGems(ctx, gems, bounds, frameCount, player) {
   const { viewLeft, viewRight, viewTop, viewBottom } = bounds;
+  const simpleEffects = getGraphicsProfile().simpleEffects;
   for (let i = 0; i < gems.length; i++) {
     const g = gems[i];
     if (g.x < viewLeft || g.x > viewRight || g.y < viewTop || g.y > viewBottom) continue;
 
     const baseColor = g.color || (g.isSuper ? '#e056fd' : '#00d2d3');
     const baseR = g.radius || 4.5;
+    if (simpleEffects) {
+      // Fixed, saturated diamonds keep XP visible without per-gem halo,
+      // pulsation, layered facets or orbital sparkle.
+      const rx = baseR * 0.95;
+      const ry = baseR * 1.35;
+      ctx.fillStyle = baseColor;
+      ctx.beginPath();
+      ctx.moveTo(g.x, g.y - ry);
+      ctx.lineTo(g.x + rx, g.y);
+      ctx.lineTo(g.x, g.y + ry);
+      ctx.lineTo(g.x - rx, g.y);
+      ctx.closePath();
+      ctx.fill();
+      if (g.isSuper) {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.3;
+        ctx.stroke();
+      }
+      continue;
+    }
     const pulseOffset = g.pulseOffset || 0;
     const pulse = Math.sin(frameCount * 0.16 + pulseOffset) * (g.isSuper ? 2.2 : 1.2);
     const rad = Math.max(3, baseR + pulse);
