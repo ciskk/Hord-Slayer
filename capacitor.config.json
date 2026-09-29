@@ -1,8 +1,0 @@
-{
-  "appId": "com.hordslayer.game",
-  "appName": "Hord Slayer",
-  "webDir": "www",
-  "server": {
-    "androidScheme": "https"
-  }
-}
