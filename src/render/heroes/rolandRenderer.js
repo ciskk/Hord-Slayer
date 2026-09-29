@@ -40,12 +40,12 @@ function drawConsecratedPlate(c, bob, t) {
   c.restore();
 }
 
-function drawChargeGrip(c, colors, evolved, bob, t) {
+function drawChargeGrip(c, colors, evolved, bob, t, isDetailed) {
   const weight = Math.sin(t * .38);
   c.save(); c.translate(2 + weight * .35, 4 + bob); c.rotate(.95 + weight * .045);
   // Pivot at the grip: the heavy head barely oscillates under a two-hand brace.
   c.translate(0, -15);
-  drawRolandHammerModel(c, colors, evolved, 1.5 + Math.sin(t * .25) * .35);
+  drawRolandHammerModel(c, colors, evolved, 1.5 + Math.sin(t * .25) * .35, isDetailed);
   c.strokeStyle = 'rgba(255, 217, 129, 0.25)'; c.lineWidth = 4;
   c.strokeRect(-10, -14, 20, 10);
   c.strokeStyle = '#fff0c4'; c.lineWidth = .65;
@@ -68,26 +68,38 @@ function drawChargeGrip(c, colors, evolved, bob, t) {
   c.restore();
 }
 
-export function drawRolandHammerModel(c, cCol, isEvolved = false, runeGlowMult = 1.0) {
+export function drawRolandHammerModel(c, cCol, isEvolved = false, runeGlowMult = 1.0, isDetailed = false) {
   const hammerWood = cCol.hammerWood || '#3d271d';
   const hammerSteel = isEvolved ? '#3d1c06' : (cCol.hammerSteel || '#57606f');
   const hammerSteelLight = isEvolved ? '#e67e22' : (cCol.hammerSteelLight || '#8395a7');
+  const hammerSteelDark = isEvolved ? '#30170a' : (cCol.hammerSteelDark || '#26303e');
   const hammerGold = isEvolved ? '#f39c12' : (cCol.hammerGold || '#f1c40f');
   const hammerGoldLight = isEvolved ? '#ffeaa7' : (cCol.hammerGoldLight || '#ffeaa7');
   const hammerRune = isEvolved ? '#ff7675' : (cCol.hammerRune || '#f1c40f');
   const hammerRuneGlow = isEvolved ? '#ffffff' : (cCol.hammerRuneGlow || '#ffffff');
   const steelHighlight = cCol.armorHighlight || '#ffffff';
+  const leatherDark = cCol.leatherDark || '#1e130c';
+  const leatherLight = cCol.leatherLight || '#785234';
+  const forgedGold = skinGradient(c, -9, -13, 18, 4, isEvolved ? '#9b4c13' : (cCol.trimDark || '#866232'), hammerGold, hammerGoldLight);
 
   // Cabo de carvalho torneado com ataduras cruzadas de couro cru
-  c.fillStyle = hammerWood;
+  c.fillStyle = skinGradient(c, -2, 0, 4, 0, leatherDark, hammerWood, leatherLight);
   c.fillRect(-2, -4, 4, 32);
-  c.strokeStyle = '#1e130c';
+  c.strokeStyle = leatherDark;
   c.lineWidth = 1;
   c.beginPath();
   c.moveTo(-2, 4); c.lineTo(2, 7);
   c.moveTo(-2, 12); c.lineTo(2, 15);
   c.moveTo(-2, 20); c.lineTo(2, 23);
   c.stroke();
+  // Leather grain and stitched wraps remain inside the original shaft.
+  skinLine(c, [[-1.2,1],[-1.2,26]], leatherLight, .35);
+  if (isDetailed) {
+    for (const y of [5, 13, 21]) {
+      skinLine(c, [[-1.4,y],[1.4,y+2.1]], '#b38b5a', .35);
+      skinLine(c, [[-.5,y+.4],[0,y+1]], hammerGoldLight, .25);
+    }
+  }
 
   // Pomo inferior de ferro forjado e anel de ouro maciço
   c.fillStyle = hammerSteel;
@@ -105,7 +117,7 @@ export function drawRolandHammerModel(c, cCol, isEvolved = false, runeGlowMult =
 
   // Cabeça titânica do martelo de guerra
   // Bloco principal de ferro temperado
-  c.fillStyle = skinGradient(c, -9, -15, 18, 8, '#26303e', hammerSteel, hammerSteelLight);
+  c.fillStyle = skinGradient(c, -9, -15, 18, 8, hammerSteelDark, hammerSteel, hammerSteelLight);
   c.fillRect(-9, -15, 18, 12);
   // Recessed end caps and silver inlay give the head a forged, layered profile.
   for (const side of [-1, 1]) {
@@ -132,7 +144,7 @@ export function drawRolandHammerModel(c, cCol, isEvolved = false, runeGlowMult =
   c.stroke();
 
   // Faixas de reforço douradas forjadas
-  c.fillStyle = hammerGold;
+  c.fillStyle = forgedGold;
   c.fillRect(-10, -13, 20, 2.6);
   c.fillRect(-10, -7.5, 20, 2.6);
   c.fillRect(-2, -15, 4, 12);
@@ -141,6 +153,19 @@ export function drawRolandHammerModel(c, cCol, isEvolved = false, runeGlowMult =
   c.fillStyle = hammerGoldLight;
   c.fillRect(-10, -13, 20, 0.8);
   c.fillRect(-10, -7.5, 20, 0.8);
+
+  // Recessed panels, bevels and rivets enrich the existing hammer face.
+  for (const side of [-1, 1]) {
+    skinLine(c, [[side*7.8,-9.7],[side*7.8,-8.1],[side*3.1,-8.1]], hammerSteelDark, .5);
+    skinLine(c, [[side*7.3,-9.6],[side*3.2,-9.6]], hammerSteelLight, .4);
+    c.fillStyle = hammerGoldLight;
+    c.fillRect(side*7.5-.35, -12.4, .7, .7);
+    c.fillRect(side*7.5-.35, -6.8, .7, .7);
+    if (isDetailed) {
+      skinLine(c, [[side*3.6,-9.2],[side*4.8,-8.5],[side*6.2,-9.2]], hammerGoldLight, .3);
+      skinLine(c, [[side*4.8,-9.5],[side*4.8,-8.4]], hammerSteelDark, .3);
+    }
+  }
 
   // Runa divina incandescente pulsante
   c.fillStyle = `rgba(241, 196, 15, ${Math.min(1, 0.45 * runeGlowMult)})`;
@@ -204,10 +229,19 @@ export function drawRolandModel(c, charDef, state, {
     const goldGlint = cCol.goldGlint || '#ffffff';
     const plumeCol = cCol.plume || '#8e44ad';
     const plumeHigh = cCol.plumeHigh || '#a55eea';
+    const plumeGlint = cCol.plumeGlint || '#d9b7f0';
+    const capeShadow = cCol.capeShadow || '#210f35';
+    const capeHighlight = cCol.capeHighlight || '#73548d';
     const tabardCol = cCol.tabard || '#f5f6fa';
     const tabardShadow = cCol.tabardShadow || '#dcdde1';
+    const tabardHighlight = cCol.tabardHighlight || '#fff4dd';
     const tabardCross = cCol.tabardCross || '#c23616';
     const tabardGold = cCol.tabardGold || '#f1c40f';
+    const crossShadow = cCol.tabardCrossShadow || '#782b35';
+    const crossLight = cCol.tabardCrossLight || '#d95d46';
+    const leather = cCol.leather || '#231711';
+    const leatherLight = cCol.leatherLight || '#785234';
+    const leatherDark = cCol.leatherDark || '#1c130d';
     const hammerWood = cCol.hammerWood || '#3d271d';
     const hammerSteel = cCol.hammerSteel || '#57606f';
     const hammerSteelLight = cCol.hammerSteelLight || '#8395a7';
@@ -218,7 +252,8 @@ export function drawRolandModel(c, charDef, state, {
     const eyeGlow = cCol.eyeGlow || '#00d2d3';
     const holyGlow = cCol.holyGlow || 'rgba(241, 196, 15, 0.40)';
     const isDetailed = scale >= 1.5;
-    const polishedSteel = skinGradient(c, -9, -15 + bob, 24, 12, steelDark, steelMid, '#c1d2df');
+    const polishedSteel = skinGradient(c, -9, -15 + bob, 24, 12, steelDark, steelMid, steelLight);
+    const polishedGold = skinGradient(c, -6, -15 + bob, 18, 12, goldDark, goldTrim, goldLight);
 
     // ULT posture: planted feet, lowered center of mass and forward plate brace.
     if (isDashing) {
@@ -242,7 +277,7 @@ export function drawRolandModel(c, charDef, state, {
     c.fill();
 
     // Manto exterior de veludo púrpura
-    c.fillStyle = skinGradient(c, -17, bob, 18, 10, '#210f35', cCol.cape || '#481b6d', '#73548d');
+    c.fillStyle = skinGradient(c, -17, bob, 18, 10, capeShadow, cCol.cape || '#481b6d', capeHighlight);
     c.beginPath();
     c.moveTo(-5, -3 + bob);
     c.lineTo(-15 - Math.abs(capeWave * 1.1), 15 + bob);
@@ -252,8 +287,21 @@ export function drawRolandModel(c, charDef, state, {
     c.closePath();
     c.fill();
 
+    // Velvet folds are clipped to the unchanged moving cape contour.
+    c.save(); c.clip(); c.globalCompositeOperation = 'source-atop';
+    skinLine(c, [[-4,-1+bob],[-10-Math.abs(capeWave*.8),13.8+bob]], capeHighlight, .7);
+    skinLine(c, [[-6,1+bob],[-13-Math.abs(capeWave),14+bob]], capeShadow, 1.4);
+    if (isDetailed) {
+      skinLine(c, [[-5.5,3+bob],[-8-Math.abs(capeWave*.6),13.8+bob]], '#c39bd52e', .35);
+      for (let i = 0; i < 5; i++) {
+        const x = -12.6 + i * 1.7 - Math.abs(capeWave * (.8 - i * .1));
+        skinLine(c, [[x,14.5+bob],[x+.4,14.1+bob]], goldLight, .3);
+      }
+    }
+    c.restore();
+
     // Vinco de sombra no veludo da capa
-    c.strokeStyle = '#220a35';
+    c.strokeStyle = capeShadow;
     c.lineWidth = 1.2;
     c.beginPath();
     c.moveTo(-4, -1 + bob);
@@ -284,7 +332,7 @@ export function drawRolandModel(c, charDef, state, {
       c.save();
       c.translate(-2, -3 + bob);
       c.rotate(-0.58);
-      drawRolandHammerModel(c, cCol, evolvedHammer, Math.sin(tFrame * 0.1) * 0.3 + 0.7);
+      drawRolandHammerModel(c, cCol, evolvedHammer, Math.sin(tFrame * 0.1) * 0.3 + 0.7, isDetailed);
       c.restore();
     }
 
@@ -298,7 +346,7 @@ export function drawRolandModel(c, charDef, state, {
     c.fillRect(legRightX, 6 + bob, 5, 8);
 
     // Placa frontal das pernas (aço polido)
-    c.fillStyle = steelMid;
+    c.fillStyle = polishedSteel;
     c.fillRect(legLeftX + 0.5, 7 + bob, 4, 6.5);
     c.fillRect(legRightX + 0.5, 7 + bob, 4, 6.5);
 
@@ -377,6 +425,9 @@ export function drawRolandModel(c, charDef, state, {
       if (isDetailed) {
         skinLine(c, [[lx+1,11+bob],[lx+2.5,10+bob],[lx+3.5,11+bob]], goldDark, .35);
         skinLine(c, [[lx+1,15+bob],[lx+1,13+bob]], '#526174', .35);
+        skinLine(c, [[lx+3.5,10.5+bob],[lx+3.5,12+bob]], steelDark, .35);
+        skinLine(c, [[lx+3.9,10.5+bob],[lx+3.9,12+bob]], steelLight, .25);
+        skinLine(c, [[lx+.5,15+bob],[lx+4.7,15+bob]], steelMid, .4);
       }
     }
 
@@ -390,6 +441,17 @@ export function drawRolandModel(c, charDef, state, {
     c.lineTo(-6.5, 7 + bob);
     c.closePath();
     c.fill();
+
+    // Raised borders and small rivets stay inset from the cuirass edges.
+    for (const side of [-1, 1]) {
+      skinLine(c, [[side*7.8,-4+bob],[side*6.3,3.4+bob]], goldDark, .8);
+      skinLine(c, [[side*7.4,-4+bob],[side*6,3.4+bob]], goldLight, .35);
+      if (isDetailed) {
+        c.fillStyle = steelHighlight;
+        c.fillRect(side*7.3-.25, -3.2+bob, .5, .5);
+        c.fillRect(side*6.4-.25, 2+bob, .5, .5);
+      }
+    }
 
     // Sombra inferior do chanfro da armadura
     c.fillStyle = steelDark;
@@ -414,7 +476,7 @@ export function drawRolandModel(c, charDef, state, {
     c.strokeRect(-5, -6.5 + bob, 10, 2.2);
 
     // Tabardo monástico sagrado drapeado com sombras de dobra
-    c.fillStyle = skinGradient(c, -5, bob, 10, 0, '#b7ae99', tabardCol, '#fff4dd');
+    c.fillStyle = skinGradient(c, -5, bob, 10, 0, tabardShadow, tabardCol, tabardHighlight);
     c.beginPath();
     c.moveTo(-5.2, -5 + bob);
     c.lineTo(5.2, -5 + bob);
@@ -441,14 +503,23 @@ export function drawRolandModel(c, charDef, state, {
     c.closePath();
     c.fill();
 
+    if (isDetailed) {
+      // Fine linen seams follow the taper; no new hem or hanging cloth.
+      for (const side of [-1, 1]) {
+        skinLine(c, [[side*4.6,-4.5+bob],[side*3.8,7.8+bob]], '#8b775355', .3);
+        skinLine(c, [[side*3.7,1.8+bob],[side*3.2,7.8+bob]], tabardHighlight, .35);
+      }
+      skinLine(c, [[-3.5,8+bob],[3.5,8+bob]], goldTrim, .35);
+    }
+
     // Cruz frontal heráldica em veludo escarlate com contorno em filigrana de ouro
     // Fundo dourado bordado (expande 0.6px em torno da cruz)
-    c.fillStyle = tabardGold;
+    c.fillStyle = skinGradient(c, -4.3, -4.4+bob, 8.6, 8, goldDark, tabardGold, goldLight);
     c.fillRect(-1.7, -4.4 + bob, 3.4, 10.8);
     c.fillRect(-4.3, -2.0 + bob, 8.6, 3.4);
 
     // Cruz escarlate interior
-    c.fillStyle = tabardCross;
+    c.fillStyle = skinGradient(c, -3.8, -4+bob, 7.6, 8, crossShadow, tabardCross, crossLight);
     c.fillRect(-1.2, -4.0 + bob, 2.4, 10);
     c.fillRect(-3.8, -1.5 + bob, 7.6, 2.4);
 
@@ -457,10 +528,11 @@ export function drawRolandModel(c, charDef, state, {
     c.fillRect(-0.5, -0.7 + bob, 1.0, 0.8);
 
     // Heraldic shield backing, raised cross and laurel in old gold.
-    skinPolygon(c, [[-3.4,-3.5+bob],[3.4,-3.5+bob],[2.7,1.6+bob],[0,3.5+bob],[-2.7,1.6+bob]], '#782b35', '#d5b877', .55);
+    skinPolygon(c, [[-3.4,-3.5+bob],[3.4,-3.5+bob],[2.7,1.6+bob],[0,3.5+bob],[-2.7,1.6+bob]], skinGradient(c, -3.4, -3.5+bob, 6.8, 6, crossShadow, tabardCross, '#bb5a4b'), tabardGold, .55);
     skinLine(c, [[0,-2.6+bob],[0,2+bob]], '#f3dd9d', .85);
     skinLine(c, [[-1.9,-1+bob],[1.9,-1+bob]], '#f3dd9d', .85);
     if (isDetailed) {
+      skinLine(c, [[-2.8,-3+bob],[2.8,-3+bob],[2.2,1.1+bob]], goldLight, .3);
       skinSprig(c, -3.3, 3+bob, 4.2, -.18, '#ac8e54', true);
       skinSprig(c, 3.3, 3+bob, 4.2, .18, '#ac8e54', true);
       // Chainmail only in the exposed flank joints.
@@ -473,16 +545,26 @@ export function drawRolandModel(c, charDef, state, {
     }
 
     // Cinto nobre de combate e correia transversal do coldre
-    c.fillStyle = '#231711';
+    c.fillStyle = skinGradient(c, -7, 4.5+bob, 0, 3.2, leatherLight, leather, leatherDark);
     c.fillRect(-7, 4.5 + bob, 14, 3.2);
 
     // Correia diagonal de couro do coldre transversal
-    c.strokeStyle = '#231711';
+    c.strokeStyle = leather;
     c.lineWidth = 2.4;
     c.beginPath();
     c.moveTo(-6, -4 + bob);
     c.lineTo(5, 5 + bob);
     c.stroke();
+
+    skinLine(c, [[-5.9,-4.5+bob],[5.3,4.6+bob]], leatherLight, .45);
+    if (isDetailed) {
+      skinLine(c, [[-6.3,5+bob],[-3.3,5+bob]], leatherLight, .3);
+      skinLine(c, [[3.3,5+bob],[6.3,5+bob]], leatherLight, .3);
+      for (let i = 0; i < 4; i++) {
+        const x = -4.8 + i * 2.4, y = -3 + i * 1.96 + bob;
+        skinLine(c, [[x,y],[x+.3,y-.35]], '#d3b57b', .25);
+      }
+    }
 
     // Rebites de aço na correia
     c.fillStyle = steelLight;
@@ -490,9 +572,9 @@ export function drawRolandModel(c, charDef, state, {
     c.fillRect(1, 1.6 + bob, 1.2, 1.2);
 
     // Fivela ornamentada de ouro com espigão e brilho especular
-    c.fillStyle = goldTrim;
+    c.fillStyle = polishedGold;
     c.fillRect(-2.8, 4.0 + bob, 5.6, 4.2);
-    c.fillStyle = '#1c130d';
+    c.fillStyle = leatherDark;
     c.fillRect(-1.5, 4.8 + bob, 3.0, 2.4);
     c.fillStyle = goldLight;
     c.fillRect(-0.5, 4.8 + bob, 1.0, 2.4);
@@ -513,7 +595,7 @@ export function drawRolandModel(c, charDef, state, {
     c.fillStyle = steelMid;
     c.fillRect(-10.5, -2 + bob, 3.5, 6);
 
-    c.fillStyle = goldTrim;
+    c.fillStyle = polishedGold;
     c.beginPath();
     c.moveTo(-7, -6 + bob);
     c.lineTo(-14, -3 + bob);
@@ -527,6 +609,10 @@ export function drawRolandModel(c, charDef, state, {
     // Brilho no topo da ombreira traseira
     c.fillStyle = goldLight;
     c.fillRect(-12, -4.5 + bob, 4, 1);
+    if (isDetailed) {
+      skinLine(c, [[-12.9,-2.5+bob],[-12.3,.7+bob],[-9,.2+bob]], goldDark, .45);
+      skinLine(c, [[-12.5,-2.5+bob],[-11.9,.1+bob],[-9,-.3+bob]], goldLight, .3);
+    }
 
     // 6. Cabeça e Grande Elmo Gótico (Greathelm) com Crista e Visor
     // Cúpula do elmo em aço chanfrado 3D
@@ -543,8 +629,17 @@ export function drawRolandModel(c, charDef, state, {
     c.lineWidth = 1.4;
     c.stroke();
 
+    c.save(); c.clip(); c.globalCompositeOperation = 'source-atop';
+    // A cool reflection across the same helmet face, below the brass visor.
+    skinPolygon(c, [[-4.3,-14.8+bob],[6.7,-13.5+bob],[6.2,-12.4+bob],[-4.8,-13.7+bob]], '#edf6ff28');
+    if (isDetailed) {
+      skinLine(c, [[-3.3,-14.5+bob],[5.6,-13.4+bob]], steelLight, .35);
+      skinLine(c, [[-3,-7+bob],[.6,-7+bob]], steelLight, .35);
+    }
+    c.restore();
+
     // Sombra do chanfro posterior do elmo
-    c.fillStyle = steelDark;
+    c.fillStyle = skinGradient(c, -7, -12+bob, 5.5, 0, steelDark, '#425369', steelMid);
     c.beginPath();
     c.moveTo(-5.5, -6 + bob);
     c.lineTo(-1.5, -6 + bob);
@@ -578,13 +673,13 @@ export function drawRolandModel(c, charDef, state, {
     c.fillRect(0.5, -13.8 + bob, 6.2, 7.8);
 
     // Barra vertical de ouro
-    c.fillStyle = goldTrim;
+    c.fillStyle = polishedGold;
     c.fillRect(1.5, -13.5 + bob, 2.2, 7.5);
     c.fillStyle = goldLight;
     c.fillRect(1.8, -13.5 + bob, 0.9, 7.5);
 
     // Barra horizontal de ouro
-    c.fillStyle = goldTrim;
+    c.fillStyle = polishedGold;
     c.fillRect(-2.5, -10.5 + bob, 9.2, 2.4);
     c.fillStyle = goldLight;
     c.fillRect(-2.5, -10.5 + bob, 9.2, 0.8);
@@ -594,6 +689,16 @@ export function drawRolandModel(c, charDef, state, {
     c.fillRect(2.0, -13.2 + bob, 1.0, 1.0);
     c.fillRect(2.0, -6.8 + bob, 1.0, 1.0);
     c.fillRect(-2.2, -10.0 + bob, 1.0, 1.0);
+
+    if (isDetailed) {
+      // Etched brass and recessed temple rivets, clear of the eye slit.
+      skinLine(c, [[2.9,-12.9+bob],[2.9,-11.1+bob]], goldDark, .3);
+      skinLine(c, [[2.9,-7.8+bob],[2.9,-7.2+bob]], goldDark, .3);
+      for (const y of [-12.7, -8]) {
+        c.fillStyle = steelDark; c.fillRect(-3.5,y+bob,.85,.85);
+        c.fillStyle = steelLight; c.fillRect(-3.4,y+bob,.4,.4);
+      }
+    }
 
     // Fenda ocular estilizada (O Olhar Sagrado do Paladino)
     const glowCol = isDashing ? '#ffffff' : eyeGlow;
@@ -616,7 +721,7 @@ export function drawRolandModel(c, charDef, state, {
     const plumeSway = isMoving ? Math.sin(walkCycle) * 3.2 : Math.sin(tFrame * 0.08) * 1.6;
 
     // Camada base roxa profunda
-    c.fillStyle = plumeCol;
+    c.fillStyle = skinGradient(c, -15-plumeSway, -19+bob, 12, 5, cCol.capeInner || '#2c1045', plumeCol, plumeHigh);
     c.beginPath();
     c.moveTo(-3, -15 + bob);
     c.quadraticCurveTo(-9 - plumeSway, -22 + bob, -17 - Math.abs(plumeSway * 1.3), -15 + bob + plumeSway);
@@ -625,7 +730,7 @@ export function drawRolandModel(c, charDef, state, {
     c.fill();
 
     // Segunda pena sobreposta com destaque em lavanda vibrante
-    c.fillStyle = plumeHigh;
+    c.fillStyle = skinGradient(c, -13-plumeSway, -19+bob, 11, 4, plumeCol, plumeHigh, plumeGlint);
     c.beginPath();
     c.moveTo(-2.5, -15.5 + bob);
     c.quadraticCurveTo(-7 - plumeSway * 0.9, -20.5 + bob, -14 - Math.abs(plumeSway * 1.1), -17 + bob + plumeSway * 0.8);
@@ -633,17 +738,29 @@ export function drawRolandModel(c, charDef, state, {
     c.closePath();
     c.fill();
 
+    // Feather filaments are clipped to the existing upper plume in every pose.
+    if (isDetailed) {
+      c.save(); c.clip(); c.globalCompositeOperation = 'source-atop';
+      skinLine(c, [[-13-Math.abs(plumeSway*1.1),-17.1+bob+plumeSway*.8],[-7-plumeSway*.5,-16.7+bob],[-3.4,-15+bob]], plumeGlint, .35);
+      for (let i=0;i<5;i++) {
+        skinLine(c, [[-4-i*1.5-plumeSway*.4,-16+bob],[-5-i*1.7-plumeSway*.6,-18+bob+i*.25]], plumeGlint, .3);
+        skinLine(c, [[-4.3-i*1.5-plumeSway*.4,-15.7+bob],[-5.4-i*1.7-plumeSway*.6,-17.5+bob+i*.25]], plumeCol, .25);
+      }
+      c.restore();
+    }
+
     // Ponto de luz na raiz do penacho
-    c.fillStyle = '#e056fd';
+    c.fillStyle = plumeGlint;
     c.beginPath();
     c.arc(-2.8, -14.8 + bob, 1.0, 0, Math.PI * 2);
     c.fill();
 
     if (isDetailed) {
-      // Feather barbs and engraved temple grooves, lit from the upper left.
+      // Retain the original feather tips and add the inset filaments above.
       for (let i=0;i<5;i++) {
-        skinLine(c, [[-4-i*1.5-plumeSway*.4,-16+bob],[-5-i*1.7-plumeSway*.6,-18+bob+i*.25]], '#c7a3da', .35);
+        skinLine(c, [[-4-i*1.5-plumeSway*.4,-16+bob],[-5-i*1.7-plumeSway*.6,-18+bob+i*.25]], plumeGlint, .35);
       }
+      // Engraved temple grooves, lit from the upper left.
       skinLine(c, [[-4,-13+bob],[-5,-10+bob],[-3,-8+bob]], '#95a8b9', .4);
       skinLine(c, [[-3.8,-12.7+bob],[-4.5,-10+bob]], '#182231', .35);
     }
@@ -660,7 +777,7 @@ export function drawRolandModel(c, charDef, state, {
     c.fill();
 
     // Chanfro superior iluminado
-    c.fillStyle = steelLight;
+    c.fillStyle = skinGradient(c, 4.5, -6+bob, 9, 3, steelMid, steelLight, steelHighlight);
     c.beginPath();
     c.moveTo(5, -6 + bob);
     c.lineTo(13.5, -4 + bob);
@@ -682,6 +799,12 @@ export function drawRolandModel(c, charDef, state, {
     skinPolygon(c, [[5,-1+bob],[12,0+bob],[10.5,3.3+bob],[5.4,1.5+bob]], polishedSteel, goldDark, .65);
     skinGem(c, 9, -2+bob, 1.5, '#72521e', '#e6cd80', goldLight);
     if (isDetailed) {
+      skinLine(c, [[5.8,-2.8+bob],[11.8,-1.2+bob]], goldDark, .45);
+      skinLine(c, [[6,-3.2+bob],[12,-1.6+bob]], goldLight, .3);
+      skinLine(c, [[6.3,-4.3+bob],[7,-3.8+bob],[7.8,-4+bob]], steelMid, .3);
+      c.fillStyle = goldGlint;
+      c.fillRect(5.6,-3.8+bob,.55,.55);
+      c.fillRect(11.6,-2.3+bob,.55,.55);
       skinSprig(c, 7, .8+bob, 3, -.65, '#e5ddc4', true);
       skinLine(c, [[10,1+bob],[11,1.3+bob]], '#e9edf0', .4);
     }
@@ -692,7 +815,7 @@ export function drawRolandModel(c, charDef, state, {
       // Braced forearms connect shoulders to the two articulated grip points.
       skinLine(c, [[-9,0+bob],[-6,5+bob],[2,7+bob]], steelDark, 4.5);
       skinLine(c, [[9,0+bob],[7,3+bob],[4,4+bob]], steelLight, 4);
-      drawChargeGrip(c, cCol, evolvedHammer, bob, tFrame);
+      drawChargeGrip(c, cCol, evolvedHammer, bob, tFrame, isDetailed);
     } else if (isHammerAttacking) {
       const p = Math.max(0, Math.min(1, hammerProgress));
       let hX = 0, hY = 0, hAngle = 0;
@@ -830,7 +953,7 @@ export function drawRolandModel(c, charDef, state, {
       c.save();
       c.translate(hX, hY + bob);
       c.rotate(hAngle);
-      drawRolandHammerModel(c, cCol, evolvedHammer, runeGlow);
+      drawRolandHammerModel(c, cCol, evolvedHammer, runeGlow, isDetailed);
       c.restore();
     } else {
       // Braço em repouso lateral segurando o equilíbrio do escudo/martelo
@@ -848,6 +971,12 @@ export function drawRolandModel(c, charDef, state, {
       c.fillRect(7.5, 4 + bob, 2.2, 2.0);
       c.fillStyle = goldLight;
       c.fillRect(8.0, 4.2 + bob, 1.0, 1.0);
+      if (isDetailed) {
+        skinLine(c, [[6.7,.4+bob],[9.9,.4+bob]], steelDark, .4);
+        skinLine(c, [[6.9,.8+bob],[9.8,.8+bob]], steelLight, .3);
+        skinLine(c, [[9.3,3.4+bob],[9.3,5.9+bob]], steelMid, .35);
+        skinLine(c, [[10.1,3.4+bob],[10.1,5.9+bob]], steelMid, .35);
+      }
     }
 
     if (isDashing) {
