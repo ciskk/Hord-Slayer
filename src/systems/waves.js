@@ -214,8 +214,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 4,
       name: t('match.wave.4'),
-      allowedSquads: ['PHALANX', 'DISRUPTION', 'EXECUTION_SQUAD'],
-      types: ['SHIELDED', 'SHOOTER', 'EXPLODER', 'FORGE_PYREGUARD', 'CHAIN_FLAYER', 'STALKER'],
+      allowedSquads: ['HORDE_RUSH', 'PHALANX', 'DISRUPTION', 'EXECUTION_SQUAD'],
+      types: ['ZOMBIE', 'SHIELDED', 'SHOOTER', 'EXPLODER', 'TRAIL_CRAWLER', 'FORGE_PYREGUARD', 'CHAIN_FLAYER', 'STALKER'],
       clusterSize: [14, 20],
       rate: 30,
       eliteChance: 0.12
@@ -224,8 +224,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 5,
       name: t('match.wave.5'),
-      allowedSquads: ['DISRUPTION', 'SIEGE_BATTERY', 'EXECUTION_SQUAD'],
-      types: ['SPLITTER', 'CRYPT_WEAVER', 'BASALT_GARGOYLE', 'PLAGUE_APOTHECARY', 'STALKER'],
+      allowedSquads: ['HORDE_RUSH', 'DISRUPTION', 'SIEGE_BATTERY', 'EXECUTION_SQUAD'],
+      types: ['ZOMBIE', 'SPLITTER', 'BAT', 'CRYPT_WEAVER', 'BASALT_GARGOYLE', 'PLAGUE_APOTHECARY', 'STALKER'],
       clusterSize: [16, 24],
       rate: 26,
       eliteChance: 0.15
@@ -234,8 +234,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 6,
       name: t('match.wave.6'),
-      allowedSquads: ['SIEGE_BATTERY', 'SNIPER_PINCER', 'DEATH_PROCESSION'],
-      types: ['NECRO', 'SHOOTER', 'GOLEM', 'RUNE_SCRIBE', 'SNIPER_CULTIST', 'STALKER'],
+      allowedSquads: ['HORDE_RUSH', 'SIEGE_BATTERY', 'SNIPER_PINCER', 'DEATH_PROCESSION'],
+      types: ['ZOMBIE', 'NECRO', 'SHOOTER', 'GOLEM', 'RUNE_SCRIBE', 'SNIPER_CULTIST', 'VOID_SCAVENGER', 'STALKER'],
       clusterSize: [16, 24],
       rate: 24,
       eliteChance: 0.18
@@ -244,8 +244,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 7,
       name: t('match.wave.7'),
-      allowedSquads: ['DEATH_PROCESSION', 'EXECUTION_SQUAD', 'AMBUSH_COVEN'],
-      types: ['GOLEM', 'BASALT_GARGOYLE', 'FORGE_PYREGUARD', 'MAIDEN_THORNS', 'DULLAHAN_VANGUARD', 'STALKER'],
+      allowedSquads: ['HORDE_RUSH', 'DEATH_PROCESSION', 'EXECUTION_SQUAD', 'AMBUSH_COVEN'],
+      types: ['ZOMBIE', 'GOLEM', 'BASALT_GARGOYLE', 'FORGE_PYREGUARD', 'MAIDEN_THORNS', 'DULLAHAN_VANGUARD', 'TRAIL_CRAWLER', 'STALKER'],
       clusterSize: [18, 26],
       rate: 22,
       eliteChance: 0.22
@@ -254,8 +254,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 8,
       name: t('match.wave.8'),
-      allowedSquads: ['SNIPER_PINCER', 'AMBUSH_COVEN', 'SWARM_PINCER', 'DEATH_PROCESSION'],
-      types: ['BAT', 'MIRROR_BANSHEE', 'SNIPER_CULTIST', 'GRAVE_GORGON', 'STALKER'],
+      allowedSquads: ['HORDE_RUSH', 'SNIPER_PINCER', 'AMBUSH_COVEN', 'SWARM_PINCER', 'DEATH_PROCESSION'],
+      types: ['ZOMBIE', 'BAT', 'SPLITTER', 'MIRROR_BANSHEE', 'SNIPER_CULTIST', 'GRAVE_GORGON', 'STALKER'],
       clusterSize: [20, 28],
       rate: 20,
       eliteChance: 0.25
@@ -264,8 +264,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 9,
       name: t('match.wave.9'),
-      allowedSquads: ['AMBUSH_COVEN', 'DEATH_PROCESSION', 'EXECUTION_SQUAD', 'SNIPER_PINCER'],
-      types: ['STALKER', 'DULLAHAN_VANGUARD', 'MAIDEN_THORNS', 'RUNE_SCRIBE', 'CURSED_CHEST'],
+      allowedSquads: ['HORDE_RUSH', 'AMBUSH_COVEN', 'DEATH_PROCESSION', 'EXECUTION_SQUAD', 'SNIPER_PINCER'],
+      types: ['ZOMBIE', 'DULLAHAN_VANGUARD', 'MAIDEN_THORNS', 'RUNE_SCRIBE', 'VOID_SCAVENGER', 'SHIELDED', 'CURSED_CHEST', 'STALKER'],
       clusterSize: [20, 30],
       rate: 18,
       eliteChance: 0.32
@@ -274,8 +274,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 10,
       name: t('match.wave.10'),
-      allowedSquads: ['AMBUSH_COVEN', 'DEATH_PROCESSION', 'EXECUTION_SQUAD', 'SNIPER_PINCER', 'PHALANX'],
-      types: ['GOLEM', 'DULLAHAN_VANGUARD', 'GRAVE_GORGON', 'MAIDEN_THORNS', 'CURSED_CHEST', 'STALKER'],
+      allowedSquads: ['HORDE_RUSH', 'AMBUSH_COVEN', 'DEATH_PROCESSION', 'EXECUTION_SQUAD', 'SNIPER_PINCER', 'PHALANX'],
+      types: ['ZOMBIE', 'GOLEM', 'BASALT_GARGOYLE', 'DULLAHAN_VANGUARD', 'GRAVE_GORGON', 'MAIDEN_THORNS', 'BAT', 'SPLITTER', 'CURSED_CHEST', 'STALKER'],
       clusterSize: [22, 32],
       rate: 16,
       eliteChance: 0.40

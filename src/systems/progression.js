@@ -509,22 +509,49 @@ export function saveBestRun(runData) {
 
 export function checkAndRecordBestRun(runData = {}) {
   const currentBest = getBestRun();
-  const newScore = calculateRunScore(runData);
+  const newScore = (typeof runData.score === 'number' && runData.score > 0)
+    ? runData.score
+    : calculateRunScore(runData);
 
   const shouldReplace = !currentBest || newScore > (currentBest.score || 0);
 
   if (shouldReplace) {
+    const seconds = Math.max(0, Number(runData.seconds) || 0);
+    const timeStr = (runData.time && runData.time !== '00:00')
+      ? runData.time
+      : ((runData.timeStr && runData.timeStr !== '00:00')
+        ? runData.timeStr
+        : `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`);
+    const highestWave = Math.max(1, Number(runData.highestWave) || Number(runData.wave) || 1);
+
     const bestRecord = {
       heroKey: runData.heroKey || 'KNIGHT',
-      seconds: runData.seconds || 0,
-      timeStr: runData.timeStr || '00:00',
-      kills: runData.kills || 0,
-      level: runData.level || 1,
-      highestWave: runData.highestWave || 1,
+      heroName: runData.heroName || '',
+      heroTitle: runData.heroTitle || '',
+      seconds,
+      time: timeStr,
+      timeStr,
+      kills: Number(runData.kills) || 0,
+      level: Number(runData.level) || 1,
+      wave: highestWave,
+      highestWave,
+      waveText: runData.waveText || '',
+      souls: Number(runData.souls) || 0,
+      weapons: Array.isArray(runData.weapons) ? runData.weapons.map(w => ({
+        type: w.type || w.id || '',
+        name: w.name || '',
+        level: Number(w.level) || Number(w.count) || 1,
+        evolved: !!w.evolved,
+        iconKey: w.iconKey || ''
+      })) : [],
+      passives: Array.isArray(runData.passives) ? [...runData.passives] : [],
+      verdictTitle: runData.verdictTitle || '',
+      verdictSub: runData.verdictSub || '',
+      bossesDefeated: Array.isArray(runData.bossesDefeated) ? [...runData.bossesDefeated] : [],
       bossesDefeatedCount: (runData.bossesDefeated || []).length,
       isVictory: !!runData.isVictory,
       score: newScore,
-      timestamp: Date.now()
+      timestamp: runData.timestamp || Date.now()
     };
     saveBestRun(bestRecord);
     return { isNewBest: true, bestRun: bestRecord };

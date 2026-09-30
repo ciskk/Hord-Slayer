@@ -21,11 +21,12 @@ import {
   stopBestRunTarot,
   resizeBestRunCanvas 
 } from '../../render/bestRunPreview.js';
-import { renderIcon } from '../icons.js';
+import { renderIcon, WEAPON_ICONS } from '../icons.js';
 import { playSfx } from '../../core/audio.js';
 
 const HERO_COLORS = {
   KNIGHT: '#f1c40f',
+  PALADIN: '#f1c40f',
   MAGE: '#ff7675',
   ROGUE: '#c084fc',
   BARBARIAN: '#e74c3c',
@@ -86,7 +87,7 @@ function renderBestRunMonument(targetContainerId = 'best-run-monument-container'
     weaponsHtml = bestRun.weapons.map(w => `
       <div class="monument-weapon-chip ${w.evolved ? 'weapon-evolved' : ''}" title="${savedWeaponHtml(w)}">
         <div class="weapon-chip-icon-box">
-          ${renderIcon(w.iconKey || 'sword', { size: 13, color: w.evolved ? '#ffd166' : '#cbd5e1' })}
+          ${renderIcon(w.iconKey || WEAPON_ICONS[w.type] || WEAPON_ICONS[w.type?.toUpperCase()] || 'sword', { size: 13, color: w.evolved ? '#ffd166' : '#cbd5e1' })}
         </div>
         <div class="weapon-chip-text">
           <span class="weapon-chip-title">${savedWeaponHtml(w)}</span>

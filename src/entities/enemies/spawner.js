@@ -382,6 +382,37 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0, forcedAngle = n
     count = Math.min(count, 1);
   }
 
+  // Redução de 50% no spawn de Gárgula de Basalto e Golem de Concreto (e teto estrito de cluster)
+  // Substitui 50% por infantaria Zumbi e limita aglomerações a no máximo 3 tanques por grupo
+  if (typeKey === 'BASALT_GARGOYLE' || typeKey === 'GOLEM') {
+    if (Math.random() < 0.50) {
+      typeKey = 'ZOMBIE';
+    } else {
+      const MAX_TANK_CLUSTER = 3;
+      if (count > MAX_TANK_CLUSTER) {
+        const overflow = count - MAX_TANK_CLUSTER;
+        count = MAX_TANK_CLUSTER;
+        spawnMobCluster('ZOMBIE', overflow, eliteChance, forcedAngle);
+      }
+    }
+  } else if (typeKey === 'DULLAHAN_VANGUARD') {
+    // Cavalaria pesada avançada: teto de 4 unidades por cluster, excesso convertido em Zumbis
+    const MAX_VANGUARD_CLUSTER = 4;
+    if (count > MAX_VANGUARD_CLUSTER) {
+      const overflow = count - MAX_VANGUARD_CLUSTER;
+      count = MAX_VANGUARD_CLUSTER;
+      spawnMobCluster('ZOMBIE', overflow, eliteChance, forcedAngle);
+    }
+  } else if (typeKey === 'GRAVE_GORGON' || typeKey === 'MAIDEN_THORNS') {
+    // Mobs avançados com alta densidade corporal: teto de 5 por cluster
+    const MAX_ADVANCED_CLUSTER = 5;
+    if (count > MAX_ADVANCED_CLUSTER) {
+      const overflow = count - MAX_ADVANCED_CLUSTER;
+      count = MAX_ADVANCED_CLUSTER;
+      spawnMobCluster('ZOMBIE', overflow, eliteChance, forcedAngle);
+    }
+  }
+
   // Tratamento de monstros com alto custo computacional/gráfico (projéteis e efeitos especiais pesados como o sino)
   if (isFpsHeavyEnemyType(typeKey)) {
     // 1. Redução de 70% na probabilidade de spawn de mobs pesados em FPS
@@ -476,6 +507,12 @@ export function spawnSquad(squadKey, eliteChance = 0, forcedAngle = null) {
     if (memberType === 'CURSED_CHEST' && Math.random() < 0.50) {
       continue;
     }
+    // Redução de 50% no spawn de Gárgula de Basalto e Golem de Concreto nos esquadrões (convertidos em Zumbis)
+    if (memberType === 'BASALT_GARGOYLE' || memberType === 'GOLEM') {
+      if (Math.random() < 0.50) {
+        memberType = 'ZOMBIE';
+      }
+    }
     // Redução de 70% no spawn de monstros de alto custo em FPS (projéteis/efeitos visuais)
     if (isFpsHeavyEnemyType(memberType)) {
       if (Math.random() < 0.70) {
@@ -536,8 +573,8 @@ export function spawnInitialHorde() {
  * @param {number} eliteChance Probabilidade de elite.
  */
 export function spawnEncirclementRing(typeKey, count = 18, eliteChance = 0) {
-  // Cerco concêntrico massivo de 360° deve usar exclusivamente infantaria sem projéteis/auras pesadas
-  if (isFpsHeavyEnemyType(typeKey)) {
+  // Cerco concêntrico massivo de 360° deve usar exclusivamente infantaria sem projéteis/auras pesadas e sem tanques massivos
+  if (isFpsHeavyEnemyType(typeKey) || typeKey === 'GOLEM' || typeKey === 'BASALT_GARGOYLE' || typeKey === 'DULLAHAN_VANGUARD' || typeKey === 'GRAVE_GORGON' || typeKey === 'MAIDEN_THORNS') {
     typeKey = 'ZOMBIE';
   }
   if (isKaelInvisible() && isWormEnemyType(typeKey)) return;

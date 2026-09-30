@@ -1,5 +1,6 @@
-import { getCurrentWave, getEffectiveHordeSeconds } from '../../systems/waves.js';
-import { getSavedWeaponName, getSavedPassivePresentation } from '../../i18n/contentPresentation.js';
+import { getCurrentWave, getEffectiveHordeSeconds, currentBossIndex } from '../../systems/waves.js';
+import { getSavedWeaponName, getSavedPassivePresentation, getItemDefinition } from '../../i18n/contentPresentation.js';
+import { getPauseEquipment } from '../pauseEquipment.js';
 import { t, formatNumber } from '../../i18n/index.js';
 /**
  * src/ui/modals/gameOverModal.js
@@ -112,43 +113,28 @@ function parseTimeToSeconds(timeStr = '00:00') {
  * Coleta armas equipadas e passivas ativas do jogador para registro na Melhor Run
  */
 function harvestPlayerRunArsenal() {
-  const weapons = [];
-  const arsenal = new Map((player.weapons || []).map(w => [w.type, { ...w, level: w.count || 1 }]));
-  for (const [type, item] of player.inventory?.weapons || []) {
-    arsenal.set(type, { ...arsenal.get(type), ...item, type });
-  }
-  if (arsenal.size) {
-    arsenal.forEach(w => {
-      const type = w.type;
-      const item = ITEMS[type];
-      const isEvolved = !!(
-        (type === 'SWORD' && player.evolvedSword) ||
-        (type === 'AURA' && player.evolvedAura) ||
-        (type === 'ORBITALS' && player.evolvedOrbitals) ||
-        (type === 'AXE' && player.evolvedAxe) ||
-        (type === 'STAFF' && player.evolvedStaff) ||
-        (type === 'HAMMER' && player.evolvedHammer) ||
-        (type === 'POTION' && player.evolvedPotion)
-      );
-      weapons.push({
-        type,
-        name: item ? item.name : type,
-        level: w.level || w.count || 1,
-        evolved: isEvolved,
-        iconKey: WEAPON_ICONS[type] || 'sword'
-      });
-    });
-  }
+  const equipped = getPauseEquipment(player);
+  const weapons = equipped.map(w => {
+    const item = getItemDefinition(w.type);
+    return {
+      type: w.type,
+      name: item?.name || w.type,
+      level: w.level || 1,
+      evolved: !!w.evolved,
+      iconKey: WEAPON_ICONS[w.type] || 'sword'
+    };
+  });
 
   const passives = [];
-  if (player.damageCardCount) passives.push(`Poder Bruto (+${Math.round((player.damagePercentBonus || 0) * 100)}%)`);
-  if (player.armorCardCount || player.hasArmorPassive) passives.push(`Armadura Rúnica (+${(player.armorCardCount || 1) * 30} HP)`);
-  if (player.wingsCardCount || player.hasWingsPassive) passives.push(`Asas do Vento (+${player.speed.toFixed(1)} Vel)`);
-  if (player.frostCardCount || (player.slowChance || 0) > 0) passives.push('Golpe Criogênico');
-  if (player.critCardCount || player.critChance > 0.05) passives.push(`Foco Letal (${Math.round(player.critChance * 100)}%)`);
-  if (player.hasteCardCount || (player.cooldownReduction || 0) > 0) passives.push('Fúria Rápida');
-  if (player.ultCooldownCount) passives.push('Ímpeto Supremo');
-  if (player.magnetCardCount) passives.push('Ímã Titânico');
+  const hasPassive = id => !!player.inventory?.passives?.has(id);
+  if (player.damageCardCount || player.hasPowerPassive || hasPassive('dmg')) passives.push(`Poder Bruto (+${Math.round((player.damagePercentBonus || 0) * 100)}%)`);
+  if (player.armorCardCount || player.hasArmorPassive || hasPassive('armor')) passives.push(`Armadura Rúnica (+${(player.armorCardCount || 1) * 30} HP)`);
+  if (player.wingsCardCount || player.hasWingsPassive || hasPassive('wings')) passives.push(`Asas do Vento (+${(player.speed || 3.2).toFixed(1)} Vel)`);
+  if (player.frostCardCount || (player.slowChance || 0) > 0 || hasPassive('frost_passive')) passives.push('Golpe Criogênico');
+  if (player.critCardCount || player.critChance > 0.05 || hasPassive('crit')) passives.push(`Foco Letal (${Math.round((player.critChance || 0.1) * 100)}%)`);
+  if (player.hasteCardCount || (player.cooldownReduction || 0) > 0 || hasPassive('haste')) passives.push('Fúria Rápida');
+  if (player.ultCooldownCount || hasPassive('ult_cooldown')) passives.push('Ímpeto Supremo');
+  if (player.magnetCardCount || hasPassive('magnet')) passives.push('Ímã Titânico');
 
   return { weapons, passives };
 }
@@ -467,14 +453,17 @@ export function openDeathModalReal() {
     heroTitle: currentHeroDef.title || 'O Paladino',
     isVictory: false,
     wave: currentWaveNum,
+    highestWave: currentWaveNum,
     waveText: waveText || `Onda ${currentWaveNum}`,
     time: survivalTime,
+    timeStr: survivalTime,
     seconds: survivalSecs,
     kills: gameState.kills,
     level: player.level,
-    souls: getPersistentGold(),
+    souls: Math.max(0, getPersistentGold() - matchStartGold),
     weapons: playerWeapons,
     passives: playerPassives,
+    bossesDefeated: Array.from({ length: currentBossIndex }, (_, i) => i + 1),
     verdictTitle: `ÚLTIMO SUSPIRO NA ONDA ${currentWaveNum}`,
     verdictSub: killerName ? `Caiu perante ${killerName}` : randomVerdict
   });
@@ -672,6 +661,9 @@ export function openVictoryModalReal() {
       wave: 10
     });
 
+    const ledger = victoryLedger(matchStartGold, beforeBonus, getPersistentGold(), bossVictoryBonus);
+    const totalEarnedInRun = ledger.total;
+
     recordResult = checkAndRecordBestRun({
       heroKey: selectedHeroKey,
       heroName: currentHeroDef.name || 'Sir Roland',
@@ -686,7 +678,7 @@ export function openVictoryModalReal() {
       seconds: survivalSecs,
       kills: gameState.kills,
       level: player.level,
-      souls: getPersistentGold(),
+      souls: totalEarnedInRun,
       weapons: playerWeapons,
       passives: playerPassives,
       verdictTitle: 'VITÓRIA SUPREMA ABSOLUTA',
@@ -699,9 +691,6 @@ export function openVictoryModalReal() {
   } catch (err) {
     console.warn('Aviso ao gravar estatísticas da vitória:', err);
   }
-
-  const ledger = victoryLedger(matchStartGold, beforeBonus, getPersistentGold(), bossVictoryBonus);
-  const totalEarnedInRun = ledger.total;
 
   refreshVictoryPresentation = () => {
     const honorsOpen = document.querySelector('.victory-honors')?.open;

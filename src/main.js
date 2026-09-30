@@ -1553,11 +1553,11 @@ function update(dt) {
     if (hordeSeconds >= nextEncirclementSecond) {
       nextEncirclementSecond = hordeSeconds + 25;
       if (hasTypes) {
-        // Cerco concêntrico massivo de 360° exclui atiradores e auras pesadas para manter 60 FPS
+        // Cerco concêntrico massivo de 360° prioriza Zumbis (75%+) para garantir 60 FPS e identidade de horda
         const safeHordeTypes = availableTypes.filter(t => !isFpsHeavyEnemyType(t));
-        const ringType = safeHordeTypes.length > 0
-          ? safeHordeTypes[Math.floor(Math.random() * safeHordeTypes.length)]
-          : 'ZOMBIE';
+        const ringType = (Math.random() < 0.75 || safeHordeTypes.length === 0)
+          ? 'ZOMBIE'
+          : safeHordeTypes[Math.floor(Math.random() * safeHordeTypes.length)];
         const ringCount = Math.min(26, 16 + currentWave.index * 2);
         spawnEncirclementRing(ringType, ringCount, currentWave.eliteChance * 0.5);
       }
@@ -1575,14 +1575,20 @@ function update(dt) {
         // Flanco de Pinça Secundário: gera um cluster complementar no flanco oposto para cercar
         if (hasTypes) {
           const safeFlankTypes = availableTypes.filter(t => !isFpsHeavyEnemyType(t));
-          const flankType = safeFlankTypes.length > 0
-            ? safeFlankTypes[Math.floor(Math.random() * safeFlankTypes.length)]
-            : availableTypes[Math.floor(Math.random() * availableTypes.length)];
+          // Prevalência dos Zumbis no flanco complementar (50% direto para Zumbi)
+          const flankType = (Math.random() < 0.50)
+            ? 'ZOMBIE'
+            : (safeFlankTypes.length > 0
+                ? safeFlankTypes[Math.floor(Math.random() * safeFlankTypes.length)]
+                : availableTypes[Math.floor(Math.random() * availableTypes.length)]);
           const flankCount = Math.max(4, Math.floor((currentWave.clusterSize ? currentWave.clusterSize[0] : 8) * 0.65));
           spawnMobCluster(flankType, flankCount, currentWave.eliteChance, oppositeAngle);
         }
       } else if (hasTypes) {
-        const chosenType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+        // Prevalência de Zumbis: 40% de chance direta para Zumbi no cluster massivo principal
+        const chosenType = (Math.random() < 0.40)
+          ? 'ZOMBIE'
+          : availableTypes[Math.floor(Math.random() * availableTypes.length)];
         const totalCount = currentWave.clusterSize
           ? Math.floor(Math.random() * (currentWave.clusterSize[1] - currentWave.clusterSize[0] + 1)) + currentWave.clusterSize[0]
           : 12;
@@ -1591,7 +1597,9 @@ function update(dt) {
         const countB = totalCount - countA;
         spawnMobCluster(chosenType, countA, currentWave.eliteChance, primaryAngle);
         if (countB > 0) {
-          const flankType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+          const flankType = (Math.random() < 0.45)
+            ? 'ZOMBIE'
+            : availableTypes[Math.floor(Math.random() * availableTypes.length)];
           spawnMobCluster(flankType, countB, currentWave.eliteChance, oppositeAngle);
         }
       }

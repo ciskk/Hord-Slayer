@@ -41,13 +41,13 @@ export function getSavedPassivePresentation(entry) {
   const saved = normalizeSavedPassive(entry);
   if (!saved) return null;
   const item = getItemDefinition(saved.id);
-  let value = saved.legacyValue || '';
+  let value = saved.legacyValue || (typeof saved.value === 'string' ? saved.value : '');
   if (Number.isFinite(saved.value)) {
     value = t(`content.savedValue.${saved.unit || 'number'}`, {
       value: `${saved.signed && saved.value >= 0 ? '+' : ''}${formatNumber(saved.value)}`
     });
   }
-  return { id: saved.id, name: item?.name || saved.legacyText || saved.id || '', value, icon: item?.icon || 'sparkle' };
+  return { id: saved.id, name: item?.name || saved.name || saved.legacyText || saved.id || '', value, icon: item?.icon || 'sparkle' };
 }
 
 export function getPactPresentation(pact) {
@@ -62,20 +62,42 @@ export function getPactPresentation(pact) {
 
 export function getBestRunPresentation(record) {
   if (!record) return null;
-  const names = { KNIGHT: 'Sir Roland', MAGE: 'Ignis', ROGUE: 'Kael', BARBARIAN: 'Kragdor', ALCHEMIST: 'Valéria' };
+  const names = {
+    KNIGHT: 'Sir Roland',
+    PALADIN: 'Sir Roland',
+    MAGE: 'Ignis',
+    ROGUE: 'Kael',
+    BARBARIAN: 'Kragdor',
+    ALCHEMIST: 'Valéria'
+  };
   const heroKey = record.heroKey || 'KNIGHT';
+  const canonicalHeroKey = heroKey === 'PALADIN' ? 'KNIGHT' : heroKey;
   const seconds = Math.max(0, Number(record.seconds) || 0);
+  const formattedSeconds = `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
+  const validTime = (record.time && record.time !== '00:00')
+    ? record.time
+    : ((record.timeStr && record.timeStr !== '00:00')
+      ? record.timeStr
+      : (seconds > 0 ? formattedSeconds : (record.time || record.timeStr || '00:00')));
+  const waveNum = (record.highestWave && record.highestWave > 1)
+    ? record.highestWave
+    : (record.wave || record.highestWave || 1);
+
   return {
     ...record,
     heroKey,
     heroName: names[heroKey] || record.heroName || heroKey,
-    heroTitle: names[heroKey] ? t(`heroes.${heroKey}.title`) : (record.heroTitle || ''),
-    date: record.timestamp ? formatDate(record.timestamp) : (record.date || ''),
-    time: record.time || record.timeStr || `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`,
-    waveText: t('wave.title', { number: record.highestWave || record.wave || 1 }),
-    souls: record.souls || 0,
-    verdictTitle: t(record.isVictory ? 'content.record.victory' : 'content.record.defeat'),
-    verdictSub: t(record.isVictory ? 'contentUI.victoryQuote' : 'contentUI.defeatQuote')
+    heroTitle: names[heroKey] ? t(`heroes.${canonicalHeroKey}.title`) : (record.heroTitle || ''),
+    date: record.timestamp ? formatDate(record.timestamp) : (record.date || formatDate(Date.now())),
+    time: validTime,
+    wave: waveNum,
+    highestWave: waveNum,
+    waveText: t('wave.title', { number: waveNum }),
+    souls: Number(record.souls) || 0,
+    weapons: Array.isArray(record.weapons) ? record.weapons : [],
+    passives: Array.isArray(record.passives) ? record.passives : [],
+    verdictTitle: record.verdictTitle || t(record.isVictory ? 'content.record.victory' : 'content.record.defeat'),
+    verdictSub: record.verdictSub || t(record.isVictory ? 'contentUI.victoryQuote' : 'contentUI.defeatQuote')
   };
 }
 
