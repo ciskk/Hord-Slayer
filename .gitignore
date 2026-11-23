@@ -2,7 +2,6 @@
 node_modules/
 /www/
 /dist/
-/temp-desktop/
 /scratch/
 *.log
 
